@@ -3,11 +3,16 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\RedirectResponse;
+use App\Services\Api\AuthService;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class AuthController extends Controller
 {
+    public function __construct(
+        protected AuthService $authService
+    ) {}
+    
     public function showLogin(Request $request): View|RedirectResponse
     {
         if ($request->session()->has('sicore_user')) {
@@ -24,42 +29,53 @@ class AuthController extends Controller
             'password' => ['required', 'string'],
         ]);
 
-        $validEmail = hash_equals(
-            mb_strtolower((string) config('sicore.test.email')),
-            mb_strtolower($credentials['email'])
-        );
+        $result = $this->authService->login($credentials);
 
-        $validPassword = hash_equals(
-            (string) config('sicore.test.password'),
-            $credentials['password']
-        );
-
-        if (! $validEmail || ! $validPassword) {
+        if (! $result['success']) {
             return back()
                 ->withInput($request->only('email'))
                 ->withErrors([
-                    'email' => 'Identifiants incorrects. Utilisez le compte de test affiché sous le formulaire.',
+                    'email' => $result['message'],
                 ]);
         }
 
+        $data = $result['data'];
+
         $request->session()->regenerate();
+
+        $request->session()->put('access_token', $data['access_token']);
+
         $request->session()->put('sicore_user', [
-            'name' => 'Administrateur SICORE',
-            'email' => config('sicore.test.email'),
-            'role' => 'Administrateur',
-            'mode' => 'test',
+            'id' => $data['user']['id'],
+            'nom' => $data['user']['nom'],
+            'prenom' => $data['user']['prenom'],
+            'email' => $data['user']['email'],
+            'role' => $data['user']['role']['nom'] ?? null,
+            'role_slug' => $data['user']['role']['slug'] ?? null,
         ]);
 
-        return redirect()->route('dashboard')
-            ->with('success', 'Connexion réussie. Bienvenue dans le tableau de bord SICORE.');
+        return redirect()
+            ->route('dashboard')
+            ->with('success', $data['message']);
     }
 
     public function logout(Request $request): RedirectResponse
     {
+        if ($request->session()->has('access_token')) {
+            $this->authService->logout();
+        }
+
+
         $request->session()->invalidate();
+
         $request->session()->regenerateToken();
 
-        return redirect()->route('login')
-            ->with('success', 'Vous êtes maintenant déconnecté.');
+
+        return redirect()
+            ->route('login')
+            ->with(
+                'success',
+                'Vous êtes maintenant déconnecté.'
+            );
     }
 }

@@ -3,11 +3,32 @@
 use App\Http\Controllers\AuthController;
 use Illuminate\Support\Facades\Route;
 
+// Route::middleware('guest')->group(function (): void {
+//     Route::get('/', [AuthController::class, 'showLogin'])->name('login');
+//     Route::post('/login', [AuthController::class, 'login'])
+//         ->middleware('throttle:6,1')
+//         ->name('login.submit');
+// });
+
 Route::middleware('guest')->group(function (): void {
-    Route::get('/', [AuthController::class, 'showLogin'])->name('login');
-    Route::post('/login', [AuthController::class, 'login'])
+
+        Route::get('/login', [
+            AuthController::class,
+            'showLogin'
+        ])
+        ->name('login');
+
+
+        Route::post('/login', [
+            AuthController::class,
+            'login'
+        ])
         ->middleware('throttle:6,1')
         ->name('login.submit');
+
+
+        // Optionnel : garder l'ancien accès /
+        Route::redirect('/', '/login');
 });
 
 Route::middleware('sicore.auth')->group(function (): void {
