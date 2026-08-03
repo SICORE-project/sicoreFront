@@ -59,11 +59,41 @@ class AuthController extends Controller
             ->with('success', $data['message']);
     }
 
+    // public function logout(Request $request): RedirectResponse
+    // {
+    //     if ($request->session()->has('access_token')) {
+    //         $this->authService->logout();
+    //     }
+
+
+    //     $request->session()->invalidate();
+
+    //     $request->session()->regenerateToken();
+
+
+    //     return redirect()
+    //         ->route('login')
+    //         ->with(
+    //             'success',
+    //             'Vous êtes maintenant déconnecté.'
+    //         );
+    // }
     public function logout(Request $request): RedirectResponse
     {
-        if ($request->session()->has('access_token')) {
+        try {
+
             $this->authService->logout();
+
+        } catch (\Exception $e) {
+
+            // On continue la déconnexion locale
         }
+
+
+        $request->session()->forget([
+            'access_token',
+            'sicore_user'
+        ]);
 
 
         $request->session()->invalidate();
