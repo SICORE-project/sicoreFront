@@ -1,0 +1,101 @@
+<?php
+
+namespace Tests\Feature;
+
+use Tests\TestCase;
+
+class ApplicationTest extends TestCase
+{
+    public function test_login_page_is_accessible(): void
+    {
+        $this->get('/')
+            ->assertOk()
+            ->assertSee('Bienvenue sur SICORE')
+            ->assertSee('admin@sicore.sn')
+            ->assertSee('Sicore@2026');
+    }
+
+    public function test_dashboard_requires_a_sicore_session(): void
+    {
+        $this->get('/dashboard')
+            ->assertRedirect(route('login'));
+    }
+
+    public function test_test_user_can_login_and_reach_dashboard(): void
+    {
+        $this->post('/login', [
+            'email' => 'admin@sicore.sn',
+            'password' => 'Sicore@2026',
+        ])->assertRedirect(route('dashboard'));
+
+        $this->assertSame('Administrateur SICORE', session('sicore_user.name'));
+    }
+
+    public function test_invalid_credentials_are_rejected(): void
+    {
+        $this->post('/login', [
+            'email' => 'admin@sicore.sn',
+            'password' => 'incorrect',
+        ])->assertSessionHasErrors('email');
+    }
+
+    public function test_sidebar_pages_are_rendered_by_laravel(): void
+    {
+        $session = [
+            'sicore_user' => [
+                'name' => 'Administrateur SICORE',
+                'email' => 'admin@sicore.sn',
+                'role' => 'Administrateur',
+            ],
+        ];
+
+        $pages = [
+            '/dashboard' => 'Tableau de bord',
+            '/enseignants' => 'Dashboard Enseignant',
+            '/enseignants/nouveau' => 'Nouvel enseignant',
+            '/paie/etats-presence' => 'États de présence',
+            '/paie/avance-tabaski' => 'Avance Tabaski',
+            '/paie/retenue-tabaski' => 'Retenue Tabaski',
+            '/paie/retenues-rappel' => 'Retenues rappel',
+            '/paie/exemptions' => 'Exemption',
+            '/paie/travaux-periodiques' => 'Travaux périodiques',
+            '/paie/recap-banque' => 'Récapitulatif',
+            '/paie/cotisations-sociales' => 'Cotisations sociales',
+            '/paie/etat-salaires' => 'État des salaires',
+            '/paie/elements-saisie-dashboard' => 'Éléments de saisie',
+            '/paie/generee-ief' => 'Paie générée',
+            '/paie/fermeture-periode' => 'Fermeture',
+            '/paie/edition-salaires-banque' => 'Salaires par banque',
+            '/paie/bulletins' => 'Bulletins',
+            '/paie/effectifs-corps' => 'Effectifs',
+            '/paie/non-generee' => 'Paie non générée',
+            '/paie/sommes-percues' => 'Sommes perçues',
+            '/credits/delegation' => 'Délégation',
+            '/credits/edition-delegations' => 'Édition des délégations',
+            '/credits/edition-engagements' => 'Édition des engagements',
+            '/indemnites/convocations' => 'Convocations',
+            '/indemnites/services-faits' => 'Services faits',
+            '/indemnites/pieces-justificatives' => 'Pièces justificatives',
+            '/indemnites/accuses-reception' => 'Accusés',
+            '/indemnites/calcul' => 'Calcul',
+            '/indemnites/frais-deplacement' => 'Frais de déplacement',
+            '/indemnites/etats-paie' => 'États de paie',
+            '/bourses/enregistrer-demande' => 'Enregistrer',
+            '/bourses/valider-dossier' => 'Valider',
+            '/bourses/attribuer-aide' => 'Attribuer',
+            '/parametres' => 'Paramétrage',
+            '/parametres/ief' => 'Inspection',
+            '/utilisateurs' => 'Utilisateurs',
+            '/utilisateurs/profils-roles' => 'Profils',
+            '/utilisateurs/permissions' => 'Permissions',
+        ];
+
+        foreach ($pages as $uri => $expectedText) {
+            $this->withSession($session)
+                ->get($uri)
+                ->assertOk()
+                ->assertSee($expectedText, false)
+                ->assertSee('sidebar', false);
+        }
+    }
+}
