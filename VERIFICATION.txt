@@ -1,0 +1,21 @@
+VÉRIFICATION DU PROJET SICORE FRONTEND
+======================================
+
+- Laravel détecté : 12.63.0
+- Mode test local uniquement : admin@sicore.sn / Sicore@2026
+- Connexion vérifiée : redirection vers /dashboard
+- Middleware de session vérifié : les pages protégées redirigent vers la connexion sans session
+- 83 routes Laravel déclarées, redirections historiques incluses
+- Syntaxe PHP vérifiée sur app/, bootstrap/, config/, routes/, database/ et tests/
+- Les 38 pages principales ont été rendues côté serveur avec Laravel/Blade
+- Les 33 pages de modules auparavant construites par JavaScript sont maintenant rendues par le composant Blade ModulePage
+- Sidebar Blade présent dans chaque page protégée
+- Tableaux, statistiques, filtres, actions, formulaires et contenus du prototype conservés
+- Formulaire « Nouvel enseignant » testable localement sans envoi API
+- Aucun pont API ni authentification backend actif dans cette version
+- Assets servis directement depuis public/assets ; aucun lancement npm/Vite requis
+
+Environnement de vérification du conteneur : PHP 8.4 sans extensions DOM/mbstring/xmlwriter.
+Les tests PHPUnit n'ont donc pas pu être exécutés dans ce conteneur, mais les routes, le login et le rendu des 38 pages ont été contrôlés avec un serveur Laravel et un script de rendu applicatif. Sur Windows/XAMPP, activez les extensions indiquées dans README.md pour lancer « php artisan test ».
+
+Port frontend recommandé : 8001.
