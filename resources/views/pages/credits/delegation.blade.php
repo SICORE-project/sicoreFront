@@ -88,6 +88,7 @@
       </div>
       <div class="actions-group">
         <button class="btn-secondary" type="button" id="btnFiltrer">Filtrer</button>
+        <button class="btn-secondary" type="button" id="btnReinitialiser">Réinitialiser</button>
       </div>
     </section>
 
@@ -199,6 +200,8 @@ async function loadStructures() {
       filterSelect.innerHTML += `<option value="${s.id}">${s.nom}</option>`;
       formSelect.innerHTML += `<option value="${s.id}">${s.nom}</option>`;
     });
+    // Sans cela, la liste Service reste vide tant qu'aucune structure n'est choisie.
+    majServicesFiltre();
   } catch(e) {
     console.error('Erreur chargement structures:', e);
   }
@@ -276,6 +279,53 @@ function renderTable(data) {
   `).join('');
 }
 
+// Remplit la liste Service : tous les services (groupes par structure) si aucune
+// structure n'est selectionnee, sinon ceux de la structure choisie.
+function majServicesFiltre() {
+  const structureId = document.getElementById('filterStructure').value;
+  const select = document.getElementById('filterService');
+  const ancienChoix = select.value;
+  const structures = structureId
+    ? allStructures.filter(s => s.id == structureId)
+    : allStructures;
+
+  select.innerHTML = '<option value="">Tous</option>' + structures.map(s => {
+    const services = s.services || [];
+    if (services.length === 0) return '';
+    const options = services.map(svc => `<option value="${svc.id}">${svc.nom}</option>`).join('');
+    // Sans structure choisie, on groupe pour distinguer les services homonymes.
+    return structureId ? options : `<optgroup label="${s.nom}">${options}</optgroup>`;
+  }).join('');
+
+  const encoreDisponible = [...select.options].some(o => o.value === ancienChoix);
+  select.value = encoreDisponible ? ancienChoix : '';
+}
+
+function appliquerFiltres() {
+  const structureId = document.getElementById('filterStructure').value;
+  const serviceId = document.getElementById('filterService').value;
+  const statut = document.getElementById('filterStatut').value;
+  const champRecherche = document.getElementById('delegationSearch');
+  const recherche = champRecherche ? champRecherche.value.trim().toLowerCase() : '';
+
+  let filtered = allDelegations;
+  if (structureId) filtered = filtered.filter(d => d.structure_id == structureId);
+  if (serviceId) filtered = filtered.filter(d => d.service_id == serviceId);
+  if (statut) filtered = filtered.filter(d => d.statut === statut);
+  if (recherche) {
+    filtered = filtered.filter(d => [
+      d.reference,
+      d.objet,
+      d.structure ? d.structure.nom : '',
+      d.service ? d.service.nom : '',
+      d.statut
+    ].join(' ').toLowerCase().includes(recherche));
+  }
+
+  renderTable(filtered);
+  updateStats(filtered);
+}
+
 function setupEvents() {
   document.getElementById('btnNouvelleDelegation').addEventListener('click', () => {
     document.getElementById('modalDelegation').style.display = 'block';
@@ -302,32 +352,34 @@ function setupEvents() {
     }
   });
 
-  document.getElementById('filterStructure').addEventListener('change', function() {
-    const structureId = this.value;
-    const serviceSelect = document.getElementById('filterService');
-    serviceSelect.innerHTML = '<option value="">Tous</option>';
-    if (!structureId) return;
-    const structure = allStructures.find(s => s.id == structureId);
-    if (structure && structure.services) {
-      structure.services.forEach(svc => {
-        serviceSelect.innerHTML += `<option value="${svc.id}">${svc.nom}</option>`;
-      });
-    }
+  document.getElementById('filterStructure').addEventListener('change', () => {
+    majServicesFiltre();
+    appliquerFiltres();
   });
 
-  document.getElementById('btnFiltrer').addEventListener('click', () => {
-    const structureId = document.getElementById('filterStructure').value;
-    const serviceId = document.getElementById('filterService').value;
-    const statut = document.getElementById('filterStatut').value;
-
-    let filtered = allDelegations;
-    if (structureId) filtered = filtered.filter(d => d.structure_id == structureId);
-    if (serviceId) filtered = filtered.filter(d => d.service_id == serviceId);
-    if (statut) filtered = filtered.filter(d => d.statut === statut);
-
-    renderTable(filtered);
-    updateStats(filtered);
+  // Le filtrage est immediat : le bouton Filtrer reste disponible mais n'est plus indispensable.
+  ['filterService', 'filterStatut'].forEach(id => {
+    document.getElementById(id).addEventListener('change', appliquerFiltres);
   });
+  document.getElementById('btnFiltrer').addEventListener('click', appliquerFiltres);
+
+  document.getElementById('btnReinitialiser').addEventListener('click', () => {
+    document.getElementById('filterStructure').value = '';
+    document.getElementById('filterStatut').value = '';
+    // Vide avant majServicesFiltre(), qui conserve sinon le service deja choisi.
+    document.getElementById('filterService').value = '';
+    const recherche = document.getElementById('delegationSearch');
+    if (recherche) recherche.value = '';
+    majServicesFiltre();
+    appliquerFiltres();
+  });
+
+  // La recherche du bandeau passe par le meme filtrage, sinon un clic sur Filtrer
+  // reconstruit le tableau et fait perdre le terme recherche.
+  const champRecherche = document.getElementById('delegationSearch');
+  if (champRecherche) champRecherche.addEventListener('input', appliquerFiltres);
+
+  document.getElementById('btnExporter').addEventListener('click', exporterCSV);
 
   document.getElementById('formDelegation').addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -379,6 +431,42 @@ function setupEvents() {
 function closeModal() {
   document.getElementById('modalDelegation').style.display = 'none';
   document.getElementById('formDelegation').reset();
+}
+
+// Exporte les lignes actuellement affichees du tableau (filtres et recherche compris).
+function exporterCSV() {
+  const table = document.getElementById('delegationTable');
+
+  const entetes = [...table.querySelectorAll('thead th')]
+    .filter(th => !th.classList.contains('actions-cell'))
+    .map(th => th.textContent.trim());
+
+  const lignes = [...table.querySelectorAll('tbody tr')]
+    .filter(tr => !tr.classList.contains('is-hidden'))
+    .map(tr => [...tr.querySelectorAll('td')]
+      .filter(td => !td.classList.contains('actions-cell'))
+      .map(td => td.textContent.trim()));
+
+  if (lignes.length === 0) {
+    alert('Aucune délégation à exporter.');
+    return;
+  }
+
+  const echapper = valeur => '"' + String(valeur).replace(/"/g, '""') + '"';
+  const csv = [entetes, ...lignes]
+    .map(ligne => ligne.map(echapper).join(';'))
+    .join('\r\n');
+
+  // BOM UTF-8 : sans lui, Excel affiche mal les accents.
+  const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const lien = document.createElement('a');
+  lien.href = url;
+  lien.download = 'delegations-credit-' + new Date().toISOString().slice(0, 10) + '.csv';
+  document.body.appendChild(lien);
+  lien.click();
+  document.body.removeChild(lien);
+  URL.revokeObjectURL(url);
 }
 
 async function voirDetail(id) {

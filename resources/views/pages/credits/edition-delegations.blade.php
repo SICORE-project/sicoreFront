@@ -83,6 +83,7 @@
       </div>
       <div class="actions-group">
         <button class="btn-secondary" type="button" id="btnFiltrer">Filtrer</button>
+        <button class="btn-secondary" type="button" id="btnReinitialiser">Réinitialiser</button>
       </div>
     </section>
 
@@ -227,16 +228,85 @@ function renderTable(data) {
   `).join('');
 }
 
+function appliquerFiltres() {
+  const structureId = document.getElementById('filterStructure').value;
+  const statut = document.getElementById('filterStatut').value;
+  const champRecherche = document.getElementById('editionSearch');
+  const recherche = champRecherche ? champRecherche.value.trim().toLowerCase() : '';
+
+  let filtered = allDelegations;
+  if (structureId) filtered = filtered.filter(d => d.structure_id == structureId);
+  if (statut) filtered = filtered.filter(d => d.statut === statut);
+  if (recherche) {
+    filtered = filtered.filter(d => [
+      d.reference,
+      d.objet,
+      d.structure ? d.structure.nom : '',
+      d.statut
+    ].join(' ').toLowerCase().includes(recherche));
+  }
+
+  renderTable(filtered);
+  updateStats(filtered);
+}
+
+// Exporte les lignes actuellement affichees du tableau (filtres et recherche compris).
+function exporterCSV() {
+  const table = document.getElementById('editionTable');
+
+  const entetes = [...table.querySelectorAll('thead th')]
+    .filter(th => !th.classList.contains('actions-cell'))
+    .map(th => th.textContent.trim());
+
+  const lignes = [...table.querySelectorAll('tbody tr')]
+    .filter(tr => !tr.classList.contains('is-hidden'))
+    .map(tr => [...tr.querySelectorAll('td')]
+      .filter(td => !td.classList.contains('actions-cell'))
+      .map(td => td.textContent.trim()));
+
+  if (lignes.length === 0) {
+    alert('Aucune délégation à exporter.');
+    return;
+  }
+
+  const echapper = valeur => '"' + String(valeur).replace(/"/g, '""') + '"';
+  const csv = [entetes, ...lignes]
+    .map(ligne => ligne.map(echapper).join(';'))
+    .join('\r\n');
+
+  // BOM UTF-8 : sans lui, Excel affiche mal les accents.
+  const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const lien = document.createElement('a');
+  lien.href = url;
+  lien.download = 'edition-delegations-' + new Date().toISOString().slice(0, 10) + '.csv';
+  document.body.appendChild(lien);
+  lien.click();
+  document.body.removeChild(lien);
+  URL.revokeObjectURL(url);
+}
+
 function setupEvents() {
-  document.getElementById('btnFiltrer').addEventListener('click', () => {
-    const structureId = document.getElementById('filterStructure').value;
-    const statut = document.getElementById('filterStatut').value;
-    let filtered = allDelegations;
-    if (structureId) filtered = filtered.filter(d => d.structure_id == structureId);
-    if (statut) filtered = filtered.filter(d => d.statut === statut);
-    renderTable(filtered);
-    updateStats(filtered);
+  // Le filtrage est immediat : le bouton Filtrer reste disponible mais n'est plus indispensable.
+  ['filterStructure', 'filterStatut'].forEach(id => {
+    document.getElementById(id).addEventListener('change', appliquerFiltres);
   });
+  document.getElementById('btnFiltrer').addEventListener('click', appliquerFiltres);
+
+  document.getElementById('btnReinitialiser').addEventListener('click', () => {
+    document.getElementById('filterStructure').value = '';
+    document.getElementById('filterStatut').value = '';
+    const recherche = document.getElementById('editionSearch');
+    if (recherche) recherche.value = '';
+    appliquerFiltres();
+  });
+
+  // La recherche du bandeau passe par le meme filtrage, sinon un clic sur Filtrer
+  // reconstruit le tableau et fait perdre le terme recherche.
+  const champRecherche = document.getElementById('editionSearch');
+  if (champRecherche) champRecherche.addEventListener('input', appliquerFiltres);
+
+  document.getElementById('btnExporter').addEventListener('click', exporterCSV);
 
   document.getElementById('btnCloseMontant').addEventListener('click', closeMontant);
   document.getElementById('btnAnnulerMontant').addEventListener('click', closeMontant);
