@@ -13,8 +13,20 @@ Route::middleware('sicore.auth')
     ->name('indemnites.')
     ->group(function (): void {
 
-        Route::view('/convocations', 'pages.indemnites.convocations')
+        Route::view('/convocations', 'pages.indemnites.convocations.index')
             ->name('convocations');
+
+        Route::view('/convocations/nouvelle', 'pages.indemnites.convocations.create')
+            ->name('convocations.create');
+
+        Route::view('/convocations/{id}/modifier', 'pages.indemnites.convocations.edit')
+            ->name('convocations.edit');
+
+        Route::view('/convocations/{id}/suivi', 'pages.indemnites.convocations.suivi')
+            ->name('convocations.suivi');
+
+        Route::view('/convocations/{id}', 'pages.indemnites.convocations.show')
+            ->name('convocations.show');
 
         Route::view('/services-faits', 'pages.indemnites.services-faits')
             ->name('services-faits');
@@ -36,8 +48,7 @@ Route::middleware('sicore.auth')
 
     });
 
-
-/*
+  /*
 |--------------------------------------------------------------------------
 | Module Bourses
 |--------------------------------------------------------------------------
@@ -45,16 +56,15 @@ Route::middleware('sicore.auth')
 
 Route::middleware('sicore.auth')
     ->prefix('bourses')
-    ->name('bourses.')
     ->group(function (): void {
 
         Route::view('/enregistrer-demande', 'pages.bourses.enregistrer-demande')
-            ->name('enregistrer-demande');
+            ->name('bourses.enregistrer-demande');
 
         Route::view('/valider-dossier', 'pages.bourses.valider-dossier')
-            ->name('valider-dossier');
+            ->name('bourses.valider-dossier');
 
         Route::view('/attribuer-aide', 'pages.bourses.attribuer-aide')
-            ->name('attribuer-aide');
+            ->name('bourses.attribuer-aide');
 
     });
