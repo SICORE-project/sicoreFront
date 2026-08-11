@@ -652,76 +652,58 @@
 
       var rows = membersBody.querySelectorAll(".member-row");
 
-      rows.forEach(function (row, memberIndex) {
+      rows.forEach(function (row) {
         var memberId = row.querySelector("[data-member-id-input]");
-
-        var nom = row.querySelector("[data-member-nom]");
 
         var fonction = row.querySelector("[data-member-fonction]");
 
         var provenance = row.querySelector("[data-member-provenance]");
 
-        var telephone = row.querySelector("[data-member-telephone]");
+        var nom = row.querySelector("[data-member-nom]");
+
+        // Le back (ConvocationBeneficiaireController / pivot
+        // convocation_enseignant) ne stocke que enseignant_id, fonction
+        // et centre_id - il n'existe pas de colonne pour un nom saisi a
+        // la main. Un membre du jury doit donc obligatoirement etre
+        // selectionne dans l'autocomplete (data-member-id-input rempli)
+        // pour pouvoir etre enregistre.
+        if (!memberId || !memberId.value) {
+          if (nom && nom.value.trim() && typeof window.showToast === "function") {
+            window.showToast(
+              "error",
+              '"' +
+                nom.value.trim() +
+                '" n\'a pas ete selectionne dans la liste de recherche et ne sera pas enregistre.',
+            );
+          }
+
+          return;
+        }
 
         addHidden(
-          "centres[" +
-            centreIndex +
-            "][membres][" +
-            memberIndex +
-            "][enseignant_id]",
-          memberId ? memberId.value : "",
+          "beneficiaires[" + beneficiaireIndex + "][enseignant_id]",
+          memberId.value,
         );
 
         addHidden(
-          "centres[" + centreIndex + "][membres][" + memberIndex + "][nom]",
-          nom ? nom.value : "",
-        );
-
-        addHidden(
-          "centres[" +
-            centreIndex +
-            "][membres][" +
-            memberIndex +
-            "][fonction]",
+          "beneficiaires[" + beneficiaireIndex + "][fonction]",
           fonction ? fonction.value : "",
         );
 
         addHidden(
-          "centres[" +
-            centreIndex +
-            "][membres][" +
-            memberIndex +
-            "][provenance]",
+          "beneficiaires[" + beneficiaireIndex + "][provenance]",
           provenance ? provenance.value : "",
         );
 
+        // C'etait le bug principal : sans centre_index, le back ne
+        // pouvait jamais rattacher ce membre a la carte "centre" dans
+        // laquelle il avait ete saisi (centre_id restait toujours null).
         addHidden(
-          "centres[" +
-            centreIndex +
-            "][membres][" +
-            memberIndex +
-            "][telephone]",
-          telephone ? telephone.value : "",
+          "beneficiaires[" + beneficiaireIndex + "][centre_index]",
+          String(centreIndex),
         );
 
-        // Le controleur de creation (ConvocationsController@store, cote
-        // front) ne lit que "beneficiaires[k][enseignant_id]" /
-        // "[fonction]" - il ne connait pas la structure "centres[]" ci-
-        // dessus. Sans ce bloc, aucun membre du jury n'etait jamais
-        // enregistre a la creation, quel que soit le contenu de l'etape 2.
-        if (memberId && memberId.value) {
-          addHidden(
-            "beneficiaires[" + beneficiaireIndex + "][enseignant_id]",
-            memberId.value,
-          );
-
-          addHidden(
-            "beneficiaires[" + beneficiaireIndex + "][fonction]",
-            fonction ? fonction.value : "",
-          );
-
-          beneficiaireIndex++;
-        }
+        beneficiaireIndex++;
       });
     });
   }

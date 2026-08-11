@@ -95,6 +95,16 @@ class ConvocationService
         ]));
     }
 
+    /**
+     * Liste des types de convocation actifs (jury_examen, formation,
+     * mission, reunion...), pour alimenter le select du formulaire de
+     * création (etape 1).
+     */
+    public function typesConvocation(): array
+    {
+        return $this->wrap($this->api->get('types-convocation'));
+    }
+
     public function rechercherEnseignants(?string $recherche = null): array
     {
         return $this->wrap($this->api->get('enseignants', array_filter([

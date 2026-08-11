@@ -200,6 +200,50 @@
                         </div>
 
 
+                        <div class="form-group full">
+
+                            <label for="type_convocation_id">
+                                Type de convocation
+                            </label>
+
+                            <select
+                                class="form-control @error('type_convocation_id') is-invalid @enderror"
+                                id="type_convocation_id"
+                                name="type_convocation_id"
+                            >
+
+                                <option value="">
+                                    Sélectionner
+                                </option>
+
+                                @foreach ($typesConvocation ?? [] as $type)
+
+                                    <option
+                                        value="{{ $type['id'] }}"
+                                        @selected((string) old('type_convocation_id') === (string) $type['id'])
+                                    >
+                                        {{ $type['libelle'] }}
+                                    </option>
+
+                                @endforeach
+
+                            </select>
+
+                            <p class="section-description" style="margin: 6px 0 0;">
+                                Détermine le modèle utilisé pour le PDF (ex : tableau centre/jury/métier pour un jury d'examen).
+                            </p>
+
+                            @error('type_convocation_id')
+
+                                <p class="field-error">
+                                    {{ $message }}
+                                </p>
+
+                            @enderror
+
+                        </div>
+
+
                         <div class="form-group">
 
                             <label for="date_emission">
@@ -990,8 +1034,6 @@ STYLES
 
 @push('styles')
 
-@push('styles')
-
 <style>
 
     /* ============================================================
@@ -1375,8 +1417,5 @@ STYLES
     }
 
 </style>
-
-@endpush
-
 
 @endpush

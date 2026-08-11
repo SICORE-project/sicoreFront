@@ -89,8 +89,13 @@ class ConvocationsController extends Controller
 
     public function create(): View
     {
+        $typesResultat = $this->convocations->typesConvocation();
+
         return view('pages.indemnites.convocations.create', [
             'utilisateur' => session('sicore_user'),
+            // ->get('data') renvoie déjà un tableau (json_decode assoc) ;
+            // pas de succès -> select vide plutôt qu'une page cassée.
+            'typesConvocation' => $typesResultat['success'] ? ($typesResultat['data'] ?? []) : [],
         ]);
     }
 
@@ -100,6 +105,7 @@ class ConvocationsController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $data = $request->validate([
+            'type_convocation_id' => ['nullable', 'integer'],
             'date_emission' => ['required', 'date'],
             'objet' => ['required', 'string', 'max:255'],
             'date_debut' => ['required', 'date'],
@@ -127,6 +133,7 @@ class ConvocationsController extends Controller
             'beneficiaires' => ['nullable', 'array'],
             'beneficiaires.*.enseignant_id' => ['required_with:beneficiaires', 'integer'],
             'beneficiaires.*.fonction' => ['nullable', 'string', 'max:100'],
+            'beneficiaires.*.provenance' => ['nullable', 'string', 'max:255'],
             'beneficiaires.*.centre_index' => ['nullable', 'integer'],
         ]);
 
@@ -168,6 +175,7 @@ class ConvocationsController extends Controller
                 return [
                     'enseignant_id' => $beneficiaire['enseignant_id'],
                     'fonction' => $beneficiaire['fonction'] ?? null,
+                    'provenance' => $beneficiaire['provenance'] ?? null,
                     'centre_id' => $centreIndex !== null ? ($centreIdParIndex[$centreIndex] ?? null) : null,
                 ];
             }, $beneficiaires);
@@ -220,8 +228,11 @@ class ConvocationsController extends Controller
                 ->with('error', $resultat['message'] ?? 'Convocation introuvable.');
         }
 
+        $typesResultat = $this->convocations->typesConvocation();
+
         return view('pages.indemnites.convocations.edit', [
             'convocation' => $this->formatConvocationForView($resultat['data']),
+            'typesConvocation' => $typesResultat['success'] ? ($typesResultat['data'] ?? []) : [],
             'id' => $id,
         ]);
     }
@@ -229,6 +240,7 @@ class ConvocationsController extends Controller
     public function update(Request $request, int|string $id): RedirectResponse
     {
         $data = $request->validate([
+            'type_convocation_id' => ['nullable', 'integer'],
             'date_emission' => ['sometimes', 'date'],
             'objet' => ['sometimes', 'string', 'max:255'],
             'date_debut' => ['sometimes', 'date'],
@@ -269,10 +281,15 @@ class ConvocationsController extends Controller
         $data = $request->validate([
             'enseignant_id' => ['required', 'integer'],
             'fonction' => ['nullable', 'string', 'max:100'],
+            'provenance' => ['nullable', 'string', 'max:255'],
         ]);
 
         $resultat = $this->convocations->ajouterBeneficiairesAvecFonction($id, [
-            ['enseignant_id' => $data['enseignant_id'], 'fonction' => $data['fonction'] ?? null],
+            [
+                'enseignant_id' => $data['enseignant_id'],
+                'fonction' => $data['fonction'] ?? null,
+                'provenance' => $data['provenance'] ?? null,
+            ],
         ]);
 
         return redirect()
