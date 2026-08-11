@@ -6,7 +6,6 @@
 
 <main class="main-content">
 
-```
 <x-topbar
     title="Nouvelle convocation"
     subtitle="Indemnites > Convocations > Nouvelle convocation"
@@ -950,7 +949,7 @@
     </section>
 
 </section>
-```
+
 
 </main>
 
@@ -962,9 +961,9 @@ JAVASCRIPT
 
 @push('scripts')
 
-```
+
 <script src="{{ asset('assets/js/indemnites/convocation-wizard.js') }}"></script>
-```
+
 
 @endpush
 
