@@ -1,269 +1,275 @@
+
 @extends('layouts.app')
 
-@section('title', 'SICORE - Detail convocation')
+@section('title', 'SICORE - Detail de la convocation')
 @section('content')
 <main class="main-content">
-    <x-topbar
-      title="Certification BT - Jury 1"
-      subtitle="{{ 'Indemnites > Convocations > Convocation #'.$id }}"
-      icon="fa-solid fa-calendar-check"
-    />
+  <x-topbar
+    title="Detail de la convocation"
+    subtitle="Indemnites > Convocations > Detail"
+    icon="fa-solid fa-envelope-open-text"
+  />
 
-    <section class="content-area">
-      <div class="actions-row">
-        <p class="breadcrumb">Centre : LTP FXN/THIES &nbsp;·&nbsp; Session du 04 au 09 aout 2025 &nbsp;·&nbsp; 8h00</p>
-        <div class="actions-group">
-          <a class="btn-secondary" href="{{ route('indemnites.convocations.edit', $id) }}">
-            <i class="fa-solid fa-pen" aria-hidden="true"></i>
-            Modifier
-          </a>
-          <a class="btn-secondary" href="{{ route('indemnites.convocations.suivi', $id) }}">
-            <i class="fa-solid fa-list-check" aria-hidden="true"></i>
-            Suivi des envois
-          </a>
-          <button class="btn-primary" type="button" data-confirm="Generer le PDF de cette convocation ?" data-success-message="PDF genere avec succes.">
-            <i class="fa-solid fa-file-pdf" aria-hidden="true"></i>
-            Generer le PDF
-          </button>
-          <a class="btn-secondary" href="#" data-confirm="Telecharger le PDF de cette convocation ?" data-success-message="Telechargement demarre.">
-            <i class="fa-solid fa-download" aria-hidden="true"></i>
-            Telecharger
-          </a>
+  <section class="content-area">
+    <div class="actions-row">
+      <p class="breadcrumb">Indemnites &gt; Convocations &gt; #{{ $id }}</p>
+      <div class="actions-group">
+        <a class="btn-secondary" href="{{ route('indemnites.convocations') }}">
+          <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
+          Retour a la liste
+        </a>
+        <a class="btn-secondary" href="{{ route('indemnites.convocations.edit', $id) }}">
+          <i class="fa-solid fa-pen" aria-hidden="true"></i>
+          Modifier
+        </a>
+        <a class="btn-secondary" href="{{ route('indemnites.convocations.suivi', $id) }}">
+          <i class="fa-solid fa-list-check" aria-hidden="true"></i>
+          Suivi des envois
+        </a>
+      </div>
+    </div>
+
+    {{-- Informations generales --}}
+    <section class="form-card">
+      <div class="form-card-header">
+        <div>
+          <h2>{{ $convocation['objet'] ?? 'Convocation' }}</h2>
+          <p class="breadcrumb">Reference #{{ $id }}</p>
         </div>
+        <x-convocation-statut-badge :statut="$convocation['statut'] ?? null" />
       </div>
 
-      {{-- Informations generales --}}
-      <section class="panel">
-        <div class="panel-header">
-          <div>
-            <h2>Informations generales</h2>
-            <p>Details de la convocation</p>
-          </div>
-          <span class="badge badge-active">Envoyee</span>
-        </div>
+      <div class="form-section">
         <div class="form-grid">
           <div class="form-group">
-            <label>Objet</label>
-            <p>Certification en Brevet de Technicien (BT) - Jury 1</p>
-          </div>
-          <div class="form-group">
             <label>Date d'emission</label>
-            <p>23/07/2025</p>
+            <p>{{ isset($convocation['date_emission']) ? \Illuminate\Support\Carbon::parse($convocation['date_emission'])->format('d/m/Y') : '—' }}</p>
           </div>
           <div class="form-group">
             <label>Centre d'examen</label>
-            <p>LTP FXN/THIES</p>
+            <p>{{ $convocation['lieu_examen'] ?? '—' }}</p>
           </div>
           <div class="form-group">
             <label>Lieu d'affectation</label>
-            <p>Thies</p>
+            <p>{{ $convocation['lieu_affectation'] ?? '—' }}</p>
           </div>
           <div class="form-group">
             <label>Ordre de mission</label>
-            <p>Oui</p>
+            <p>{{ ($convocation['ordre_de_mission'] ?? false) ? 'Oui' : 'Non' }}</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    {{-- Beneficiaires --}}
+    <section class="table-card">
+      <div class="panel-header">
+        <div>
+          <h2>Membres du jury convoques</h2>
+          <p>{{ count($beneficiaires) }} beneficiaire(s) rattache(s) a cette convocation</p>
+        </div>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Nom</th>
+              <th>Prenom</th>
+              <th>Fonction</th>
+              <th>Telephone</th>
+            </tr>
+          </thead>
+          <tbody>
+            @foreach ($beneficiaires as $beneficiaire)
+              <tr>
+                <td>{{ $beneficiaire['nom'] ?? $beneficiaire['enseignant']['nom'] ?? '—' }}</td>
+                <td>{{ $beneficiaire['prenom'] ?? $beneficiaire['enseignant']['prenom'] ?? '—' }}</td>
+                <td>{{ $beneficiaire['fonction'] ?? '—' }}</td>
+                <td>{{ $beneficiaire['telephone'] ?? $beneficiaire['enseignant']['telephone'] ?? '—' }}</td>
+              </tr>
+            @endforeach
+          </tbody>
+        </table>
+      </div>
+      @if (empty($beneficiaires))
+        <p class="empty-message">Aucun beneficiaire ajoute pour le moment.</p>
+      @endif
+
+      <div class="form-section">
+        <h3>Ajouter un membre du jury</h3>
+        <form
+          method="POST"
+          action="{{ route('indemnites.convocations.beneficiaires.store', $id) }}"
+          class="form-grid"
+          data-convocation-form
+          data-search-url="{{ route('indemnites.convocations.enseignants.rechercher') }}"
+        >
+          @csrf
+          <div class="form-group">
+            <label for="enseignant_search">Enseignant <span class="required">*</span></label>
+            <div class="enseignant-search" data-enseignant-search>
+              <input
+                class="form-control"
+                id="enseignant_search"
+                type="text"
+                placeholder="Rechercher un enseignant (nom, prenom, matricule)…"
+                data-enseignant-search-input
+                autocomplete="off"
+              >
+              <input type="hidden" name="enseignant_id" data-enseignant-id-input required>
+              <ul class="enseignant-suggestions" data-enseignant-suggestions hidden></ul>
+            </div>
           </div>
           <div class="form-group">
-            <label>Emise par</label>
-            <p>Le Directeur - DECPC</p>
+            <label for="fonction">Fonction</label>
+            <select class="form-control" id="fonction" name="fonction" data-fonction-select>
+              <option value="">Selectionner une fonction</option>
+              <option value="President de jury">President de jury</option>
+              <option value="Membre du jury">Membre du jury</option>
+              <option value="Surveillant/correcteur">Surveillant/correcteur</option>
+              <option value="Chef de centre">Chef de centre</option>
+            </select>
           </div>
-          <div class="form-group">
-            <label>Chef de centre</label>
-            <p>Souleymane Toure &nbsp;·&nbsp; 33 911 07 17 / 77 579 97 93</p>
-          </div>
-        </div>
-      </section>
-
-      {{-- Beneficiaires --}}
-      <section class="table-card">
-        <div class="panel-header">
-          <div>
-            <h2>Beneficiaires</h2>
-            <p>Membres de jury convoques a cette certification</p>
-          </div>
-          <button class="btn-secondary" type="button" data-toggle-target="#ajouter-beneficiaire">
-            <i class="fa-solid fa-user-plus" aria-hidden="true"></i>
-            Ajouter un beneficiaire
-          </button>
-        </div>
-
-        <div class="table-responsive">
-          <table class="table" id="beneficiairesTable">
-            <thead>
-              <tr>
-                <th>Prenoms</th>
-                <th>Nom</th>
-                <th>Fonction</th>
-                <th>Provenance</th>
-                <th>Telephone</th>
-                <th class="actions-cell">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>Adama</td>
-                <td>Gueye</td>
-                <td>President de jury</td>
-                <td>I.S.I.L</td>
-                <td>77 377 02 28</td>
-                <td class="actions-cell"><button class="icon-action" title="Retirer" type="button" data-confirm="Retirer ce beneficiaire de la convocation ?" data-success-message="Beneficiaire retire."><i class="fa-solid fa-user-minus" aria-hidden="true"></i></button></td>
-              </tr>
-              <tr>
-                <td>Nfaly</td>
-                <td>Sarr</td>
-                <td>Surveillant/correcteur</td>
-                <td>LTP-FXN/THIES</td>
-                <td>77 361 13 51</td>
-                <td class="actions-cell"><button class="icon-action" title="Retirer" type="button"><i class="fa-solid fa-user-minus" aria-hidden="true"></i></button></td>
-              </tr>
-              <tr>
-                <td>Papa Alioune Badara</td>
-                <td>Sarr</td>
-                <td>Surveillant/correcteur</td>
-                <td>LTID</td>
-                <td>77 168 38 99</td>
-                <td class="actions-cell"><button class="icon-action" title="Retirer" type="button"><i class="fa-solid fa-user-minus" aria-hidden="true"></i></button></td>
-              </tr>
-              <tr>
-                <td>Mamadou Moustapha</td>
-                <td>Wone</td>
-                <td>Surveillant/correcteur</td>
-                <td>LTAP/SAINT-LOUIS</td>
-                <td>77 613 89 24</td>
-                <td class="actions-cell"><button class="icon-action" title="Retirer" type="button"><i class="fa-solid fa-user-minus" aria-hidden="true"></i></button></td>
-              </tr>
-              <tr>
-                <td>Gueye</td>
-                <td>Mbaye</td>
-                <td>Surveillant/correcteur</td>
-                <td>LTAB/DIOURBEL</td>
-                <td>77 104 95 18</td>
-                <td class="actions-cell"><button class="icon-action" title="Retirer" type="button"><i class="fa-solid fa-user-minus" aria-hidden="true"></i></button></td>
-              </tr>
-              <tr>
-                <td>Assane</td>
-                <td>Thiam</td>
-                <td>Surveillant/correcteur</td>
-                <td>LTP-FXN/THIES</td>
-                <td>77 209 67 25</td>
-                <td class="actions-cell"><button class="icon-action" title="Retirer" type="button"><i class="fa-solid fa-user-minus" aria-hidden="true"></i></button></td>
-              </tr>
-              <tr>
-                <td>El Hadji</td>
-                <td>Faye</td>
-                <td>Surveillant/correcteur</td>
-                <td>LTP-FXN/THIES</td>
-                <td>77 209 67 26</td>
-                <td class="actions-cell"><button class="icon-action" title="Retirer" type="button"><i class="fa-solid fa-user-minus" aria-hidden="true"></i></button></td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        <p class="empty-message">Aucun beneficiaire ajoute.</p>
-
-        <div class="form-section" id="ajouter-beneficiaire" data-collapsible hidden>
-          <h3>Ajouter un beneficiaire</h3>
-          <form class="form-grid" data-validate-form data-success-message="Beneficiaire ajoute a la convocation.">
-            <div class="form-group">
-              <label for="nouvelEnseignant">Enseignant <span class="required">*</span></label>
-              <select class="form-control" id="nouvelEnseignant" name="enseignant_id" required>
-                <option value="">Selectionner un enseignant</option>
-                <option value="108">DIOP Mamadou (ENS108)</option>
-                <option value="109">FALL Aissatou (ENS109)</option>
-                <option value="110">NDIAYE Cheikh (ENS110)</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label for="nouvelleFonction">Fonction</label>
-              <input class="form-control" id="nouvelleFonction" name="fonction" type="text" placeholder="Ex : Surveillant/correcteur">
-            </div>
-            <div class="form-group full form-actions" style="justify-content:flex-start;">
-              <button class="btn-primary" type="submit">Ajouter a la convocation</button>
-            </div>
-          </form>
-        </div>
-      </section>
-
-      {{-- Depot de fichier --}}
-      <section class="panel">
-        <div class="panel-header">
-          <div>
-            <h2>Piece jointe</h2>
-            <p>Deposer le document scanne de la convocation (PDF, JPG ou PNG - 5 Mo max)</p>
-          </div>
-        </div>
-        <form class="form-grid" data-validate-form data-success-message="Fichier depose avec succes.">
-          <div class="form-group full">
-            <label for="fichier">Fichier <span class="required">*</span></label>
-            <input class="form-control" id="fichier" name="fichier" type="file" accept=".pdf,.jpg,.jpeg,.png" required>
-          </div>
-          <div class="form-group full form-actions" style="justify-content:flex-start;">
-            <button class="btn-primary" type="submit">Deposer le fichier</button>
+          <div class="form-group" style="align-self: flex-end;">
+            <button class="btn-primary" type="submit">
+              <i class="fa-solid fa-plus" aria-hidden="true"></i>
+              Ajouter
+            </button>
           </div>
         </form>
-      </section>
+      </div>
+    </section>
 
-      {{-- Envoi --}}
-      <section class="panel">
-        <div class="panel-header">
-          <div>
-            <h2>Envoi de la convocation</h2>
-            <p>Envoyer par email, SMS ou courrier a tout ou partie des beneficiaires</p>
+    {{-- Document scanne --}}
+    <section class="form-card">
+      <div class="form-card-header">
+        <div>
+          <h2>Document scanne</h2>
+          <p class="breadcrumb">Deposer une version signee ou scannee de la convocation</p>
+        </div>
+      </div>
+      <form
+        class="form-section"
+        method="POST"
+        action="{{ route('indemnites.convocations.fichier.store', $id) }}"
+        enctype="multipart/form-data"
+      >
+        @csrf
+        <div class="form-grid">
+          <div class="form-group full">
+            <label for="fichier">Fichier (PDF, JPG ou PNG, 5 Mo max) <span class="required">*</span></label>
+            <input class="form-control" id="fichier" name="fichier" type="file" accept=".pdf,.jpg,.jpeg,.png" required>
           </div>
         </div>
-        <form class="form-grid" data-validate-form data-success-message="Convocation envoyee aux beneficiaires.">
+        <div class="form-actions">
+          <button class="btn-secondary" type="submit">
+            <i class="fa-solid fa-upload" aria-hidden="true"></i>
+            Deposer le fichier
+          </button>
+        </div>
+      </form>
+    </section>
+
+    {{-- Generation et telechargement du PDF --}}
+    <section class="form-card">
+      <div class="form-card-header">
+        <div>
+          <h2>Document PDF</h2>
+          <p class="breadcrumb">Generer puis telecharger la convocation au format PDF</p>
+        </div>
+      </div>
+      <div class="form-actions" style="justify-content: flex-start;">
+        <form method="POST" action="{{ route('indemnites.convocations.pdf.generer', $id) }}">
+          @csrf
+          <button class="btn-secondary" type="submit">
+            <i class="fa-solid fa-file-pdf" aria-hidden="true"></i>
+            Generer le PDF
+          </button>
+        </form>
+        <a class="btn-secondary" href="{{ route('indemnites.convocations.pdf.telecharger', $id) }}">
+          <i class="fa-solid fa-download" aria-hidden="true"></i>
+          Telecharger le PDF
+        </a>
+      </div>
+    </section>
+
+    {{-- Envoi et relance --}}
+    <section class="form-card">
+      <div class="form-card-header">
+        <div>
+          <h2>Envoi aux beneficiaires</h2>
+          <p class="breadcrumb">Notifier les membres du jury par email, SMS ou courrier</p>
+        </div>
+      </div>
+      <form class="form-section" method="POST" action="{{ route('indemnites.convocations.envoyer', $id) }}">
+        @csrf
+        <div class="form-grid">
           <div class="form-group">
-            <label for="canalEnvoi">Canal</label>
-            <select class="form-control" id="canalEnvoi" name="canal">
-              <option value="email" selected>Email</option>
+            <label for="canal">Canal</label>
+            <select class="form-control" id="canal" name="canal">
+              <option value="email">Email</option>
               <option value="sms">SMS</option>
               <option value="courrier">Courrier</option>
             </select>
           </div>
-          <div class="form-group">
-            <label for="destinataires">Destinataires</label>
-            <select class="form-control" id="destinataires" name="destinataires">
-              <option value="tous" selected>Tous les beneficiaires (7)</option>
-              <option value="selection">Beneficiaires selectionnes uniquement</option>
-            </select>
-          </div>
           <div class="form-group full">
-            <label for="messageEnvoi">Message (optionnel)</label>
-            <textarea class="form-control" id="messageEnvoi" name="message" maxlength="2000" placeholder="Message accompagnant la convocation…"></textarea>
-          </div>
-          <div class="form-group full form-actions" style="justify-content:flex-start;">
-            <button class="btn-primary" type="submit">
-              <i class="fa-solid fa-paper-plane" aria-hidden="true"></i>
-              Envoyer la convocation
-            </button>
-          </div>
-        </form>
-      </section>
-
-      {{-- Relance --}}
-      <section class="panel">
-        <div class="panel-header">
-          <div>
-            <h2>Relance</h2>
-            <p>Relancer les beneficiaires qui n'ont pas encore accuse reception</p>
+            <label for="message">Message (optionnel)</label>
+            <textarea class="form-control" id="message" name="message" rows="3" maxlength="2000" placeholder="Message accompagnant l'envoi…"></textarea>
           </div>
         </div>
-        <form class="form-grid" data-validate-form data-success-message="Relance envoyee aux beneficiaires concernes.">
+        <div class="form-actions">
+          <button class="btn-primary" type="submit">
+            <i class="fa-solid fa-paper-plane" aria-hidden="true"></i>
+            Envoyer la convocation
+          </button>
+        </div>
+      </form>
+
+      <form class="form-section" method="POST" action="{{ route('indemnites.convocations.relancer', $id) }}">
+        @csrf
+        <div class="form-grid">
           <div class="form-group full">
-            <label for="messageRelance">Message de relance (optionnel)</label>
-            <textarea class="form-control" id="messageRelance" name="message" maxlength="2000" placeholder="Merci de confirmer votre presence…"></textarea>
+            <label for="relance_message">Message de relance (optionnel)</label>
+            <textarea class="form-control" id="relance_message" name="message" rows="3" maxlength="2000" placeholder="Message de relance…"></textarea>
           </div>
-          <div class="form-group full form-actions" style="justify-content:flex-start;">
-            <button class="btn-secondary" type="submit">
-              <i class="fa-solid fa-rotate-right" aria-hidden="true"></i>
-              Relancer les non-repondants
-            </button>
-          </div>
-        </form>
-      </section>
+        </div>
+        <div class="form-actions">
+          <button class="btn-secondary" type="submit">
+            <i class="fa-solid fa-rotate-right" aria-hidden="true"></i>
+            Relancer les beneficiaires non repondus
+          </button>
+        </div>
+      </form>
     </section>
-  </main>
+
+    {{-- Suppression --}}
+    <section class="form-card">
+      <div class="form-card-header">
+        <div>
+          <h2>Zone sensible</h2>
+          <p class="breadcrumb">La suppression est definitive</p>
+        </div>
+      </div>
+      <form
+        method="POST"
+        action="{{ route('indemnites.convocations.destroy', $id) }}"
+        onsubmit="return confirm('Voulez-vous vraiment supprimer cette convocation ? Cette action est irreversible.');"
+      >
+        @csrf
+        @method('DELETE')
+        <div class="form-actions" style="justify-content: flex-start;">
+          <button class="btn-danger-soft" type="submit">
+            <i class="fa-solid fa-trash" aria-hidden="true"></i>
+            Supprimer la convocation
+          </button>
+        </div>
+      </form>
+    </section>
+  </section>
+</main>
 @endsection
 
 @push('scripts')
-<script src="{{ asset('assets/js/convocation-show.js') }}" defer></script>
+  <script src="{{ asset('assets/js/indemnites/convocation-form.js') }}" defer></script>
 @endpush
