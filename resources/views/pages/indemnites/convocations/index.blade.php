@@ -1,135 +1,242 @@
-
 @extends('layouts.app')
 
 @section('title', 'SICORE - Gestion des convocations')
+
 @section('content')
+
 <main class="main-content">
-  <x-topbar
-    title="Convocations"
-    subtitle="Indemnites > Convocations"
-    icon="fa-solid fa-envelope-open-text"
-    search-id="convocationSearch"
-    search-placeholder="Rechercher un objet, un centre…"
-    filter-target="#convocationsTable"
-  />
 
-  <section class="content-area">
-    <div class="actions-row">
-      <p class="breadcrumb">Indemnites &gt; Convocations</p>
-      <div class="actions-group">
-        <a class="btn-primary" href="{{ route('indemnites.convocations.create') }}">
-          <i class="fa-solid fa-plus" aria-hidden="true"></i>
-          Nouvelle convocation
-        </a>
-      </div>
-    </div>
+    <x-topbar
+        title="Gestion des convocations"
+        subtitle="Indemnites > Convocations"
+        icon="fa-solid fa-envelope-open-text"
+        search-id="convocationSearch"
+        search-placeholder="Rechercher…"
+        filter-target="#convocationsTable"
+    />
 
-    <div class="stats-grid">
-      <article class="stat-card">
-        <div><p class="stat-label">Total</p><p class="stat-value">{{ $stats['total'] }}</p><p class="stat-note">Sur la page courante</p></div>
-        <span class="stat-icon blue"><i class="fa-solid fa-layer-group" aria-hidden="true"></i></span>
-      </article>
-      <article class="stat-card">
-        <div><p class="stat-label">Brouillons</p><p class="stat-value">{{ $stats['brouillon'] }}</p><p class="stat-note neutral">A finaliser</p></div>
-        <span class="stat-icon yellow"><i class="fa-solid fa-pen" aria-hidden="true"></i></span>
-      </article>
-      <article class="stat-card">
-        <div><p class="stat-label">Emises</p><p class="stat-value">{{ $stats['emise'] }}</p><p class="stat-note neutral">Pretes a l'envoi</p></div>
-        <span class="stat-icon purple"><i class="fa-solid fa-file-circle-check" aria-hidden="true"></i></span>
-      </article>
-      <article class="stat-card">
-        <div><p class="stat-label">Envoyees</p><p class="stat-value">{{ $stats['envoyee'] }}</p><p class="stat-note neutral">Notifiees aux beneficiaires</p></div>
-        <span class="stat-icon green"><i class="fa-solid fa-paper-plane" aria-hidden="true"></i></span>
-      </article>
-      <article class="stat-card">
-        <div><p class="stat-label">Cloturees</p><p class="stat-value">{{ $stats['cloturee'] }}</p><p class="stat-note neutral">Dossier termine</p></div>
-        <span class="stat-icon blue"><i class="fa-solid fa-box-archive" aria-hidden="true"></i></span>
-      </article>
-    </div>
+    <section class="content-area">
 
-    <section class="filter-panel" aria-label="Filtres">
-      <form method="GET" action="{{ route('indemnites.convocations') }}" class="form-grid" style="flex: 1; display: flex; gap: 12px; align-items: flex-end;">
-        <div class="form-group">
-          <label for="statut">Statut</label>
-          <select class="form-control" id="statut" name="statut">
-            <option value="" @selected($statutFiltre === '')>Tous les statuts</option>
-            <option value="brouillon" @selected($statutFiltre === 'brouillon')>Brouillon</option>
-            <option value="emise" @selected($statutFiltre === 'emise')>Emise</option>
-            <option value="envoyee" @selected($statutFiltre === 'envoyee')>Envoyee</option>
-            <option value="cloturee" @selected($statutFiltre === 'cloturee')>Cloturee</option>
-          </select>
+        {{-- ============================================================
+             STATISTIQUES
+             NB: $stats est optionnel. S'il n'est pas envoyé par le
+             controller, les valeurs retombent sur 0 / le total du
+             paginator pour ne jamais planter la vue.
+        ============================================================ --}}
+
+        <div class="stats-grid four">
+
+            <article class="stat-card">
+                <div>
+                    <p class="stat-label">Convocations</p>
+                    <p class="stat-value">{{ $stats['total'] ?? $convocations->total() }}</p>
+                    <p class="stat-note">Période active</p>
+                </div>
+                <span class="stat-icon green">
+                    <i class="fa-solid fa-folder-open" aria-hidden="true"></i>
+                </span>
+            </article>
+
+            <article class="stat-card">
+                <div>
+                    <p class="stat-label">Envoyées</p>
+                    <p class="stat-value">{{ $stats['envoyees'] ?? 0 }}</p>
+                    <p class="stat-note">Statut final</p>
+                </div>
+                <span class="stat-icon blue">
+                    <i class="fa-solid fa-circle-check" aria-hidden="true"></i>
+                </span>
+            </article>
+
+            <article class="stat-card">
+                <div>
+                    <p class="stat-label">Brouillons</p>
+                    <p class="stat-value">{{ $stats['brouillons'] ?? 0 }}</p>
+                    <p class="stat-note">À finaliser</p>
+                </div>
+                <span class="stat-icon yellow">
+                    <i class="fa-solid fa-clock" aria-hidden="true"></i>
+                </span>
+            </article>
+
+            <article class="stat-card">
+                <div>
+                    <p class="stat-label">Clôturées</p>
+                    <p class="stat-value">{{ $stats['cloturees'] ?? 0 }}</p>
+                    <p class="stat-note">Traitées</p>
+                </div>
+                <span class="stat-icon red">
+                    <i class="fa-solid fa-circle-xmark" aria-hidden="true"></i>
+                </span>
+            </article>
+
         </div>
-        <div class="actions-group">
-          <button class="btn-secondary" type="submit">
-            <i class="fa-solid fa-filter" aria-hidden="true"></i>
-            Filtrer
-          </button>
-          @if ($statutFiltre !== '')
-            <a class="btn-secondary" href="{{ route('indemnites.convocations') }}">Reinitialiser</a>
-          @endif
+
+        {{-- ============================================================
+             ACTIONS
+        ============================================================ --}}
+
+        <div class="actions-row">
+            <p class="breadcrumb">Gestion des indemnités &gt; Convocations</p>
+            <div class="actions-group">
+                <a class="btn-primary" href="{{ route('indemnites.convocations.create') }}">
+                    Nouvelle convocation
+                </a>
+                <button class="btn-secondary" type="button">
+                    Exporter
+                </button>
+            </div>
         </div>
-      </form>
+
+        {{-- ============================================================
+             FILTRES
+        ============================================================ --}}
+
+        <section class="filter-panel" aria-label="Filtres de la page">
+
+            <div class="form-group">
+                <label for="convocation-filter-date">Date</label>
+                <input
+                    class="form-control"
+                    id="convocation-filter-date"
+                    type="date"
+                    name="date"
+                    value="{{ request('date') }}"
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="convocation-filter-objet">Objet</label>
+                <input
+                    class="form-control"
+                    id="convocation-filter-objet"
+                    type="text"
+                    name="objet"
+                    placeholder="Rechercher un objet"
+                    value="{{ request('objet') }}"
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="convocation-filter-statut">Statut</label>
+                <select class="form-control" id="convocation-filter-statut" name="statut">
+                    <option value="">Tous</option>
+                    <option value="brouillon" @selected(request('statut') === 'brouillon')>Brouillon</option>
+                    <option value="emise" @selected(request('statut') === 'emise')>Émise</option>
+                    <option value="envoyee" @selected(request('statut') === 'envoyee')>Envoyée</option>
+                    <option value="cloturee" @selected(request('statut') === 'cloturee')>Clôturée</option>
+                </select>
+            </div>
+
+            <div class="actions-group">
+                <button class="btn-secondary" type="submit" form="convocationFilterForm">
+                    Filtrer
+                </button>
+            </div>
+
+        </section>
+
+        {{-- ============================================================
+             TABLEAU
+             NB: adapte les noms d'attributs ($convocation->xxx) à ton
+             modèle Eloquent réel — ce sont les mêmes colonnes que
+             l'entrée 'indemnites-convocations' de module-pages.php,
+             mais alimentées par la base au lieu d'un tableau statique.
+        ============================================================ --}}
+
+        <section class="table-card">
+
+            <div class="table-responsive">
+                <table class="table" id="convocationsTable">
+
+                    <thead>
+                        <tr>
+                            <th>Membres du jury</th>
+                            <th>Objet</th>
+                            <th>Date</th>
+                            <th>Lieu</th>
+                            <th>Statut</th>
+                            <th class="actions-cell">Actions</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        @forelse ($convocations as $convocation)
+                            <tr>
+                                <td>
+                                    @php
+                                        $nombreMembres = $convocation->enseignants_count ?? 0;
+                                    @endphp
+                                    {{ $nombreMembres }} {{ $nombreMembres > 1 ? 'membres' : 'membre' }}
+                                </td>
+                                <td>{{ $convocation->objet }}</td>
+                                <td>{{ optional($convocation->date_emission)->format('d/m/Y') ?? '—' }}</td>
+                                <td>{{ $convocation->lieu_examen ?? $convocation->lieu_affectation ?? '—' }}</td>
+                                <td>
+                                    @php
+                                        $statutBadges = [
+                                            'brouillon' => ['badge-pending', 'Brouillon'],
+                                            'emise'     => ['badge-primary', 'Émise'],
+                                            'envoyee'   => ['badge-active', 'Envoyée'],
+                                            'cloturee'  => ['badge-inactive', 'Clôturée'],
+                                        ];
+                                        [$badgeClass, $badgeLabel] = $statutBadges[$convocation->statut]
+                                            ?? ['badge-pending', ucfirst($convocation->statut)];
+                                    @endphp
+                                    <span class="badge {{ $badgeClass }}">{{ $badgeLabel }}</span>
+                                </td>
+                                <td class="actions-cell">
+                                    <div class="table-actions-inline">
+                                        <a class="table-action" href="{{ route('indemnites.convocations.show', $convocation) }}">
+                                            Voir
+                                        </a>
+                                        <a class="table-action" href="{{ route('indemnites.convocations.edit', $convocation) }}">
+                                            Modifier
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        @empty
+                        @endforelse
+                    </tbody>
+
+                </table>
+            </div>
+
+            @if ($convocations->isEmpty())
+                <p class="empty-message">Aucune donnée trouvée.</p>
+            @endif
+
+            <div class="pagination" aria-label="Pagination">
+
+                @if ($convocations->onFirstPage())
+                    <span class="page-btn" aria-disabled="true">←</span>
+                @else
+                    <a class="page-btn" href="{{ $convocations->previousPageUrl() }}" aria-label="Page précédente">←</a>
+                @endif
+
+                @for ($page = 1; $page <= $convocations->lastPage(); $page++)
+                    <a
+                        class="page-btn {{ $page === $convocations->currentPage() ? 'active' : '' }}"
+                        href="{{ $convocations->url($page) }}"
+                        data-page-number
+                    >
+                        {{ $page }}
+                    </a>
+                @endfor
+
+                @if ($convocations->hasMorePages())
+                    <a class="page-btn" href="{{ $convocations->nextPageUrl() }}" aria-label="Page suivante">→</a>
+                @else
+                    <span class="page-btn" aria-disabled="true">→</span>
+                @endif
+
+            </div>
+
+        </section>
+
     </section>
 
-    <section class="table-card">
-      <div class="panel-header">
-        <div>
-          <h2>Liste des convocations</h2>
-          <p>Suivi des convocations emises pour les jurys et centres d'examen</p>
-        </div>
-      </div>
-
-      <div class="table-responsive">
-        <table class="table" id="convocationsTable">
-          <thead>
-            <tr>
-              <th>Objet</th>
-              <th>Date d'emission</th>
-              <th>Centre d'examen</th>
-              <th>Lieu d'affectation</th>
-              <th>Statut</th>
-              <th class="actions-cell">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            @foreach ($convocations as $convocation)
-              <tr>
-                <td>{{ $convocation['objet'] ?? '—' }}</td>
-                <td>{{ isset($convocation['date_emission']) ? \Illuminate\Support\Carbon::parse($convocation['date_emission'])->format('d/m/Y') : '—' }}</td>
-                <td>{{ $convocation['lieu_examen'] ?? '—' }}</td>
-                <td>{{ $convocation['lieu_affectation'] ?? '—' }}</td>
-                <td><x-convocation-statut-badge :statut="$convocation['statut'] ?? null" /></td>
-                <td class="actions-cell">
-                  <a class="icon-action" title="Voir" href="{{ route('indemnites.convocations.show', $convocation['id']) }}">&#128065;</a>
-                  <a class="icon-action" title="Modifier" href="{{ route('indemnites.convocations.edit', $convocation['id']) }}">&#9998;</a>
-                  <form
-                    method="POST"
-                    action="{{ route('indemnites.convocations.destroy', $convocation['id']) }}"
-                    style="display: inline;"
-                    onsubmit="return confirm('Voulez-vous vraiment supprimer cette convocation ?');"
-                  >
-                    @csrf
-                    @method('DELETE')
-                    <button class="icon-action" type="submit" title="Supprimer">&#128465;</button>
-                  </form>
-                </td>
-              </tr>
-            @endforeach
-          </tbody>
-        </table>
-      </div>
-
-      @if (empty($convocations))
-        <p class="empty-message">Aucune convocation trouvee.</p>
-      @endif
-
-      <div class="pagination" aria-label="Pagination">
-        @php($pageCourante = (int) request()->query('page', 1))
-        <a class="page-btn" href="{{ route('indemnites.convocations', array_filter(['statut' => $statutFiltre ?: null, 'page' => max(1, $pageCourante - 1)])) }}" aria-label="Page precedente">&#8592;</a>
-        <span class="page-btn active">{{ $pageCourante }}</span>
-        <a class="page-btn" href="{{ route('indemnites.convocations', array_filter(['statut' => $statutFiltre ?: null, 'page' => $pageCourante + 1])) }}" aria-label="Page suivante">&#8594;</a>
-      </div>
-    </section>
-  </section>
 </main>
+
 @endsection

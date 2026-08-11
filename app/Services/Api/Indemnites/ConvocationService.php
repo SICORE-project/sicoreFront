@@ -64,6 +64,18 @@ class ConvocationService
         return $this->wrap($this->api->get("convocations/{$id}/beneficiaires"));
     }
 
+    /**
+     * Cree les centres d'examen d'une convocation. Renvoie les centres
+     * crees dans le meme ordre que $centres, avec leur id reel en base -
+     * necessaire pour rattacher ensuite chaque beneficiaire au bon centre.
+     */
+    public function creerCentres(int|string $id, array $centres): array
+    {
+        return $this->wrap($this->api->post("convocations/{$id}/centres", [
+            'centres' => $centres,
+        ]));
+    }
+
     public function ajouterBeneficiaires(int|string $id, array $enseignantIds): array
     {
         return $this->wrap($this->api->post("convocations/{$id}/beneficiaires", [

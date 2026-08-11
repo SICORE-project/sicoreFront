@@ -471,12 +471,33 @@
 
             suggestions.hidden = true;
 
-            var telephoneInput = input
-              .closest("[data-centre-card]")
-              ?.querySelector("[data-chef-telephone-input]");
+            var memberRow = input.closest(".member-row");
 
-            if (telephoneInput && enseignant.telephone) {
-              telephoneInput.value = enseignant.telephone;
+            if (memberRow) {
+              // Recherche d'un membre du jury : on renseigne le nom et
+              // le telephone de CETTE ligne, pas ceux du chef de centre.
+              var memberNomInput = memberRow.querySelector("[data-member-nom]");
+
+              var memberTelephoneInput = memberRow.querySelector(
+                "[data-member-telephone]",
+              );
+
+              if (memberNomInput) {
+                memberNomInput.value = nom;
+              }
+
+              if (memberTelephoneInput && enseignant.telephone) {
+                memberTelephoneInput.value = enseignant.telephone;
+              }
+            } else {
+              // Recherche du chef de centre.
+              var telephoneInput = input
+                .closest("[data-centre-card]")
+                ?.querySelector("[data-chef-telephone-input]");
+
+              if (telephoneInput && enseignant.telephone) {
+                telephoneInput.value = enseignant.telephone;
+              }
             }
           });
 
@@ -568,6 +589,8 @@
     }
 
     var centres = centresContainer.querySelectorAll("[data-centre-card]");
+
+    var beneficiaireIndex = 0;
 
     centres.forEach(function (centre, centreIndex) {
       function addHidden(name, value) {
@@ -680,6 +703,25 @@
             "][telephone]",
           telephone ? telephone.value : "",
         );
+
+        // Le controleur de creation (ConvocationsController@store, cote
+        // front) ne lit que "beneficiaires[k][enseignant_id]" /
+        // "[fonction]" - il ne connait pas la structure "centres[]" ci-
+        // dessus. Sans ce bloc, aucun membre du jury n'etait jamais
+        // enregistre a la creation, quel que soit le contenu de l'etape 2.
+        if (memberId && memberId.value) {
+          addHidden(
+            "beneficiaires[" + beneficiaireIndex + "][enseignant_id]",
+            memberId.value,
+          );
+
+          addHidden(
+            "beneficiaires[" + beneficiaireIndex + "][fonction]",
+            fonction ? fonction.value : "",
+          );
+
+          beneficiaireIndex++;
+        }
       });
     });
   }

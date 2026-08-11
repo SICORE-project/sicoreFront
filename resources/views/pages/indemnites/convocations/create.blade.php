@@ -16,21 +16,21 @@
 
     <section class="form-card wizard-card convocation-card">
 
-        <div class="form-card-header">
+      <div class="form-card-header">
 
-            <div>
-                <h2>Nouvelle convocation</h2>
+    <div>
+        <h2>Nouvelle convocation</h2>
 
-                <p class="breadcrumb">
-                    Création d'une convocation pour les membres du jury
-                </p>
-            </div>
+        <p class="breadcrumb">
+            Création d'une convocation pour un examen de certification
+        </p>
+    </div>
 
-            <span class="badge badge-primary">
-                Brouillon
-            </span>
+    <span class="badge badge-primary">
+        Brouillon
+    </span>
 
-        </div>
+</div>
 
 
         <form
@@ -85,7 +85,24 @@
                     </span>
 
                     <span>
-                        Centres et membres
+                        Centres d'examen
+                    </span>
+
+                </button>
+
+
+                <button
+                    class="wizard-step"
+                    type="button"
+                    data-step-indicator="3"
+                >
+
+                    <span class="wizard-step-number">
+                        3
+                    </span>
+
+                    <span>
+                        Membres du jury
                     </span>
 
                 </button>
