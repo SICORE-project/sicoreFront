@@ -780,6 +780,13 @@
   padding: 22px;
 }
 
+.form-required-note {
+  margin: 16px 22px -6px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
 .form-section {
   display: grid;
   gap: 16px;
@@ -814,6 +821,27 @@
 .form-control.is-invalid {
   border-color: var(--red);
   box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.1);
+}
+
+.form-text {
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.invalid-feedback,
+.text-danger {
+  color: var(--red);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.text-success {
+  color: var(--primary);
+}
+
+.password-field .form-control {
+  padding-right: 48px;
 }
 
 .form-actions {
