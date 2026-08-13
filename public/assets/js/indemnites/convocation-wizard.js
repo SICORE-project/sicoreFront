@@ -752,6 +752,61 @@
     ============================================================
     */
 
+  // "UN BENEFICIAIRE NE PEUT PAS ETRE CONVOQUE PLUS DE UNE FOIS" : vrai sur
+  // TOUTE la convocation (tous centres/metiers confondus), pas seulement au
+  // sein d'un meme groupe metier - on parcourt donc TOUS les
+  // [data-member-id-input] du formulaire, pas seulement ceux du groupe en
+  // cours. "hiddenInputActuel" est exclu de la comparaison pour ne pas se
+  // bloquer soi-meme en reselectionnant la meme personne sur SA propre ligne.
+  function estEnseignantDejaBeneficiaire(form, enseignantId, hiddenInputActuel) {
+    if (!form || !enseignantId) {
+      return false;
+    }
+
+    var dejaPresent = false;
+
+    form
+      .querySelectorAll("[data-member-id-input]")
+      .forEach(function (autreInput) {
+        if (
+          autreInput !== hiddenInputActuel &&
+          autreInput.value &&
+          String(autreInput.value) === String(enseignantId)
+        ) {
+          dejaPresent = true;
+        }
+      });
+
+    return dejaPresent;
+  }
+
+  // Doublons deja presents dans le DOM au moment de l'enregistrement (ex :
+  // import CSV, ou pre-remplissage) - meme regle que
+  // estEnseignantDejaBeneficiaire() ci-dessus, mais evaluee sur TOUT le
+  // formulaire d'un coup pour bloquer la soumission (cf. handler "submit").
+  function trouverBeneficiairesEnDouble(form) {
+    var vus = {};
+    var doublons = [];
+
+    form
+      .querySelectorAll("[data-member-id-input]")
+      .forEach(function (input) {
+        var id = input.value;
+
+        if (!id) {
+          return;
+        }
+
+        if (vus[id] && doublons.indexOf(id) === -1) {
+          doublons.push(id);
+        }
+
+        vus[id] = true;
+      });
+
+    return doublons;
+  }
+
   function rechercherEnseignant(input, hiddenInput, suggestions) {
     var form = getWizard();
 
@@ -815,6 +870,33 @@
           li.textContent = (prenom + " " + nom).trim();
 
           li.addEventListener("click", function () {
+            var memberRow = input.closest(".member-row");
+
+            // "UN BENEFICIAIRE NE PEUT PAS ETRE CONVOQUE PLUS DE UNE FOIS" -
+            // un meme enseignant ne peut pas etre ajoute deux fois comme
+            // membre du jury de CETTE convocation (deja vrai en base, cf.
+            // contrainte sur convocation_enseignant, mais jusqu'ici
+            // silencieusement ecrase sans prevenir l'utilisatrice - cf.
+            // ConvocationSyncController::sync() qui indexe "beneficiaires"
+            // par enseignant_id). On bloque des la selection, avec un
+            // message clair, plutot que de laisser deux lignes identiques
+            // dont une disparaitra sans explication a l'enregistrement.
+            if (
+              memberRow &&
+              estEnseignantDejaBeneficiaire(form, enseignant.id, hiddenInput)
+            ) {
+              if (typeof window.showToast === "function") {
+                window.showToast(
+                  "error",
+                  '"' +
+                    li.textContent +
+                    '" est déjà convoqué(e) dans cette convocation. Un bénéficiaire ne peut pas être convoqué plus d\'une fois.',
+                );
+              }
+
+              return;
+            }
+
             input.value = li.textContent;
 
             hiddenInput.value = enseignant.id || "";
@@ -822,8 +904,6 @@
             suggestions.innerHTML = "";
 
             suggestions.hidden = true;
-
-            var memberRow = input.closest(".member-row");
 
             if (memberRow) {
               // Recherche d'un membre du jury : on renseigne le nom et
@@ -1522,6 +1602,26 @@
           window.showToast(
             "error",
             "Ajoutez au moins un centre d'examen avant d'enregistrer la convocation.",
+          );
+        }
+
+        return;
+      }
+
+      // "UN BENEFICIAIRE NE PEUT PAS ETRE CONVOQUE PLUS DE UNE FOIS" :
+      // dernier filet avant l'envoi - couvre aussi les doublons qui
+      // n'auraient pas pu etre bloques a la selection (import CSV,
+      // pre-remplissage de la fiche "Modifier"...).
+      if (trouverBeneficiairesEnDouble(form).length > 0) {
+        event.preventDefault();
+
+        currentStep = 2;
+        updateProgressBar();
+
+        if (typeof window.showToast === "function") {
+          window.showToast(
+            "error",
+            "Un(e) même bénéficiaire est ajouté(e) plusieurs fois dans cette convocation. Retirez les doublons avant d'enregistrer : un bénéficiaire ne peut pas être convoqué plus d'une fois.",
           );
         }
 

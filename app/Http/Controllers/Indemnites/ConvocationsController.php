@@ -355,12 +355,17 @@ class ConvocationsController extends Controller
             // auquel il est affecte (index dans "centres"/"centres.*.metiers"
             // ci-dessus, ou vide pour un groupe "general" sans metier).
             'beneficiaires' => ['nullable', 'array'],
-            'beneficiaires.*.enseignant_id' => ['required_with:beneficiaires', 'integer'],
+            // "distinct" : "UN BENEFICIAIRE NE PEUT PAS ETRE CONVOQUE PLUS
+            // DE UNE FOIS" - deja bloque cote wizard (convocation-wizard.js)
+            // avant meme la soumission, mais garde-fou serveur au cas ou.
+            'beneficiaires.*.enseignant_id' => ['required_with:beneficiaires', 'integer', 'distinct'],
             'beneficiaires.*.fonction' => ['nullable', 'string', 'max:100'],
             'beneficiaires.*.provenance' => ['nullable', 'string', 'max:255'],
             'beneficiaires.*.categorie_personnel' => ['nullable', 'in:fonctionnaire,contractuel,vacataire'],
             'beneficiaires.*.centre_index' => ['nullable', 'integer'],
             'beneficiaires.*.metier_index' => ['nullable', 'integer'],
+        ], [
+            'beneficiaires.*.enseignant_id.distinct' => "Un bénéficiaire ne peut pas être convoqué plus d'une fois sur la même convocation.",
         ]);
 
         $data['utilisateur_id'] = session('sicore_user.id');
@@ -740,12 +745,17 @@ class ConvocationsController extends Controller
             'centres.*.president_jury_telephone' => ['nullable', 'string', 'max:30'],
 
             'beneficiaires' => ['nullable', 'array'],
-            'beneficiaires.*.enseignant_id' => ['required_with:beneficiaires', 'integer'],
+            // "distinct" : "UN BENEFICIAIRE NE PEUT PAS ETRE CONVOQUE PLUS
+            // DE UNE FOIS" - deja bloque cote wizard (convocation-wizard.js)
+            // avant meme la soumission, mais garde-fou serveur au cas ou.
+            'beneficiaires.*.enseignant_id' => ['required_with:beneficiaires', 'integer', 'distinct'],
             'beneficiaires.*.fonction' => ['nullable', 'string', 'max:100'],
             'beneficiaires.*.provenance' => ['nullable', 'string', 'max:255'],
             'beneficiaires.*.categorie_personnel' => ['nullable', 'in:fonctionnaire,contractuel,vacataire'],
             'beneficiaires.*.centre_index' => ['nullable', 'integer'],
             'beneficiaires.*.metier_index' => ['nullable', 'integer'],
+        ], [
+            'beneficiaires.*.enseignant_id.distinct' => "Un bénéficiaire ne peut pas être convoqué plus d'une fois sur la même convocation.",
         ]);
 
         $data['ordre_de_mission'] = $request->boolean('ordre_de_mission');
