@@ -3,7 +3,7 @@
         'name' => 'sicore/frontend-laravel',
         'pretty_version' => 'dev-main',
         'version' => 'dev-main',
-        'reference' => 'dfb481eb8f4fb2444f0f292bf111c68bcf529580',
+        'reference' => '4a9207971bf4d81fe601a46686bf503fa7f22f6c',
         'type' => 'project',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -983,7 +983,7 @@
         'sicore/frontend-laravel' => array(
             'pretty_version' => 'dev-main',
             'version' => 'dev-main',
-            'reference' => 'dfb481eb8f4fb2444f0f292bf111c68bcf529580',
+            'reference' => '4a9207971bf4d81fe601a46686bf503fa7f22f6c',
             'type' => 'project',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),
