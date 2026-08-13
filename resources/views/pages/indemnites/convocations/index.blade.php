@@ -99,13 +99,7 @@
             </div>
         </div>
 
-        {{-- ============================================================
-             OPTION A — IMPORT D'UN FICHIER DE CONVOCATIONS (DECPC)
-             Panneau compact, masqué par défaut, ouvert par le bouton
-             "Importer" ci-dessus (aligné avec Exporter / Nouvelle
-             convocation, plus de détails superflus sur le format CSV
-             attendu — voir GUIDE-IMPORT-CONVOCATIONS.md si besoin).
-        ============================================================ --}}
+    
 
         <div id="import-convocations" class="import-panel" data-import-panel hidden>
 
@@ -209,17 +203,7 @@
 
         </form>
 
-        {{-- ============================================================
-             TABLEAU — liste DAGE (point 3 du cahier des charges
-             "Transmission des convocations à la DAGE") : une ligne par
-             agent convoqué (Agent/Type/Session/Centre/Rôle/Dates/Lieu de
-             service/Lieu d'examen/Statut). $lignes est calculé par
-             ConvocationsController::construireLignes() à partir des
-             convocations de la page courante ($convocations) : une
-             convocation à plusieurs bénéficiaires produit donc plusieurs
-             lignes, ce qui explique que leur nombre puisse dépasser la
-             taille de page ci-dessous.
-        ============================================================ --}}
+    
 
         <section class="table-card">
 
@@ -311,12 +295,7 @@
                 <p class="empty-message">Aucune donnée trouvée.</p>
             @endif
 
-            {{-- Classe dediee (pas "pagination") : le script global
-                 app.js attache un handler sur toute ".pagination" qui fait
-                 preventDefault() sur les clics (pense pour des pages sans
-                 vraie pagination serveur) — avec la vraie classe Laravel
-                 ci-dessous, il ecrasait la navigation reelle vers ?page=2.
-            --}}
+         
             <div class="convocation-pagination" aria-label="Pagination">
 
                 @if ($convocations->onFirstPage())

@@ -201,7 +201,14 @@ class ConvocationsController extends Controller
             $ligneCommune = [
                 'convocation_id' => $item['id'] ?? null,
                 'objet' => $item['objet'] ?? null,
-                'type' => $item['typeConvocation']['libelle'] ?? null,
+                // NB: les relations Eloquent sont serialisees en snake_case
+                // par l'API (Model::$snakeAttributes = true, comportement
+                // par defaut de Laravel) : la methode de relation
+                // "typeConvocation()" devient la cle JSON "type_convocation",
+                // PAS "typeConvocation". Meme chose pour chef_centre et
+                // lieu_service plus bas — piege facile, cf. chef de centre
+                // toujours "—" malgre chef_centre_id rempli en base.
+                'type' => $item['type_convocation']['libelle'] ?? null,
                 'session' => $item['session'] ?? null,
                 'date_debut' => $item['date_debut'] ?? null,
                 'date_fin' => $item['date_fin'] ?? null,
@@ -242,7 +249,7 @@ class ConvocationsController extends Controller
                     'agent' => trim(($enseignant['prenom'] ?? '').' '.($enseignant['nom'] ?? '')) ?: '—',
                     'role' => $enseignant['pivot']['fonction'] ?? null,
                     'centre' => $centreNom,
-                    'lieu_service' => $enseignant['lieuService']['libelle'] ?? null,
+                    'lieu_service' => $enseignant['lieu_service']['libelle'] ?? null,
                 ]);
             }
         }
@@ -509,6 +516,36 @@ class ConvocationsController extends Controller
             ->with($resultat['success'] ? 'success' : 'error', $resultat['message'] ?? 'Beneficiaire ajoute.');
     }
 
+    // Modifie un beneficiaire deja rattache a la convocation (utilise
+    // depuis la fiche "Modifier" — bouton "Modifier" de la section Membres
+    // du jury, qui bascule le sous-formulaire d'ajout en mode edition).
+    public function updateBeneficiaire(Request $request, int|string $id, int|string $enseignantId): RedirectResponse
+    {
+        $data = $request->validate([
+            'fonction' => ['nullable', 'string', 'max:100'],
+            'provenance' => ['nullable', 'string', 'max:255'],
+            'categorie_personnel' => ['nullable', 'in:fonctionnaire,contractuel,vacataire'],
+            'centre_id' => ['nullable', 'integer'],
+        ]);
+
+        $resultat = $this->convocations->mettreAJourBeneficiaire($id, $enseignantId, $data);
+
+        return redirect()
+            ->route('indemnites.convocations.edit', $id)
+            ->with($resultat['success'] ? 'success' : 'error', $resultat['message'] ?? 'Beneficiaire mis a jour.');
+    }
+
+    // Retire un beneficiaire de la convocation (l'enseignant lui-meme
+    // n'est pas supprime, seul son rattachement a cette convocation l'est).
+    public function destroyBeneficiaire(int|string $id, int|string $enseignantId): RedirectResponse
+    {
+        $resultat = $this->convocations->supprimerBeneficiaire($id, $enseignantId);
+
+        return redirect()
+            ->route('indemnites.convocations.edit', $id)
+            ->with($resultat['success'] ? 'success' : 'error', $resultat['message'] ?? 'Beneficiaire retire.');
+    }
+
     // Ajoute un centre d'examen a une convocation existante (utilise depuis
     // la fiche "Modifier" — cf. section Centres d'examen). Meme endpoint API
     // que la creation (ConvocationCentreController::store), qui accepte deja
@@ -518,6 +555,7 @@ class ConvocationsController extends Controller
         $data = $request->validate([
             'centre' => ['required', 'string', 'max:255'],
             'jury' => ['nullable', 'string', 'max:100'],
+            'metier' => ['nullable', 'string', 'max:255'],
             'chef_centre_id' => ['nullable', 'integer'],
             'chef_centre_telephone' => ['nullable', 'string', 'max:30'],
         ]);
@@ -527,6 +565,37 @@ class ConvocationsController extends Controller
         return redirect()
             ->route('indemnites.convocations.edit', $id)
             ->with($resultat['success'] ? 'success' : 'error', $resultat['message'] ?? 'Centre ajoute.');
+    }
+
+    // Modifie un centre d'examen deja rattache a la convocation (utilise
+    // depuis la fiche "Modifier" — bouton "Modifier" de la section Centres
+    // d'examen, qui bascule le sous-formulaire d'ajout en mode edition).
+    public function updateCentre(Request $request, int|string $id, int|string $centreId): RedirectResponse
+    {
+        $data = $request->validate([
+            'centre' => ['required', 'string', 'max:255'],
+            'jury' => ['nullable', 'string', 'max:100'],
+            'metier' => ['nullable', 'string', 'max:255'],
+            'chef_centre_id' => ['nullable', 'integer'],
+            'chef_centre_telephone' => ['nullable', 'string', 'max:30'],
+        ]);
+
+        $resultat = $this->convocations->mettreAJourCentre($id, $centreId, $data);
+
+        return redirect()
+            ->route('indemnites.convocations.edit', $id)
+            ->with($resultat['success'] ? 'success' : 'error', $resultat['message'] ?? 'Centre mis a jour.');
+    }
+
+    // Supprime un centre d'examen (les membres qui y etaient rattaches ne
+    // sont pas supprimes, seul leur rattachement au centre est retire).
+    public function destroyCentre(int|string $id, int|string $centreId): RedirectResponse
+    {
+        $resultat = $this->convocations->supprimerCentre($id, $centreId);
+
+        return redirect()
+            ->route('indemnites.convocations.edit', $id)
+            ->with($resultat['success'] ? 'success' : 'error', $resultat['message'] ?? 'Centre supprime.');
     }
 
     /**

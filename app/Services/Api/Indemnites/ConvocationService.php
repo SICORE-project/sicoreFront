@@ -69,6 +69,26 @@ class ConvocationService
         return $this->wrap($this->api->get("convocations/{$id}/centres"));
     }
 
+    public function mettreAJourCentre(int|string $convocationId, int|string $centreId, array $donnees): array
+    {
+        return $this->wrap($this->api->put("convocations/{$convocationId}/centres/{$centreId}", $donnees));
+    }
+
+    public function supprimerCentre(int|string $convocationId, int|string $centreId): array
+    {
+        return $this->wrap($this->api->delete("convocations/{$convocationId}/centres/{$centreId}"));
+    }
+
+    public function mettreAJourBeneficiaire(int|string $convocationId, int|string $enseignantId, array $donnees): array
+    {
+        return $this->wrap($this->api->put("convocations/{$convocationId}/beneficiaires/{$enseignantId}", $donnees));
+    }
+
+    public function supprimerBeneficiaire(int|string $convocationId, int|string $enseignantId): array
+    {
+        return $this->wrap($this->api->delete("convocations/{$convocationId}/beneficiaires/{$enseignantId}"));
+    }
+
     /**
      * Cree les centres d'examen d'une convocation. Renvoie les centres
      * crees dans le meme ordre que $centres, avec leur id reel en base -

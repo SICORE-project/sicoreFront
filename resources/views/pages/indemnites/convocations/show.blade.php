@@ -33,8 +33,8 @@
                 <h2>{{ $convocation->objet ?? '—' }}</h2>
                 <p class="breadcrumb">
                     Émise le {{ optional($convocation->date_emission)->format('d/m/Y') ?? '—' }}
-                    @if (! empty($convocation->typeConvocation['libelle'] ?? null))
-                        &middot; {{ $convocation->typeConvocation['libelle'] }}
+                    @if (! empty($convocation->type_convocation['libelle'] ?? null))
+                        &middot; {{ $convocation->type_convocation['libelle'] }}
                     @endif
                 </p>
             </div>
@@ -57,7 +57,7 @@
 
                     <div class="form-group">
                         <label>Type de convocation</label>
-                        <p>{{ $convocation->typeConvocation['libelle'] ?? '—' }}</p>
+                        <p>{{ $convocation->type_convocation['libelle'] ?? '—' }}</p>
                     </div>
 
                     <div class="form-group">
@@ -129,7 +129,7 @@
                                         <td>{{ $centre['centre'] ?? '—' }}</td>
                                         <td>{{ $centre['jury'] ?? '—' }}</td>
                                         <td>{{ $centre['metier'] ?? '—' }}</td>
-                                        <td>{{ $centre['chefCentre']['nom'] ?? '—' }}</td>
+                                    <td>{{ $centre['chef_centre']['prenom'] ?? '—' }} {{ $centre['chef_centre']['nom'] ?? '—' }}</td>
                                         <td>{{ $centre['chef_centre_telephone'] ?? '—' }}</td>
                                     </tr>
                                 @endforeach

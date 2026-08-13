@@ -81,7 +81,7 @@
                             @foreach ($typesConvocation ?? [] as $type)
                                 <option
                                     value="{{ $type['id'] }}"
-                                    @selected((string) old('type_convocation_id', $convocation->typeConvocation['id'] ?? '') === (string) $type['id'])
+                                    @selected((string) old('type_convocation_id', $convocation->type_convocation['id'] ?? '') === (string) $type['id'])
                                 >
                                     {{ $type['libelle'] }}
                                 </option>
@@ -221,16 +221,51 @@
                                 <th>Métier</th>
                                 <th>Chef de centre</th>
                                 <th>Téléphone</th>
+                                <th class="actions-cell">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             @foreach ($centres as $centre)
+                                @php
+                                    // "chefCentre" (nom de la methode de relation) devient
+                                    // "chef_centre" une fois serialise en JSON par l'API
+                                    // (snake_case automatique de Laravel sur les relations).
+                                    $chefCentreNom = trim(($centre['chef_centre']['prenom'] ?? '').' '.($centre['chef_centre']['nom'] ?? ''));
+                                @endphp
                                 <tr>
                                     <td>{{ $centre['centre'] ?? '—' }}</td>
                                     <td>{{ $centre['jury'] ?? '—' }}</td>
                                     <td>{{ $centre['metier'] ?? '—' }}</td>
-                                    <td>{{ $centre['chefCentre']['nom'] ?? '—' }}</td>
+                                    <td>{{ $centre['chef_centre']['prenom'] ?? '—' }} {{ $centre['chef_centre']['nom'] ?? '—' }}</td>
                                     <td>{{ $centre['chef_centre_telephone'] ?? '—' }}</td>
+                                    <td class="actions-cell">
+                                        <div class="table-actions-inline">
+                                            <button
+                                                type="button"
+                                                class="table-action"
+                                                data-edit-centre
+                                                data-update-url="{{ route('indemnites.convocations.centres.update', [$id, $centre['id']]) }}"
+                                                data-centre="{{ $centre['centre'] ?? '' }}"
+                                                data-jury="{{ $centre['jury'] ?? '' }}"
+                                                data-metier="{{ $centre['metier'] ?? '' }}"
+                                                data-chef-id="{{ $centre['chef_centre_id'] ?? '' }}"
+                                                data-chef-nom="{{ $chefCentreNom }}"
+                                                data-chef-tel="{{ $centre['chef_centre_telephone'] ?? '' }}"
+                                            >
+                                                Modifier
+                                            </button>
+                                            <form
+                                                method="POST"
+                                                action="{{ route('indemnites.convocations.centres.destroy', [$id, $centre['id']]) }}"
+                                                onsubmit="return confirm('Supprimer ce centre d\'examen ?');"
+                                                style="display:inline;"
+                                            >
+                                                @csrf
+                                                @method('DELETE')
+                                                <button class="table-action danger" type="submit">Supprimer</button>
+                                            </form>
+                                        </div>
+                                    </td>
                                 </tr>
                             @endforeach
                         </tbody>
@@ -239,7 +274,7 @@
 
             @endif
 
-            <form method="POST" action="{{ route('indemnites.convocations.centres.store', $id) }}" class="add-sub-form">
+            <form method="POST" action="{{ route('indemnites.convocations.centres.store', $id) }}" class="add-sub-form" data-centre-form>
 
                 @csrf
 
@@ -253,6 +288,11 @@
                     <div class="form-group">
                         <label for="jury">Jury</label>
                         <input class="form-control" id="jury" name="jury" type="text" placeholder="Ex : Jury 1">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="metier">Métier / spécialité</label>
+                        <input class="form-control" id="metier" name="metier" type="text" placeholder="Ex : Technicien en Maintenance Véhicules Moteurs (MVM)">
                     </div>
 
                     <div class="form-group">
@@ -272,7 +312,8 @@
                 </div>
 
                 <div class="form-actions">
-                    <button class="btn-secondary" type="submit">Ajouter le centre</button>
+                    <button class="btn-secondary" type="submit" data-centre-submit>Ajouter le centre</button>
+                    <button class="btn-secondary" type="button" data-centre-cancel hidden>Annuler la modification</button>
                 </div>
 
             </form>
@@ -312,16 +353,48 @@
                                 <th>Statut</th>
                                 <th>Provenance</th>
                                 <th>Téléphone</th>
+                                <th class="actions-cell">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             @foreach ($beneficiaires as $beneficiaire)
+                                @php
+                                    $beneficiaireNom = trim(($beneficiaire['prenom'] ?? '') . ' ' . ($beneficiaire['nom'] ?? ''));
+                                @endphp
                                 <tr>
-                                    <td>{{ trim(($beneficiaire['prenom'] ?? '') . ' ' . ($beneficiaire['nom'] ?? '')) ?: '—' }}</td>
+                                    <td>{{ $beneficiaireNom ?: '—' }}</td>
                                     <td>{{ $beneficiaire['pivot']['fonction'] ?? '—' }}</td>
                                     <td>{{ $statutsPersonnel[$beneficiaire['categorie_personnel'] ?? null] ?? '—' }}</td>
                                     <td>{{ $beneficiaire['pivot']['provenance'] ?? '—' }}</td>
                                     <td>{{ $beneficiaire['telephone'] ?? '—' }}</td>
+                                    <td class="actions-cell">
+                                        <div class="table-actions-inline">
+                                            <button
+                                                type="button"
+                                                class="table-action"
+                                                data-edit-beneficiaire
+                                                data-update-url="{{ route('indemnites.convocations.beneficiaires.update', [$id, $beneficiaire['id']]) }}"
+                                                data-enseignant-id="{{ $beneficiaire['id'] }}"
+                                                data-nom="{{ $beneficiaireNom }}"
+                                                data-fonction="{{ $beneficiaire['pivot']['fonction'] ?? '' }}"
+                                                data-categorie="{{ $beneficiaire['categorie_personnel'] ?? '' }}"
+                                                data-provenance="{{ $beneficiaire['pivot']['provenance'] ?? '' }}"
+                                                data-centre-id="{{ $beneficiaire['pivot']['centre_id'] ?? '' }}"
+                                            >
+                                                Modifier
+                                            </button>
+                                            <form
+                                                method="POST"
+                                                action="{{ route('indemnites.convocations.beneficiaires.destroy', [$id, $beneficiaire['id']]) }}"
+                                                onsubmit="return confirm('Retirer ce membre de la convocation ?');"
+                                                style="display:inline;"
+                                            >
+                                                @csrf
+                                                @method('DELETE')
+                                                <button class="table-action danger" type="submit">Supprimer</button>
+                                            </form>
+                                        </div>
+                                    </td>
                                 </tr>
                             @endforeach
                         </tbody>
@@ -330,7 +403,7 @@
 
             @endif
 
-            <form method="POST" action="{{ route('indemnites.convocations.beneficiaires.store', $id) }}" class="add-sub-form">
+            <form method="POST" action="{{ route('indemnites.convocations.beneficiaires.store', $id) }}" class="add-sub-form" data-beneficiaire-form>
 
                 @csrf
 
@@ -386,7 +459,8 @@
                 </div>
 
                 <div class="form-actions">
-                    <button class="btn-secondary" type="submit">Ajouter le membre</button>
+                    <button class="btn-secondary" type="submit" data-beneficiaire-submit>Ajouter le membre</button>
+                    <button class="btn-secondary" type="button" data-beneficiaire-cancel hidden>Annuler la modification</button>
                 </div>
 
             </form>
@@ -403,6 +477,181 @@
 
 @push('scripts')
 <script src="{{ asset('assets/js/indemnites/convocation-edit.js') }}"></script>
+
+{{-- ================================================================
+     SCRIPT — bascule les sous-formulaires "Ajouter un centre" / "Ajouter
+     un membre" en mode edition (bouton "Modifier" d'une ligne du
+     tableau) : meme formulaire, action et méthode changées vers
+     l'endpoint de mise à jour, champs pré-remplis avec les valeurs de la
+     ligne. "Annuler la modification" revient au mode ajout normal.
+================================================================ --}}
+<script>
+    (function () {
+        "use strict";
+
+        function setupEditableSubForm(options) {
+            var form = document.querySelector(options.formSelector);
+
+            if (!form) {
+                return;
+            }
+
+            var originalAction = form.getAttribute("action");
+            var submitButton = form.querySelector(options.submitSelector);
+            var cancelButton = form.querySelector(options.cancelSelector);
+            var originalSubmitLabel = submitButton ? submitButton.textContent : "";
+
+            function ensureMethodField(methodValue) {
+                var methodInput = form.querySelector("[data-dynamic-method]");
+
+                if (!methodInput) {
+                    methodInput = document.createElement("input");
+                    methodInput.type = "hidden";
+                    methodInput.name = "_method";
+                    methodInput.setAttribute("data-dynamic-method", "");
+                    form.appendChild(methodInput);
+                }
+
+                methodInput.value = methodValue;
+            }
+
+            function removeMethodField() {
+                var methodInput = form.querySelector("[data-dynamic-method]");
+
+                if (methodInput) {
+                    methodInput.parentNode.removeChild(methodInput);
+                }
+            }
+
+            function enterEditMode(button) {
+                form.setAttribute("action", button.getAttribute("data-update-url"));
+                ensureMethodField("PUT");
+
+                options.fields.forEach(function (field) {
+                    var el = form.querySelector(field.selector);
+
+                    if (el) {
+                        el.value = button.getAttribute(field.attribute) || "";
+                    }
+                });
+
+                if (options.onEnter) {
+                    options.onEnter(form, button);
+                }
+
+                if (submitButton) {
+                    submitButton.textContent = options.editLabel;
+                }
+
+                if (cancelButton) {
+                    cancelButton.hidden = false;
+                }
+
+                form.scrollIntoView({ behavior: "smooth", block: "center" });
+            }
+
+            function exitEditMode() {
+                form.setAttribute("action", originalAction);
+                removeMethodField();
+                form.reset();
+
+                if (options.onExit) {
+                    options.onExit(form);
+                }
+
+                if (submitButton) {
+                    submitButton.textContent = originalSubmitLabel;
+                }
+
+                if (cancelButton) {
+                    cancelButton.hidden = true;
+                }
+            }
+
+            document.querySelectorAll(options.editButtonSelector).forEach(function (button) {
+                button.addEventListener("click", function () {
+                    enterEditMode(button);
+                });
+            });
+
+            if (cancelButton) {
+                cancelButton.addEventListener("click", exitEditMode);
+            }
+        }
+
+        setupEditableSubForm({
+            formSelector: "[data-centre-form]",
+            submitSelector: "[data-centre-submit]",
+            cancelSelector: "[data-centre-cancel]",
+            editButtonSelector: "[data-edit-centre]",
+            editLabel: "Enregistrer les modifications",
+            fields: [
+                { selector: "#centre", attribute: "data-centre" },
+                { selector: "#jury", attribute: "data-jury" },
+                { selector: "#metier", attribute: "data-metier" },
+                { selector: "#chef_centre_telephone", attribute: "data-chef-tel" },
+            ],
+            onEnter: function (form, button) {
+                var searchInput = form.querySelector("[data-enseignant-search-input]");
+                var hiddenIdInput = form.querySelector("[data-enseignant-id-input]");
+
+                if (searchInput) {
+                    searchInput.value = button.getAttribute("data-chef-nom") || "";
+                }
+
+                if (hiddenIdInput) {
+                    hiddenIdInput.value = button.getAttribute("data-chef-id") || "";
+                }
+            },
+            onExit: function (form) {
+                var hiddenIdInput = form.querySelector("[data-enseignant-id-input]");
+
+                if (hiddenIdInput) {
+                    hiddenIdInput.value = "";
+                }
+            },
+        });
+
+        setupEditableSubForm({
+            formSelector: "[data-beneficiaire-form]",
+            submitSelector: "[data-beneficiaire-submit]",
+            cancelSelector: "[data-beneficiaire-cancel]",
+            editButtonSelector: "[data-edit-beneficiaire]",
+            editLabel: "Enregistrer les modifications",
+            fields: [
+                { selector: "#fonction", attribute: "data-fonction" },
+                { selector: "#categorie_personnel", attribute: "data-categorie" },
+                { selector: "#provenance", attribute: "data-provenance" },
+                { selector: "#centre_id", attribute: "data-centre-id" },
+            ],
+            onEnter: function (form, button) {
+                var searchInput = form.querySelector("[data-enseignant-search-input]");
+                var hiddenIdInput = form.querySelector("[data-enseignant-id-input]");
+
+                if (searchInput) {
+                    searchInput.value = button.getAttribute("data-nom") || "";
+                    searchInput.setAttribute("readonly", "readonly");
+                }
+
+                if (hiddenIdInput) {
+                    hiddenIdInput.value = button.getAttribute("data-enseignant-id") || "";
+                }
+            },
+            onExit: function (form) {
+                var searchInput = form.querySelector("[data-enseignant-search-input]");
+                var hiddenIdInput = form.querySelector("[data-enseignant-id-input]");
+
+                if (searchInput) {
+                    searchInput.removeAttribute("readonly");
+                }
+
+                if (hiddenIdInput) {
+                    hiddenIdInput.value = "";
+                }
+            },
+        });
+    })();
+</script>
 @endpush
 
 {{-- ================================================================

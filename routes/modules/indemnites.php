@@ -54,8 +54,20 @@ Route::middleware('sicore.auth')
         Route::post('/convocations/{id}/beneficiaires', [ConvocationsController::class, 'storeBeneficiaires'])
             ->name('convocations.beneficiaires.store');
 
+        Route::put('/convocations/{id}/beneficiaires/{enseignantId}', [ConvocationsController::class, 'updateBeneficiaire'])
+            ->name('convocations.beneficiaires.update');
+
+        Route::delete('/convocations/{id}/beneficiaires/{enseignantId}', [ConvocationsController::class, 'destroyBeneficiaire'])
+            ->name('convocations.beneficiaires.destroy');
+
         Route::post('/convocations/{id}/centres', [ConvocationsController::class, 'storeCentres'])
             ->name('convocations.centres.store');
+
+        Route::put('/convocations/{id}/centres/{centreId}', [ConvocationsController::class, 'updateCentre'])
+            ->name('convocations.centres.update');
+
+        Route::delete('/convocations/{id}/centres/{centreId}', [ConvocationsController::class, 'destroyCentre'])
+            ->name('convocations.centres.destroy');
 
         Route::get('/convocations/{id}', [ConvocationsController::class, 'show'])
             ->name('convocations.show');
