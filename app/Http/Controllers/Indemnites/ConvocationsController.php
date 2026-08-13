@@ -106,6 +106,51 @@ class ConvocationsController extends Controller
     }
 
     /**
+     * Aplati les convocations en lignes "une par centre" pour le tableau de
+     * la liste : Objet / Centre / Date debut / Date fin / Action. Une
+     * convocation sans centre produit quand meme une ligne (centre "—"),
+     * pour rester visible tant qu'aucun centre n'a ete ajoute.
+     *
+     * NB : cette methode avait disparu du fichier (le "call to undefined
+     * method" qui cassait la page liste) alors qu'elle est toujours
+     * appelee depuis index() ci-dessus — restauree ici.
+     */
+    private function construireLignesCentres(array $items): array
+    {
+        $lignes = [];
+
+        foreach ($items as $item) {
+            $centres = $item['centres'] ?? [];
+
+            $ligneCommune = [
+                'convocation_id' => $item['id'] ?? null,
+                'objet' => $item['objet'] ?? null,
+                'date_debut' => $item['date_debut'] ?? null,
+                'date_fin' => $item['date_fin'] ?? null,
+                'statut' => $item['statut'] ?? null,
+            ];
+
+            if (empty($centres)) {
+                $lignes[] = array_merge($ligneCommune, [
+                    'centre_id' => null,
+                    'centre' => null,
+                ]);
+
+                continue;
+            }
+
+            foreach ($centres as $centre) {
+                $lignes[] = array_merge($ligneCommune, [
+                    'centre_id' => $centre['id'] ?? null,
+                    'centre' => $centre['centre'] ?? null,
+                ]);
+            }
+        }
+
+        return $lignes;
+    }
+
+    /**
      * Import d'une convocation depuis le modèle Word rempli (voir
      * telechargerModeleWord() ci-dessous) : un document = une convocation
      * complète (infos + centres + membres du jury).
@@ -150,13 +195,7 @@ class ConvocationsController extends Controller
     // headers renvoyés par le backend (voir ConvocationModeleWordController).
     public function telechargerModeleWord(): StreamedResponse
     {
-        $filtres = array_filter([
-            'date' => $request->query('date'),
-            'objet' => $request->query('objet'),
-            'metier' => $request->query('metier'),
-            'centre' => $request->query('centre'),
-            'per_page' => 5000,
-        ]);
+        $reponse = $this->convocations->telechargerModeleWord();
 
         return response()->streamDownload(function () use ($reponse) {
             echo $reponse->body();
