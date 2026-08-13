@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'SICORE - Modifier la convocation')
+@section('title', 'SICORE - Modifier convocation')
 
 @section('content')
 
@@ -14,22 +14,71 @@
 
 <section class="content-area">
 
-    <section class="form-card convocation-card">
+    @php
+        $statutsLabels = ['brouillon' => 'Brouillon', 'emise' => 'Émise', 'envoyee' => 'Envoyée', 'cloturee' => 'Clôturée'];
+    @endphp
+
+    <section class="form-card wizard-card convocation-card">
 
         <div class="form-card-header">
             <div>
                 <h2>Modifier la convocation</h2>
-                <p class="breadcrumb">{{ $convocation->objet ?? '—' }}</p>
+                <p class="breadcrumb">Mise à jour de la convocation et de ses centres d'examen</p>
             </div>
+            <span class="badge badge-primary">{{ $statutsLabels[$convocation->statut ?? 'brouillon'] ?? 'Brouillon' }}</span>
         </div>
 
-        <form method="POST" action="{{ route('indemnites.convocations.update', $id) }}" class="convocation-edit-form">
+        {{-- ============================================================
+             "IL FAUT QUE EDIT SOIT EXACTEMENT COMME CREATE MAIS PREREMPLI"
+             Ce formulaire est structurellement IDENTIQUE a create.blade.php
+             (memes templates, meme JS convocation-wizard.js) - seules
+             differences : method PUT, data-wizard-mode="edit", et les
+             champs de l'etape 1 pre-remplis via old(..., $convocation->x).
+             Le wizard se remplit lui-meme au chargement via
+             window.__convocationWizardPrefill ci-dessous (cf.
+             convocation-wizard.js::hydrateFromPrefill()) : il simule des
+             clics sur les memes boutons "Ajouter..." que la creation,
+             reutilisant exactement la meme logique de creation/validation.
+        ============================================================ --}}
+
+        <form
+            id="convocationForm"
+            class="convocation-form"
+            role="form"
+            method="POST"
+            action="{{ route('indemnites.convocations.update', $id) }}"
+            enctype="multipart/form-data"
+            data-convocation-wizard
+            data-wizard-mode="edit"
+            data-search-url="{{ route('indemnites.convocations.enseignants.rechercher') }}"
+            aria-describedby="{{ $errors->any() ? 'form-errors' : '' }}"
+            novalidate
+        >
 
             @csrf
             @method('PUT')
 
+            {{-- ============================================================
+                 PROGRESSION
+            ============================================================ --}}
+
+            <div class="wizard-progress" aria-label="Progression du formulaire">
+                <button class="wizard-step active" type="button" data-step-indicator="1">
+                    <span class="wizard-step-number">1</span>
+                    <span>Informations générales</span>
+                </button>
+                <button class="wizard-step" type="button" data-step-indicator="2">
+                    <span class="wizard-step-number">2</span>
+                    <span>Centres, jurys et membres</span>
+                </button>
+            </div>
+
+            {{-- ============================================================
+                 ERREURS
+            ============================================================ --}}
+
             @if ($errors->any())
-                <div class="form-errors" role="alert">
+                <div id="form-errors" class="form-errors" role="alert">
                     <p><strong>Veuillez corriger les erreurs suivantes :</strong></p>
                     <ul>
                         @foreach ($errors->all() as $error)
@@ -39,433 +88,448 @@
                 </div>
             @endif
 
-            <div class="form-section">
+            {{-- ============================================================
+                 ÉTAPE 1 — INFORMATIONS GÉNÉRALES
+            ============================================================ --}}
 
-                <div class="form-grid">
+            <section class="wizard-panel" data-wizard-panel="1">
 
-                    <div class="form-group full">
-                        <label for="objet">
-                            Objet <span class="required">*</span>
-                        </label>
-                        <input
-                            class="form-control @error('objet') is-invalid @enderror"
-                            id="objet"
-                            name="objet"
-                            type="text"
-                            value="{{ old('objet', $convocation->objet ?? '') }}"
-                            required
-                        >
-                        @error('objet')<p class="field-error">{{ $message }}</p>@enderror
-                    </div>
+                <div class="form-section">
 
-                    <div class="form-group full">
-                        <label for="session">Session (ex : BFEM 2026)</label>
-                        <input
-                            class="form-control @error('session') is-invalid @enderror"
-                            id="session"
-                            name="session"
-                            type="text"
-                            value="{{ old('session', $convocation->session ?? '') }}"
-                        >
-                        @error('session')<p class="field-error">{{ $message }}</p>@enderror
-                    </div>
+                    <h3>Informations de la convocation</h3>
+                    <p class="section-description">Renseignez les informations générales de la convocation.</p>
 
-                    <div class="form-group full">
-                        <label for="type_convocation_id">Type de convocation</label>
-                        <select
-                            class="form-control @error('type_convocation_id') is-invalid @enderror"
-                            id="type_convocation_id"
-                            name="type_convocation_id"
-                        >
-                            <option value="">Sélectionner</option>
-                            @foreach ($typesConvocation ?? [] as $type)
-                                <option
-                                    value="{{ $type['id'] }}"
-                                    @selected((string) old('type_convocation_id', $convocation->type_convocation['id'] ?? '') === (string) $type['id'])
-                                >
-                                    {{ $type['libelle'] }}
-                                </option>
-                            @endforeach
-                        </select>
-                        @error('type_convocation_id')<p class="field-error">{{ $message }}</p>@enderror
-                    </div>
+                    <div class="form-grid">
 
-                    <div class="form-group">
-                        <label for="date_emission">
-                            Date d'émission <span class="required">*</span>
-                        </label>
-                        <input
-                            class="form-control @error('date_emission') is-invalid @enderror"
-                            id="date_emission"
-                            name="date_emission"
-                            type="date"
-                            value="{{ old('date_emission', optional($convocation->date_emission ?? null)->format('Y-m-d')) }}"
-                            required
-                        >
-                        @error('date_emission')<p class="field-error">{{ $message }}</p>@enderror
-                    </div>
+                        <div class="form-group full">
+                            <label for="objet">Objet <span class="required">*</span></label>
+                            <input
+                                class="form-control @error('objet') is-invalid @enderror"
+                                id="objet"
+                                name="objet"
+                                type="text"
+                                placeholder="Ex : Examen de certification en Brevet de Technicien (BT)"
+                                value="{{ old('objet', $convocation->objet ?? '') }}"
+                                required
+                            >
+                            @error('objet')<p class="field-error">{{ $message }}</p>@enderror
+                        </div>
 
-                    <div class="form-group">
-                        <label for="statut">Statut</label>
-                        <select class="form-control @error('statut') is-invalid @enderror" id="statut" name="statut">
-                            @foreach (['brouillon' => 'Brouillon', 'emise' => 'Émise', 'envoyee' => 'Envoyée', 'cloturee' => 'Clôturée'] as $value => $label)
-                                <option value="{{ $value }}" @selected(old('statut', $convocation->statut ?? 'brouillon') === $value)>
-                                    {{ $label }}
-                                </option>
-                            @endforeach
-                        </select>
-                        @error('statut')<p class="field-error">{{ $message }}</p>@enderror
-                    </div>
+                        <div class="form-group full">
+                            <label for="session">Session (ex : BFEM 2026)</label>
+                            <input
+                                class="form-control @error('session') is-invalid @enderror"
+                                id="session"
+                                name="session"
+                                type="text"
+                                placeholder="Ex : BT 2026"
+                                value="{{ old('session', $convocation->session ?? '') }}"
+                            >
+                            @error('session')<p class="field-error">{{ $message }}</p>@enderror
+                        </div>
 
-                    <div class="form-group">
-                        <label for="date_debut">Du</label>
-                        <input
-                            class="form-control @error('date_debut') is-invalid @enderror"
-                            id="date_debut"
-                            name="date_debut"
-                            type="date"
-                            value="{{ old('date_debut', optional($convocation->date_debut ?? null)->format('Y-m-d')) }}"
-                        >
-                        @error('date_debut')<p class="field-error">{{ $message }}</p>@enderror
-                    </div>
+                        <div class="form-group full">
+                            <label for="type_convocation_id">Type de convocation</label>
+                            <select
+                                class="form-control @error('type_convocation_id') is-invalid @enderror"
+                                id="type_convocation_id"
+                                name="type_convocation_id"
+                            >
+                                <option value="">Sélectionner</option>
+                                @foreach ($typesConvocation ?? [] as $type)
+                                    <option
+                                        value="{{ $type['id'] }}"
+                                        @selected((string) old('type_convocation_id', $convocation->type_convocation_id ?? '') === (string) $type['id'])
+                                    >
+                                        {{ $type['libelle'] }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            <p class="section-description" style="margin: 6px 0 0;">
+                                Détermine le modèle utilisé pour le PDF (ex : tableau centre/jury/métier pour un jury d'examen).
+                            </p>
+                            @error('type_convocation_id')<p class="field-error">{{ $message }}</p>@enderror
+                        </div>
 
-                    <div class="form-group">
-                        <label for="date_fin">Au</label>
-                        <input
-                            class="form-control @error('date_fin') is-invalid @enderror"
-                            id="date_fin"
-                            name="date_fin"
-                            type="date"
-                            value="{{ old('date_fin', optional($convocation->date_fin ?? null)->format('Y-m-d')) }}"
-                        >
-                        @error('date_fin')<p class="field-error">{{ $message }}</p>@enderror
-                    </div>
+                        <div class="form-group">
+                            <label for="date_emission">Date d'émission <span class="required">*</span></label>
+                            <input
+                                class="form-control @error('date_emission') is-invalid @enderror"
+                                id="date_emission"
+                                name="date_emission"
+                                type="date"
+                                value="{{ old('date_emission', optional($convocation->date_emission ?? null)->format('Y-m-d')) }}"
+                                required
+                            >
+                            @error('date_emission')<p class="field-error">{{ $message }}</p>@enderror
+                        </div>
 
-                    <div class="form-group">
-                        <label for="heure_debut">À partir de</label>
-                        <input
-                            class="form-control @error('heure_debut') is-invalid @enderror"
-                            id="heure_debut"
-                            name="heure_debut"
-                            type="time"
-                            value="{{ old('heure_debut', $convocation->heure_debut ?? '') }}"
-                        >
-                        @error('heure_debut')<p class="field-error">{{ $message }}</p>@enderror
-                    </div>
+                        <div class="form-group">
+                            <label for="statut">Statut</label>
+                            <select class="form-control @error('statut') is-invalid @enderror" id="statut" name="statut">
+                                @foreach (['brouillon' => 'Brouillon', 'emise' => 'Émise', 'envoyee' => 'Envoyée', 'cloturee' => 'Clôturée'] as $value => $label)
+                                    <option value="{{ $value }}" @selected(old('statut', $convocation->statut ?? 'brouillon') === $value)>
+                                        {{ $label }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            @error('statut')<p class="field-error">{{ $message }}</p>@enderror
+                        </div>
 
-                    <div class="form-group">
-                        <label for="lieu_examen">Lieu d'examen</label>
-                        <input
-                            class="form-control @error('lieu_examen') is-invalid @enderror"
-                            id="lieu_examen"
-                            name="lieu_examen"
-                            type="text"
-                            value="{{ old('lieu_examen', $convocation->lieu_examen ?? '') }}"
-                        >
-                        @error('lieu_examen')<p class="field-error">{{ $message }}</p>@enderror
-                    </div>
-
-                    <div class="form-group">
-                        <label for="lieu_affectation">Lieu d'affectation</label>
-                        <input
-                            class="form-control @error('lieu_affectation') is-invalid @enderror"
-                            id="lieu_affectation"
-                            name="lieu_affectation"
-                            type="text"
-                            value="{{ old('lieu_affectation', $convocation->lieu_affectation ?? '') }}"
-                        >
-                        @error('lieu_affectation')<p class="field-error">{{ $message }}</p>@enderror
                     </div>
 
                 </div>
 
-            </div>
+                <div class="form-section">
 
-            <div class="form-actions">
-                <a class="btn-secondary" href="{{ route('indemnites.convocations.show', $id) }}">
-                    Annuler
-                </a>
-                <button class="btn-primary" type="submit">
-                    Enregistrer les modifications
-                </button>
-            </div>
+                    <h3>Période de l'examen</h3>
+                    <p class="section-description">Indiquez la période et l'heure prévues pour l'examen.</p>
 
-        </form>
+                    <div class="form-grid">
 
-        {{-- ============================================================
-             CENTRES D'EXAMEN
-             Formulaires separes du formulaire principal ci-dessus : chaque
-             ajout est un POST independant vers un endpoint deja utilise a
-             la creation (ConvocationCentreController::store()), qui accepte
-             tres bien une convocation existante.
-        ============================================================ --}}
+                        <div class="form-group">
+                            <label for="date_debut">Du <span class="required">*</span></label>
+                            <input
+                                class="form-control @error('date_debut') is-invalid @enderror"
+                                id="date_debut"
+                                name="date_debut"
+                                type="date"
+                                value="{{ old('date_debut', optional($convocation->date_debut ?? null)->format('Y-m-d')) }}"
+                                required
+                            >
+                            @error('date_debut')<p class="field-error">{{ $message }}</p>@enderror
+                        </div>
 
-        <div class="form-section sub-form-section">
+                        <div class="form-group">
+                            <label for="date_fin">Au <span class="required">*</span></label>
+                            <input
+                                class="form-control @error('date_fin') is-invalid @enderror"
+                                id="date_fin"
+                                name="date_fin"
+                                type="date"
+                                value="{{ old('date_fin', optional($convocation->date_fin ?? null)->format('Y-m-d')) }}"
+                                required
+                            >
+                            @error('date_fin')<p class="field-error">{{ $message }}</p>@enderror
+                        </div>
 
-            <div class="panel-header">
-                <h3>Centres d'examen</h3>
-            </div>
+                        <div class="form-group">
+                            <label for="heure_debut">À partir de <span class="required">*</span></label>
+                            <input
+                                class="form-control @error('heure_debut') is-invalid @enderror"
+                                id="heure_debut"
+                                name="heure_debut"
+                                type="time"
+                                value="{{ old('heure_debut', $convocation->heure_debut ?? '08:00') }}"
+                                required
+                            >
+                            @error('heure_debut')<p class="field-error">{{ $message }}</p>@enderror
+                        </div>
 
-            @if (empty($centres))
+                        <div class="form-group">
+                            <label for="lieu_examen">Lieu d'examen</label>
+                            <input
+                                class="form-control @error('lieu_examen') is-invalid @enderror"
+                                id="lieu_examen"
+                                name="lieu_examen"
+                                type="text"
+                                value="{{ old('lieu_examen', $convocation->lieu_examen ?? '') }}"
+                            >
+                            @error('lieu_examen')<p class="field-error">{{ $message }}</p>@enderror
+                        </div>
 
-                <p class="empty-message">Aucun centre ajouté pour le moment.</p>
+                        
 
-            @else
+                    </div>
 
-                <div class="table-responsive">
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <th>Centre</th>
-                                <th>Jury</th>
-                                <th>Métier</th>
-                                <th>Chef de centre</th>
-                                <th>Téléphone</th>
-                                <th class="actions-cell">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach ($centres as $centre)
-                                @php
-                                    // "chefCentre" (nom de la methode de relation) devient
-                                    // "chef_centre" une fois serialise en JSON par l'API
-                                    // (snake_case automatique de Laravel sur les relations).
-                                    $chefCentreNom = trim(($centre['chef_centre']['prenom'] ?? '').' '.($centre['chef_centre']['nom'] ?? ''));
-                                @endphp
-                                <tr>
-                                    <td>{{ $centre['centre'] ?? '—' }}</td>
-                                    <td>{{ $centre['jury'] ?? '—' }}</td>
-                                    <td>{{ $centre['metier'] ?? '—' }}</td>
-                                    <td>{{ $centre['chef_centre']['prenom'] ?? '—' }} {{ $centre['chef_centre']['nom'] ?? '—' }}</td>
-                                    <td>{{ $centre['chef_centre_telephone'] ?? '—' }}</td>
-                                    <td class="actions-cell">
-                                        <div class="table-actions-inline">
-                                            <button
-                                                type="button"
-                                                class="table-action"
-                                                data-edit-centre
-                                                data-update-url="{{ route('indemnites.convocations.centres.update', [$id, $centre['id']]) }}"
-                                                data-centre="{{ $centre['centre'] ?? '' }}"
-                                                data-jury="{{ $centre['jury'] ?? '' }}"
-                                                data-metier="{{ $centre['metier'] ?? '' }}"
-                                                data-chef-id="{{ $centre['chef_centre_id'] ?? '' }}"
-                                                data-chef-nom="{{ $chefCentreNom }}"
-                                                data-chef-tel="{{ $centre['chef_centre_telephone'] ?? '' }}"
-                                            >
-                                                Modifier
-                                            </button>
-                                            <form
-                                                method="POST"
-                                                action="{{ route('indemnites.convocations.centres.destroy', [$id, $centre['id']]) }}"
-                                                onsubmit="return confirm('Supprimer ce centre d\'examen ?');"
-                                                style="display:inline;"
-                                            >
-                                                @csrf
-                                                @method('DELETE')
-                                                <button class="table-action danger" type="submit">Supprimer</button>
-                                            </form>
-                                        </div>
-                                    </td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
                 </div>
 
-            @endif
+            </section>
 
-            <form method="POST" action="{{ route('indemnites.convocations.centres.store', $id) }}" class="add-sub-form" data-centre-form>
+            {{-- ============================================================
+                 ÉTAPE 2 — CENTRES, JURYS ET MEMBRES
+            ============================================================ --}}
 
-                @csrf
+            <section class="wizard-panel" data-wizard-panel="2" hidden>
 
-                <div class="form-grid">
+                <div class="form-section">
 
-                    <div class="form-group">
-                        <label for="centre">Centre d'examen <span class="required">*</span></label>
-                        <input class="form-control" id="centre" name="centre" type="text" placeholder="Ex : Centre LTP FXN/THIES" required>
+                    <div class="panel-header">
+                        <div>
+                            <h3>Centres d'examen</h3>
+                            <p>
+                                Ajoutez les différents centres concernés par la convocation. Pour
+                                chaque centre, précisez le jury et le chef de centre, puis ajoutez
+                                un groupe par métier (ex : MVM, puis FC) avec ses propres membres.
+                            </p>
+                        </div>
+                        <button class="btn-secondary" type="button" data-add-centre>
+                            <i class="fa-solid fa-plus" aria-hidden="true"></i>
+                            Ajouter un centre
+                        </button>
                     </div>
 
-                    <div class="form-group">
-                        <label for="jury">Jury</label>
-                        <input class="form-control" id="jury" name="jury" type="text" placeholder="Ex : Jury 1">
+                    <div class="centres-container" data-centres-container></div>
+
+                    <p class="empty-message" data-centres-empty>Aucun centre ajouté pour le moment.</p>
+
+                    @error('centres')<p class="field-error">{{ $message }}</p>@enderror
+
+                </div>
+
+            </section>
+
+            {{-- ============================================================
+                 TEMPLATE CENTRE
+            ============================================================ --}}
+
+            <template data-centre-template>
+
+                <div class="centre-card" data-centre-card>
+
+                    <input type="hidden" data-field="id">
+
+                    <div class="centre-card-header">
+                        <div>
+                            <h4>Centre d'examen <span data-centre-number></span></h4>
+                            <p>Centre, métier, jury et chef de centre</p>
+                        </div>
+                        <button type="button" class="icon-action" title="Supprimer le centre" aria-label="Supprimer le centre" data-remove-centre>
+                            <i class="fa-solid fa-trash" aria-hidden="true"></i>
+                        </button>
                     </div>
 
-                    <div class="form-group">
-                        <label for="metier">Métier / spécialité</label>
-                        <input class="form-control" id="metier" name="metier" type="text" placeholder="Ex : Technicien en Maintenance Véhicules Moteurs (MVM)">
+                    <div class="form-grid">
+
+                        <div class="form-group">
+                            <label>Centre d'examen <span class="required">*</span></label>
+                            <input
+                                class="form-control"
+                                type="text"
+                                placeholder="Ex : Centre LTP FXN/THIES"
+                                data-centre-input
+                                data-field="centre"
+                                required
+                            >
+                        </div>
+
+                        <div class="form-group">
+                            <label>Jury</label>
+                            <input class="form-control" type="text" placeholder="Ex : Jury 1" data-jury-input data-field="jury">
+                        </div>
+
+                        <div class="form-group">
+                            <label>Président du jury</label>
+                            <div class="enseignant-search" data-president-search>
+                                <input class="form-control" type="text" placeholder="Rechercher le président du jury..." autocomplete="off" data-president-search-input>
+                                <input type="hidden" data-president-id-input data-field="president_jury_id">
+                                <ul class="enseignant-suggestions" data-president-suggestions hidden></ul>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Téléphone du président du jury</label>
+                            <input class="form-control" type="text" placeholder="33 901 10 71" data-president-telephone-input data-field="president_jury_telephone">
+                        </div>
+
+                        <div class="form-group">
+                            <label>Chef de centre</label>
+                            <div class="enseignant-search" data-chef-search>
+                                <input class="form-control" type="text" placeholder="Rechercher le chef de centre..." autocomplete="off" data-chef-search-input>
+                                <input type="hidden" data-chef-id-input data-field="chef_centre_id">
+                                <ul class="enseignant-suggestions" data-chef-suggestions hidden></ul>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Téléphone du chef de centre</label>
+                            <input class="form-control" type="text" placeholder="33 901 10 71" data-chef-telephone-input data-field="chef_centre_telephone">
+                        </div>
+
                     </div>
 
-                    <div class="form-group">
-                        <label>Chef de centre</label>
-                        <div class="enseignant-search" data-enseignant-search data-search-url="{{ route('indemnites.convocations.enseignants.rechercher') }}">
-                            <input class="form-control" type="text" placeholder="Rechercher..." autocomplete="off" data-enseignant-search-input>
-                            <input type="hidden" name="chef_centre_id" data-enseignant-id-input>
-                            <ul class="enseignant-suggestions" data-enseignant-suggestions hidden></ul>
+                    <div class="metier-groups-section">
+
+                        <div class="panel-header">
+                            <div>
+                                <h4>Métiers &amp; membres du jury</h4>
+                                <p>
+                                    Un centre peut regrouper plusieurs métiers (ex : MVM puis FC).
+                                    Ajoutez un groupe par métier, avec ses propres membres.
+                                </p>
+                            </div>
+                            <button type="button" class="btn-secondary" data-add-metier-group>
+                                <i class="fa-solid fa-plus" aria-hidden="true"></i>
+                                Ajouter un groupe métier
+                            </button>
+                        </div>
+
+                        <div class="metier-groups-container" data-metiers-container></div>
+
+                        <p class="empty-message" data-metiers-empty>Aucun groupe métier ajouté pour ce centre.</p>
+
+                        @error('centres.*.metier')<p class="field-error">{{ $message }}</p>@enderror
+
+                    </div>
+
+                </div>
+
+            </template>
+
+            {{-- ============================================================
+                 TEMPLATE GROUPE MÉTIER
+            ============================================================ --}}
+
+            <template data-metier-group-template>
+
+                <div class="metier-group" data-metier-group>
+
+                    <input type="hidden" data-field="id">
+
+                    <div class="metier-group-header">
+                        <div>
+                            <h5>Groupe métier <span data-metier-number></span></h5>
+                            <p>
+                                Laissez le métier vide pour un groupe "général"
+                                (ex : président de jury, sans métier associé).
+                            </p>
+                        </div>
+                        <button type="button" class="icon-action" title="Supprimer ce groupe" aria-label="Supprimer ce groupe métier" data-remove-metier-group>
+                            <i class="fa-solid fa-trash" aria-hidden="true"></i>
+                        </button>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group full">
+                            <label>Métier / spécialité</label>
+                            <input
+                                class="form-control"
+                                type="text"
+                                placeholder="Ex : Technicien en Maintenance Véhicules Moteurs (MVM)"
+                                data-metier-input
+                                data-field="metier"
+                            >
                         </div>
                     </div>
 
-                    <div class="form-group">
-                        <label for="chef_centre_telephone">Téléphone du chef de centre</label>
-                        <input class="form-control" id="chef_centre_telephone" name="chef_centre_telephone" type="text" data-enseignant-telephone-target>
-                    </div>
-
-                </div>
-
-                <div class="form-actions">
-                    <button class="btn-secondary" type="submit" data-centre-submit>Ajouter le centre</button>
-                    <button class="btn-secondary" type="button" data-centre-cancel hidden>Annuler la modification</button>
-                </div>
-
-            </form>
-
-        </div>
-
-        {{-- ============================================================
-             MEMBRES DU JURY
-        ============================================================ --}}
-
-        <div class="form-section sub-form-section">
-
-            <div class="panel-header">
-                <h3>Membres du jury</h3>
-            </div>
-
-            @if (empty($beneficiaires))
-
-                <p class="empty-message">Aucun membre ajouté pour le moment.</p>
-
-            @else
-
-                @php
-                    $statutsPersonnel = [
-                        'fonctionnaire' => 'Fonctionnaire',
-                        'contractuel' => 'Contractuelle',
-                        'vacataire' => 'Vacataire',
-                    ];
-                @endphp
-
-                <div class="table-responsive">
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <th>Nom</th>
-                                <th>Fonction</th>
-                                <th>Statut</th>
-                                <th>Provenance</th>
-                                <th>Téléphone</th>
-                                <th class="actions-cell">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach ($beneficiaires as $beneficiaire)
-                                @php
-                                    $beneficiaireNom = trim(($beneficiaire['prenom'] ?? '') . ' ' . ($beneficiaire['nom'] ?? ''));
-                                @endphp
+                    <div class="table-responsive">
+                        <table class="table members-table">
+                            <thead>
                                 <tr>
-                                    <td>{{ $beneficiaireNom ?: '—' }}</td>
-                                    <td>{{ $beneficiaire['pivot']['fonction'] ?? '—' }}</td>
-                                    <td>{{ $statutsPersonnel[$beneficiaire['categorie_personnel'] ?? null] ?? '—' }}</td>
-                                    <td>{{ $beneficiaire['pivot']['provenance'] ?? '—' }}</td>
-                                    <td>{{ $beneficiaire['telephone'] ?? '—' }}</td>
-                                    <td class="actions-cell">
-                                        <div class="table-actions-inline">
-                                            <button
-                                                type="button"
-                                                class="table-action"
-                                                data-edit-beneficiaire
-                                                data-update-url="{{ route('indemnites.convocations.beneficiaires.update', [$id, $beneficiaire['id']]) }}"
-                                                data-enseignant-id="{{ $beneficiaire['id'] }}"
-                                                data-nom="{{ $beneficiaireNom }}"
-                                                data-fonction="{{ $beneficiaire['pivot']['fonction'] ?? '' }}"
-                                                data-categorie="{{ $beneficiaire['categorie_personnel'] ?? '' }}"
-                                                data-provenance="{{ $beneficiaire['pivot']['provenance'] ?? '' }}"
-                                                data-centre-id="{{ $beneficiaire['pivot']['centre_id'] ?? '' }}"
-                                            >
-                                                Modifier
-                                            </button>
-                                            <form
-                                                method="POST"
-                                                action="{{ route('indemnites.convocations.beneficiaires.destroy', [$id, $beneficiaire['id']]) }}"
-                                                onsubmit="return confirm('Retirer ce membre de la convocation ?');"
-                                                style="display:inline;"
-                                            >
-                                                @csrf
-                                                @method('DELETE')
-                                                <button class="table-action danger" type="submit">Supprimer</button>
-                                            </form>
-                                        </div>
-                                    </td>
+                                    <th>Prénom</th>
+                                    <th>Nom</th>
+                                    <th>Fonction</th>
+                                    <th>Statut</th>
+                                    <th>Provenance</th>
+                                    <th>Téléphone</th>
+                                    <th>Action</th>
                                 </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
-
-            @endif
-
-            <form method="POST" action="{{ route('indemnites.convocations.beneficiaires.store', $id) }}" class="add-sub-form" data-beneficiaire-form>
-
-                @csrf
-
-                <div class="form-grid">
-
-                    <div class="form-group full">
-                        <label>Enseignant <span class="required">*</span></label>
-                        <div class="enseignant-search" data-enseignant-search data-search-url="{{ route('indemnites.convocations.enseignants.rechercher') }}">
-                            <input class="form-control" type="text" placeholder="Rechercher un enseignant..." autocomplete="off" data-enseignant-search-input>
-                            <input type="hidden" name="enseignant_id" data-enseignant-id-input>
-                            <ul class="enseignant-suggestions" data-enseignant-suggestions hidden></ul>
-                        </div>
+                            </thead>
+                            <tbody data-members-body></tbody>
+                        </table>
                     </div>
 
-                    <div class="form-group">
-                        <label for="fonction">Fonction</label>
-                        <select class="form-control" id="fonction" name="fonction">
+                    <div class="member-import-actions">
+
+                        <button type="button" class="btn-secondary" data-add-member>
+                            <i class="fa-solid fa-plus" aria-hidden="true"></i>
+                            Ajouter un membre
+                        </button>
+
+                        <label class="btn-secondary" data-import-members-label title="Fichier CSV avec les colonnes : matricule, fonction, statut, provenance">
+                            <i class="fa-solid fa-file-import" aria-hidden="true"></i>
+                            Importer une liste (CSV)
+                            <input type="file" accept=".csv,text/csv,text/plain" data-import-members-input hidden>
+                        </label>
+
+                    </div>
+
+                    <p class="import-members-status" data-import-members-status hidden></p>
+
+                    <p class="empty-message" data-members-empty>Aucun membre ajouté pour ce groupe.</p>
+
+                </div>
+
+            </template>
+
+            {{-- ============================================================
+                 TEMPLATE MEMBRE
+            ============================================================ --}}
+
+            <template data-member-template>
+
+                <tr class="member-row">
+                    <td data-label="Prénom">
+                        <div class="enseignant-search" data-member-search>
+                            <input class="form-control" type="text" placeholder="Rechercher..." autocomplete="off" data-member-search-input>
+                            <input type="hidden" data-member-id-input>
+                            <ul class="enseignant-suggestions" data-member-suggestions hidden></ul>
+                        </div>
+                    </td>
+                    <td data-label="Nom">
+                        <input class="form-control" type="text" placeholder="Nom" data-member-nom>
+                    </td>
+                    <td data-label="Fonction">
+                        <select class="form-control" data-member-fonction>
                             <option value="">Sélectionner</option>
                             <option value="Président de jury">Président de jury</option>
                             <option value="Membre du jury">Membre du jury</option>
                             <option value="Surveillant/correcteur">Surveillant/correcteur</option>
                             <option value="Chef de centre">Chef de centre</option>
                         </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="categorie_personnel">Statut</label>
-                        <select class="form-control" id="categorie_personnel" name="categorie_personnel" data-enseignant-categorie-target>
+                    </td>
+                    <td data-label="Statut">
+                        <select class="form-control" data-member-categorie>
                             <option value="">Sélectionner</option>
                             <option value="fonctionnaire">Fonctionnaire</option>
                             <option value="contractuel">Contractuelle</option>
                             <option value="vacataire">Vacataire</option>
                         </select>
-                    </div>
+                    </td>
+                    <td data-label="Provenance">
+                        <input class="form-control" type="text" placeholder="Ex : LTP-FXN/THIES" data-member-provenance>
+                    </td>
+                    <td data-label="Téléphone">
+                        <input class="form-control" type="text" placeholder="77 000 00 00" data-member-telephone>
+                    </td>
+                    <td class="actions-cell" data-label="Action">
+                        <button type="button" class="icon-action" title="Retirer" aria-label="Retirer le membre" data-remove-member>
+                            <i class="fa-solid fa-trash" aria-hidden="true"></i>
+                        </button>
+                    </td>
+                </tr>
 
-                    <div class="form-group">
-                        <label for="provenance">Provenance</label>
-                        <input class="form-control" id="provenance" name="provenance" type="text" placeholder="Ex : LTP-FXN/THIES">
-                    </div>
+            </template>
 
-                    @if (! empty($centres))
-                        <div class="form-group">
-                            <label for="centre_id">Centre</label>
-                            <select class="form-control" id="centre_id" name="centre_id">
-                                <option value="">Aucun</option>
-                                @foreach ($centres as $centre)
-                                    <option value="{{ $centre['id'] }}">{{ $centre['centre'] ?? ('Centre #' . $centre['id']) }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                    @endif
+            {{-- ============================================================
+                 MESSAGE
+            ============================================================ --}}
 
-                </div>
+            <p class="form-status" data-form-status aria-live="polite"></p>
 
-                <div class="form-actions">
-                    <button class="btn-secondary" type="submit" data-beneficiaire-submit>Ajouter le membre</button>
-                    <button class="btn-secondary" type="button" data-beneficiaire-cancel hidden>Annuler la modification</button>
-                </div>
+            {{-- ============================================================
+                 ACTIONS
+            ============================================================ --}}
 
-            </form>
+            <div class="form-actions">
+                <a class="btn-secondary" href="{{ route('indemnites.convocations.show', $id) }}" data-wizard-cancel>
+                    Annuler
+                </a>
+                <button class="btn-secondary" type="button" data-wizard-prev hidden>
+                    <i class="fa-solid fa-arrow-left"></i>
+                    Précédent
+                </button>
+                <button class="btn-primary" type="button" data-wizard-next>
+                    Suivant
+                    <i class="fa-solid fa-arrow-right"></i>
+                </button>
+                <button class="btn-primary" type="submit" data-wizard-submit hidden>
+                    <i class="fa-solid fa-floppy-disk" aria-hidden="true"></i>
+                    Enregistrer la convocation
+                </button>
+            </div>
 
-        </div>
+        </form>
 
     </section>
 
@@ -475,192 +539,25 @@
 
 @endsection
 
-@push('scripts')
-<script src="{{ asset('assets/js/indemnites/convocation-edit.js') }}"></script>
-
 {{-- ================================================================
-     SCRIPT — bascule les sous-formulaires "Ajouter un centre" / "Ajouter
-     un membre" en mode edition (bouton "Modifier" d'une ligne du
-     tableau) : meme formulaire, action et méthode changées vers
-     l'endpoint de mise à jour, champs pré-remplis avec les valeurs de la
-     ligne. "Annuler la modification" revient au mode ajout normal.
+     JAVASCRIPT
+     Le pre-remplissage (window.__convocationWizardPrefill) doit etre
+     defini AVANT le chargement de convocation-wizard.js, dont
+     hydrateFromPrefill() le lit au demarrage (DOMContentLoaded).
 ================================================================ --}}
+
+@push('scripts')
 <script>
-    (function () {
-        "use strict";
-
-        function setupEditableSubForm(options) {
-            var form = document.querySelector(options.formSelector);
-
-            if (!form) {
-                return;
-            }
-
-            var originalAction = form.getAttribute("action");
-            var submitButton = form.querySelector(options.submitSelector);
-            var cancelButton = form.querySelector(options.cancelSelector);
-            var originalSubmitLabel = submitButton ? submitButton.textContent : "";
-
-            function ensureMethodField(methodValue) {
-                var methodInput = form.querySelector("[data-dynamic-method]");
-
-                if (!methodInput) {
-                    methodInput = document.createElement("input");
-                    methodInput.type = "hidden";
-                    methodInput.name = "_method";
-                    methodInput.setAttribute("data-dynamic-method", "");
-                    form.appendChild(methodInput);
-                }
-
-                methodInput.value = methodValue;
-            }
-
-            function removeMethodField() {
-                var methodInput = form.querySelector("[data-dynamic-method]");
-
-                if (methodInput) {
-                    methodInput.parentNode.removeChild(methodInput);
-                }
-            }
-
-            function enterEditMode(button) {
-                form.setAttribute("action", button.getAttribute("data-update-url"));
-                ensureMethodField("PUT");
-
-                options.fields.forEach(function (field) {
-                    var el = form.querySelector(field.selector);
-
-                    if (el) {
-                        el.value = button.getAttribute(field.attribute) || "";
-                    }
-                });
-
-                if (options.onEnter) {
-                    options.onEnter(form, button);
-                }
-
-                if (submitButton) {
-                    submitButton.textContent = options.editLabel;
-                }
-
-                if (cancelButton) {
-                    cancelButton.hidden = false;
-                }
-
-                form.scrollIntoView({ behavior: "smooth", block: "center" });
-            }
-
-            function exitEditMode() {
-                form.setAttribute("action", originalAction);
-                removeMethodField();
-                form.reset();
-
-                if (options.onExit) {
-                    options.onExit(form);
-                }
-
-                if (submitButton) {
-                    submitButton.textContent = originalSubmitLabel;
-                }
-
-                if (cancelButton) {
-                    cancelButton.hidden = true;
-                }
-            }
-
-            document.querySelectorAll(options.editButtonSelector).forEach(function (button) {
-                button.addEventListener("click", function () {
-                    enterEditMode(button);
-                });
-            });
-
-            if (cancelButton) {
-                cancelButton.addEventListener("click", exitEditMode);
-            }
-        }
-
-        setupEditableSubForm({
-            formSelector: "[data-centre-form]",
-            submitSelector: "[data-centre-submit]",
-            cancelSelector: "[data-centre-cancel]",
-            editButtonSelector: "[data-edit-centre]",
-            editLabel: "Enregistrer les modifications",
-            fields: [
-                { selector: "#centre", attribute: "data-centre" },
-                { selector: "#jury", attribute: "data-jury" },
-                { selector: "#metier", attribute: "data-metier" },
-                { selector: "#chef_centre_telephone", attribute: "data-chef-tel" },
-            ],
-            onEnter: function (form, button) {
-                var searchInput = form.querySelector("[data-enseignant-search-input]");
-                var hiddenIdInput = form.querySelector("[data-enseignant-id-input]");
-
-                if (searchInput) {
-                    searchInput.value = button.getAttribute("data-chef-nom") || "";
-                }
-
-                if (hiddenIdInput) {
-                    hiddenIdInput.value = button.getAttribute("data-chef-id") || "";
-                }
-            },
-            onExit: function (form) {
-                var hiddenIdInput = form.querySelector("[data-enseignant-id-input]");
-
-                if (hiddenIdInput) {
-                    hiddenIdInput.value = "";
-                }
-            },
-        });
-
-        setupEditableSubForm({
-            formSelector: "[data-beneficiaire-form]",
-            submitSelector: "[data-beneficiaire-submit]",
-            cancelSelector: "[data-beneficiaire-cancel]",
-            editButtonSelector: "[data-edit-beneficiaire]",
-            editLabel: "Enregistrer les modifications",
-            fields: [
-                { selector: "#fonction", attribute: "data-fonction" },
-                { selector: "#categorie_personnel", attribute: "data-categorie" },
-                { selector: "#provenance", attribute: "data-provenance" },
-                { selector: "#centre_id", attribute: "data-centre-id" },
-            ],
-            onEnter: function (form, button) {
-                var searchInput = form.querySelector("[data-enseignant-search-input]");
-                var hiddenIdInput = form.querySelector("[data-enseignant-id-input]");
-
-                if (searchInput) {
-                    searchInput.value = button.getAttribute("data-nom") || "";
-                    searchInput.setAttribute("readonly", "readonly");
-                }
-
-                if (hiddenIdInput) {
-                    hiddenIdInput.value = button.getAttribute("data-enseignant-id") || "";
-                }
-            },
-            onExit: function (form) {
-                var searchInput = form.querySelector("[data-enseignant-search-input]");
-                var hiddenIdInput = form.querySelector("[data-enseignant-id-input]");
-
-                if (searchInput) {
-                    searchInput.removeAttribute("readonly");
-                }
-
-                if (hiddenIdInput) {
-                    hiddenIdInput.value = "";
-                }
-            },
-        });
-    })();
+    window.__convocationWizardPrefill = @json($wizardData ?? []);
 </script>
+<script src="{{ asset('assets/js/indemnites/convocation-wizard.js') }}"></script>
 @endpush
 
 {{-- ================================================================
      STYLES
-     Même correctif que show.blade.php : le .form-card global (app.css)
-     est plafonné à 720px et sans padding, ce qui écrasait le formulaire.
-     Ici pas de wrapper .convocation-form (le <form> encapsule
-     directement une seule .form-section), donc le padding cible
-     .convocation-edit-form au lieu de .convocation-form.
+     Identiques a create.blade.php (meme carte, meme wizard) : "LE SHOW
+     N'AFFICHE PAS TOUT ET EDIT DOIT SUIVRE LOGIQUE DE CREATE" - largeur et
+     structure alignees sur le formulaire de creation.
 ================================================================ --}}
 
 @push('styles')
@@ -668,56 +565,261 @@
 
     .convocation-card {
         width: calc(100% - 40px);
-        max-width: 980px;
+        max-width: 1500px;
         margin: 24px auto 40px;
+        overflow: hidden;
     }
 
-    .convocation-card .convocation-edit-form {
-        display: grid;
-        gap: 22px;
-        padding: 26px 30px 30px;
+    .convocation-card .form-card-header {
+        padding: 28px 34px;
+        margin: 0;
+        border-bottom: 1px solid #e5e7eb;
+    }
+
+    .convocation-card .form-card-header h2 {
+        margin: 0 0 6px;
+    }
+
+    .convocation-card .form-card-header .breadcrumb {
+        margin: 0;
+    }
+
+    .convocation-card .convocation-form {
+        width: 100%;
+        padding: 30px 34px 34px;
+        box-sizing: border-box;
+    }
+
+    .convocation-card .wizard-progress {
+        margin: 0 0 30px;
+        padding: 0;
+    }
+
+    .convocation-card .wizard-panel {
+        width: 100%;
         box-sizing: border-box;
     }
 
     .convocation-card .form-section {
-        padding: 22px 24px;
+        width: 100%;
+        margin: 0 0 24px;
+        padding: 26px 28px;
+        box-sizing: border-box;
         border: 1px solid #e5e7eb;
         border-radius: 12px;
         background: #ffffff;
     }
 
-    .convocation-card .sub-form-section {
-        margin: 0 30px 24px;
+    .convocation-card .form-section:last-child {
+        margin-bottom: 0;
     }
 
-    .convocation-card .sub-form-section:first-of-type {
+    .convocation-card .form-section h3 {
+        margin: 0 0 6px;
+    }
+
+    .convocation-card .section-description {
+        margin: 0 0 24px;
+    }
+
+    .convocation-card .form-grid {
+        width: 100%;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 22px 24px;
+    }
+
+    .convocation-card .form-group {
+        min-width: 0;
+        width: 100%;
+    }
+
+    .convocation-card .form-group.full {
+        grid-column: 1 / -1;
+    }
+
+    .convocation-card .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 600;
+    }
+
+    .convocation-card .required {
+        margin-left: 3px;
+    }
+
+    .convocation-card .form-control {
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .convocation-card .centres-container {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: 22px;
         margin-top: 24px;
     }
 
-    .convocation-card .sub-form-section:last-of-type {
-        margin-bottom: 30px;
+    .convocation-card .centre-card {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 24px;
+        border: 1px solid #dfe3e8;
+        border-radius: 12px;
+        background: #fafbfc;
     }
 
-    .convocation-card .sub-form-section .panel-header {
+    .convocation-card .centre-card-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 20px;
+        margin-bottom: 24px;
+        padding-bottom: 18px;
+        border-bottom: 1px solid #e5e7eb;
+    }
+
+    .convocation-card .centre-card-header h4 {
+        margin: 0 0 5px;
+    }
+
+    .convocation-card .centre-card-header p {
+        margin: 0;
+    }
+
+    .convocation-card .metier-groups-section {
+        margin-top: 28px;
+        padding-top: 24px;
+        border-top: 1px solid #e5e7eb;
+    }
+
+    .convocation-card .metier-groups-container {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+        margin-top: 4px;
+    }
+
+    .convocation-card .metier-group {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 20px;
+        border: 1px solid #e5e7eb;
+        border-radius: 10px;
+        background: #ffffff;
+    }
+
+    .convocation-card .metier-group .form-grid {
+        margin-bottom: 18px;
+    }
+
+    .convocation-card .metier-group .table-responsive {
         margin-bottom: 14px;
     }
 
-    .convocation-card .sub-form-section .table-responsive {
-        margin-bottom: 20px;
-    }
-
-    .convocation-card .add-sub-form .form-grid {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 16px 20px;
-    }
-
-    .convocation-card .add-sub-form .form-actions {
+    .convocation-card .metier-group-header {
         display: flex;
-        justify-content: flex-end;
-        margin-top: 16px;
-        padding-top: 0;
-        border-top: none;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 20px;
+        margin-bottom: 18px;
+        padding-bottom: 14px;
+        border-bottom: 1px solid #e5e7eb;
+    }
+
+    .convocation-card .metier-group-header h5 {
+        margin: 0 0 5px;
+    }
+
+    .convocation-card .metier-group-header p {
+        margin: 0;
+    }
+
+    .convocation-card .panel-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+        margin-bottom: 18px;
+    }
+
+    .convocation-card .panel-header h3,
+    .convocation-card .panel-header h4 {
+        margin: 0 0 5px;
+    }
+
+    .convocation-card .panel-header p {
+        margin: 0;
+    }
+
+    /* ------------------------------------------------------------
+       Le tableau des membres du jury (7 colonnes) ne rentre pas de
+       facon fiable sur toutes les tailles d'ecran/fenetre. Plutot que
+       de compter sur un defilement horizontal (peu visible selon les
+       systemes/navigateurs, source de confusion), chaque membre est
+       affiche en carte empilee : toutes les colonnes restent visibles
+       en permanence, sans jamais avoir a glisser quoi que ce soit.
+    ------------------------------------------------------------ */
+
+    .convocation-card .table-responsive {
+        width: 100%;
+        overflow: visible;
+    }
+
+    .convocation-card .members-table {
+        display: block;
+        width: 100%;
+    }
+
+    .convocation-card .members-table thead {
+        display: none;
+    }
+
+    .convocation-card .members-table tbody {
+        display: block;
+    }
+
+    .convocation-card .members-table tbody:empty {
+        display: none;
+    }
+
+    .convocation-card .members-table tr.member-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 14px;
+        margin-bottom: 14px;
+        padding: 16px;
+        border: 1px solid #e5e7eb;
+        border-radius: 10px;
+        background: #fafafa;
+    }
+
+    .convocation-card .members-table td {
+        display: block;
+        padding: 0;
+    }
+
+    .convocation-card .members-table td[data-label]::before {
+        content: attr(data-label);
+        display: block;
+        margin-bottom: 4px;
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        color: #6b7280;
+    }
+
+    .convocation-card .members-table .form-control {
+        width: 100%;
+        min-width: 0;
+        box-sizing: border-box;
+    }
+
+    .convocation-card .actions-cell {
+        display: flex;
+        align-items: flex-end;
     }
 
     .convocation-card .enseignant-search {
@@ -726,29 +828,101 @@
 
     .convocation-card .enseignant-suggestions {
         position: absolute;
+        z-index: 20;
         top: calc(100% + 4px);
         left: 0;
         right: 0;
-        z-index: 20;
         margin: 0;
-        padding: 4px;
+        padding: 4px 0;
         list-style: none;
-        background: #ffffff;
-        border: 1px solid #e5e7eb;
-        border-radius: 8px;
-        box-shadow: 0 8px 20px rgba(15, 23, 42, 0.12);
         max-height: 220px;
         overflow-y: auto;
+        background: #ffffff;
+        border: 1px solid #d1d5db;
+        border-radius: 8px;
+        box-shadow: 0 8px 20px rgba(15, 23, 42, 0.12);
     }
 
     .convocation-card .enseignant-suggestions li {
-        padding: 8px 10px;
-        border-radius: 6px;
+        padding: 8px 12px;
         cursor: pointer;
+        white-space: nowrap;
     }
 
     .convocation-card .enseignant-suggestions li:hover {
         background: #f3f4f6;
+    }
+
+    .convocation-card .empty-message {
+        margin: 18px 0 0;
+        padding: 14px 16px;
+        text-align: center;
+        border: 1px dashed #d1d5db;
+        border-radius: 8px;
+    }
+
+    .convocation-card .member-import-actions {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .convocation-card .member-import-actions label.btn-secondary {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        cursor: pointer;
+        margin: 0;
+    }
+
+    .convocation-card .import-members-status {
+        margin: 10px 0 0;
+        font-size: 13px;
+        color: #4b5563;
+    }
+
+    .convocation-card .form-status {
+        margin: 24px 0 0;
+    }
+
+    .convocation-card .form-actions {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 12px;
+        margin-top: 30px;
+        padding-top: 24px;
+        border-top: 1px solid #e5e7eb;
+    }
+
+    .convocation-card .form-actions .btn-secondary,
+    .convocation-card .form-actions .btn-primary {
+        white-space: nowrap;
+    }
+
+    .convocation-card .form-errors {
+        margin: 0 0 24px;
+    }
+
+    .convocation-card .field-error {
+        margin-top: 6px;
+    }
+
+    @media (max-width: 1100px) {
+
+        .convocation-card {
+            width: calc(100% - 30px);
+        }
+
+        .convocation-card .convocation-form {
+            padding: 24px;
+        }
+
+        .convocation-card .form-section {
+            padding: 22px;
+        }
+
     }
 
     @media (max-width: 768px) {
@@ -758,20 +932,53 @@
             margin-top: 15px;
         }
 
-        .convocation-card .convocation-edit-form {
+        .convocation-card .form-card-header {
+            padding: 22px;
+        }
+
+        .convocation-card .convocation-form {
             padding: 18px;
         }
 
         .convocation-card .form-section {
-            padding: 16px;
+            padding: 18px;
         }
 
-        .convocation-card .sub-form-section {
-            margin: 0 18px 18px;
-        }
-
-        .convocation-card .add-sub-form .form-grid {
+        .convocation-card .form-grid {
             grid-template-columns: 1fr;
+            gap: 18px;
+        }
+
+        .convocation-card .form-group.full {
+            grid-column: auto;
+        }
+
+        .convocation-card .panel-header {
+            align-items: flex-start;
+            flex-direction: column;
+        }
+
+        .convocation-card .panel-header .btn-secondary {
+            width: 100%;
+        }
+
+        .convocation-card .centre-card {
+            padding: 18px;
+        }
+
+        .convocation-card .centre-card-header {
+            gap: 12px;
+        }
+
+        .convocation-card .form-actions {
+            flex-direction: column-reverse;
+            align-items: stretch;
+        }
+
+        .convocation-card .form-actions a,
+        .convocation-card .form-actions button {
+            width: 100%;
+            justify-content: center;
         }
 
     }

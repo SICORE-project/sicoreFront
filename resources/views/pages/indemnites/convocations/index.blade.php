@@ -201,14 +201,27 @@
             </div>
 
             <div class="form-group">
-                <label for="convocation-filter-statut">Statut</label>
-                <select class="form-control" id="convocation-filter-statut" name="statut">
-                    <option value="">Tous</option>
-                    <option value="brouillon" @selected(request('statut') === 'brouillon')>Brouillon</option>
-                    <option value="emise" @selected(request('statut') === 'emise')>Émise</option>
-                    <option value="envoyee" @selected(request('statut') === 'envoyee')>Envoyée</option>
-                    <option value="cloturee" @selected(request('statut') === 'cloturee')>Clôturée</option>
-                </select>
+                <label for="convocation-filter-metier">Métier</label>
+                <input
+                    class="form-control"
+                    id="convocation-filter-metier"
+                    type="text"
+                    name="metier"
+                    placeholder="Rechercher un métier"
+                    value="{{ request('metier') }}"
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="convocation-filter-centre">Centre</label>
+                <input
+                    class="form-control"
+                    id="convocation-filter-centre"
+                    type="text"
+                    name="centre"
+                    placeholder="Rechercher un centre"
+                    value="{{ request('centre') }}"
+                >
             </div>
 
             <div class="actions-group">
@@ -216,7 +229,7 @@
                     Filtrer
                 </button>
 
-                @if (request()->hasAny(['date', 'objet', 'statut']))
+                @if (request()->hasAny(['date', 'objet', 'metier', 'centre']))
                     <a class="btn-secondary" href="{{ route('indemnites.convocations') }}">
                         Réinitialiser
                     </a>
@@ -237,39 +250,27 @@
                             <th class="checkbox-cell">
                                 <input type="checkbox" data-select-all aria-label="Tout sélectionner">
                             </th>
-                            <th>Agent</th>
-                            <th>Type</th>
                             <th>Objet</th>
-                            <th>Session</th>
                             <th>Centre</th>
-                            <th>Rôle</th>
                             <th>Date début</th>
                             <th>Date fin</th>
-                            <th>Lieu de service</th>
-                            <th>Lieu d'examen</th>
                             <th>Statut</th>
-                            <th class="actions-cell">Actions</th>
+                            <th class="actions-cell">Action</th>
                         </tr>
                     </thead>
 
                     <tbody>
-                        @forelse ($lignes as $ligne)
+                        @forelse ($centresLignes as $ligne)
                             <tr>
                                 <td class="checkbox-cell">
                                     @if (! empty($ligne['convocation_id']))
                                         <input type="checkbox" data-row-checkbox value="{{ $ligne['convocation_id'] }}" aria-label="Sélectionner cette ligne">
                                     @endif
                                 </td>
-                                <td>{{ $ligne['agent'] ?? '—' }}</td>
-                                <td>{{ $ligne['type'] ?? '—' }}</td>
                                 <td>{{ $ligne['objet'] ?? '—' }}</td>
-                                <td>{{ $ligne['session'] ?? '—' }}</td>
                                 <td>{{ $ligne['centre'] ?? '—' }}</td>
-                                <td>{{ $ligne['role'] ?? '—' }}</td>
                                 <td>{{ $ligne['date_debut'] ? \Illuminate\Support\Carbon::parse($ligne['date_debut'])->format('d/m/Y') : '—' }}</td>
                                 <td>{{ $ligne['date_fin'] ? \Illuminate\Support\Carbon::parse($ligne['date_fin'])->format('d/m/Y') : '—' }}</td>
-                                <td>{{ $ligne['lieu_service'] ?? '—' }}</td>
-                                <td>{{ $ligne['lieu_examen'] ?? '—' }}</td>
                                 <td>
                                     @php
                                         $statutBadges = [
@@ -285,12 +286,21 @@
                                 </td>
                                 <td class="actions-cell">
                                     <div class="table-actions-inline">
-                                        <a class="table-action" href="{{ route('indemnites.convocations.show', $ligne['convocation_id']) }}">
-                                            Voir
-                                        </a>
-                                        <a class="table-action" href="{{ route('indemnites.convocations.edit', $ligne['convocation_id']) }}">
-                                            Compléter
-                                        </a>
+                                        @if (! empty($ligne['centre_id']))
+                                            <a class="table-action" href="{{ route('indemnites.convocations.centres.show', [$ligne['convocation_id'], $ligne['centre_id']]) }}">
+                                                Voir
+                                            </a>
+                                            <a class="table-action" href="{{ route('indemnites.convocations.centres.edit', [$ligne['convocation_id'], $ligne['centre_id']]) }}">
+                                                Modifier
+                                            </a>
+                                        @else
+                                            <a class="table-action" href="{{ route('indemnites.convocations.show', $ligne['convocation_id']) }}">
+                                                Voir
+                                            </a>
+                                            <a class="table-action" href="{{ route('indemnites.convocations.edit', $ligne['convocation_id']) }}">
+                                                Modifier
+                                            </a>
+                                        @endif
                                         <form
                                             method="POST"
                                             action="{{ route('indemnites.convocations.destroy', $ligne['convocation_id']) }}"
@@ -313,7 +323,7 @@
                 </table>
             </div>
 
-            @if (empty($lignes))
+            @if (empty($centresLignes))
                 <p class="empty-message">Aucune donnée trouvée.</p>
             @endif
 
@@ -448,6 +458,22 @@
         text-align: center;
     }
 
+    /* Filtrer / Reinitialiser : sur leur propre ligne (span sur les 4
+       colonnes de .filter-panel, cf. app.css), alignes en bas a droite du
+       panneau plutot qu'a gauche sous les champs, avec des boutons plus
+       compacts que le style par defaut (min-height 40px / padding 10px 18px). */
+    #convocationFilterForm .actions-group {
+        grid-column: 1 / -1;
+        justify-content: flex-end;
+        margin-top: 2px;
+    }
+
+    #convocationFilterForm .actions-group .btn-secondary {
+        min-height: 30px;
+        padding: 5px 12px;
+        font-size: 12.5px;
+    }
+
     /* Meme rendu que .pagination (app.css), sous un nom de classe
        different pour ne pas etre capturee par setupPagination() dans
        app.js (voir commentaire au-dessus du bloc pagination). */
@@ -542,7 +568,7 @@
 {{-- ================================================================
      SCRIPT — selection multiple (cases a cocher) + suppression
      groupee. Une meme convocation peut apparaitre sur plusieurs lignes
-     (une par beneficiaire) : on deduplique cote back (voir
+     (une par centre) : on deduplique cote back (voir
      destroyMultiple()), donc pas besoin de s'en soucier ici.
 ================================================================ --}}
 

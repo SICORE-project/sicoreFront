@@ -32,6 +32,7 @@
             action="{{ route('indemnites.convocations.store') }}"
             enctype="multipart/form-data"
             data-convocation-wizard
+            data-wizard-mode="create"
             data-search-url="{{ route('indemnites.convocations.enseignants.rechercher') }}"
             aria-describedby="{{ $errors->any() ? 'form-errors' : '' }}"
             novalidate
@@ -219,17 +220,7 @@
                             @error('lieu_examen')<p class="field-error">{{ $message }}</p>@enderror
                         </div>
 
-                        <div class="form-group">
-                            <label for="lieu_affectation">Lieu d'affectation</label>
-                            <input
-                                class="form-control @error('lieu_affectation') is-invalid @enderror"
-                                id="lieu_affectation"
-                                name="lieu_affectation"
-                                type="text"
-                                value="{{ old('lieu_affectation') }}"
-                            >
-                            @error('lieu_affectation')<p class="field-error">{{ $message }}</p>@enderror
-                        </div>
+                        
 
                     </div>
 
@@ -278,6 +269,12 @@
 
                 <div class="centre-card" data-centre-card>
 
+                    {{-- Vide en creation ; pre-rempli par edit.blade.php avec
+                         l'id reel du centre existant, pour que le back sache
+                         METTRE A JOUR cette ligne plutot que d'en creer une
+                         nouvelle (cf. ConvocationSyncController). --}}
+                    <input type="hidden" data-field="id">
+
                     <div class="centre-card-header">
                         <div>
                             <h4>Centre d'examen <span data-centre-number></span></h4>
@@ -305,6 +302,20 @@
                         <div class="form-group">
                             <label>Jury</label>
                             <input class="form-control" type="text" placeholder="Ex : Jury 1" data-jury-input data-field="jury">
+                        </div>
+
+                        <div class="form-group">
+                            <label>Président du jury</label>
+                            <div class="enseignant-search" data-president-search>
+                                <input class="form-control" type="text" placeholder="Rechercher le président du jury..." autocomplete="off" data-president-search-input>
+                                <input type="hidden" data-president-id-input data-field="president_jury_id">
+                                <ul class="enseignant-suggestions" data-president-suggestions hidden></ul>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Téléphone du président du jury</label>
+                            <input class="form-control" type="text" placeholder="33 901 10 71" data-president-telephone-input data-field="president_jury_telephone">
                         </div>
 
                         <div class="form-group">
@@ -358,6 +369,10 @@
             <template data-metier-group-template>
 
                 <div class="metier-group" data-metier-group>
+
+                    {{-- Vide en creation ; pre-rempli par edit.blade.php avec
+                         l'id reel du metier existant . --}}
+                    <input type="hidden" data-field="id">
 
                     <div class="metier-group-header">
                         <div>

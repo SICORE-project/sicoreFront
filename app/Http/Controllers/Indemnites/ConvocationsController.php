@@ -17,16 +17,17 @@ class ConvocationsController extends Controller
         protected ConvocationService $convocations
     ) {}
 
-    // Liste des convocations, avec filtres optionnels (statut, date, objet)
+    // Liste des convocations, avec filtres optionnels (date, objet, metier, centre)
     public function index(Request $request): View
     {
-        $filtres = array_filter([
-            'statut' => $request->query('statut'),
-            'date' => $request->query('date'),
-            'objet' => $request->query('objet'),
-            'per_page' => 10,
-            'page' => $request->query('page', 1),
-        ]);
+         $filtres = array_filter([
+        'date' => $request->query('date'),
+        'objet' => $request->query('objet'),
+        'metier' => $request->query('metier'),
+        'centre' => $request->query('centre'),
+        'per_page' => 10,
+        'page' => $request->query('page', 1),
+    ]);
 
         $resultat = $this->convocations->liste($filtres);
 
@@ -83,13 +84,13 @@ class ConvocationsController extends Controller
 
         return view('pages.indemnites.convocations.index', [
             'convocations' => $convocations,
-            // Liste "a plat" pour le tableau DAGE (point 3 du cahier des
-            // charges) : une ligne par (convocation x centre x agent),
-            // avec les colonnes Agent/Type/Session/Centre/Role/... qui ne
-            // sont pas toutes portees par le meme objet Eloquent.
-            'lignes' => $this->construireLignes($items),
+            // Une ligne par (convocation x centre) : chaque centre porte
+            // son propre metier (deux centres de meme nom mais de metier
+            // different sont deux lignes distinctes en base), donc "Voir"/
+            // "Modifier" doivent pointer vers CE centre precis plutot que
+            // vers toute la convocation (cf. construireLignesCentres()).
+            'centresLignes' => $this->construireLignesCentres($items),
             'stats' => $stats,
-            'statutFiltre' => $request->query('statut', ''),
             'importAvertissements' => session('import_avertissements', []),
             // Selectionne dans le formulaire d'import (modal) : le type
             // n'est plus un champ du document Word, voir import() ci-dessous.
@@ -149,7 +150,13 @@ class ConvocationsController extends Controller
     // headers renvoyés par le backend (voir ConvocationModeleWordController).
     public function telechargerModeleWord(): StreamedResponse
     {
-        $reponse = $this->convocations->telechargerModeleWord();
+        $filtres = array_filter([
+            'date' => $request->query('date'),
+            'objet' => $request->query('objet'),
+            'metier' => $request->query('metier'),
+            'centre' => $request->query('centre'),
+            'per_page' => 5000,
+        ]);
 
         return response()->streamDownload(function () use ($reponse) {
             echo $reponse->body();
@@ -264,26 +271,36 @@ class ConvocationsController extends Controller
             'ordre_de_mission' => ['nullable', 'boolean'],
             'statut' => ['nullable', 'in:brouillon,emise,envoyee,cloturee'],
 
-            // Centres d'examen (etape 2 du wizard) : centre, jury, metier,
-            // chef de centre. Un membre du jury (ci-dessous) reference son
-            // centre par sa position dans ce tableau ("centre_index"),
-            // puisqu'a ce stade les centres n'ont pas encore d'id reel.
-            'centres' => ['nullable', 'array'],
+            // Centres d'examen (etape 2 du wizard) : centre, jury, chef de
+            // centre — UNE seule entree par centre physique (une convocation
+            // doit toujours avoir au moins un centre). Chaque centre peut
+            // couvrir PLUSIEURS metiers ("metiers", tableau — un par groupe
+            // metier de la carte, cf. convocation-wizard.js::prepareFormData()),
+            // chacun avec ses propres membres. Un membre du jury (ci-dessous)
+            // reference son centre ET son metier par leur position dans ces
+            // tableaux ("centre_index" / "metier_index"), puisqu'a ce stade
+            // ils n'ont pas encore d'id reel.
+            'centres' => ['required', 'array', 'min:1'],
             'centres.*.centre' => ['required_with:centres', 'string', 'max:255'],
             'centres.*.jury' => ['nullable', 'string', 'max:100'],
-            'centres.*.metier' => ['nullable', 'string', 'max:255'],
+            'centres.*.metiers' => ['nullable', 'array'],
+            'centres.*.metiers.*' => ['nullable', 'string', 'max:255'],
             'centres.*.chef_centre_id' => ['nullable', 'integer'],
             'centres.*.chef_centre_telephone' => ['nullable', 'string', 'max:30'],
+            'centres.*.president_jury_id' => ['nullable', 'integer'],
+            'centres.*.president_jury_telephone' => ['nullable', 'string', 'max:30'],
 
-            // Membres du jury (etape 3 du wizard) : un enseignant, sa
-            // fonction propre a cette convocation, et le centre auquel il
-            // est affecte (index dans "centres" ci-dessus, ou vide).
+            // Membres du jury (etape 2 du wizard) : un enseignant, sa
+            // fonction propre a cette convocation, et le centre/metier
+            // auquel il est affecte (index dans "centres"/"centres.*.metiers"
+            // ci-dessus, ou vide pour un groupe "general" sans metier).
             'beneficiaires' => ['nullable', 'array'],
             'beneficiaires.*.enseignant_id' => ['required_with:beneficiaires', 'integer'],
             'beneficiaires.*.fonction' => ['nullable', 'string', 'max:100'],
             'beneficiaires.*.provenance' => ['nullable', 'string', 'max:255'],
             'beneficiaires.*.categorie_personnel' => ['nullable', 'in:fonctionnaire,contractuel,vacataire'],
             'beneficiaires.*.centre_index' => ['nullable', 'integer'],
+            'beneficiaires.*.metier_index' => ['nullable', 'integer'],
         ]);
 
         $data['utilisateur_id'] = session('sicore_user.id');
@@ -303,9 +320,15 @@ class ConvocationsController extends Controller
 
         $convocationId = $resultat['data']['id'];
 
-        // Index (position dans "centres") -> id reel renvoye par l'API,
-        // pour rattacher chaque beneficiaire a son centre.
+        // Index (position dans "centres") -> id reel renvoye par l'API, pour
+        // rattacher chaque beneficiaire a son centre ET a son metier precis
+        // au sein de ce centre (position dans "centres.*.metiers" -> id reel
+        // du metier cree, cf. ConvocationCentreController::store() qui
+        // renvoie les metiers CREES dans le meme ordre que soumis, noms
+        // vides exclus — meme convention que le compteur "metierPosition" du
+        // wizard front, voir convocation-wizard.js::prepareFormData()).
         $centreIdParIndex = [];
+        $metierIdParIndexParCentre = [];
 
         if (! empty($centres)) {
             $centresResultat = $this->convocations->creerCentres($convocationId, $centres);
@@ -313,20 +336,31 @@ class ConvocationsController extends Controller
             if ($centresResultat['success']) {
                 foreach (($centresResultat['data'] ?? []) as $index => $centreCree) {
                     $centreIdParIndex[$index] = $centreCree['id'] ?? null;
+
+                    foreach (($centreCree['metiers'] ?? []) as $position => $metierCree) {
+                        $metierIdParIndexParCentre[$index][$position] = $metierCree['id'] ?? null;
+                    }
                 }
             }
         }
 
         if (! empty($beneficiaires)) {
-            $beneficiaires = array_map(function (array $beneficiaire) use ($centreIdParIndex) {
+            $beneficiaires = array_map(function (array $beneficiaire) use ($centreIdParIndex, $metierIdParIndexParCentre) {
                 $centreIndex = $beneficiaire['centre_index'] ?? null;
+                $metierIndex = $beneficiaire['metier_index'] ?? null;
+
+                $centreId = $centreIndex !== null ? ($centreIdParIndex[$centreIndex] ?? null) : null;
+                $centreMetierId = ($centreIndex !== null && $metierIndex !== null)
+                    ? ($metierIdParIndexParCentre[$centreIndex][$metierIndex] ?? null)
+                    : null;
 
                 return [
                     'enseignant_id' => $beneficiaire['enseignant_id'],
                     'fonction' => $beneficiaire['fonction'] ?? null,
                     'provenance' => $beneficiaire['provenance'] ?? null,
                     'categorie_personnel' => $beneficiaire['categorie_personnel'] ?? null,
-                    'centre_id' => $centreIndex !== null ? ($centreIdParIndex[$centreIndex] ?? null) : null,
+                    'centre_id' => $centreId,
+                    'centre_metier_id' => $centreMetierId,
                 ];
             }, $beneficiaires);
 
@@ -351,6 +385,20 @@ class ConvocationsController extends Controller
 
     public function show(int|string $id): View|RedirectResponse
     {
+        return $this->renderShow($id, null);
+    }
+
+    // Fiche detail d'UN centre precis d'une convocation (venant de la liste,
+    // une ligne = un centre) : ne montre que ce centre et les membres qui y
+    // sont explicitement rattaches (pivot.centre_id), pas toute la
+    // convocation — cf. commentaire sur construireLignesCentres().
+    public function showCentre(int|string $id, int|string $centreId): View|RedirectResponse
+    {
+        return $this->renderShow($id, $centreId);
+    }
+
+    private function renderShow(int|string $id, int|string|null $centreId): View|RedirectResponse
+    {
         $resultat = $this->convocations->trouver($id);
 
         if (! $resultat['success']) {
@@ -359,16 +407,164 @@ class ConvocationsController extends Controller
                 ->with('error', $resultat['message'] ?? 'Convocation introuvable.');
         }
 
+        $convocation = $this->formatConvocationForView($resultat['data']);
+
+        // Le back renvoie desormais la liste COMPLETE (plus de pagination,
+        // cf. ConvocationBeneficiaireController::index()) : 'data' est
+        // directement le tableau des beneficiaires, pas un objet paginateur
+        // imbrique ('data'.'data').
         $beneficiairesResultat = $this->convocations->beneficiaires($id);
+        $beneficiaires = $beneficiairesResultat['success'] ? ($beneficiairesResultat['data'] ?? []) : [];
+
+        if ($centreId !== null) {
+            $centre = $convocation->centres->first(
+                fn ($c) => (int) ($c['id'] ?? 0) === (int) $centreId
+            );
+
+            if (! $centre) {
+                return redirect()
+                    ->route('indemnites.convocations.show', $id)
+                    ->with('error', 'Centre introuvable pour cette convocation.');
+            }
+
+            $convocation->centres = collect([$centre]);
+
+            $beneficiaires = array_values(array_filter($beneficiaires, function ($beneficiaire) use ($centreId) {
+                return (int) ($beneficiaire['pivot']['centre_id'] ?? 0) === (int) $centreId;
+            }));
+        }
+
+        // Un bloc par centre — Centre / Jury / Chef de centre / Téléphone en
+        // tete, puis les membres groupes par metier (un centre peut en
+        // couvrir plusieurs, chacun avec ses propres membres) : meme
+        // structure que le PDF (ConvocationPdfController), calquee sur le
+        // modele papier "convocation jury" fourni par l'utilisatrice.
+        $centresAvecMetiers = $convocation->centres
+            ->map(function ($centre) use ($beneficiaires) {
+                $beneficiairesDuCentre = array_values(array_filter($beneficiaires, function ($beneficiaire) use ($centre) {
+                    return (int) ($beneficiaire['pivot']['centre_id'] ?? 0) === (int) ($centre['id'] ?? 0);
+                }));
+
+                return array_merge($centre, $this->grouperBeneficiairesParMetier($centre, $beneficiairesDuCentre));
+            })
+            ->all();
+
+        // Membres ajoutes avant l'existence du rattachement a un centre
+        // (pivot.centre_id vide, anciennes donnees) : ne doivent pas
+        // disparaitre silencieusement de la fiche complete — regroupes dans
+        // un bloc "Sans centre affecté" a part. Non applicable a la fiche
+        // centree sur UN centre (deja filtree ci-dessus).
+        if ($centreId === null) {
+            $idsCentres = array_map('intval', $convocation->centres->pluck('id')->all());
+
+            $beneficiairesSansCentre = array_values(array_filter($beneficiaires, function ($beneficiaire) use ($idsCentres) {
+                $centreIdBeneficiaire = $beneficiaire['pivot']['centre_id'] ?? null;
+
+                return empty($centreIdBeneficiaire) || ! in_array((int) $centreIdBeneficiaire, $idsCentres, true);
+            }));
+
+            if (! empty($beneficiairesSansCentre)) {
+                $centresAvecMetiers[] = [
+                    'id' => null,
+                    'centre' => 'Sans centre affecté',
+                    'jury' => null,
+                    'president_jury' => null,
+                    'president_jury_telephone' => null,
+                    'chef_centre' => null,
+                    'chef_centre_telephone' => null,
+                    'metiers' => [
+                        ['id' => null, 'metier' => 'Non classés', 'beneficiaires' => $beneficiairesSansCentre],
+                    ],
+                ];
+            }
+        }
 
         return view('pages.indemnites.convocations.show', [
-            'convocation' => $this->formatConvocationForView($resultat['data']),
-            'beneficiaires' => $beneficiairesResultat['success'] ? ($beneficiairesResultat['data']['data'] ?? []) : [],
+            'convocation' => $convocation,
+            'centresAvecMetiers' => $centresAvecMetiers,
             'id' => $id,
+            'centreId' => $centreId,
+        ]);
+    }
+
+    /**
+     * Regroupe les membres (deja filtres pour CE centre) par metier de ce
+     * centre (pivot.centre_metier_id), pour les fiches Voir/Modifier
+     * centrees sur un centre (un centre peut couvrir plusieurs metiers,
+     * chacun avec ses propres membres — cf. modele papier "convocation
+     * jury BT"). Les membres sans metier (donnees anciennes, avant ce
+     * regroupement) sont regroupes dans un pseudo-metier "id => null" en
+     * fin de liste ("Non classés"), pour que les vues n'aient qu'UNE seule
+     * boucle a ecrire plutot que de dupliquer l'affichage d'un tableau de
+     * membres une deuxieme fois. Le select "Métier" du formulaire d'ajout
+     * doit donc ignorer les entrees dont l'id est null.
+     */
+    private function grouperBeneficiairesParMetier(array $centre, array $beneficiaires): array
+    {
+        $metiers = collect($centre['metiers'] ?? [])->map(function (array $metier) use ($beneficiaires) {
+            $metier['beneficiaires'] = array_values(array_filter($beneficiaires, function ($beneficiaire) use ($metier) {
+                return (int) ($beneficiaire['pivot']['centre_metier_id'] ?? 0) === (int) $metier['id'];
+            }));
+
+            return $metier;
+        })->all();
+
+        $sansMetier = array_values(array_filter($beneficiaires, function ($beneficiaire) {
+            return empty($beneficiaire['pivot']['centre_metier_id']);
+        }));
+
+        if (! empty($sansMetier)) {
+            $metiers[] = [
+                'id' => null,
+                'metier' => 'Non classés',
+                'beneficiaires' => $sansMetier,
+            ];
+        }
+
+        return ['metiers' => $metiers];
+    }
+
+    // Telecharge le PDF de la convocation (le back le genere au vol s'il
+    // n'existe pas encore). On relaie la reponse binaire de l'API telle
+    // quelle plutot que de passer par ConvocationService::wrap() (concu
+    // pour du JSON) — voir ConvocationService::telechargerPdf().
+    public function downloadPdf(int|string $id): RedirectResponse|\Illuminate\Http\Response
+    {
+        $reponse = $this->convocations->telechargerPdf($id);
+
+        if (! $reponse->successful()) {
+            return redirect()
+                ->route('indemnites.convocations.show', $id)
+                ->with('error', $reponse->json('message') ?? "Impossible de générer le PDF de cette convocation.");
+        }
+
+        return response($reponse->body(), 200, [
+            'Content-Type' => $reponse->header('Content-Type') ?: 'application/pdf',
+            'Content-Disposition' => $reponse->header('Content-Disposition')
+                ?: 'attachment; filename="convocation-'.$id.'.pdf"',
         ]);
     }
 
     public function edit(int|string $id): View|RedirectResponse
+    {
+        return $this->renderEdit($id);
+    }
+
+    // Ancienne fiche de modification "centree sur un centre" (venant de la
+    // liste, une ligne = un centre). Le wizard "Modifier" agit desormais
+    // TOUJOURS sur la convocation entiere, exactement comme la creation
+    // ("IL FAUT QUE EDIT SOIT EXACTEMENT COMME CREATE MAIS PREREMPLI") : le
+    // scoper a un seul centre serait dangereux, puisque
+    // ConvocationSyncController::sync() supprime tout centre non re-soumis -
+    // une page limitee a un centre ferait donc disparaitre silencieusement
+    // tous les AUTRES centres de la convocation au premier enregistrement.
+    // On redirige simplement vers la fiche complete.
+    public function editCentre(int|string $id, int|string $centreId): RedirectResponse
+    {
+        return redirect()->route('indemnites.convocations.edit', $id);
+    }
+
+    private function renderEdit(int|string $id): View|RedirectResponse
     {
         $resultat = $this->convocations->trouver($id);
 
@@ -382,15 +578,80 @@ class ConvocationsController extends Controller
         $centresResultat = $this->convocations->centres($id);
         $beneficiairesResultat = $this->convocations->beneficiaires($id);
 
+        $centres = $centresResultat['success'] ? ($centresResultat['data'] ?? []) : [];
+        // Meme correctif que renderShow() : 'data' est directement le
+        // tableau des beneficiaires depuis le retrait de la pagination.
+        $beneficiaires = $beneficiairesResultat['success'] ? ($beneficiairesResultat['data'] ?? []) : [];
+
         return view('pages.indemnites.convocations.edit', [
             'convocation' => $this->formatConvocationForView($resultat['data']),
             'typesConvocation' => $typesResultat['success'] ? ($typesResultat['data'] ?? []) : [],
-            'centres' => $centresResultat['success'] ? ($centresResultat['data'] ?? []) : [],
-            'beneficiaires' => $beneficiairesResultat['success'] ? ($beneficiairesResultat['data']['data'] ?? []) : [],
+            'wizardData' => $this->construireWizardData($centres, $beneficiaires),
             'id' => $id,
         ]);
     }
 
+    /**
+     * Construit la structure de pre-remplissage attendue par
+     * convocation-wizard.js::hydrateFromPrefill() (embarquee en JSON dans
+     * edit.blade.php via window.__convocationWizardPrefill) : un tableau de
+     * centres, chacun avec ses metiers, chacun avec ses membres - meme
+     * imbrication que le wizard de creation, juste deja rempli.
+     */
+    private function construireWizardData(array $centres, array $beneficiaires): array
+    {
+        return array_values(array_map(function (array $centre) use ($beneficiaires) {
+            $beneficiairesDuCentre = array_values(array_filter($beneficiaires, function ($beneficiaire) use ($centre) {
+                return (int) ($beneficiaire['pivot']['centre_id'] ?? 0) === (int) ($centre['id'] ?? 0);
+            }));
+
+            $groupes = $this->grouperBeneficiairesParMetier($centre, $beneficiairesDuCentre);
+
+            $metiers = array_map(function (array $metier) {
+                return [
+                    'id' => $metier['id'] ?? null,
+                    // Le pseudo-metier "Non classés" (id => null, membres
+                    // sans centre_metier_id) redevient un groupe "general"
+                    // (nom vide) une fois renvoye au wizard - meme
+                    // convention que la creation, cf. commentaire "groupe
+                    // general" dans convocation-wizard.js::prepareFormData().
+                    'metier' => $metier['id'] !== null ? ($metier['metier'] ?? '') : '',
+                    'membres' => array_map(function ($beneficiaire) {
+                        return [
+                            'enseignant_id' => $beneficiaire['id'] ?? null,
+                            'nom' => $beneficiaire['nom'] ?? null,
+                            'prenom' => $beneficiaire['prenom'] ?? null,
+                            'telephone' => $beneficiaire['telephone'] ?? null,
+                            'fonction' => $beneficiaire['pivot']['fonction'] ?? null,
+                            'provenance' => $beneficiaire['pivot']['provenance'] ?? null,
+                            'categorie_personnel' => $beneficiaire['categorie_personnel'] ?? null,
+                        ];
+                    }, $metier['beneficiaires'] ?? []),
+                ];
+            }, $groupes['metiers'] ?? []);
+
+            return [
+                'id' => $centre['id'] ?? null,
+                'centre' => $centre['centre'] ?? null,
+                'jury' => $centre['jury'] ?? null,
+                'chef_centre_id' => $centre['chef_centre_id'] ?? null,
+                'chef_centre_nom' => trim(($centre['chef_centre']['prenom'] ?? '').' '.($centre['chef_centre']['nom'] ?? '')) ?: null,
+                'chef_centre_telephone' => $centre['chef_centre_telephone'] ?? null,
+                'president_jury_id' => $centre['president_jury_id'] ?? null,
+                'president_jury_nom' => trim(($centre['president_jury']['prenom'] ?? '').' '.($centre['president_jury']['nom'] ?? '')) ?: null,
+                'president_jury_telephone' => $centre['president_jury_telephone'] ?? null,
+                'metiers' => $metiers,
+            ];
+        }, $centres));
+    }
+
+    // Fiche "Modifier" alignee sur l'assistant de creation ("IL FAUT QUE
+    // EDIT SOIT EXACTEMENT COMME CREATE MAIS PREREMPLI") : UN seul
+    // enregistrement remplace toute la structure de la convocation (infos
+    // generales + centres + leurs metiers + membres du jury) - cf. store()
+    // ci-dessus pour la convention centre_index/metier_index, et
+    // ConvocationSyncController::sync() cote back pour la logique de
+    // remplacement complet.
     public function update(Request $request, int|string $id): RedirectResponse
     {
         $data = $request->validate([
@@ -405,10 +666,31 @@ class ConvocationsController extends Controller
             'lieu_affectation' => ['nullable', 'string', 'max:255'],
             'ordre_de_mission' => ['nullable', 'boolean'],
             'statut' => ['nullable', 'in:brouillon,emise,envoyee,cloturee'],
+
+            'centres' => ['required', 'array', 'min:1'],
+            'centres.*.id' => ['nullable', 'integer'],
+            'centres.*.centre' => ['required_with:centres', 'string', 'max:255'],
+            'centres.*.jury' => ['nullable', 'string', 'max:100'],
+            'centres.*.metiers' => ['nullable', 'array'],
+            'centres.*.metiers.*.id' => ['nullable', 'integer'],
+            'centres.*.metiers.*.metier' => ['nullable', 'string', 'max:255'],
+            'centres.*.chef_centre_id' => ['nullable', 'integer'],
+            'centres.*.chef_centre_telephone' => ['nullable', 'string', 'max:30'],
+            'centres.*.president_jury_id' => ['nullable', 'integer'],
+            'centres.*.president_jury_telephone' => ['nullable', 'string', 'max:30'],
+
+            'beneficiaires' => ['nullable', 'array'],
+            'beneficiaires.*.enseignant_id' => ['required_with:beneficiaires', 'integer'],
+            'beneficiaires.*.fonction' => ['nullable', 'string', 'max:100'],
+            'beneficiaires.*.provenance' => ['nullable', 'string', 'max:255'],
+            'beneficiaires.*.categorie_personnel' => ['nullable', 'in:fonctionnaire,contractuel,vacataire'],
+            'beneficiaires.*.centre_index' => ['nullable', 'integer'],
+            'beneficiaires.*.metier_index' => ['nullable', 'integer'],
         ]);
+
         $data['ordre_de_mission'] = $request->boolean('ordre_de_mission');
 
-        $resultat = $this->convocations->mettreAJour($id, $data);
+        $resultat = $this->convocations->mettreAJourStructure($id, $data);
 
         if (! $resultat['success']) {
             return back()->withInput()->withErrors(
@@ -475,6 +757,7 @@ class ConvocationsController extends Controller
             'provenance' => ['nullable', 'string', 'max:255'],
             'categorie_personnel' => ['nullable', 'in:fonctionnaire,contractuel,vacataire'],
             'centre_id' => ['nullable', 'integer'],
+            'centre_metier_id' => ['nullable', 'integer'],
         ]);
 
         $resultat = $this->convocations->ajouterBeneficiairesAvecFonction($id, [
@@ -484,11 +767,12 @@ class ConvocationsController extends Controller
                 'provenance' => $data['provenance'] ?? null,
                 'categorie_personnel' => $data['categorie_personnel'] ?? null,
                 'centre_id' => $data['centre_id'] ?? null,
+                'centre_metier_id' => $data['centre_metier_id'] ?? null,
             ],
         ]);
 
         return redirect()
-            ->route('indemnites.convocations.edit', $id)
+            ->to($this->redirectionEdition($id, $data['centre_id'] ?? null))
             ->with($resultat['success'] ? 'success' : 'error', $resultat['message'] ?? 'Beneficiaire ajoute.');
     }
 
@@ -502,23 +786,36 @@ class ConvocationsController extends Controller
             'provenance' => ['nullable', 'string', 'max:255'],
             'categorie_personnel' => ['nullable', 'in:fonctionnaire,contractuel,vacataire'],
             'centre_id' => ['nullable', 'integer'],
+            'centre_metier_id' => ['nullable', 'integer'],
         ]);
 
         $resultat = $this->convocations->mettreAJourBeneficiaire($id, $enseignantId, $data);
 
         return redirect()
-            ->route('indemnites.convocations.edit', $id)
+            ->to($this->redirectionEdition($id, $data['centre_id'] ?? null))
             ->with($resultat['success'] ? 'success' : 'error', $resultat['message'] ?? 'Beneficiaire mis a jour.');
+    }
+
+    // Apres ajout/modification/suppression d'un membre ou d'un metier
+    // depuis une fiche centree sur un centre, on y reste (plutot que de
+    // renvoyer vers la fiche complete de la convocation).
+    private function redirectionEdition(int|string $id, int|string|null $centreId): string
+    {
+        return $centreId
+            ? route('indemnites.convocations.centres.edit', [$id, $centreId])
+            : route('indemnites.convocations.edit', $id);
     }
 
     // Retire un beneficiaire de la convocation (l'enseignant lui-meme
     // n'est pas supprime, seul son rattachement a cette convocation l'est).
-    public function destroyBeneficiaire(int|string $id, int|string $enseignantId): RedirectResponse
+    // ?centre_id=... (ajoute par la fiche centree sur un centre) permet d'y
+    // rester apres la suppression plutot que de revenir a la fiche complete.
+    public function destroyBeneficiaire(Request $request, int|string $id, int|string $enseignantId): RedirectResponse
     {
         $resultat = $this->convocations->supprimerBeneficiaire($id, $enseignantId);
 
         return redirect()
-            ->route('indemnites.convocations.edit', $id)
+            ->to($this->redirectionEdition($id, $request->query('centre_id')))
             ->with($resultat['success'] ? 'success' : 'error', $resultat['message'] ?? 'Beneficiaire retire.');
     }
 
@@ -534,6 +831,8 @@ class ConvocationsController extends Controller
             'metier' => ['nullable', 'string', 'max:255'],
             'chef_centre_id' => ['nullable', 'integer'],
             'chef_centre_telephone' => ['nullable', 'string', 'max:30'],
+            'president_jury_id' => ['nullable', 'integer'],
+            'president_jury_telephone' => ['nullable', 'string', 'max:30'],
         ]);
 
         $resultat = $this->convocations->creerCentres($id, [$data]);
@@ -554,17 +853,21 @@ class ConvocationsController extends Controller
             'metier' => ['nullable', 'string', 'max:255'],
             'chef_centre_id' => ['nullable', 'integer'],
             'chef_centre_telephone' => ['nullable', 'string', 'max:30'],
+            'president_jury_id' => ['nullable', 'integer'],
+            'president_jury_telephone' => ['nullable', 'string', 'max:30'],
         ]);
 
         $resultat = $this->convocations->mettreAJourCentre($id, $centreId, $data);
 
         return redirect()
-            ->route('indemnites.convocations.edit', $id)
+            ->to($this->redirectionEdition($id, $centreId))
             ->with($resultat['success'] ? 'success' : 'error', $resultat['message'] ?? 'Centre mis a jour.');
     }
 
     // Supprime un centre d'examen (les membres qui y etaient rattaches ne
     // sont pas supprimes, seul leur rattachement au centre est retire).
+    // Toujours vers la fiche complete (pas de fiche centree possible sur un
+    // centre qui vient d'etre supprime).
     public function destroyCentre(int|string $id, int|string $centreId): RedirectResponse
     {
         $resultat = $this->convocations->supprimerCentre($id, $centreId);
@@ -572,6 +875,47 @@ class ConvocationsController extends Controller
         return redirect()
             ->route('indemnites.convocations.edit', $id)
             ->with($resultat['success'] ? 'success' : 'error', $resultat['message'] ?? 'Centre supprime.');
+    }
+
+    // Ajoute un metier a un centre (utilise depuis la fiche centree sur ce
+    // centre — cf. section Métiers).
+    public function storeMetier(Request $request, int|string $id, int|string $centreId): RedirectResponse
+    {
+        $data = $request->validate([
+            'metier' => ['required', 'string', 'max:255'],
+        ]);
+
+        $resultat = $this->convocations->ajouterMetier($id, $centreId, $data);
+
+        return redirect()
+            ->route('indemnites.convocations.centres.edit', [$id, $centreId])
+            ->with($resultat['success'] ? 'success' : 'error', $resultat['message'] ?? 'Métier ajouté.');
+    }
+
+    // Modifie un metier deja rattache au centre (bouton "Modifier" de la
+    // section Métiers, meme bascule JS que pour un centre/beneficiaire).
+    public function updateMetier(Request $request, int|string $id, int|string $centreId, int|string $metierId): RedirectResponse
+    {
+        $data = $request->validate([
+            'metier' => ['required', 'string', 'max:255'],
+        ]);
+
+        $resultat = $this->convocations->mettreAJourMetier($id, $centreId, $metierId, $data);
+
+        return redirect()
+            ->route('indemnites.convocations.centres.edit', [$id, $centreId])
+            ->with($resultat['success'] ? 'success' : 'error', $resultat['message'] ?? 'Métier mis à jour.');
+    }
+
+    // Supprime un metier (les membres qui y etaient rattaches ne sont pas
+    // supprimes, seul leur rattachement a ce metier est retire).
+    public function destroyMetier(int|string $id, int|string $centreId, int|string $metierId): RedirectResponse
+    {
+        $resultat = $this->convocations->supprimerMetier($id, $centreId, $metierId);
+
+        return redirect()
+            ->route('indemnites.convocations.centres.edit', [$id, $centreId])
+            ->with($resultat['success'] ? 'success' : 'error', $resultat['message'] ?? 'Métier supprimé.');
     }
 
     /**

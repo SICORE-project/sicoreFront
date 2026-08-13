@@ -25,9 +25,20 @@
             ?? ['badge-pending', ucfirst($convocation->statut ?? '—')];
     @endphp
 
-    <section class="form-card convocation-card">
+    {{-- ============================================================
+         "SHOW AFFICHE PAS TOUT ENLEVE LE CARD" : la classe globale
+         .form-card (app.css) impose max-width:720px ET overflow:hidden -
+         quelle que soit la largeur qu'on lui donne par-dessus (tentatives
+         precedentes), tout ce qui deborde reste silencieusement TRONQUE.
+         Cette page n'utilise donc plus .form-card du tout : plus de
+         plafond de largeur, plus d'overflow:hidden, plus jamais de contenu
+         coupe - cf. .convocation-page ci-dessous (style dedie, sans aucun
+         "overflow: hidden").
+    ============================================================ --}}
 
-        <div class="form-card-header">
+    <section class="convocation-page">
+
+        <div class="convocation-page-header">
 
             <div>
                 <h2>{{ $convocation->objet ?? '—' }}</h2>
@@ -37,13 +48,18 @@
                         &middot; {{ $convocation->type_convocation['libelle'] }}
                     @endif
                 </p>
+                @if (! empty($centreId))
+                    <p class="breadcrumb">
+                        Centre : {{ $convocation->centres->first()['centre'] ?? '—' }}
+                    </p>
+                @endif
             </div>
 
             <span class="badge {{ $badgeClass }}">{{ $badgeLabel }}</span>
 
         </div>
 
-        <div class="convocation-form">
+        <div class="convocation-page-body">
 
             {{-- ============================================================
                  INFORMATIONS GENERALES
@@ -87,10 +103,7 @@
                         <p>{{ $convocation->lieu_examen ?? '—' }}</p>
                     </div>
 
-                    <div class="form-group">
-                        <label>Lieu d'affectation</label>
-                        <p>{{ $convocation->lieu_affectation ?? '—' }}</p>
-                    </div>
+                   
 
                 </div>
 
@@ -98,6 +111,11 @@
 
             {{-- ============================================================
                  CENTRES D'EXAMEN
+                 Meme structure que le PDF (ConvocationPdfController) et que
+                 le modele papier fourni : pour CHAQUE centre, un bloc
+                 d'infos (Centre / Jury / Chef de centre / Téléphone) puis
+                 ses membres groupes par métier (un centre peut en couvrir
+                 plusieurs, chacun avec ses propres membres).
             ============================================================ --}}
 
             <div class="form-section">
@@ -106,91 +124,104 @@
                     <h3>Centres d'examen</h3>
                 </div>
 
-                @if (($convocation->centres ?? collect())->isEmpty())
+                @php
+                    $statutsPersonnel = [
+                        'fonctionnaire' => 'Fonctionnaire',
+                        'contractuel' => 'Contractuelle',
+                        'vacataire' => 'Vacataire',
+                    ];
+                @endphp
+
+                @forelse ($centresAvecMetiers as $centre)
+
+                    <div class="centre-block">
+
+                        <div class="form-grid centre-info-grid">
+
+                            <div class="form-group">
+                                <label>Centre</label>
+                                <p>{{ $centre['centre'] ?? '—' }}</p>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Jury</label>
+                                <p>{{ $centre['jury'] ?? '—' }}</p>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Président du jury</label>
+                                <p>{{ trim(($centre['president_jury']['prenom'] ?? '') . ' ' . ($centre['president_jury']['nom'] ?? '')) ?: '—' }}</p>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Téléphone</label>
+                                <p>{{ $centre['president_jury_telephone'] ?? '—' }}</p>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Chef de centre</label>
+                                <p>{{ trim(($centre['chef_centre']['prenom'] ?? '') . ' ' . ($centre['chef_centre']['nom'] ?? '')) ?: '—' }}</p>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Téléphone</label>
+                                <p>{{ $centre['chef_centre_telephone'] ?? '—' }}</p>
+                            </div>
+
+                        </div>
+
+                        @forelse ($centre['metiers'] as $metier)
+
+                            <h4 class="sub-form-subheading">{{ $metier['metier'] ?? '—' }}</h4>
+
+                            @if (empty($metier['beneficiaires']))
+
+                                <p class="empty-message">Aucun membre ajouté pour ce métier.</p>
+
+                            @else
+
+                                <div class="table-responsive">
+                                    <table class="table">
+                                        <thead>
+                                            <tr>
+                                                <th>Nom</th>
+                                                <th>Prénoms</th>
+                                                <th>Fonction</th>
+                                                <th>Statut</th>
+                                                <th>Provenance</th>
+                                                <th>Téléphone</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach ($metier['beneficiaires'] as $beneficiaire)
+                                                <tr>
+                                                    <td>{{ $beneficiaire['nom'] ?? '—' }}</td>
+                                                    <td>{{ $beneficiaire['prenom'] ?? '—' }}</td>
+                                                    <td>{{ $beneficiaire['pivot']['fonction'] ?? '—' }}</td>
+                                                    <td>{{ $statutsPersonnel[$beneficiaire['categorie_personnel'] ?? null] ?? '—' }}</td>
+                                                    <td>{{ $beneficiaire['pivot']['provenance'] ?? '—' }}</td>
+                                                    <td>{{ $beneficiaire['telephone'] ?? '—' }}</td>
+                                                </tr>
+                                            @endforeach
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                            @endif
+
+                        @empty
+
+                            <p class="empty-message">Aucun métier renseigné pour ce centre.</p>
+
+                        @endforelse
+
+                    </div>
+
+                @empty
 
                     <p class="empty-message">Aucun centre renseigné pour cette convocation.</p>
 
-                @else
-
-                    <div class="table-responsive">
-                        <table class="table">
-                            <thead>
-                                <tr>
-                                    <th>Centre</th>
-                                    <th>Jury</th>
-                                    <th>Métier</th>
-                                    <th>Chef de centre</th>
-                                    <th>Téléphone</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach ($convocation->centres as $centre)
-                                    <tr>
-                                        <td>{{ $centre['centre'] ?? '—' }}</td>
-                                        <td>{{ $centre['jury'] ?? '—' }}</td>
-                                        <td>{{ $centre['metier'] ?? '—' }}</td>
-                                    <td>{{ $centre['chef_centre']['prenom'] ?? '—' }} {{ $centre['chef_centre']['nom'] ?? '—' }}</td>
-                                        <td>{{ $centre['chef_centre_telephone'] ?? '—' }}</td>
-                                    </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </div>
-
-                @endif
-
-            </div>
-
-            {{-- ============================================================
-                 BENEFICIAIRES / MEMBRES DU JURY
-            ============================================================ --}}
-
-            <div class="form-section">
-
-                <div class="panel-header">
-                    <h3>Membres du jury</h3>
-                </div>
-
-                @if (empty($beneficiaires))
-
-                    <p class="empty-message">Aucun membre ajouté pour le moment.</p>
-
-                @else
-
-                    @php
-                        $statutsPersonnel = [
-                            'fonctionnaire' => 'Fonctionnaire',
-                            'contractuel' => 'Contractuelle',
-                            'vacataire' => 'Vacataire',
-                        ];
-                    @endphp
-
-                    <div class="table-responsive">
-                        <table class="table">
-                            <thead>
-                                <tr>
-                                    <th>Nom</th>
-                                    <th>Fonction</th>
-                                    <th>Statut</th>
-                                    <th>Provenance</th>
-                                    <th>Téléphone</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach ($beneficiaires as $beneficiaire)
-                                    <tr>
-                                        <td>{{ trim(($beneficiaire['prenom'] ?? '') . ' ' . ($beneficiaire['nom'] ?? '')) ?: '—' }}</td>
-                                        <td>{{ $beneficiaire['pivot']['fonction'] ?? '—' }}</td>
-                                        <td>{{ $statutsPersonnel[$beneficiaire['categorie_personnel'] ?? null] ?? '—' }}</td>
-                                        <td>{{ $beneficiaire['pivot']['provenance'] ?? '—' }}</td>
-                                        <td>{{ $beneficiaire['telephone'] ?? '—' }}</td>
-                                    </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </div>
-
-                @endif
+                @endforelse
 
             </div>
 
@@ -204,7 +235,17 @@
                     Retour à la liste
                 </a>
 
-                <a class="btn-primary" href="{{ route('indemnites.convocations.edit', $id) }}">
+                @if (! empty($centreId))
+                    <a class="btn-secondary" href="{{ route('indemnites.convocations.show', $id) }}">
+                        Voir tous les centres
+                    </a>
+                @endif
+
+                <a class="btn-secondary" href="{{ route('indemnites.convocations.pdf', $id) }}">
+                    Télécharger PDF
+                </a>
+
+                <a class="btn-primary" href="{{ ! empty($centreId) ? route('indemnites.convocations.centres.edit', [$id, $centreId]) : route('indemnites.convocations.edit', $id) }}">
                     Modifier
                 </a>
 
@@ -222,58 +263,131 @@
 
 {{-- ================================================================
      STYLES
-     Le .form-card global (app.css) est plafonné à 720px et sans
-     padding — pensé pour un formulaire simple, pas pour cette page qui
-     empile plusieurs sections et des tableaux (min-width 760px, cf.
-     .table en CSS globale). Sans cet élargissement, les tableaux
-     débordaient/étaient tronqués et le contenu touchait les bords de
-     la carte (même souci que sur edit.blade.php, cf. .convocation-card
-     dans create.blade.php qui s'en sort déjà correctement).
+     "SHOW AFFICHE PAS TOUT ENLEVE LE CARD" : les tentatives precedentes
+     (elargir .convocation-card, ajouter min-width:0...) laissaient la page
+     sur la classe globale .form-card (app.css), qui impose TOUJOURS
+     max-width:720px ET overflow:hidden - donc un plafond, et tout ce qui
+     le depasse encore reste tronque en silence. Cette page n'herite plus
+     du tout de .form-card : .convocation-page ci-dessous est un style
+     autonome, sans overflow:hidden nulle part, qui prend toute la largeur
+     disponible dans .content-area - il n'y a plus de plafond a atteindre.
 ================================================================ --}}
 
 @push('styles')
 <style>
 
-    .convocation-card {
-        width: calc(100% - 40px);
-        max-width: 980px;
-        margin: 24px auto 40px;
+    .convocation-page {
+        width: 100%;
+        margin: 24px 0 40px;
+        box-sizing: border-box;
+        border: 1px solid #e5e7eb;
+        border-radius: 16px;
+        background: #ffffff;
+        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
     }
 
-    .convocation-card .convocation-form {
+    .convocation-page-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 20px 22px;
+        border-bottom: 1px solid #e5e7eb;
+    }
+
+    .convocation-page-header h2 {
+        margin: 0;
+        font-size: 18px;
+        font-weight: 900;
+    }
+
+    .convocation-page-header .breadcrumb {
+        margin: 4px 0 0;
+    }
+
+    .convocation-page-body {
         display: grid;
         gap: 22px;
         padding: 26px 30px 30px;
         box-sizing: border-box;
     }
 
-    .convocation-card .form-section {
+    .convocation-page-body .form-section {
         padding: 22px 24px;
         border: 1px solid #e5e7eb;
         border-radius: 12px;
         background: #ffffff;
     }
 
-    .convocation-card .form-section h3 {
+    .convocation-page-body .form-section h3 {
         margin: 0 0 16px;
     }
 
-    .convocation-card .panel-header {
+    .convocation-page-body .panel-header {
         margin-bottom: 14px;
+    }
+
+    /* Sous-titre "nom du metier" au-dessus du tableau de ses membres. */
+    .convocation-page-body .sub-form-subheading {
+        margin: 0 0 10px;
+        font-size: 14px;
+        font-weight: 600;
+        color: #334155;
+    }
+
+    /* Un bloc par centre (Centre/Jury/Chef de centre + ses metiers) dans la
+       section "Centres d'examen" — separateur discret entre plusieurs
+       centres d'une meme convocation. */
+    .convocation-page-body .centre-block {
+        padding: 18px 0;
+        border-top: 1px solid #e5e7eb;
+    }
+
+    .convocation-page-body .centre-block:first-child {
+        padding-top: 0;
+        border-top: none;
+    }
+
+    .convocation-page-body .centre-block:last-child {
+        padding-bottom: 0;
+    }
+
+    .convocation-page-body .centre-info-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        margin-bottom: 16px;
+    }
+
+    .convocation-page-body .centre-info-grid .form-group label {
+        font-size: 12px;
+    }
+
+    /* Le tableau (.table, min-width:760px) defile tout seul dans
+       .table-responsive (overflow-x:auto, cf. app.css) des qu'il ne rentre
+       pas - inutile, et dangereux, de mettre "overflow: hidden" sur un des
+       parents (c'est exactement ce qui coupait le contenu avant). */
+    .convocation-page-body .table-responsive {
+        overflow-x: auto;
+    }
+
+    @media (max-width: 900px) {
+
+        .convocation-page-body .centre-info-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
     }
 
     @media (max-width: 768px) {
 
-        .convocation-card {
-            width: calc(100% - 20px);
-            margin-top: 15px;
+        .convocation-page-header {
+            padding: 16px 18px;
         }
 
-        .convocation-card .convocation-form {
+        .convocation-page-body {
             padding: 18px;
         }
 
-        .convocation-card .form-section {
+        .convocation-page-body .form-section {
             padding: 16px;
         }
 
