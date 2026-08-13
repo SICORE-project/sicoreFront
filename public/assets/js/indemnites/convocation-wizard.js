@@ -422,6 +422,22 @@
           addMember(group);
         });
       }
+
+      var importInput = group.querySelector("[data-import-members-input]");
+
+      if (importInput) {
+        importInput.addEventListener("change", function () {
+          var file = importInput.files && importInput.files[0];
+
+          if (file) {
+            importerMembresDepuisCsv(file, group);
+          }
+
+          // Permet de reimporter le meme fichier deux fois de suite
+          // (le navigateur ne redeclenche pas "change" sinon).
+          importInput.value = "";
+        });
+      }
     }
 
     function addMember(group) {
@@ -476,6 +492,252 @@
       }
 
       empty.hidden = body.children.length > 0;
+    }
+
+    /*
+      ============================================================
+      IMPORT CSV D'UNE LISTE DE MEMBRES
+      Permet de remplir le tableau "Métiers & membres du jury" d'un
+      coup, plutot que de chercher/ajouter chaque enseignant a la
+      main. Colonnes attendues (1re ligne = en-tetes) : matricule
+      (ou agent), fonction, statut, provenance — seule "matricule"
+      est obligatoire. Le matricule est recherche via le meme
+      endpoint que la recherche manuelle (data-search-url) pour
+      retrouver l'enseignant et pre-remplir nom/telephone/statut ;
+      s'il n'est pas trouve, la ligne est quand meme ajoutee (avec le
+      matricule saisi tel quel) pour ne rien perdre de l'import.
+      ============================================================
+      */
+
+    function parseCsvSimple(texte) {
+      var lignes = String(texte || "")
+        .split(/\r\n|\r|\n/)
+        .filter(function (ligne) {
+          return ligne.trim().length > 0;
+        });
+
+      if (lignes.length === 0) {
+        return { entetes: [], lignes: [] };
+      }
+
+      function decouper(ligne) {
+        return ligne.split(",").map(function (cellule) {
+          return cellule.trim().replace(/^"|"$/g, "");
+        });
+      }
+
+      var entetes = decouper(lignes[0]).map(function (entete) {
+        return entete.toLowerCase();
+      });
+
+      var donnees = lignes.slice(1).map(decouper);
+
+      return { entetes: entetes, lignes: donnees };
+    }
+
+    function indexEntete(entetes, noms) {
+      for (var i = 0; i < noms.length; i++) {
+        var index = entetes.indexOf(noms[i]);
+
+        if (index !== -1) {
+          return index;
+        }
+      }
+
+      return -1;
+    }
+
+    function rechercherEnseignantParMatricule(matricule) {
+      var form = getWizard();
+
+      var searchUrl = form ? form.getAttribute("data-search-url") : null;
+
+      if (!searchUrl || !matricule) {
+        return Promise.resolve(null);
+      }
+
+      return fetch(searchUrl + "?search=" + encodeURIComponent(matricule), {
+        method: "GET",
+
+        headers: {
+          Accept: "application/json",
+
+          "X-Requested-With": "XMLHttpRequest",
+        },
+      })
+        .then(function (response) {
+          return response.ok ? response.json() : null;
+        })
+        .then(function (payload) {
+          var resultats = (payload && payload.data) || [];
+
+          if (!Array.isArray(resultats) || resultats.length === 0) {
+            return null;
+          }
+
+          var exact = resultats.filter(function (enseignant) {
+            return (
+              enseignant.matricule &&
+              String(enseignant.matricule).toLowerCase() ===
+                String(matricule).toLowerCase()
+            );
+          });
+
+          return exact[0] || resultats[0];
+        })
+        .catch(function () {
+          return null;
+        });
+    }
+
+    function importerMembresDepuisCsv(file, group) {
+      var statusEl = group.querySelector("[data-import-members-status]");
+
+      function setStatus(texte) {
+        if (statusEl) {
+          statusEl.textContent = texte;
+          statusEl.hidden = false;
+        }
+      }
+
+      setStatus("Import en cours…");
+
+      var reader = new FileReader();
+
+      reader.onload = function () {
+        var parsed = parseCsvSimple(reader.result);
+
+        var idxMatricule = indexEntete(parsed.entetes, ["matricule", "agent"]);
+        var idxFonction = indexEntete(parsed.entetes, ["fonction", "role"]);
+        var idxStatut = indexEntete(parsed.entetes, [
+          "statut",
+          "categorie_personnel",
+          "categorie",
+        ]);
+        var idxProvenance = indexEntete(parsed.entetes, ["provenance"]);
+
+        if (idxMatricule === -1) {
+          setStatus('Le fichier doit contenir une colonne "matricule".');
+
+          return;
+        }
+
+        var total = parsed.lignes.length;
+        var trouves = 0;
+        var introuvables = [];
+
+        function traiterLigne(index) {
+          if (index >= parsed.lignes.length) {
+            var resume = trouves + " membre(s) importé(s) sur " + total + ".";
+
+            if (introuvables.length > 0) {
+              resume +=
+                " Introuvable(s) dans la liste des enseignants : " +
+                introuvables.join(", ") +
+                ".";
+            }
+
+            setStatus(resume);
+
+            return;
+          }
+
+          var ligne = parsed.lignes[index];
+          var matricule = ligne[idxMatricule] || "";
+
+          if (!matricule) {
+            traiterLigne(index + 1);
+
+            return;
+          }
+
+          rechercherEnseignantParMatricule(matricule).then(function (
+            enseignant,
+          ) {
+            addMember(group);
+
+            var lignesMembres = group.querySelectorAll(".member-row");
+            var nouvelleLigne = lignesMembres[lignesMembres.length - 1];
+
+            if (!nouvelleLigne) {
+              traiterLigne(index + 1);
+
+              return;
+            }
+
+            var searchInput = nouvelleLigne.querySelector(
+              "[data-member-search-input]",
+            );
+            var idInput = nouvelleLigne.querySelector("[data-member-id-input]");
+            var nomInput = nouvelleLigne.querySelector("[data-member-nom]");
+            var telephoneInput = nouvelleLigne.querySelector(
+              "[data-member-telephone]",
+            );
+            var fonctionInput = nouvelleLigne.querySelector(
+              "[data-member-fonction]",
+            );
+            var categorieInput = nouvelleLigne.querySelector(
+              "[data-member-categorie]",
+            );
+            var provenanceInput = nouvelleLigne.querySelector(
+              "[data-member-provenance]",
+            );
+
+            if (enseignant) {
+              trouves++;
+
+              var nomComplet = (
+                (enseignant.prenom || "") +
+                " " +
+                (enseignant.nom || "")
+              ).trim();
+
+              if (searchInput) searchInput.value = nomComplet;
+              if (idInput) idInput.value = enseignant.id || "";
+              if (nomInput) nomInput.value = enseignant.nom || "";
+
+              if (telephoneInput && enseignant.telephone) {
+                telephoneInput.value = enseignant.telephone;
+              }
+
+              if (categorieInput && enseignant.categorie_personnel) {
+                categorieInput.value = enseignant.categorie_personnel;
+              }
+            } else {
+              introuvables.push(matricule);
+
+              if (searchInput) searchInput.value = matricule;
+              if (nomInput) nomInput.value = matricule;
+            }
+
+            if (idxFonction !== -1 && fonctionInput && ligne[idxFonction]) {
+              fonctionInput.value = ligne[idxFonction];
+            }
+
+            if (idxStatut !== -1 && categorieInput && ligne[idxStatut]) {
+              categorieInput.value = ligne[idxStatut].toLowerCase();
+            }
+
+            if (
+              idxProvenance !== -1 &&
+              provenanceInput &&
+              ligne[idxProvenance]
+            ) {
+              provenanceInput.value = ligne[idxProvenance];
+            }
+
+            traiterLigne(index + 1);
+          });
+        }
+
+        traiterLigne(0);
+      };
+
+      reader.onerror = function () {
+        setStatus("Impossible de lire ce fichier.");
+      };
+
+      reader.readAsText(file, "UTF-8");
     }
 
     addButton.addEventListener("click", addCentre);

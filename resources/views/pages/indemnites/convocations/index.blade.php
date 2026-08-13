@@ -89,8 +89,12 @@
                     Importer
                 </button>
 
-                <button class="btn-secondary" type="button">
+                <a class="btn-secondary" href="{{ route('indemnites.convocations.export', request()->query()) }}">
                     Exporter
+                </a>
+
+                <button class="btn-secondary btn-bulk-delete" type="button" data-bulk-delete-button disabled>
+                    Supprimer la sélection
                 </button>
             </div>
         </div>
@@ -125,13 +129,13 @@
                 @csrf
 
                 <div class="form-group">
-                    <label for="import-fichier">Fichier (CSV)</label>
+                    <label for="import-fichier">Fichier (CSV ou Word)</label>
                     <input
                         class="form-control"
                         id="import-fichier"
                         name="fichier"
                         type="file"
-                        accept=".csv,text/csv,text/plain"
+                        accept=".csv,text/csv,text/plain,.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                         required
                     >
                 </div>
@@ -149,7 +153,13 @@
              FILTRES
         ============================================================ --}}
 
-        <section class="filter-panel" aria-label="Filtres de la page">
+        <form
+            id="convocationFilterForm"
+            class="filter-panel"
+            method="GET"
+            action="{{ route('indemnites.convocations') }}"
+            aria-label="Filtres de la page"
+        >
 
             <div class="form-group">
                 <label for="convocation-filter-date">Date</label>
@@ -186,12 +196,18 @@
             </div>
 
             <div class="actions-group">
-                <button class="btn-secondary" type="submit" form="convocationFilterForm">
+                <button class="btn-secondary" type="submit">
                     Filtrer
                 </button>
+
+                @if (request()->hasAny(['date', 'objet', 'statut']))
+                    <a class="btn-secondary" href="{{ route('indemnites.convocations') }}">
+                        Réinitialiser
+                    </a>
+                @endif
             </div>
 
-        </section>
+        </form>
 
         {{-- ============================================================
              TABLEAU — liste DAGE (point 3 du cahier des charges
@@ -212,8 +228,12 @@
 
                     <thead>
                         <tr>
+                            <th class="checkbox-cell">
+                                <input type="checkbox" data-select-all aria-label="Tout sélectionner">
+                            </th>
                             <th>Agent</th>
                             <th>Type</th>
+                            <th>Objet</th>
                             <th>Session</th>
                             <th>Centre</th>
                             <th>Rôle</th>
@@ -229,8 +249,14 @@
                     <tbody>
                         @forelse ($lignes as $ligne)
                             <tr>
+                                <td class="checkbox-cell">
+                                    @if (! empty($ligne['convocation_id']))
+                                        <input type="checkbox" data-row-checkbox value="{{ $ligne['convocation_id'] }}" aria-label="Sélectionner cette ligne">
+                                    @endif
+                                </td>
                                 <td>{{ $ligne['agent'] ?? '—' }}</td>
                                 <td>{{ $ligne['type'] ?? '—' }}</td>
+                                <td>{{ $ligne['objet'] ?? '—' }}</td>
                                 <td>{{ $ligne['session'] ?? '—' }}</td>
                                 <td>{{ $ligne['centre'] ?? '—' }}</td>
                                 <td>{{ $ligne['role'] ?? '—' }}</td>
@@ -242,7 +268,6 @@
                                     @php
                                         $statutBadges = [
                                             'brouillon'    => ['badge-pending', 'Brouillon'],
-                                            'a_completer'  => ['badge-pending', 'À compléter'],
                                             'emise'        => ['badge-primary', 'Émise'],
                                             'envoyee'      => ['badge-active', 'Envoyée'],
                                             'cloturee'     => ['badge-inactive', 'Clôturée'],
@@ -286,7 +311,13 @@
                 <p class="empty-message">Aucune donnée trouvée.</p>
             @endif
 
-            <div class="pagination" aria-label="Pagination">
+            {{-- Classe dediee (pas "pagination") : le script global
+                 app.js attache un handler sur toute ".pagination" qui fait
+                 preventDefault() sur les clics (pense pour des pages sans
+                 vraie pagination serveur) — avec la vraie classe Laravel
+                 ci-dessous, il ecrasait la navigation reelle vers ?page=2.
+            --}}
+            <div class="convocation-pagination" aria-label="Pagination">
 
                 @if ($convocations->onFirstPage())
                     <span class="page-btn" aria-disabled="true">←</span>
@@ -352,6 +383,35 @@
         margin: 0;
     }
 
+    .checkbox-cell {
+        width: 40px;
+        text-align: center;
+    }
+
+    /* Meme rendu que .pagination (app.css), sous un nom de classe
+       different pour ne pas etre capturee par setupPagination() dans
+       app.js (voir commentaire au-dessus du bloc pagination). */
+    .convocation-pagination {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 7px;
+        padding: 14px 18px;
+        border-top: 1px solid var(--border-soft);
+    }
+
+    .btn-bulk-delete {
+        color: #b91c1c;
+        border-color: #fca5a5;
+    }
+
+    .btn-bulk-delete:disabled {
+        color: inherit;
+        border-color: inherit;
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
 </style>
 @endpush
 
@@ -379,6 +439,119 @@
                 panel.scrollIntoView({ behavior: "smooth", block: "nearest" });
             }
         });
+    })();
+</script>
+
+{{-- ================================================================
+     SCRIPT — selection multiple (cases a cocher) + suppression
+     groupee. Une meme convocation peut apparaitre sur plusieurs lignes
+     (une par beneficiaire) : on deduplique cote back (voir
+     destroyMultiple()), donc pas besoin de s'en soucier ici.
+================================================================ --}}
+
+<script>
+    (function () {
+        "use strict";
+
+        var selectAll = document.querySelector("[data-select-all]");
+        var deleteButton = document.querySelector("[data-bulk-delete-button]");
+
+        function getRowCheckboxes() {
+            return Array.prototype.slice.call(
+                document.querySelectorAll("[data-row-checkbox]"),
+            );
+        }
+
+        function updateState() {
+            var boxes = getRowCheckboxes();
+            var checked = boxes.filter(function (box) {
+                return box.checked;
+            });
+
+            if (deleteButton) {
+                deleteButton.disabled = checked.length === 0;
+                deleteButton.textContent =
+                    checked.length > 0
+                        ? "Supprimer la sélection (" + checked.length + ")"
+                        : "Supprimer la sélection";
+            }
+
+            if (selectAll) {
+                selectAll.checked = boxes.length > 0 && checked.length === boxes.length;
+                selectAll.indeterminate = checked.length > 0 && checked.length < boxes.length;
+            }
+        }
+
+        if (selectAll) {
+            selectAll.addEventListener("change", function () {
+                getRowCheckboxes().forEach(function (box) {
+                    box.checked = selectAll.checked;
+                });
+
+                updateState();
+            });
+        }
+
+        document.addEventListener("change", function (event) {
+            if (event.target.matches && event.target.matches("[data-row-checkbox]")) {
+                updateState();
+            }
+        });
+
+        if (deleteButton) {
+            deleteButton.addEventListener("click", function () {
+                var ids = getRowCheckboxes()
+                    .filter(function (box) {
+                        return box.checked;
+                    })
+                    .map(function (box) {
+                        return box.value;
+                    });
+
+                if (ids.length === 0) {
+                    return;
+                }
+
+                var confirmation =
+                    ids.length === 1
+                        ? "Supprimer définitivement cette convocation ?"
+                        : "Supprimer définitivement ces " + ids.length + " convocations ?";
+
+                if (!window.confirm(confirmation)) {
+                    return;
+                }
+
+                var form = document.createElement("form");
+                form.method = "POST";
+                form.action = "{{ route('indemnites.convocations.destroy-multiple') }}";
+                form.style.display = "none";
+
+                var csrf = document.createElement("input");
+                csrf.type = "hidden";
+                csrf.name = "_token";
+                csrf.value = "{{ csrf_token() }}";
+                form.appendChild(csrf);
+
+                var methode = document.createElement("input");
+                methode.type = "hidden";
+                methode.name = "_method";
+                methode.value = "DELETE";
+                form.appendChild(methode);
+
+                ids.forEach(function (id) {
+                    var input = document.createElement("input");
+                    input.type = "hidden";
+                    input.name = "ids[]";
+                    input.value = id;
+                    form.appendChild(input);
+                });
+
+                document.body.appendChild(form);
+                form.submit();
+            });
+        }
+
+        updateState();
     })();
 </script>
 @endpush

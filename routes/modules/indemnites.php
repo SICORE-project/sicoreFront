@@ -30,8 +30,17 @@ Route::middleware('sicore.auth')
         Route::post('/convocations/import', [ConvocationsController::class, 'import'])
             ->name('convocations.import');
 
+        // Export CSV de la liste (respecte les filtres actifs) — doit
+        // rester avant /convocations/{id} pour ne pas etre capturee par elle.
+        Route::get('/convocations/export', [ConvocationsController::class, 'export'])
+            ->name('convocations.export');
+
         Route::post('/convocations', [ConvocationsController::class, 'store'])
             ->name('convocations.store');
+
+        // Suppression multiple depuis les cases a cocher de la liste.
+        Route::delete('/convocations', [ConvocationsController::class, 'destroyMultiple'])
+            ->name('convocations.destroy-multiple');
 
         Route::get('/convocations/{id}/modifier', [ConvocationsController::class, 'edit'])
             ->name('convocations.edit');

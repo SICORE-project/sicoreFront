@@ -402,10 +402,22 @@
                         </table>
                     </div>
 
-                    <button type="button" class="btn-secondary" data-add-member>
-                        <i class="fa-solid fa-plus" aria-hidden="true"></i>
-                        Ajouter un membre
-                    </button>
+                    <div class="member-import-actions">
+
+                        <button type="button" class="btn-secondary" data-add-member>
+                            <i class="fa-solid fa-plus" aria-hidden="true"></i>
+                            Ajouter un membre
+                        </button>
+
+                        <label class="btn-secondary" data-import-members-label title="Fichier CSV avec les colonnes : matricule, fonction, statut, provenance">
+                            <i class="fa-solid fa-file-import" aria-hidden="true"></i>
+                            Importer une liste (CSV)
+                            <input type="file" accept=".csv,text/csv,text/plain" data-import-members-input hidden>
+                        </label>
+
+                    </div>
+
+                    <p class="import-members-status" data-import-members-status hidden></p>
 
                     <p class="empty-message" data-members-empty>Aucun membre ajouté pour ce groupe.</p>
 
@@ -814,6 +826,27 @@
         text-align: center;
         border: 1px dashed #d1d5db;
         border-radius: 8px;
+    }
+
+    .convocation-card .member-import-actions {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .convocation-card .member-import-actions label.btn-secondary {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        cursor: pointer;
+        margin: 0;
+    }
+
+    .convocation-card .import-members-status {
+        margin: 10px 0 0;
+        font-size: 13px;
+        color: #4b5563;
     }
 
     .convocation-card .form-status {

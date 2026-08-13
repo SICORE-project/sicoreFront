@@ -108,7 +108,7 @@
                     <div class="form-group">
                         <label for="statut">Statut</label>
                         <select class="form-control @error('statut') is-invalid @enderror" id="statut" name="statut">
-                            @foreach (['brouillon' => 'Brouillon', 'a_completer' => 'À compléter', 'emise' => 'Émise', 'envoyee' => 'Envoyée', 'cloturee' => 'Clôturée'] as $value => $label)
+                            @foreach (['brouillon' => 'Brouillon', 'emise' => 'Émise', 'envoyee' => 'Envoyée', 'cloturee' => 'Clôturée'] as $value => $label)
                                 <option value="{{ $value }}" @selected(old('statut', $convocation->statut ?? 'brouillon') === $value)>
                                     {{ $label }}
                                 </option>
@@ -218,6 +218,7 @@
                             <tr>
                                 <th>Centre</th>
                                 <th>Jury</th>
+                                <th>Métier</th>
                                 <th>Chef de centre</th>
                                 <th>Téléphone</th>
                             </tr>
@@ -227,6 +228,7 @@
                                 <tr>
                                     <td>{{ $centre['centre'] ?? '—' }}</td>
                                     <td>{{ $centre['jury'] ?? '—' }}</td>
+                                    <td>{{ $centre['metier'] ?? '—' }}</td>
                                     <td>{{ $centre['chefCentre']['nom'] ?? '—' }}</td>
                                     <td>{{ $centre['chef_centre_telephone'] ?? '—' }}</td>
                                 </tr>

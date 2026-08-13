@@ -17,7 +17,6 @@
     @php
         $statutBadges = [
             'brouillon'   => ['badge-pending', 'Brouillon'],
-            'a_completer' => ['badge-pending', 'À compléter'],
             'emise'       => ['badge-primary', 'Émise'],
             'envoyee'     => ['badge-active', 'Envoyée'],
             'cloturee'    => ['badge-inactive', 'Clôturée'],
@@ -158,12 +157,21 @@
 
                 @else
 
+                    @php
+                        $statutsPersonnel = [
+                            'fonctionnaire' => 'Fonctionnaire',
+                            'contractuel' => 'Contractuelle',
+                            'vacataire' => 'Vacataire',
+                        ];
+                    @endphp
+
                     <div class="table-responsive">
                         <table class="table">
                             <thead>
                                 <tr>
                                     <th>Nom</th>
                                     <th>Fonction</th>
+                                    <th>Statut</th>
                                     <th>Provenance</th>
                                     <th>Téléphone</th>
                                 </tr>
@@ -173,6 +181,7 @@
                                     <tr>
                                         <td>{{ trim(($beneficiaire['prenom'] ?? '') . ' ' . ($beneficiaire['nom'] ?? '')) ?: '—' }}</td>
                                         <td>{{ $beneficiaire['pivot']['fonction'] ?? '—' }}</td>
+                                        <td>{{ $statutsPersonnel[$beneficiaire['categorie_personnel'] ?? null] ?? '—' }}</td>
                                         <td>{{ $beneficiaire['pivot']['provenance'] ?? '—' }}</td>
                                         <td>{{ $beneficiaire['telephone'] ?? '—' }}</td>
                                     </tr>

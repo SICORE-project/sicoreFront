@@ -9,6 +9,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Carbon;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ConvocationsController extends Controller
 {
@@ -23,7 +24,7 @@ class ConvocationsController extends Controller
             'statut' => $request->query('statut'),
             'date' => $request->query('date'),
             'objet' => $request->query('objet'),
-            'per_page' => 15,
+            'per_page' => 10,
             'page' => $request->query('page', 1),
         ]);
 
@@ -45,7 +46,7 @@ class ConvocationsController extends Controller
         $convocations = new LengthAwarePaginator(
             $convocationsPage,
             $meta['total'] ?? count($convocationsPage),
-            $meta['per_page'] ?? 15,
+            $meta['per_page'] ?? 10,
             $meta['current_page'] ?? (int) $request->query('page', 1),
             [
                 'path' => $request->url(),
@@ -61,7 +62,6 @@ class ConvocationsController extends Controller
         $stats = [
             'total' => $convocations->total(),
             'brouillons' => 0,
-            'a_completer' => 0,
             'emises' => 0,
             'envoyees' => 0,
             'cloturees' => 0,
@@ -69,7 +69,6 @@ class ConvocationsController extends Controller
 
         $statutVersCleStat = [
             'brouillon' => 'brouillons',
-            'a_completer' => 'a_completer',
             'emise' => 'emises',
             'envoyee' => 'envoyees',
             'cloturee' => 'cloturees',
@@ -102,7 +101,7 @@ class ConvocationsController extends Controller
     public function import(Request $request): RedirectResponse
     {
         $request->validate([
-            'fichier' => ['required', 'file', 'mimes:csv,txt', 'max:5120'],
+            'fichier' => ['required', 'file', 'mimes:csv,txt,docx', 'max:5120'],
         ]);
 
         $utilisateurId = session('sicore_user.id');
@@ -133,6 +132,57 @@ class ConvocationsController extends Controller
             ->with('import_avertissements', $avertissements);
     }
 
+    // Export CSV du tableau DAGE, en respectant les filtres actifs
+    // (statut/date/objet) — mêmes lignes que construireLignes(), mais sur
+    // la totalité des résultats filtrés plutôt que la seule page affichée.
+    public function export(Request $request): StreamedResponse
+    {
+        $filtres = array_filter([
+            'statut' => $request->query('statut'),
+            'date' => $request->query('date'),
+            'objet' => $request->query('objet'),
+            'per_page' => 5000,
+        ]);
+
+        $resultat = $this->convocations->liste($filtres);
+        $items = $resultat['success'] ? ($resultat['data']['data'] ?? []) : [];
+        $lignes = $this->construireLignes($items);
+
+        $nomFichier = 'convocations_'.now()->format('Y-m-d_His').'.csv';
+
+        return response()->streamDownload(function () use ($lignes) {
+            $sortie = fopen('php://output', 'w');
+
+            // BOM UTF-8 : sans ca, Excel affiche les accents mal encodes.
+            fwrite($sortie, "\xEF\xBB\xBF");
+
+            fputcsv($sortie, [
+                'Agent', 'Type', 'Objet', 'Session', 'Centre', 'Rôle',
+                'Date début', 'Date fin', 'Lieu de service', "Lieu d'examen", 'Statut',
+            ], ';');
+
+            foreach ($lignes as $ligne) {
+                fputcsv($sortie, [
+                    $ligne['agent'] ?? '',
+                    $ligne['type'] ?? '',
+                    $ligne['objet'] ?? '',
+                    $ligne['session'] ?? '',
+                    $ligne['centre'] ?? '',
+                    $ligne['role'] ?? '',
+                    $ligne['date_debut'] ? Carbon::parse($ligne['date_debut'])->format('d/m/Y') : '',
+                    $ligne['date_fin'] ? Carbon::parse($ligne['date_fin'])->format('d/m/Y') : '',
+                    $ligne['lieu_service'] ?? '',
+                    $ligne['lieu_examen'] ?? '',
+                    $ligne['statut'] ?? '',
+                ], ';');
+            }
+
+            fclose($sortie);
+        }, $nomFichier, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+        ]);
+    }
+
     /**
      * Aplati les convocations (avec leurs centres et bénéficiaires
      * imbriqués) en lignes exploitables par le tableau DAGE. Une
@@ -150,6 +200,7 @@ class ConvocationsController extends Controller
 
             $ligneCommune = [
                 'convocation_id' => $item['id'] ?? null,
+                'objet' => $item['objet'] ?? null,
                 'type' => $item['typeConvocation']['libelle'] ?? null,
                 'session' => $item['session'] ?? null,
                 'date_debut' => $item['date_debut'] ?? null,
@@ -228,7 +279,7 @@ class ConvocationsController extends Controller
             'lieu_examen' => ['nullable', 'string', 'max:255'],
             'lieu_affectation' => ['nullable', 'string', 'max:255'],
             'ordre_de_mission' => ['nullable', 'boolean'],
-            'statut' => ['nullable', 'in:brouillon,a_completer,emise,envoyee,cloturee'],
+            'statut' => ['nullable', 'in:brouillon,emise,envoyee,cloturee'],
 
             // Centres d'examen (etape 2 du wizard) : centre, jury, metier,
             // chef de centre. Un membre du jury (ci-dessous) reference son
@@ -370,7 +421,7 @@ class ConvocationsController extends Controller
             'lieu_examen' => ['nullable', 'string', 'max:255'],
             'lieu_affectation' => ['nullable', 'string', 'max:255'],
             'ordre_de_mission' => ['nullable', 'boolean'],
-            'statut' => ['nullable', 'in:brouillon,a_completer,emise,envoyee,cloturee'],
+            'statut' => ['nullable', 'in:brouillon,emise,envoyee,cloturee'],
         ]);
         $data['ordre_de_mission'] = $request->boolean('ordre_de_mission');
 
@@ -394,6 +445,41 @@ class ConvocationsController extends Controller
         return redirect()
             ->route('indemnites.convocations')
             ->with($resultat['success'] ? 'success' : 'error', $resultat['message'] ?? 'Convocation supprimee.');
+    }
+
+    // Suppression multiple depuis les cases a cocher de la liste (index).
+    // Reutilise l'endpoint de suppression unitaire (pas de nouvel endpoint
+    // API cote back) : une boucle simple suffit vu les volumes attendus.
+    public function destroyMultiple(Request $request): RedirectResponse
+    {
+        // Une meme convocation peut apparaitre sur plusieurs lignes du
+        // tableau DAGE (une par beneficiaire) : on deduplique les id
+        // coches pour ne pas tenter de la supprimer deux fois.
+        $ids = array_unique(array_filter((array) $request->input('ids', [])));
+
+        if (empty($ids)) {
+            return redirect()
+                ->route('indemnites.convocations')
+                ->with('error', 'Aucune convocation sélectionnée.');
+        }
+
+        $supprimees = 0;
+
+        foreach ($ids as $id) {
+            $resultat = $this->convocations->supprimer($id);
+
+            if ($resultat['success']) {
+                $supprimees++;
+            }
+        }
+
+        $message = $supprimees > 0
+            ? $supprimees.' convocation(s) supprimée(s).'
+            : "Aucune des convocations sélectionnées n'a pu être supprimée.";
+
+        return redirect()
+            ->route('indemnites.convocations')
+            ->with($supprimees > 0 ? 'success' : 'error', $message);
     }
 
     // Ajoute un ou plusieurs beneficiaires a une convocation existante
