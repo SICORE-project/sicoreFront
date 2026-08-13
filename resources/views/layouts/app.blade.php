@@ -15,5 +15,6 @@ class="app-body" @yield('page_attributes')
   @yield('content')
 
   <div class="mobile-overlay" data-sidebar-close aria-hidden="true"></div>
+  
 @endsection
 
