@@ -91,22 +91,34 @@ class ConvocationsController extends Controller
             'stats' => $stats,
             'statutFiltre' => $request->query('statut', ''),
             'importAvertissements' => session('import_avertissements', []),
+            // Selectionne dans le formulaire d'import (modal) : le type
+            // n'est plus un champ du document Word, voir import() ci-dessous.
+            'typesConvocation' => $this->typesConvocationPourImport(),
         ]);
     }
 
+    private function typesConvocationPourImport(): array
+    {
+        $resultat = $this->convocations->typesConvocation();
+
+        return $resultat['success'] ? ($resultat['data'] ?? []) : [];
+    }
+
     /**
-     * Option A du workflow DAGE : import du fichier CSV remis par la
-     * DECPC (voir GUIDE-IMPORT-CONVOCATIONS.md).
+     * Import d'une convocation depuis le modèle Word rempli (voir
+     * telechargerModeleWord() ci-dessous) : un document = une convocation
+     * complète (infos + centres + membres du jury).
      */
     public function import(Request $request): RedirectResponse
     {
-        $request->validate([
-            'fichier' => ['required', 'file', 'mimes:csv,txt,docx', 'max:5120'],
+        $data = $request->validate([
+            'fichier' => ['required', 'file', 'mimes:docx', 'max:5120'],
+            'type_convocation_id' => ['required', 'integer'],
         ]);
 
         $utilisateurId = session('sicore_user.id');
 
-        $resultat = $this->convocations->importer($request->file('fichier'), $utilisateurId);
+        $resultat = $this->convocations->importer($request->file('fichier'), $utilisateurId, $data['type_convocation_id']);
 
         if (! $resultat['success']) {
             return redirect()
@@ -132,54 +144,18 @@ class ConvocationsController extends Controller
             ->with('import_avertissements', $avertissements);
     }
 
-    // Export CSV du tableau DAGE, en respectant les filtres actifs
-    // (statut/date/objet) — mêmes lignes que construireLignes(), mais sur
-    // la totalité des résultats filtrés plutôt que la seule page affichée.
-    public function export(Request $request): StreamedResponse
+    // Télécharge le modèle Word à remplir (mêmes champs que le formulaire
+    // de nouvelle convocation) — relaie tel quel le corps binaire et les
+    // headers renvoyés par le backend (voir ConvocationModeleWordController).
+    public function telechargerModeleWord(): StreamedResponse
     {
-        $filtres = array_filter([
-            'statut' => $request->query('statut'),
-            'date' => $request->query('date'),
-            'objet' => $request->query('objet'),
-            'per_page' => 5000,
-        ]);
+        $reponse = $this->convocations->telechargerModeleWord();
 
-        $resultat = $this->convocations->liste($filtres);
-        $items = $resultat['success'] ? ($resultat['data']['data'] ?? []) : [];
-        $lignes = $this->construireLignes($items);
-
-        $nomFichier = 'convocations_'.now()->format('Y-m-d_His').'.csv';
-
-        return response()->streamDownload(function () use ($lignes) {
-            $sortie = fopen('php://output', 'w');
-
-            // BOM UTF-8 : sans ca, Excel affiche les accents mal encodes.
-            fwrite($sortie, "\xEF\xBB\xBF");
-
-            fputcsv($sortie, [
-                'Agent', 'Type', 'Objet', 'Session', 'Centre', 'Rôle',
-                'Date début', 'Date fin', 'Lieu de service', "Lieu d'examen", 'Statut',
-            ], ';');
-
-            foreach ($lignes as $ligne) {
-                fputcsv($sortie, [
-                    $ligne['agent'] ?? '',
-                    $ligne['type'] ?? '',
-                    $ligne['objet'] ?? '',
-                    $ligne['session'] ?? '',
-                    $ligne['centre'] ?? '',
-                    $ligne['role'] ?? '',
-                    $ligne['date_debut'] ? Carbon::parse($ligne['date_debut'])->format('d/m/Y') : '',
-                    $ligne['date_fin'] ? Carbon::parse($ligne['date_fin'])->format('d/m/Y') : '',
-                    $ligne['lieu_service'] ?? '',
-                    $ligne['lieu_examen'] ?? '',
-                    $ligne['statut'] ?? '',
-                ], ';');
-            }
-
-            fclose($sortie);
-        }, $nomFichier, [
-            'Content-Type' => 'text/csv; charset=UTF-8',
+        return response()->streamDownload(function () use ($reponse) {
+            echo $reponse->body();
+        }, 'modele-convocation.docx', [
+            'Content-Type' => $reponse->header('Content-Type')
+                ?: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
         ]);
     }
 

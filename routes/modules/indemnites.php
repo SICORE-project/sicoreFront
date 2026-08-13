@@ -25,15 +25,14 @@ Route::middleware('sicore.auth')
         Route::get('/convocations/enseignants/rechercher', [ConvocationsController::class, 'rechercherEnseignants'])
             ->name('convocations.enseignants.rechercher');
 
-        // Option A du workflow DAGE ("Transmission des convocations") :
-        // import du fichier remis par la DECPC.
+        // Modèle Word à remplir puis import du document rempli (une
+        // convocation complète par document : infos + centres + membres).
+        // Doit rester avant /convocations/{id} pour ne pas etre capturee par elle.
+        Route::get('/convocations/modele-word', [ConvocationsController::class, 'telechargerModeleWord'])
+            ->name('convocations.modele-word');
+
         Route::post('/convocations/import', [ConvocationsController::class, 'import'])
             ->name('convocations.import');
-
-        // Export CSV de la liste (respecte les filtres actifs) — doit
-        // rester avant /convocations/{id} pour ne pas etre capturee par elle.
-        Route::get('/convocations/export', [ConvocationsController::class, 'export'])
-            ->name('convocations.export');
 
         Route::post('/convocations', [ConvocationsController::class, 'store'])
             ->name('convocations.store');

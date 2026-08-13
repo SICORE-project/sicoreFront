@@ -85,13 +85,9 @@
                     Nouvelle convocation
                 </a>
 
-                <button class="btn-secondary" type="button" data-import-toggle>
+                <button class="btn-secondary" type="button" data-modal-open="import-convocations">
                     Importer
                 </button>
-
-                <a class="btn-secondary" href="{{ route('indemnites.convocations.export', request()->query()) }}">
-                    Exporter
-                </a>
 
                 <button class="btn-secondary btn-bulk-delete" type="button" data-bulk-delete-button disabled>
                     Supprimer la sélection
@@ -101,46 +97,72 @@
 
     
 
-        <div id="import-convocations" class="import-panel" data-import-panel hidden>
+        <div class="modal-backdrop" id="import-convocations" data-modal hidden>
+            <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="import-convocations-title">
 
-            @if (! empty($importAvertissements))
-                <div class="form-errors" role="alert">
-                    <p><strong>Points à vérifier sur le dernier import :</strong></p>
-                    <ul>
-                        @foreach ($importAvertissements as $avertissement)
-                            <li>{{ $avertissement }}</li>
-                        @endforeach
-                    </ul>
-                </div>
-            @endif
-
-            <form
-                method="POST"
-                action="{{ route('indemnites.convocations.import') }}"
-                enctype="multipart/form-data"
-                class="import-panel-form"
-            >
-                @csrf
-
-                <div class="form-group">
-                    <label for="import-fichier">Fichier (CSV ou Word)</label>
-                    <input
-                        class="form-control"
-                        id="import-fichier"
-                        name="fichier"
-                        type="file"
-                        accept=".csv,text/csv,text/plain,.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                        required
-                    >
+                <div class="modal-header">
+                    <h2 id="import-convocations-title">Importer une convocation</h2>
+                    <button class="modal-close" type="button" data-modal-close aria-label="Fermer">&times;</button>
                 </div>
 
-                <div class="actions-group">
-                    <button class="btn-primary" type="submit">
-                        Importer
-                    </button>
-                </div>
-            </form>
+                <a class="btn-secondary modal-modele-link" href="{{ route('indemnites.convocations.modele-word') }}">
+                    Télécharger le modèle Word
+                </a>
 
+                @if (! empty($importAvertissements))
+                    <div class="form-errors" role="alert">
+                        <p><strong>Points à vérifier sur le dernier import :</strong></p>
+                        <ul>
+                            @foreach ($importAvertissements as $avertissement)
+                                <li>{{ $avertissement }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endif
+
+                <form
+                    method="POST"
+                    action="{{ route('indemnites.convocations.import') }}"
+                    enctype="multipart/form-data"
+                    class="import-panel-form"
+                >
+                    @csrf
+
+                    <div class="form-group">
+                        <label for="import-type-convocation">Type de convocation</label>
+                        <select
+                            class="form-control"
+                            id="import-type-convocation"
+                            name="type_convocation_id"
+                            required
+                        >
+                            <option value="">Sélectionner</option>
+                            @foreach ($typesConvocation ?? [] as $type)
+                                <option value="{{ $type['id'] }}">{{ $type['libelle'] }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="import-fichier">Fichier (Word)</label>
+                        <input
+                            class="form-control"
+                            id="import-fichier"
+                            name="fichier"
+                            type="file"
+                            accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                            required
+                        >
+                    </div>
+
+                    <div class="actions-group">
+                        <button class="btn-primary" type="submit">
+                            Importer
+                        </button>
+                    </div>
+                </form>
+
+            </div>
         </div>
 
         {{-- ============================================================
@@ -338,28 +360,87 @@
 @push('styles')
 <style>
 
-    .import-panel {
-        margin: 0 0 20px;
-        padding: 18px 20px;
-        border: 1px solid #e5e7eb;
+    .modal-backdrop {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        background: rgba(15, 23, 42, 0.5);
+        z-index: 1000;
+    }
+
+    .modal-backdrop[hidden] {
+        display: none;
+    }
+
+    .modal-dialog {
+        width: 100%;
+        max-width: 520px;
+        max-height: calc(100vh - 40px);
+        overflow-y: auto;
+        padding: 20px 22px;
         border-radius: 10px;
         background: #ffffff;
+        box-shadow: 0 20px 45px rgba(15, 23, 42, 0.25);
+    }
+
+    .modal-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 8px;
+    }
+
+    .modal-header h2 {
+        margin: 0;
+        font-size: 1.1rem;
+    }
+
+    .modal-close {
+        border: 0;
+        background: transparent;
+        font-size: 1.4rem;
+        line-height: 1;
+        cursor: pointer;
+        color: inherit;
+    }
+
+    .modal-modele-link {
+        display: block;
+        width: 100%;
+        text-align: center;
+        margin-bottom: 18px;
+        color: #ffffff;
+        background: var(--blue, #2563eb);
+        border-color: var(--blue, #2563eb);
     }
 
     .import-panel-form {
         display: flex;
-        align-items: flex-end;
-        flex-wrap: wrap;
-        gap: 16px;
+        flex-direction: column;
+        gap: 14px;
     }
 
     .import-panel-form .form-group {
         margin: 0;
-        min-width: 240px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .import-panel-form .form-control {
+        width: 100%;
     }
 
     .import-panel-form .actions-group {
         margin: 0;
+    }
+
+    .import-panel-form .actions-group .btn-primary {
+        width: 100%;
     }
 
     .checkbox-cell {
@@ -395,8 +476,8 @@
 @endpush
 
 {{-- ================================================================
-     SCRIPT — bascule l'affichage du panneau d'import au clic sur le
-     bouton "Importer".
+     SCRIPT — ouverture/fermeture de la modal d'import (bouton
+     "Importer", bouton de fermeture, clic sur l'overlay, touche Échap).
 ================================================================ --}}
 
 @push('scripts')
@@ -404,20 +485,57 @@
     (function () {
         "use strict";
 
-        var toggleButton = document.querySelector("[data-import-toggle]");
-        var panel = document.querySelector("[data-import-panel]");
-
-        if (!toggleButton || !panel) {
-            return;
+        function ouvrirModal(modal) {
+            modal.hidden = false;
         }
 
-        toggleButton.addEventListener("click", function () {
-            panel.hidden = !panel.hidden;
+        function fermerModal(modal) {
+            modal.hidden = true;
+        }
 
-            if (!panel.hidden) {
-                panel.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        document.querySelectorAll("[data-modal-open]").forEach(function (bouton) {
+            var modal = document.getElementById(bouton.getAttribute("data-modal-open"));
+
+            if (!modal) {
+                return;
             }
+
+            bouton.addEventListener("click", function () {
+                ouvrirModal(modal);
+            });
         });
+
+        document.querySelectorAll("[data-modal]").forEach(function (modal) {
+            modal.addEventListener("click", function (event) {
+                if (event.target === modal) {
+                    fermerModal(modal);
+                }
+            });
+
+            modal.querySelectorAll("[data-modal-close]").forEach(function (bouton) {
+                bouton.addEventListener("click", function () {
+                    fermerModal(modal);
+                });
+            });
+        });
+
+        document.addEventListener("keydown", function (event) {
+            if (event.key !== "Escape") {
+                return;
+            }
+
+            document.querySelectorAll("[data-modal]:not([hidden])").forEach(fermerModal);
+        });
+
+        @if (! empty($importAvertissements))
+            // Rouvre automatiquement la modal apres un import : sinon les
+            // avertissements ("agent non reconnu", ...) restent invisibles
+            // dans la modal fermee et l'utilisateur croit l'import parfait.
+            var modaleImport = document.getElementById("import-convocations");
+            if (modaleImport) {
+                ouvrirModal(modaleImport);
+            }
+        @endif
     })();
 </script>
 

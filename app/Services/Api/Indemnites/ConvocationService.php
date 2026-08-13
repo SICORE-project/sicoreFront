@@ -139,14 +139,17 @@ class ConvocationService
     }
 
     /**
-     * Option A du workflow DAGE : import du fichier CSV remis par la
-     * DECPC. $utilisateurId est rattaché à chaque convocation créée
-     * (colonne non nullable en base).
+     * Import d'une convocation depuis le modèle Word rempli (voir
+     * telechargerModeleWord() ci-dessous). $utilisateurId est rattaché à
+     * la convocation créée (colonne non nullable en base). Le type de
+     * convocation est choisi dans le formulaire d'import (pas dans le
+     * document Word) et transmis ici séparément.
      */
-    public function importer(\Illuminate\Http\UploadedFile $fichier, int|string $utilisateurId): array
+    public function importer(\Illuminate\Http\UploadedFile $fichier, int|string $utilisateurId, int|string $typeConvocationId): array
     {
         return $this->wrap($this->api->postMultipart('convocations/import', [
             'utilisateur_id' => $utilisateurId,
+            'type_convocation_id' => $typeConvocationId,
         ], [
             [
                 'name' => 'fichier',
@@ -154,6 +157,16 @@ class ConvocationService
                 'filename' => $fichier->getClientOriginalName(),
             ],
         ]));
+    }
+
+    /**
+     * Réponse brute (pas de wrap() : le corps n'est pas du JSON mais le
+     * contenu binaire du modèle .docx) — le contrôleur relaie ce corps et
+     * les headers reçus tels quels au navigateur.
+     */
+    public function telechargerModeleWord(): \Illuminate\Http\Client\Response
+    {
+        return $this->api->get('convocations/modele-word');
     }
 
 }
