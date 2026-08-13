@@ -68,4 +68,28 @@ class ApiClient
                 $this->baseUrl.'/'.$uri
             );
     }
+
+
+    /**
+     * POST multipart/form-data (upload de fichier). $fichiers est un
+     * tableau de ['name' => ..., 'contents' => resource|string, 'filename' => ...],
+     * $data porte les champs de formulaire additionnels (non-fichier).
+     *
+     * Utilisée par ConvocationService::deposerFichier() et ::importer() —
+     * 
+     */
+    public function postMultipart(string $uri, array $data = [], array $fichiers = [])
+    {
+        $request = $this->request();
+
+        foreach ($fichiers as $fichier) {
+            $request = $request->attach(
+                $fichier['name'],
+                $fichier['contents'],
+                $fichier['filename'] ?? null
+            );
+        }
+
+        return $request->post($this->baseUrl.'/'.$uri, $data);
+    }
 }

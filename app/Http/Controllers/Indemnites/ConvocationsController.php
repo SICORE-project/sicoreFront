@@ -61,6 +61,7 @@ class ConvocationsController extends Controller
         $stats = [
             'total' => $convocations->total(),
             'brouillons' => 0,
+            'a_completer' => 0,
             'emises' => 0,
             'envoyees' => 0,
             'cloturees' => 0,
@@ -68,6 +69,7 @@ class ConvocationsController extends Controller
 
         $statutVersCleStat = [
             'brouillon' => 'brouillons',
+            'a_completer' => 'a_completer',
             'emise' => 'emises',
             'envoyee' => 'envoyees',
             'cloturee' => 'cloturees',
@@ -82,9 +84,119 @@ class ConvocationsController extends Controller
 
         return view('pages.indemnites.convocations.index', [
             'convocations' => $convocations,
+            // Liste "a plat" pour le tableau DAGE (point 3 du cahier des
+            // charges) : une ligne par (convocation x centre x agent),
+            // avec les colonnes Agent/Type/Session/Centre/Role/... qui ne
+            // sont pas toutes portees par le meme objet Eloquent.
+            'lignes' => $this->construireLignes($items),
             'stats' => $stats,
             'statutFiltre' => $request->query('statut', ''),
+            'importAvertissements' => session('import_avertissements', []),
         ]);
+    }
+
+    /**
+     * Option A du workflow DAGE : import du fichier CSV remis par la
+     * DECPC (voir GUIDE-IMPORT-CONVOCATIONS.md).
+     */
+    public function import(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'fichier' => ['required', 'file', 'mimes:csv,txt', 'max:5120'],
+        ]);
+
+        $utilisateurId = session('sicore_user.id');
+
+        $resultat = $this->convocations->importer($request->file('fichier'), $utilisateurId);
+
+        if (! $resultat['success']) {
+            return redirect()
+                ->route('indemnites.convocations')
+                ->with('error', $resultat['message'] ?? "Échec de l'import du fichier.");
+        }
+
+        $donnees = $resultat['data'] ?? [];
+        $importees = $donnees['importees'] ?? 0;
+        $avertissements = array_merge($donnees['avertissements'] ?? [], $donnees['erreurs'] ?? []);
+
+        $message = $importees > 0
+            ? "{$importees} convocation(s) importée(s)."
+            : "Aucune convocation n'a pu être importée.";
+
+        if (! empty($avertissements)) {
+            $message .= ' '.count($avertissements)." ligne(s) à vérifier — voir le détail ci-dessous.";
+        }
+
+        return redirect()
+            ->route('indemnites.convocations')
+            ->with($importees > 0 ? 'success' : 'error', $message)
+            ->with('import_avertissements', $avertissements);
+    }
+
+    /**
+     * Aplati les convocations (avec leurs centres et bénéficiaires
+     * imbriqués) en lignes exploitables par le tableau DAGE. Une
+     * convocation sans bénéficiaire produit quand même une ligne (agent
+     * "—"), pour rester visible dans la liste tant qu'elle n'est pas
+     * complétée (option B).
+     */
+    private function construireLignes(array $items): array
+    {
+        $lignes = [];
+
+        foreach ($items as $item) {
+            $centres = $item['centres'] ?? [];
+            $enseignants = $item['enseignants'] ?? [];
+
+            $ligneCommune = [
+                'convocation_id' => $item['id'] ?? null,
+                'type' => $item['typeConvocation']['libelle'] ?? null,
+                'session' => $item['session'] ?? null,
+                'date_debut' => $item['date_debut'] ?? null,
+                'date_fin' => $item['date_fin'] ?? null,
+                'lieu_examen' => $item['lieu_examen'] ?? null,
+                'statut' => $item['statut'] ?? null,
+            ];
+
+            if (empty($enseignants)) {
+                $lignes[] = array_merge($ligneCommune, [
+                    'agent' => null,
+                    'role' => null,
+                    'centre' => $centres[0]['centre'] ?? null,
+                    'lieu_service' => null,
+                ]);
+
+                continue;
+            }
+
+            foreach ($enseignants as $enseignant) {
+                $centreId = $enseignant['pivot']['centre_id'] ?? null;
+                $centreNom = null;
+
+                foreach ($centres as $centre) {
+                    if ($centreId && (int) ($centre['id'] ?? null) === (int) $centreId) {
+                        $centreNom = $centre['centre'] ?? null;
+                        break;
+                    }
+                }
+
+                // Convocation a un seul centre : pas d'ambiguite, on
+                // l'affiche meme si le beneficiaire n'y est pas rattache
+                // explicitement (ancien format d'ajout, sans centre_id).
+                if (! $centreNom && count($centres) === 1) {
+                    $centreNom = $centres[0]['centre'] ?? null;
+                }
+
+                $lignes[] = array_merge($ligneCommune, [
+                    'agent' => trim(($enseignant['prenom'] ?? '').' '.($enseignant['nom'] ?? '')) ?: '—',
+                    'role' => $enseignant['pivot']['fonction'] ?? null,
+                    'centre' => $centreNom,
+                    'lieu_service' => $enseignant['lieuService']['libelle'] ?? null,
+                ]);
+            }
+        }
+
+        return $lignes;
     }
 
     public function create(): View
@@ -100,21 +212,23 @@ class ConvocationsController extends Controller
     }
 
     // Cree la convocation, puis (si fournis) ses centres d'examen et ses
-    // beneficiaires. Le depot du fichier scanne se fait separement, depuis
-    // la fiche de la convocation (voir storeFichier plus bas).
+    // beneficiaires. L'import en masse (fichier DECPC, option A) se fait
+    // depuis la liste (voir import() plus bas) — ce formulaire ne gere que
+    // la saisie manuelle, sans depot de fichier.
     public function store(Request $request): RedirectResponse
     {
         $data = $request->validate([
             'type_convocation_id' => ['nullable', 'integer'],
             'date_emission' => ['required', 'date'],
             'objet' => ['required', 'string', 'max:255'],
+            'session' => ['nullable', 'string', 'max:150'],
             'date_debut' => ['required', 'date'],
             'date_fin' => ['required', 'date', 'after_or_equal:date_debut'],
             'heure_debut' => ['required', 'date_format:H:i'],
             'lieu_examen' => ['nullable', 'string', 'max:255'],
             'lieu_affectation' => ['nullable', 'string', 'max:255'],
             'ordre_de_mission' => ['nullable', 'boolean'],
-            'statut' => ['nullable', 'in:brouillon,emise,envoyee,cloturee'],
+            'statut' => ['nullable', 'in:brouillon,a_completer,emise,envoyee,cloturee'],
 
             // Centres d'examen (etape 2 du wizard) : centre, jury, metier,
             // chef de centre. Un membre du jury (ci-dessous) reference son
@@ -134,6 +248,7 @@ class ConvocationsController extends Controller
             'beneficiaires.*.enseignant_id' => ['required_with:beneficiaires', 'integer'],
             'beneficiaires.*.fonction' => ['nullable', 'string', 'max:100'],
             'beneficiaires.*.provenance' => ['nullable', 'string', 'max:255'],
+            'beneficiaires.*.categorie_personnel' => ['nullable', 'in:fonctionnaire,contractuel,vacataire'],
             'beneficiaires.*.centre_index' => ['nullable', 'integer'],
         ]);
 
@@ -176,6 +291,7 @@ class ConvocationsController extends Controller
                     'enseignant_id' => $beneficiaire['enseignant_id'],
                     'fonction' => $beneficiaire['fonction'] ?? null,
                     'provenance' => $beneficiaire['provenance'] ?? null,
+                    'categorie_personnel' => $beneficiaire['categorie_personnel'] ?? null,
                     'centre_id' => $centreIndex !== null ? ($centreIdParIndex[$centreIndex] ?? null) : null,
                 ];
             }, $beneficiaires);
@@ -229,10 +345,14 @@ class ConvocationsController extends Controller
         }
 
         $typesResultat = $this->convocations->typesConvocation();
+        $centresResultat = $this->convocations->centres($id);
+        $beneficiairesResultat = $this->convocations->beneficiaires($id);
 
         return view('pages.indemnites.convocations.edit', [
             'convocation' => $this->formatConvocationForView($resultat['data']),
             'typesConvocation' => $typesResultat['success'] ? ($typesResultat['data'] ?? []) : [],
+            'centres' => $centresResultat['success'] ? ($centresResultat['data'] ?? []) : [],
+            'beneficiaires' => $beneficiairesResultat['success'] ? ($beneficiairesResultat['data']['data'] ?? []) : [],
             'id' => $id,
         ]);
     }
@@ -243,13 +363,14 @@ class ConvocationsController extends Controller
             'type_convocation_id' => ['nullable', 'integer'],
             'date_emission' => ['sometimes', 'date'],
             'objet' => ['sometimes', 'string', 'max:255'],
+            'session' => ['nullable', 'string', 'max:150'],
             'date_debut' => ['sometimes', 'date'],
             'date_fin' => ['sometimes', 'date', 'after_or_equal:date_debut'],
             'heure_debut' => ['sometimes', 'date_format:H:i'],
             'lieu_examen' => ['nullable', 'string', 'max:255'],
             'lieu_affectation' => ['nullable', 'string', 'max:255'],
             'ordre_de_mission' => ['nullable', 'boolean'],
-            'statut' => ['nullable', 'in:brouillon,emise,envoyee,cloturee'],
+            'statut' => ['nullable', 'in:brouillon,a_completer,emise,envoyee,cloturee'],
         ]);
         $data['ordre_de_mission'] = $request->boolean('ordre_de_mission');
 
@@ -276,12 +397,15 @@ class ConvocationsController extends Controller
     }
 
     // Ajoute un ou plusieurs beneficiaires a une convocation existante
+    // (utilise depuis la fiche "Modifier" — cf. section Membres du jury).
     public function storeBeneficiaires(Request $request, int|string $id): RedirectResponse
     {
         $data = $request->validate([
             'enseignant_id' => ['required', 'integer'],
             'fonction' => ['nullable', 'string', 'max:100'],
             'provenance' => ['nullable', 'string', 'max:255'],
+            'categorie_personnel' => ['nullable', 'in:fonctionnaire,contractuel,vacataire'],
+            'centre_id' => ['nullable', 'integer'],
         ]);
 
         $resultat = $this->convocations->ajouterBeneficiairesAvecFonction($id, [
@@ -289,98 +413,34 @@ class ConvocationsController extends Controller
                 'enseignant_id' => $data['enseignant_id'],
                 'fonction' => $data['fonction'] ?? null,
                 'provenance' => $data['provenance'] ?? null,
+                'categorie_personnel' => $data['categorie_personnel'] ?? null,
+                'centre_id' => $data['centre_id'] ?? null,
             ],
         ]);
 
         return redirect()
-            ->route('indemnites.convocations.show', $id)
+            ->route('indemnites.convocations.edit', $id)
             ->with($resultat['success'] ? 'success' : 'error', $resultat['message'] ?? 'Beneficiaire ajoute.');
     }
 
-    public function storeFichier(Request $request, int|string $id): RedirectResponse
-    {
-        $request->validate([
-            'fichier' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
-        ]);
-
-        $resultat = $this->convocations->deposerFichier($id, $request->file('fichier'));
-
-        return redirect()
-            ->route('indemnites.convocations.show', $id)
-            ->with($resultat['success'] ? 'success' : 'error', $resultat['message'] ?? 'Fichier depose.');
-    }
-
-    public function genererPdf(int|string $id): RedirectResponse
-    {
-        $resultat = $this->convocations->genererPdf($id);
-
-        return redirect()
-            ->route('indemnites.convocations.show', $id)
-            ->with($resultat['success'] ? 'success' : 'error', $resultat['message'] ?? 'PDF genere.');
-    }
-
-    // Recupere le PDF depuis le backend (avec le jeton) et le retransmet au navigateur
-    public function telechargerPdf(int|string $id)
-    {
-        $response = $this->convocations->telechargerPdf($id);
-
-        if (! $response->successful()) {
-            return redirect()
-                ->route('indemnites.convocations.show', $id)
-                ->with('error', 'Impossible de telecharger le PDF de cette convocation.');
-        }
-
-        return response($response->body(), 200, [
-            'Content-Type' => $response->header('Content-Type') ?? 'application/pdf',
-            'Content-Disposition' => "attachment; filename=\"convocation-{$id}.pdf\"",
-        ]);
-    }
-
-    public function envoyer(Request $request, int|string $id): RedirectResponse
+    // Ajoute un centre d'examen a une convocation existante (utilise depuis
+    // la fiche "Modifier" — cf. section Centres d'examen). Meme endpoint API
+    // que la creation (ConvocationCentreController::store), qui accepte deja
+    // un id de convocation existante.
+    public function storeCentres(Request $request, int|string $id): RedirectResponse
     {
         $data = $request->validate([
-            'canal' => ['nullable', 'in:email,sms,courrier'],
-            'message' => ['nullable', 'string', 'max:2000'],
+            'centre' => ['required', 'string', 'max:255'],
+            'jury' => ['nullable', 'string', 'max:100'],
+            'chef_centre_id' => ['nullable', 'integer'],
+            'chef_centre_telephone' => ['nullable', 'string', 'max:30'],
         ]);
 
-        $resultat = $this->convocations->envoyer($id, $data);
+        $resultat = $this->convocations->creerCentres($id, [$data]);
 
         return redirect()
-            ->route('indemnites.convocations.show', $id)
-            ->with($resultat['success'] ? 'success' : 'error', $resultat['message'] ?? 'Envoi effectue.');
-    }
-
-    public function relancer(Request $request, int|string $id): RedirectResponse
-    {
-        $data = $request->validate([
-            'message' => ['nullable', 'string', 'max:2000'],
-        ]);
-
-        $resultat = $this->convocations->relancer($id, $data);
-
-        return redirect()
-            ->route('indemnites.convocations.show', $id)
-            ->with($resultat['success'] ? 'success' : 'error', $resultat['message'] ?? 'Relance effectuee.');
-    }
-
-    public function suivi(int|string $id): View
-    {
-        $resultat = $this->convocations->suivi($id);
-        $envois = $resultat['success'] ? ($resultat['data']['data'] ?? []) : [];
-
-        $stats = ['total' => count($envois), 'envoye' => 0, 'echec' => 0];
-        foreach ($envois as $envoi) {
-            $statut = $envoi['statut'] ?? null;
-            if ($statut && array_key_exists($statut, $stats)) {
-                $stats[$statut]++;
-            }
-        }
-
-        return view('pages.indemnites.convocations.suivi', [
-            'envois' => $envois,
-            'stats' => $stats,
-            'id' => $id,
-        ]);
+            ->route('indemnites.convocations.edit', $id)
+            ->with($resultat['success'] ? 'success' : 'error', $resultat['message'] ?? 'Centre ajoute.');
     }
 
     /**

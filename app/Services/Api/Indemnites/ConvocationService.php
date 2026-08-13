@@ -64,6 +64,11 @@ class ConvocationService
         return $this->wrap($this->api->get("convocations/{$id}/beneficiaires"));
     }
 
+    public function centres(int|string $id): array
+    {
+        return $this->wrap($this->api->get("convocations/{$id}/centres"));
+    }
+
     /**
      * Cree les centres d'examen d'une convocation. Renvoie les centres
      * crees dans le meme ordre que $centres, avec leur id reel en base -
@@ -113,9 +118,16 @@ class ConvocationService
         ])));
     }
 
-    public function deposerFichier(int|string $id, \Illuminate\Http\UploadedFile $fichier): array
+    /**
+     * Option A du workflow DAGE : import du fichier CSV remis par la
+     * DECPC. $utilisateurId est rattaché à chaque convocation créée
+     * (colonne non nullable en base).
+     */
+    public function importer(\Illuminate\Http\UploadedFile $fichier, int|string $utilisateurId): array
     {
-        return $this->wrap($this->api->postMultipart("convocations/{$id}/fichier", [], [
+        return $this->wrap($this->api->postMultipart('convocations/import', [
+            'utilisateur_id' => $utilisateurId,
+        ], [
             [
                 'name' => 'fichier',
                 'contents' => fopen($fichier->getRealPath(), 'r'),
@@ -124,32 +136,4 @@ class ConvocationService
         ]));
     }
 
-    public function genererPdf(int|string $id): array
-    {
-        return $this->wrap($this->api->get("convocations/{$id}/pdf"));
-    }
-
-    /**
-     * Retourne la reponse HTTP brute (non wrap()) car le controleur a besoin
-     * du corps binaire du PDF pour le retransmettre au navigateur.
-     */
-    public function telechargerPdf(int|string $id)
-    {
-        return $this->api->get("convocations/{$id}/download");
-    }
-
-    public function envoyer(int|string $id, array $donnees): array
-    {
-        return $this->wrap($this->api->post("convocations/{$id}/envoyer", $donnees));
-    }
-
-    public function relancer(int|string $id, array $donnees): array
-    {
-        return $this->wrap($this->api->post("convocations/{$id}/relancer", $donnees));
-    }
-
-    public function suivi(int|string $id): array
-    {
-        return $this->wrap($this->api->get("convocations/{$id}/suivi"));
-    }
 }

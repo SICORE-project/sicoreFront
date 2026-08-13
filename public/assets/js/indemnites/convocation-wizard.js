@@ -273,6 +273,10 @@
 
     var template = form.querySelector("[data-centre-template]");
 
+    var metierGroupTemplate = form.querySelector(
+      "[data-metier-group-template]",
+    );
+
     var addButton = form.querySelector("[data-add-centre]");
 
     var emptyMessage = form.querySelector("[data-centres-empty]");
@@ -308,11 +312,13 @@
         });
       }
 
-      var addMemberButton = centre.querySelector("[data-add-member]");
+      var addMetierGroupButton = centre.querySelector(
+        "[data-add-metier-group]",
+      );
 
-      if (addMemberButton) {
-        addMemberButton.addEventListener("click", function () {
-          addMember(centre);
+      if (addMetierGroupButton) {
+        addMetierGroupButton.addEventListener("click", function () {
+          addMetierGroup(centre);
         });
       }
 
@@ -332,13 +338,96 @@
 
       initCentre(centre);
 
+      // Un centre commence toujours avec un premier groupe métier, pour
+      // coller au papier (formconf.jpeg n'a jamais de centre sans aucun
+      // groupe) tout en autorisant d'en ajouter/retirer d'autres ensuite.
+      addMetierGroup(centre);
+
       updateCentres();
     }
 
-    function addMember(centre) {
+    /*
+      ============================================================
+      GROUPES MÉTIER (un centre peut regrouper plusieurs métiers,
+      ex: MVM puis FC sur formconf.jpeg, chacun avec ses propres
+      membres mais le même centre/jury/chef de centre)
+      ============================================================
+      */
+
+    function updateMetierGroups(centre) {
+      var groupsContainer = centre.querySelector("[data-metiers-container]");
+
+      var empty = centre.querySelector("[data-metiers-empty]");
+
+      if (!groupsContainer) {
+        return;
+      }
+
+      var groups = groupsContainer.querySelectorAll("[data-metier-group]");
+
+      groups.forEach(function (group, index) {
+        var number = group.querySelector("[data-metier-number]");
+
+        if (number) {
+          number.textContent = index + 1;
+        }
+      });
+
+      if (empty) {
+        empty.hidden = groups.length > 0;
+      }
+    }
+
+    function addMetierGroup(centre) {
+      var groupsContainer = centre.querySelector("[data-metiers-container]");
+
+      if (!metierGroupTemplate || !groupsContainer) {
+        return;
+      }
+
+      var fragment = metierGroupTemplate.content.cloneNode(true);
+
+      var group = fragment.querySelector("[data-metier-group]");
+
+      if (!group) {
+        return;
+      }
+
+      groupsContainer.appendChild(group);
+
+      initMetierGroup(group);
+
+      updateMetierGroups(centre);
+    }
+
+    function initMetierGroup(group) {
+      var removeButton = group.querySelector("[data-remove-metier-group]");
+
+      if (removeButton) {
+        removeButton.addEventListener("click", function () {
+          var centre = group.closest("[data-centre-card]");
+
+          group.remove();
+
+          if (centre) {
+            updateMetierGroups(centre);
+          }
+        });
+      }
+
+      var addMemberButton = group.querySelector("[data-add-member]");
+
+      if (addMemberButton) {
+        addMemberButton.addEventListener("click", function () {
+          addMember(group);
+        });
+      }
+    }
+
+    function addMember(group) {
       var memberTemplate = form.querySelector("[data-member-template]");
 
-      var membersBody = centre.querySelector("[data-members-body]");
+      var membersBody = group.querySelector("[data-members-body]");
 
       if (!memberTemplate || !membersBody) {
         return;
@@ -356,7 +445,7 @@
 
       initMember(row);
 
-      updateMembers(centre);
+      updateMembers(group);
     }
 
     function initMember(row) {
@@ -364,12 +453,12 @@
 
       if (removeButton) {
         removeButton.addEventListener("click", function () {
-          var centre = row.closest("[data-centre-card]");
+          var group = row.closest("[data-metier-group]");
 
           row.remove();
 
-          if (centre) {
-            updateMembers(centre);
+          if (group) {
+            updateMembers(group);
           }
         });
       }
@@ -377,10 +466,10 @@
       initMemberSearch(row);
     }
 
-    function updateMembers(centre) {
-      var body = centre.querySelector("[data-members-body]");
+    function updateMembers(group) {
+      var body = group.querySelector("[data-members-body]");
 
-      var empty = centre.querySelector("[data-members-empty]");
+      var empty = group.querySelector("[data-members-empty]");
 
       if (!body || !empty) {
         return;
@@ -482,12 +571,24 @@
                 "[data-member-telephone]",
               );
 
+              var memberCategorieInput = memberRow.querySelector(
+                "[data-member-categorie]",
+              );
+
               if (memberNomInput) {
                 memberNomInput.value = nom;
               }
 
               if (memberTelephoneInput && enseignant.telephone) {
                 memberTelephoneInput.value = enseignant.telephone;
+              }
+
+              // Pre-remplit le statut (fonctionnaire/contractuel/vacataire)
+              // s'il est deja renseigne sur la fiche de l'enseignant -
+              // sinon laisse "Selectionner" pour que l'utilisateur le
+              // complete lui-meme.
+              if (memberCategorieInput && enseignant.categorie_personnel) {
+                memberCategorieInput.value = enseignant.categorie_personnel;
               }
             } else {
               // Recherche du chef de centre.
@@ -592,26 +693,33 @@
 
     var beneficiaireIndex = 0;
 
-    centres.forEach(function (centre, centreIndex) {
-      function addHidden(name, value) {
-        var input = document.createElement("input");
+    // Un centre "papier" (ex: "LTP FXN/THIES JURY 1") peut regrouper
+    // plusieurs métiers (MVM, puis FC...), chacun avec ses propres
+    // membres, mais le même centre/jury/chef de centre. Le back attend
+    // une ligne "centres[]" par métier (cf. StoreConvocationCentresRequest
+    // + README-livraison.md), donc on aplatit ici : chaque groupe métier
+    // devient sa propre entrée "centres[]", et centresIndex (pas l'index
+    // de la carte centre) sert de repère pour rattacher ses membres.
+    var centresIndex = 0;
 
-        input.type = "hidden";
+    function addHidden(name, value) {
+      var input = document.createElement("input");
 
-        input.name = name;
+      input.type = "hidden";
 
-        input.value = value || "";
+      input.name = name;
 
-        input.setAttribute("data-generated-convocation", "true");
+      input.value = value || "";
 
-        form.appendChild(input);
-      }
+      input.setAttribute("data-generated-convocation", "true");
 
+      form.appendChild(input);
+    }
+
+    centres.forEach(function (centre) {
       var centreInput = centre.querySelector('[data-field="centre"]');
 
       var juryInput = centre.querySelector('[data-field="jury"]');
-
-      var metierInput = centre.querySelector('[data-field="metier"]');
 
       var chefInput = centre.querySelector('[data-field="chef_centre_id"]');
 
@@ -619,91 +727,119 @@
         '[data-field="chef_centre_telephone"]',
       );
 
-      addHidden(
-        "centres[" + centreIndex + "][centre]",
-        centreInput ? centreInput.value : "",
+      var metierGroups = Array.prototype.slice.call(
+        centre.querySelectorAll("[data-metier-group]"),
       );
 
-      addHidden(
-        "centres[" + centreIndex + "][jury]",
-        juryInput ? juryInput.value : "",
-      );
-
-      addHidden(
-        "centres[" + centreIndex + "][metier]",
-        metierInput ? metierInput.value : "",
-      );
-
-      addHidden(
-        "centres[" + centreIndex + "][chef_centre_id]",
-        chefInput ? chefInput.value : "",
-      );
-
-      addHidden(
-        "centres[" + centreIndex + "][chef_centre_telephone]",
-        telephoneInput ? telephoneInput.value : "",
-      );
-
-      var membersBody = centre.querySelector("[data-members-body]");
-
-      if (!membersBody) {
-        return;
+      // Cas limite : un centre sans aucun groupe métier (ex. supprimé par
+      // erreur) reste tout de même enregistré comme une ligne "centres[]"
+      // sans métier, pour ne pas perdre le centre/jury/chef déjà saisis.
+      if (metierGroups.length === 0) {
+        metierGroups = [null];
       }
 
-      var rows = membersBody.querySelectorAll(".member-row");
+      metierGroups.forEach(function (group) {
+        var metierInput = group
+          ? group.querySelector('[data-field="metier"]')
+          : null;
 
-      rows.forEach(function (row) {
-        var memberId = row.querySelector("[data-member-id-input]");
+        addHidden(
+          "centres[" + centresIndex + "][centre]",
+          centreInput ? centreInput.value : "",
+        );
 
-        var fonction = row.querySelector("[data-member-fonction]");
+        addHidden(
+          "centres[" + centresIndex + "][jury]",
+          juryInput ? juryInput.value : "",
+        );
 
-        var provenance = row.querySelector("[data-member-provenance]");
+        addHidden(
+          "centres[" + centresIndex + "][metier]",
+          metierInput ? metierInput.value : "",
+        );
 
-        var nom = row.querySelector("[data-member-nom]");
+        addHidden(
+          "centres[" + centresIndex + "][chef_centre_id]",
+          chefInput ? chefInput.value : "",
+        );
 
-        // Le back (ConvocationBeneficiaireController / pivot
-        // convocation_enseignant) ne stocke que enseignant_id, fonction
-        // et centre_id - il n'existe pas de colonne pour un nom saisi a
-        // la main. Un membre du jury doit donc obligatoirement etre
-        // selectionne dans l'autocomplete (data-member-id-input rempli)
-        // pour pouvoir etre enregistre.
-        if (!memberId || !memberId.value) {
-          if (nom && nom.value.trim() && typeof window.showToast === "function") {
-            window.showToast(
-              "error",
-              '"' +
-                nom.value.trim() +
-                '" n\'a pas ete selectionne dans la liste de recherche et ne sera pas enregistre.',
+        addHidden(
+          "centres[" + centresIndex + "][chef_centre_telephone]",
+          telephoneInput ? telephoneInput.value : "",
+        );
+
+        var membersBody = group ? group.querySelector("[data-members-body]") : null;
+
+        if (membersBody) {
+          var rows = membersBody.querySelectorAll(".member-row");
+
+          rows.forEach(function (row) {
+            var memberId = row.querySelector("[data-member-id-input]");
+
+            var fonction = row.querySelector("[data-member-fonction]");
+
+            var provenance = row.querySelector("[data-member-provenance]");
+
+            var categorie = row.querySelector("[data-member-categorie]");
+
+            var nom = row.querySelector("[data-member-nom]");
+
+            // Le back (ConvocationBeneficiaireController / pivot
+            // convocation_enseignant) ne stocke que enseignant_id, fonction
+            // et centre_id - il n'existe pas de colonne pour un nom saisi a
+            // la main. Un membre du jury doit donc obligatoirement etre
+            // selectionne dans l'autocomplete (data-member-id-input rempli)
+            // pour pouvoir etre enregistre.
+            if (!memberId || !memberId.value) {
+              if (
+                nom &&
+                nom.value.trim() &&
+                typeof window.showToast === "function"
+              ) {
+                window.showToast(
+                  "error",
+                  '"' +
+                    nom.value.trim() +
+                    '" n\'a pas ete selectionne dans la liste de recherche et ne sera pas enregistre.',
+                );
+              }
+
+              return;
+            }
+
+            addHidden(
+              "beneficiaires[" + beneficiaireIndex + "][enseignant_id]",
+              memberId.value,
             );
-          }
 
-          return;
+            addHidden(
+              "beneficiaires[" + beneficiaireIndex + "][fonction]",
+              fonction ? fonction.value : "",
+            );
+
+            addHidden(
+              "beneficiaires[" + beneficiaireIndex + "][provenance]",
+              provenance ? provenance.value : "",
+            );
+
+            addHidden(
+              "beneficiaires[" + beneficiaireIndex + "][categorie_personnel]",
+              categorie ? categorie.value : "",
+            );
+
+            // C'etait le bug principal : sans centre_index, le back ne
+            // pouvait jamais rattacher ce membre au bon groupe
+            // centre/métier (centre_id restait toujours null).
+            addHidden(
+              "beneficiaires[" + beneficiaireIndex + "][centre_index]",
+              String(centresIndex),
+            );
+
+            beneficiaireIndex++;
+          });
         }
 
-        addHidden(
-          "beneficiaires[" + beneficiaireIndex + "][enseignant_id]",
-          memberId.value,
-        );
-
-        addHidden(
-          "beneficiaires[" + beneficiaireIndex + "][fonction]",
-          fonction ? fonction.value : "",
-        );
-
-        addHidden(
-          "beneficiaires[" + beneficiaireIndex + "][provenance]",
-          provenance ? provenance.value : "",
-        );
-
-        // C'etait le bug principal : sans centre_index, le back ne
-        // pouvait jamais rattacher ce membre a la carte "centre" dans
-        // laquelle il avait ete saisi (centre_id restait toujours null).
-        addHidden(
-          "beneficiaires[" + beneficiaireIndex + "][centre_index]",
-          String(centreIndex),
-        );
-
-        beneficiaireIndex++;
+        centresIndex++;
       });
     });
   }

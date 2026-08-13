@@ -25,6 +25,11 @@ Route::middleware('sicore.auth')
         Route::get('/convocations/enseignants/rechercher', [ConvocationsController::class, 'rechercherEnseignants'])
             ->name('convocations.enseignants.rechercher');
 
+        // Option A du workflow DAGE ("Transmission des convocations") :
+        // import du fichier remis par la DECPC.
+        Route::post('/convocations/import', [ConvocationsController::class, 'import'])
+            ->name('convocations.import');
+
         Route::post('/convocations', [ConvocationsController::class, 'store'])
             ->name('convocations.store');
 
@@ -37,26 +42,11 @@ Route::middleware('sicore.auth')
         Route::delete('/convocations/{id}', [ConvocationsController::class, 'destroy'])
             ->name('convocations.destroy');
 
-        Route::get('/convocations/{id}/suivi', [ConvocationsController::class, 'suivi'])
-            ->name('convocations.suivi');
-
         Route::post('/convocations/{id}/beneficiaires', [ConvocationsController::class, 'storeBeneficiaires'])
             ->name('convocations.beneficiaires.store');
 
-        Route::post('/convocations/{id}/fichier', [ConvocationsController::class, 'storeFichier'])
-            ->name('convocations.fichier.store');
-
-        Route::post('/convocations/{id}/pdf', [ConvocationsController::class, 'genererPdf'])
-            ->name('convocations.pdf.generer');
-
-        Route::get('/convocations/{id}/pdf/telecharger', [ConvocationsController::class, 'telechargerPdf'])
-            ->name('convocations.pdf.telecharger');
-
-        Route::post('/convocations/{id}/envoyer', [ConvocationsController::class, 'envoyer'])
-            ->name('convocations.envoyer');
-
-        Route::post('/convocations/{id}/relancer', [ConvocationsController::class, 'relancer'])
-            ->name('convocations.relancer');
+        Route::post('/convocations/{id}/centres', [ConvocationsController::class, 'storeCentres'])
+            ->name('convocations.centres.store');
 
         Route::get('/convocations/{id}', [ConvocationsController::class, 'show'])
             ->name('convocations.show');

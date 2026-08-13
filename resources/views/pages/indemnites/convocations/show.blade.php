@@ -16,16 +16,17 @@
 
     @php
         $statutBadges = [
-            'brouillon' => ['badge-pending', 'Brouillon'],
-            'emise'     => ['badge-primary', 'Émise'],
-            'envoyee'   => ['badge-active', 'Envoyée'],
-            'cloturee'  => ['badge-inactive', 'Clôturée'],
+            'brouillon'   => ['badge-pending', 'Brouillon'],
+            'a_completer' => ['badge-pending', 'À compléter'],
+            'emise'       => ['badge-primary', 'Émise'],
+            'envoyee'     => ['badge-active', 'Envoyée'],
+            'cloturee'    => ['badge-inactive', 'Clôturée'],
         ];
         [$badgeClass, $badgeLabel] = $statutBadges[$convocation->statut ?? null]
             ?? ['badge-pending', ucfirst($convocation->statut ?? '—')];
     @endphp
 
-    <section class="form-card">
+    <section class="form-card convocation-card">
 
         <div class="form-card-header">
 
@@ -56,6 +57,16 @@
                 <div class="form-grid">
 
                     <div class="form-group">
+                        <label>Type de convocation</label>
+                        <p>{{ $convocation->typeConvocation['libelle'] ?? '—' }}</p>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Session</label>
+                        <p>{{ $convocation->session ?? '—' }}</p>
+                    </div>
+
+                    <div class="form-group">
                         <label>Période</label>
                         <p>
                             @if (! empty($convocation->date_debut) && ! empty($convocation->date_fin))
@@ -80,11 +91,6 @@
                     <div class="form-group">
                         <label>Lieu d'affectation</label>
                         <p>{{ $convocation->lieu_affectation ?? '—' }}</p>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Ordre de mission</label>
-                        <p>{{ ($convocation->ordre_de_mission ?? false) ? 'Oui' : 'Non' }}</p>
                     </div>
 
                 </div>
@@ -189,21 +195,6 @@
                     Retour à la liste
                 </a>
 
-                <a class="btn-secondary" href="{{ route('indemnites.convocations.suivi', $id) }}">
-                    Voir le suivi des envois
-                </a>
-
-                <form method="POST" action="{{ route('indemnites.convocations.pdf.generer', $id) }}">
-                    @csrf
-                    <button class="btn-secondary" type="submit">
-                        Générer le PDF
-                    </button>
-                </form>
-
-                <a class="btn-secondary" href="{{ route('indemnites.convocations.pdf.telecharger', $id) }}">
-                    Télécharger le PDF
-                </a>
-
                 <a class="btn-primary" href="{{ route('indemnites.convocations.edit', $id) }}">
                     Modifier
                 </a>
@@ -219,3 +210,65 @@
 </main>
 
 @endsection
+
+{{-- ================================================================
+     STYLES
+     Le .form-card global (app.css) est plafonné à 720px et sans
+     padding — pensé pour un formulaire simple, pas pour cette page qui
+     empile plusieurs sections et des tableaux (min-width 760px, cf.
+     .table en CSS globale). Sans cet élargissement, les tableaux
+     débordaient/étaient tronqués et le contenu touchait les bords de
+     la carte (même souci que sur edit.blade.php, cf. .convocation-card
+     dans create.blade.php qui s'en sort déjà correctement).
+================================================================ --}}
+
+@push('styles')
+<style>
+
+    .convocation-card {
+        width: calc(100% - 40px);
+        max-width: 980px;
+        margin: 24px auto 40px;
+    }
+
+    .convocation-card .convocation-form {
+        display: grid;
+        gap: 22px;
+        padding: 26px 30px 30px;
+        box-sizing: border-box;
+    }
+
+    .convocation-card .form-section {
+        padding: 22px 24px;
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        background: #ffffff;
+    }
+
+    .convocation-card .form-section h3 {
+        margin: 0 0 16px;
+    }
+
+    .convocation-card .panel-header {
+        margin-bottom: 14px;
+    }
+
+    @media (max-width: 768px) {
+
+        .convocation-card {
+            width: calc(100% - 20px);
+            margin-top: 15px;
+        }
+
+        .convocation-card .convocation-form {
+            padding: 18px;
+        }
+
+        .convocation-card .form-section {
+            padding: 16px;
+        }
+
+    }
+
+</style>
+@endpush
