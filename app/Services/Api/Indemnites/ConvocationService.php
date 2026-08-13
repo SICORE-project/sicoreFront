@@ -44,6 +44,18 @@ class ConvocationService
         return $this->wrap($this->api->get("convocations/{$id}"));
     }
 
+    /**
+     * Telecharge le PDF de la convocation (genere par le back au vol s'il
+     * n'existe pas encore). Renvoie la reponse HTTP BRUTE (pas wrap()) :
+     * c'est un fichier binaire, pas du JSON, on a besoin du corps et des
+     * en-tetes (Content-Type/Content-Disposition) tels quels pour les
+     * relayer au navigateur depuis ConvocationsController::downloadPdf().
+     */
+    public function telechargerPdf(int|string $id)
+    {
+        return $this->api->get("convocations/{$id}/download");
+    }
+
     public function creer(array $donnees): array
     {
         return $this->wrap($this->api->post('convocations', $donnees));
@@ -52,6 +64,18 @@ class ConvocationService
     public function mettreAJour(int|string $id, array $donnees): array
     {
         return $this->wrap($this->api->put("convocations/{$id}", $donnees));
+    }
+
+    /**
+     * Fiche "Modifier" alignee sur l'assistant de creation ("IL FAUT QUE
+     * EDIT SOIT EXACTEMENT COMME CREATE MAIS PREREMPLI") : UN seul appel
+     * remplace toute la structure de la convocation (infos generales +
+     * centres + leurs metiers + membres du jury) - cf.
+     * ConvocationSyncController::sync() cote back.
+     */
+    public function mettreAJourStructure(int|string $id, array $donnees): array
+    {
+        return $this->wrap($this->api->put("convocations/{$id}/structure", $donnees));
     }
 
     public function supprimer(int|string $id): array
@@ -90,6 +114,25 @@ class ConvocationService
     }
 
     /**
+     * Metiers d'UN centre (un centre peut en couvrir plusieurs, chacun
+     * avec ses propres membres du jury).
+     */
+    public function ajouterMetier(int|string $convocationId, int|string $centreId, array $donnees): array
+    {
+        return $this->wrap($this->api->post("convocations/{$convocationId}/centres/{$centreId}/metiers", $donnees));
+    }
+
+    public function mettreAJourMetier(int|string $convocationId, int|string $centreId, int|string $metierId, array $donnees): array
+    {
+        return $this->wrap($this->api->put("convocations/{$convocationId}/centres/{$centreId}/metiers/{$metierId}", $donnees));
+    }
+
+    public function supprimerMetier(int|string $convocationId, int|string $centreId, int|string $metierId): array
+    {
+        return $this->wrap($this->api->delete("convocations/{$convocationId}/centres/{$centreId}/metiers/{$metierId}"));
+    }
+
+    /**
      * Cree les centres d'examen d'une convocation. Renvoie les centres
      * crees dans le meme ordre que $centres, avec leur id reel en base -
      * necessaire pour rattacher ensuite chaque beneficiaire au bon centre.
@@ -120,11 +163,7 @@ class ConvocationService
         ]));
     }
 
-    /**
-     * Liste des types de convocation actifs (jury_examen, formation,
-     * mission, reunion...), pour alimenter le select du formulaire de
-     * création (etape 1).
-     */
+   
     public function typesConvocation(): array
     {
         return $this->wrap($this->api->get('types-convocation'));

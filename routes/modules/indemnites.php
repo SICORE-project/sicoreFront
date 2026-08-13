@@ -69,6 +69,29 @@ Route::middleware('sicore.auth')
         Route::delete('/convocations/{id}/centres/{centreId}', [ConvocationsController::class, 'destroyCentre'])
             ->name('convocations.centres.destroy');
 
+        // Metiers d'UN centre (un centre peut en couvrir plusieurs, chacun
+        // avec ses propres membres du jury).
+        Route::post('/convocations/{id}/centres/{centreId}/metiers', [ConvocationsController::class, 'storeMetier'])
+            ->name('convocations.metiers.store');
+
+        Route::put('/convocations/{id}/centres/{centreId}/metiers/{metierId}', [ConvocationsController::class, 'updateMetier'])
+            ->name('convocations.metiers.update');
+
+        Route::delete('/convocations/{id}/centres/{centreId}/metiers/{metierId}', [ConvocationsController::class, 'destroyMetier'])
+            ->name('convocations.metiers.destroy');
+
+        // Fiche detail / modification d'UN centre precis (une ligne de la
+        // liste = un centre) : doivent rester avant /convocations/{id} et
+        // /convocations/{id}/modifier pour ne pas etre capturees par elles.
+        Route::get('/convocations/{id}/centres/{centreId}/modifier', [ConvocationsController::class, 'editCentre'])
+            ->name('convocations.centres.edit');
+
+        Route::get('/convocations/{id}/centres/{centreId}', [ConvocationsController::class, 'showCentre'])
+            ->name('convocations.centres.show');
+
+        Route::get('/convocations/{id}/pdf', [ConvocationsController::class, 'downloadPdf'])
+            ->name('convocations.pdf');
+
         Route::get('/convocations/{id}', [ConvocationsController::class, 'show'])
             ->name('convocations.show');
 

@@ -41,6 +41,17 @@
 
     var form = container.closest("form");
 
+    // Un meme formulaire peut contenir PLUSIEURS widgets de recherche
+    // independants (ex: "Président du jury" et "Chef de centre" sur le
+    // formulaire "Ajouter le centre") : sans cle de groupe, le premier
+    // champ telephone/statut trouve dans tout le formulaire serait
+    // toujours cible, meme s'il appartient a l'AUTRE widget. Quand
+    // data-enseignant-group est present, on ne cible que les champs
+    // portant la MEME valeur ; sinon (formulaires a un seul widget,
+    // comportement historique) on garde la recherche sur tout le
+    // formulaire.
+    var groupe = container.getAttribute("data-enseignant-group");
+
     var runSearch = debounce(function () {
       var search = input.value.trim();
 
@@ -97,9 +108,11 @@
               suggestions.hidden = true;
 
               if (form) {
-                var telephoneTarget = form.querySelector(
-                  "[data-enseignant-telephone-target]",
-                );
+                var selecteurTelephone = groupe
+                  ? '[data-enseignant-telephone-target][data-enseignant-group="' + groupe + '"]'
+                  : "[data-enseignant-telephone-target]";
+
+                var telephoneTarget = form.querySelector(selecteurTelephone);
 
                 if (telephoneTarget && enseignant.telephone) {
                   telephoneTarget.value = enseignant.telephone;
@@ -108,9 +121,11 @@
                 // Pre-remplit le statut (fonctionnaire/contractuel/vacataire)
                 // s'il est deja renseigne sur la fiche — sinon laisse
                 // "Selectionner" pour que l'utilisateur le complete.
-                var categorieTarget = form.querySelector(
-                  "[data-enseignant-categorie-target]",
-                );
+                var selecteurCategorie = groupe
+                  ? '[data-enseignant-categorie-target][data-enseignant-group="' + groupe + '"]'
+                  : "[data-enseignant-categorie-target]";
+
+                var categorieTarget = form.querySelector(selecteurCategorie);
 
                 if (categorieTarget && enseignant.categorie_personnel) {
                   categorieTarget.value = enseignant.categorie_personnel;

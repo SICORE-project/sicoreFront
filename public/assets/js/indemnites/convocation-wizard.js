@@ -323,6 +323,7 @@
       }
 
       initChefSearch(centre);
+      initPresidentSearch(centre);
     }
 
     function addCentre() {
@@ -853,10 +854,20 @@
                 memberCategorieInput.value = enseignant.categorie_personnel;
               }
             } else {
-              // Recherche du chef de centre.
-              var telephoneInput = input
-                .closest("[data-centre-card]")
-                ?.querySelector("[data-chef-telephone-input]");
+              // Recherche du chef de centre OU du président du jury — deux
+              // champs distincts sur la même carte centre, on cible celui
+              // qui correspond au conteneur de recherche utilisé.
+              var centreCard = input.closest("[data-centre-card]");
+
+              var estPresident = !!input.closest("[data-president-search]");
+
+              var telephoneInput = centreCard
+                ? centreCard.querySelector(
+                    estPresident
+                      ? "[data-president-telephone-input]"
+                      : "[data-chef-telephone-input]",
+                  )
+                : null;
 
               if (telephoneInput && enseignant.telephone) {
                 telephoneInput.value = enseignant.telephone;
@@ -888,6 +899,34 @@
     var hiddenInput = container.querySelector("[data-chef-id-input]");
 
     var suggestions = container.querySelector("[data-chef-suggestions]");
+
+    if (!input || !hiddenInput || !suggestions) {
+      return;
+    }
+
+    input.addEventListener("input", function () {
+      rechercherEnseignant(input, hiddenInput, suggestions);
+    });
+
+    input.addEventListener("focus", function () {
+      if (input.value.trim().length >= 2) {
+        rechercherEnseignant(input, hiddenInput, suggestions);
+      }
+    });
+  }
+
+  function initPresidentSearch(centre) {
+    var container = centre.querySelector("[data-president-search]");
+
+    if (!container) {
+      return;
+    }
+
+    var input = container.querySelector("[data-president-search-input]");
+
+    var hiddenInput = container.querySelector("[data-president-id-input]");
+
+    var suggestions = container.querySelector("[data-president-suggestions]");
 
     if (!input || !hiddenInput || !suggestions) {
       return;
@@ -939,6 +978,15 @@
       return;
     }
 
+    // Fiche "Modifier" : identique a la creation, mais chaque centre/metier
+    // deja existant doit renvoyer son id reel (pour que le back sache le
+    // METTRE A JOUR plutot que d'en creer un doublon) et les metiers sont
+    // serialises en objets {id, metier} plutot qu'en simples chaines - cf.
+    // SyncConvocationStructureRequest cote back. La creation garde l'ancien
+    // format (chaines), inchange, pour ne pas casser ConvocationCentreController::store().
+    var mode =
+      form.getAttribute("data-wizard-mode") === "edit" ? "edit" : "create";
+
     form
       .querySelectorAll("[data-generated-convocation]")
       .forEach(function (input) {
@@ -957,11 +1005,14 @@
 
     // Un centre "papier" (ex: "LTP FXN/THIES JURY 1") peut regrouper
     // plusieurs métiers (MVM, puis FC...), chacun avec ses propres
-    // membres, mais le même centre/jury/chef de centre. Le back attend
-    // une ligne "centres[]" par métier (cf. StoreConvocationCentresRequest
-    // + README-livraison.md), donc on aplatit ici : chaque groupe métier
-    // devient sa propre entrée "centres[]", et centresIndex (pas l'index
-    // de la carte centre) sert de repère pour rattacher ses membres.
+    // membres, mais le même centre/jury/chef de centre. Une SEULE ligne
+    // "centres[]" est envoyée par carte centre (centresIndex n'avance
+    // qu'une fois par carte, pas par groupe métier) — chaque métier de
+    // cette carte devient une entrée de "centres[i][metiers][]" (cf.
+    // ConvocationCentreController::store() côté back, qui crée alors
+    // PLUSIEURS lignes convocation_centre_metiers pour CE MÊME centre,
+    // au lieu de dupliquer le centre lui-même comme c'était le cas avant
+    // ce correctif.
     var centresIndex = 0;
 
     function addHidden(name, value) {
@@ -989,48 +1040,99 @@
         '[data-field="chef_centre_telephone"]',
       );
 
+      var presidentInput = centre.querySelector(
+        '[data-field="president_jury_id"]',
+      );
+
+      var presidentTelephoneInput = centre.querySelector(
+        '[data-field="president_jury_telephone"]',
+      );
+
       var metierGroups = Array.prototype.slice.call(
         centre.querySelectorAll("[data-metier-group]"),
       );
 
-      // Cas limite : un centre sans aucun groupe métier (ex. supprimé par
-      // erreur) reste tout de même enregistré comme une ligne "centres[]"
-      // sans métier, pour ne pas perdre le centre/jury/chef déjà saisis.
-      if (metierGroups.length === 0) {
-        metierGroups = [null];
+      if (mode === "edit") {
+        var centreIdInput = centre.querySelector('[data-field="id"]');
+
+        addHidden(
+          "centres[" + centresIndex + "][id]",
+          centreIdInput ? centreIdInput.value : "",
+        );
       }
 
+      addHidden(
+        "centres[" + centresIndex + "][centre]",
+        centreInput ? centreInput.value : "",
+      );
+
+      addHidden(
+        "centres[" + centresIndex + "][jury]",
+        juryInput ? juryInput.value : "",
+      );
+
+      addHidden(
+        "centres[" + centresIndex + "][chef_centre_id]",
+        chefInput ? chefInput.value : "",
+      );
+
+      addHidden(
+        "centres[" + centresIndex + "][chef_centre_telephone]",
+        telephoneInput ? telephoneInput.value : "",
+      );
+
+      addHidden(
+        "centres[" + centresIndex + "][president_jury_id]",
+        presidentInput ? presidentInput.value : "",
+      );
+
+      addHidden(
+        "centres[" + centresIndex + "][president_jury_telephone]",
+        presidentTelephoneInput ? presidentTelephoneInput.value : "",
+      );
+
+      // N'avance que pour les groupes avec un NOM de métier renseigné — le
+      // back (ConvocationCentreController::store()) ignore lui aussi les
+      // noms vides (groupe "général", ex: président de jury sans métier),
+      // donc les deux côtés restent alignés sur le même compteur pour
+      // retrouver l'id réel du métier une fois créé.
+      var metierPosition = 0;
+
       metierGroups.forEach(function (group) {
-        var metierInput = group
-          ? group.querySelector('[data-field="metier"]')
-          : null;
+        var metierInput = group.querySelector('[data-field="metier"]');
+        var metierNom = metierInput ? metierInput.value.trim() : "";
+        var aUnMetier = metierNom !== "";
 
-        addHidden(
-          "centres[" + centresIndex + "][centre]",
-          centreInput ? centreInput.value : "",
-        );
+        if (aUnMetier) {
+          if (mode === "edit") {
+            var metierIdInput = group.querySelector('[data-field="id"]');
 
-        addHidden(
-          "centres[" + centresIndex + "][jury]",
-          juryInput ? juryInput.value : "",
-        );
+            addHidden(
+              "centres[" +
+                centresIndex +
+                "][metiers][" +
+                metierPosition +
+                "][id]",
+              metierIdInput ? metierIdInput.value : "",
+            );
 
-        addHidden(
-          "centres[" + centresIndex + "][metier]",
-          metierInput ? metierInput.value : "",
-        );
+            addHidden(
+              "centres[" +
+                centresIndex +
+                "][metiers][" +
+                metierPosition +
+                "][metier]",
+              metierNom,
+            );
+          } else {
+            addHidden(
+              "centres[" + centresIndex + "][metiers][" + metierPosition + "]",
+              metierNom,
+            );
+          }
+        }
 
-        addHidden(
-          "centres[" + centresIndex + "][chef_centre_id]",
-          chefInput ? chefInput.value : "",
-        );
-
-        addHidden(
-          "centres[" + centresIndex + "][chef_centre_telephone]",
-          telephoneInput ? telephoneInput.value : "",
-        );
-
-        var membersBody = group ? group.querySelector("[data-members-body]") : null;
+        var membersBody = group.querySelector("[data-members-body]");
 
         if (membersBody) {
           var rows = membersBody.querySelectorAll(".member-row");
@@ -1089,19 +1191,243 @@
               categorie ? categorie.value : "",
             );
 
-            // C'etait le bug principal : sans centre_index, le back ne
-            // pouvait jamais rattacher ce membre au bon groupe
-            // centre/métier (centre_id restait toujours null).
+            // Rattache ce membre à SON centre ET, s'il en a un, à SON
+            // métier précis au sein de ce centre (un centre peut en avoir
+            // plusieurs) — cf. commentaire plus haut sur l'alignement des
+            // compteurs centresIndex/metierPosition avec le back.
             addHidden(
               "beneficiaires[" + beneficiaireIndex + "][centre_index]",
               String(centresIndex),
             );
 
+            if (aUnMetier) {
+              addHidden(
+                "beneficiaires[" + beneficiaireIndex + "][metier_index]",
+                String(metierPosition),
+              );
+            }
+
             beneficiaireIndex++;
           });
         }
 
-        centresIndex++;
+        if (aUnMetier) {
+          metierPosition++;
+        }
+      });
+
+      centresIndex++;
+    });
+  }
+
+  /*
+    ============================================================
+    PRE-REMPLISSAGE (fiche "Modifier")
+    "IL FAUT QUE EDIT SOIT EXACTEMENT COMME CREATE MAIS PREREMPLI" :
+    plutot que de reecrire une logique d'ajout separee pour l'edition, on
+    reutilise EXACTEMENT celle de la creation - on simule des clics sur les
+    boutons "Ajouter un centre" / "Ajouter un groupe métier" / "Ajouter un
+    membre" (deja cables par initCentres()) le nombre de fois necessaire,
+    puis on remplit les champs du dernier bloc ajoute avec les donnees
+    fournies par le back (window.__convocationWizardPrefill, cf.
+    ConvocationsController::renderEdit() cote front).
+    ============================================================
+    */
+
+  function setFieldValue(scope, selector, value) {
+    var field = scope.querySelector(selector);
+
+    if (field && value !== null && typeof value !== "undefined") {
+      field.value = value;
+    }
+  }
+
+  function hydrateFromPrefill() {
+    var form = getWizard();
+
+    if (!form || form.getAttribute("data-wizard-mode") !== "edit") {
+      return;
+    }
+
+    var prefill = window.__convocationWizardPrefill;
+
+    if (!Array.isArray(prefill) || prefill.length === 0) {
+      return;
+    }
+
+    var addCentreButton = form.querySelector("[data-add-centre]");
+
+    var centresContainer = form.querySelector("[data-centres-container]");
+
+    if (!addCentreButton || !centresContainer) {
+      return;
+    }
+
+    prefill.forEach(function (centreData) {
+      addCentreButton.click();
+
+      var centreCards = centresContainer.querySelectorAll(
+        "[data-centre-card]",
+      );
+
+      var centreCard = centreCards[centreCards.length - 1];
+
+      if (!centreCard) {
+        return;
+      }
+
+      setFieldValue(centreCard, '[data-field="id"]', centreData.id);
+      setFieldValue(centreCard, '[data-field="centre"]', centreData.centre);
+      setFieldValue(centreCard, '[data-field="jury"]', centreData.jury);
+      setFieldValue(
+        centreCard,
+        '[data-field="chef_centre_id"]',
+        centreData.chef_centre_id,
+      );
+      setFieldValue(
+        centreCard,
+        '[data-field="chef_centre_telephone"]',
+        centreData.chef_centre_telephone,
+      );
+      setFieldValue(
+        centreCard,
+        '[data-field="president_jury_id"]',
+        centreData.president_jury_id,
+      );
+      setFieldValue(
+        centreCard,
+        '[data-field="president_jury_telephone"]',
+        centreData.president_jury_telephone,
+      );
+
+      // Le champ visible (texte) du widget de recherche n'est pas
+      // "data-field" (seul son id cache l'est) - sans ca le nom du chef de
+      // centre / president du jury deja selectionne n'apparaitrait pas.
+      var chefSearchInput = centreCard.querySelector(
+        "[data-chef-search-input]",
+      );
+
+      if (chefSearchInput && centreData.chef_centre_nom) {
+        chefSearchInput.value = centreData.chef_centre_nom;
+      }
+
+      var presidentSearchInput = centreCard.querySelector(
+        "[data-president-search-input]",
+      );
+
+      if (presidentSearchInput && centreData.president_jury_nom) {
+        presidentSearchInput.value = centreData.president_jury_nom;
+      }
+
+      // addCentre() ajoute toujours un premier groupe metier "vide" par
+      // defaut (pour coller au papier) - on le retire, la liste reelle des
+      // groupes vient entierement de centreData.metiers ci-dessous.
+      var metiersContainer = centreCard.querySelector(
+        "[data-metiers-container]",
+      );
+
+      var metiersEmpty = centreCard.querySelector("[data-metiers-empty]");
+
+      if (metiersContainer) {
+        // innerHTML = "" contourne le toggle habituel de
+        // updateMetierGroups() (qui tourne uniquement lors d'un ajout/
+        // suppression via les boutons) - on remet nous-memes le message
+        // "vide" en visible en attendant les groupes reels ci-dessous.
+        metiersContainer.innerHTML = "";
+
+        if (metiersEmpty) {
+          metiersEmpty.hidden = false;
+        }
+      }
+
+      var addMetierGroupButton = centreCard.querySelector(
+        "[data-add-metier-group]",
+      );
+
+      var metiers = Array.isArray(centreData.metiers)
+        ? centreData.metiers
+        : [];
+
+      metiers.forEach(function (metierData) {
+        if (!addMetierGroupButton) {
+          return;
+        }
+
+        addMetierGroupButton.click();
+
+        var groupNodes = metiersContainer
+          ? metiersContainer.querySelectorAll("[data-metier-group]")
+          : [];
+
+        var groupNode = groupNodes[groupNodes.length - 1];
+
+        if (!groupNode) {
+          return;
+        }
+
+        setFieldValue(groupNode, '[data-field="id"]', metierData.id);
+        setFieldValue(groupNode, '[data-field="metier"]', metierData.metier);
+
+        var membersBody = groupNode.querySelector("[data-members-body]");
+
+        var addMemberButton = groupNode.querySelector("[data-add-member]");
+
+        var membres = Array.isArray(metierData.membres)
+          ? metierData.membres
+          : [];
+
+        membres.forEach(function (membre) {
+          if (!addMemberButton) {
+            return;
+          }
+
+          addMemberButton.click();
+
+          var rows = membersBody
+            ? membersBody.querySelectorAll(".member-row")
+            : [];
+
+          var row = rows[rows.length - 1];
+
+          if (!row) {
+            return;
+          }
+
+          var searchInput = row.querySelector("[data-member-search-input]");
+          var idInput = row.querySelector("[data-member-id-input]");
+          var nomInput = row.querySelector("[data-member-nom]");
+          var fonctionInput = row.querySelector("[data-member-fonction]");
+          var categorieInput = row.querySelector("[data-member-categorie]");
+          var provenanceInput = row.querySelector(
+            "[data-member-provenance]",
+          );
+          var telephoneInput = row.querySelector(
+            "[data-member-telephone]",
+          );
+
+          var nomComplet = (
+            (membre.prenom || "") +
+            " " +
+            (membre.nom || "")
+          ).trim();
+
+          if (searchInput) searchInput.value = nomComplet;
+          if (idInput) idInput.value = membre.enseignant_id || "";
+          if (nomInput) nomInput.value = membre.nom || "";
+          if (fonctionInput) fonctionInput.value = membre.fonction || "";
+
+          if (categorieInput) {
+            categorieInput.value = membre.categorie_personnel || "";
+          }
+
+          if (provenanceInput) {
+            provenanceInput.value = membre.provenance || "";
+          }
+
+          if (telephoneInput) {
+            telephoneInput.value = membre.telephone || "";
+          }
+        });
       });
     });
   }
@@ -1161,6 +1487,8 @@
 
     initCentres();
 
+    hydrateFromPrefill();
+
     form.addEventListener("submit", function (event) {
       if (!validateAllSteps()) {
         event.preventDefault();
@@ -1169,6 +1497,31 @@
           window.showToast(
             "error",
             "Veuillez finaliser les informations obligatoires.",
+          );
+        }
+
+        return;
+      }
+
+      // Chaque convocation doit avoir au moins un centre (le back le
+      // refuse de toute facon — StoreConvocationCentresRequest — mais on
+      // evite l'aller-retour serveur en le signalant tout de suite).
+      var centresContainer = form.querySelector("[data-centres-container]");
+
+      var nbCentres = centresContainer
+        ? centresContainer.querySelectorAll("[data-centre-card]").length
+        : 0;
+
+      if (nbCentres === 0) {
+        event.preventDefault();
+
+        currentStep = 2;
+        updateProgressBar();
+
+        if (typeof window.showToast === "function") {
+          window.showToast(
+            "error",
+            "Ajoutez au moins un centre d'examen avant d'enregistrer la convocation.",
           );
         }
 
