@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 class ApplicationTest extends TestCase
@@ -37,6 +38,45 @@ class ApplicationTest extends TestCase
             'email' => 'admin@sicore.sn',
             'password' => 'incorrect',
         ])->assertSessionHasErrors('email');
+    }
+
+    public function test_users_page_renders_backend_users(): void
+    {
+        Http::fake([
+            '*/admin/users*' => Http::response([
+                'data' => [
+                    [
+                        'id' => 1,
+                        'nom' => 'Diallo',
+                        'prenom' => 'Amina',
+                        'email' => 'amina.diallo@sicore.sn',
+                        'role' => ['nom' => 'Administrateur'],
+                        'statut' => true,
+                    ],
+                    [
+                        'id' => 2,
+                        'nom' => 'Ndiaye',
+                        'prenom' => 'Moussa',
+                        'email' => 'moussa.ndiaye@sicore.sn',
+                        'role' => ['nom' => 'Gestionnaire paie'],
+                        'statut' => true,
+                    ],
+                ],
+            ]),
+        ]);
+
+        $this->withSession([
+            'sicore_user' => [
+                'name' => 'Administrateur SICORE',
+                'email' => 'admin@sicore.sn',
+                'role' => 'Administrateur',
+            ],
+        ])->get('/utilisateurs')
+            ->assertOk()
+            ->assertSee('Amina Diallo')
+            ->assertSee('amina.diallo@sicore.sn')
+            ->assertSee('Administrateur')
+            ->assertSee('Actif');
     }
 
     public function test_sidebar_pages_are_rendered_by_laravel(): void

@@ -1,15 +1,30 @@
-@extends('layouts.app')
 
-@section('title', 'SICORE - Créer un utilisateur')
 
-@section('content')
+<?php $__env->startSection('title', 'SICORE - Créer un utilisateur'); ?>
+
+<?php $__env->startSection('content'); ?>
     <main class="main-content">
 
-        <x-topbar
-            title="Créer un utilisateur"
-            subtitle="Ajouter un nouvel utilisateur au système"
-            icon="fa-solid fa-user-plus"
-        />
+        <?php if (isset($component)) { $__componentOriginal57b7ac81b71e7fe2d81fa75baf439455 = $component; } ?>
+<?php if (isset($attributes)) { $__attributesOriginal57b7ac81b71e7fe2d81fa75baf439455 = $attributes; } ?>
+<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.topbar','data' => ['title' => 'Créer un utilisateur','subtitle' => 'Ajouter un nouvel utilisateur au système','icon' => 'fa-solid fa-user-plus']] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
+<?php $component->withName('topbar'); ?>
+<?php if ($component->shouldRender()): ?>
+<?php $__env->startComponent($component->resolveView(), $component->data()); ?>
+<?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag): ?>
+<?php $attributes = $attributes->except(\Illuminate\View\AnonymousComponent::ignoredParameterNames()); ?>
+<?php endif; ?>
+<?php $component->withAttributes(['title' => 'Créer un utilisateur','subtitle' => 'Ajouter un nouvel utilisateur au système','icon' => 'fa-solid fa-user-plus']); ?>
+<?php echo $__env->renderComponent(); ?>
+<?php endif; ?>
+<?php if (isset($__attributesOriginal57b7ac81b71e7fe2d81fa75baf439455)): ?>
+<?php $attributes = $__attributesOriginal57b7ac81b71e7fe2d81fa75baf439455; ?>
+<?php unset($__attributesOriginal57b7ac81b71e7fe2d81fa75baf439455); ?>
+<?php endif; ?>
+<?php if (isset($__componentOriginal57b7ac81b71e7fe2d81fa75baf439455)): ?>
+<?php $component = $__componentOriginal57b7ac81b71e7fe2d81fa75baf439455; ?>
+<?php unset($__componentOriginal57b7ac81b71e7fe2d81fa75baf439455); ?>
+<?php endif; ?>
 
         <section class="content-area">
             <section class="form-card">
@@ -27,53 +42,61 @@
 
                 <p class="form-required-note"><span class="required">*</span> Champs obligatoires</p>
 
-                {{-- Message d'erreur général --}}
-                @if (session('error'))
+                
+                <?php if(session('error')): ?>
                     <div class="alert alert-danger">
-                        {{ session('error') }}
-                    </div>
-                @endif
+                        <?php echo e(session('error')); ?>
 
-                {{-- Erreurs de validation --}}
-                @if ($errors->any())
+                    </div>
+                <?php endif; ?>
+
+                
+                <?php if($errors->any()): ?>
                     <div class="alert alert-danger">
                         <strong>Veuillez corriger les erreurs suivantes :</strong>
 
                         <ul>
-                            @foreach ($errors->all() as $error)
-                                <li>{{ $error }}</li>
-                            @endforeach
+                            <?php $__currentLoopData = $errors->all(); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $error): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                <li><?php echo e($error); ?></li>
+                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                         </ul>
                     </div>
-                @endif
+                <?php endif; ?>
 
                 <form
                     class="teacher-form"
                     id="createUserForm"
                     method="POST"
-                    action="{{ route('utilisateurs.store') }}"
+                    action="<?php echo e(route('utilisateurs.store')); ?>"
                     novalidate
                 >
-                    @csrf
+                    <?php echo csrf_field(); ?>
 
-                    {{-- Informations personnelles --}}
+                    
                     <div class="form-section">
                         <h3>Informations personnelles</h3>
 
                         <div class="form-grid">
 
-                            {{-- Nom --}}
+                            
                             <div class="form-group">
                                 <label for="nom">
                                     Nom <span class="required">*</span>
                                 </label>
 
                                 <input
-                                    class="form-control @error('nom') is-invalid @enderror"
+                                    class="form-control <?php $__errorArgs = ['nom'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?> is-invalid <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>"
                                     id="nom"
                                     name="nom"
                                     type="text"
-                                    value="{{ old('nom') }}"
+                                    value="<?php echo e(old('nom')); ?>"
                                     maxlength="100"
                                     required
                                     autocomplete="family-name"
@@ -81,25 +104,40 @@
                                     aria-describedby="nom-error"
                                 >
 
-                                @error('nom')
+                                <?php $__errorArgs = ['nom'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
                                     <div class="invalid-feedback" id="nom-error">
-                                        {{ $message }}
+                                        <?php echo e($message); ?>
+
                                     </div>
-                                @enderror
+                                <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
                             </div>
 
-                            {{-- Prénom --}}
+                            
                             <div class="form-group">
                                 <label for="prenom">
                                     Prénom <span class="required">*</span>
                                 </label>
 
                                 <input
-                                    class="form-control @error('prenom') is-invalid @enderror"
+                                    class="form-control <?php $__errorArgs = ['prenom'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?> is-invalid <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>"
                                     id="prenom"
                                     name="prenom"
                                     type="text"
-                                    value="{{ old('prenom') }}"
+                                    value="<?php echo e(old('prenom')); ?>"
                                     maxlength="100"
                                     required
                                     autocomplete="given-name"
@@ -107,25 +145,40 @@
                                     aria-describedby="prenom-error"
                                 >
 
-                                @error('prenom')
+                                <?php $__errorArgs = ['prenom'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
                                     <div class="invalid-feedback" id="prenom-error">
-                                        {{ $message }}
+                                        <?php echo e($message); ?>
+
                                     </div>
-                                @enderror
+                                <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
                             </div>
 
-                            {{-- Email --}}
+                            
                             <div class="form-group full">
                                 <label for="email">
                                     Adresse e-mail <span class="required">*</span>
                                 </label>
 
                                 <input
-                                    class="form-control @error('email') is-invalid @enderror"
+                                    class="form-control <?php $__errorArgs = ['email'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?> is-invalid <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>"
                                     id="email"
                                     name="email"
                                     type="email"
-                                    value="{{ old('email') }}"
+                                    value="<?php echo e(old('email')); ?>"
                                     maxlength="255"
                                     required
                                     autocomplete="email"
@@ -136,30 +189,45 @@
 
                                 <small class="form-text" id="email-help">Cette adresse servira d'identifiant de connexion.</small>
 
-                                @error('email')
+                                <?php $__errorArgs = ['email'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
                                     <div class="invalid-feedback" id="email-error">
-                                        {{ $message }}
+                                        <?php echo e($message); ?>
+
                                     </div>
-                                @enderror
+                                <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
                             </div>
 
                         </div>
                     </div>
 
-                    {{-- Accès au système --}}
+                    
                     <div class="form-section">
                         <h3>Accès au système</h3>
 
                         <div class="form-grid form-grid--balanced">
 
-                            {{-- Rôle --}}
+                            
                             <div class="form-group">
                                 <label for="role_id">
                                     Rôle <span class="required">*</span>
                                 </label>
 
                                 <select
-                                    class="form-control @error('role_id') is-invalid @enderror"
+                                    class="form-control <?php $__errorArgs = ['role_id'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?> is-invalid <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>"
                                     id="role_id"
                                     name="role_id"
                                     required
@@ -169,35 +237,51 @@
                                         Sélectionner un rôle
                                     </option>
 
-                                    @forelse ($roles as $role)
+                                    <?php $__empty_1 = true; $__currentLoopData = $roles; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $role): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
                                         <option
-                                            value="{{ $role['id'] }}"
-                                            @selected(old('role_id') == $role['id'])
+                                            value="<?php echo e($role['id']); ?>"
+                                            <?php if(old('role_id') == $role['id']): echo 'selected'; endif; ?>
                                         >
-                                            {{ $role['nom'] }}
+                                            <?php echo e($role['nom']); ?>
+
                                         </option>
-                                    @empty
+                                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
                                         <option value="" disabled>
                                             Aucun rôle disponible
                                         </option>
-                                    @endforelse
+                                    <?php endif; ?>
                                 </select>
 
-                                @error('role_id')
+                                <?php $__errorArgs = ['role_id'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
                                     <div class="invalid-feedback" id="role_id-error">
-                                        {{ $message }}
+                                        <?php echo e($message); ?>
+
                                     </div>
-                                @enderror
+                                <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
                             </div>
 
-                            {{-- Statut --}}
+                            
                             <div class="form-group">
                                 <label for="statut">
                                     Statut <span class="required">*</span>
                                 </label>
 
                                 <select
-                                    class="form-control @error('statut') is-invalid @enderror"
+                                    class="form-control <?php $__errorArgs = ['statut'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?> is-invalid <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>"
                                     id="statut"
                                     name="statut"
                                     required
@@ -205,14 +289,14 @@
                                 >
                                     <option
                                         value="actif"
-                                        @selected(old('statut', 'actif') === 'actif')
+                                        <?php if(old('statut', 'actif') === 'actif'): echo 'selected'; endif; ?>
                                     >
                                         Actif
                                     </option>
 
                                     <option
                                         value="inactif"
-                                        @selected(old('statut') === 'inactif')
+                                        <?php if(old('statut') === 'inactif'): echo 'selected'; endif; ?>
                                     >
                                         Inactif
                                     </option>
@@ -220,23 +304,31 @@
 
                                 <small class="form-text" id="statut-help">Un compte inactif ne peut pas se connecter.</small>
 
-                                @error('statut')
+                                <?php $__errorArgs = ['statut'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
                                     <div class="invalid-feedback" id="statut-error">
-                                        {{ $message }}
+                                        <?php echo e($message); ?>
+
                                     </div>
-                                @enderror
+                                <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
                             </div>
 
                         </div>
                     </div>
 
-                    {{-- Sécurité --}}
+                    
                     <div class="form-section">
                         <h3>Sécurité</h3>
 
                         <div class="form-grid form-grid--balanced">
 
-                            {{-- Mot de passe --}}
+                            
                             <div class="form-group">
                                 <label for="password">
                                     Mot de passe <span class="required">*</span>
@@ -244,7 +336,14 @@
 
                                 <div class="password-field">
                                     <input
-                                        class="form-control @error('password') is-invalid @enderror"
+                                        class="form-control <?php $__errorArgs = ['password'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?> is-invalid <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>"
                                         id="password"
                                         name="password"
                                         type="password"
@@ -262,14 +361,22 @@
                                     Le mot de passe doit contenir au moins 8 caractères.
                                 </small>
 
-                                @error('password')
+                                <?php $__errorArgs = ['password'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
                                     <div class="invalid-feedback" id="password-error">
-                                        {{ $message }}
+                                        <?php echo e($message); ?>
+
                                     </div>
-                                @enderror
+                                <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
                             </div>
 
-                            {{-- Confirmation --}}
+                            
                             <div class="form-group">
                                 <label for="password_confirmation">
                                     Confirmation du mot de passe
@@ -297,11 +404,11 @@
                         </div>
                     </div>
 
-                    {{-- Actions --}}
+                    
                     <div class="form-actions">
                         <a
                             class="btn-secondary"
-                            href="{{ route('utilisateurs.index') }}"
+                            href="<?php echo e(route('utilisateurs.index')); ?>"
                         >
                             Annuler
                         </a>
@@ -322,9 +429,9 @@
         </section>
 
     </main>
-@endsection
+<?php $__env->stopSection(); ?>
 
-@push('scripts')
+<?php $__env->startPush('scripts'); ?>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const form = document.getElementById('createUserForm');
@@ -358,4 +465,6 @@
             });
         });
     </script>
-@endpush
+<?php $__env->stopPush(); ?>
+
+<?php echo $__env->make('layouts.app', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\laragon\www\sicoreFront\resources\views/pages/administration/utilisateurs/create.blade.php ENDPATH**/ ?>

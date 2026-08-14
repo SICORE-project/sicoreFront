@@ -36,6 +36,54 @@ class UserService
     }
 
     /**
+     * Récupérer la liste des utilisateurs depuis le backend.
+     */
+    public function getUsers(int $page = 1, int $perPage = 10): array
+    {
+        try {
+            $response = $this->apiClient->get('admin/users', [
+                'page' => $page,
+                'per_page' => $perPage,
+            ]);
+        } catch (ConnectionException) {
+            return [
+                'items' => [],
+                'pagination' => [
+                    'current_page' => $page,
+                    'last_page' => 1,
+                    'total' => 0,
+                    'per_page' => $perPage,
+                ],
+            ];
+        }
+
+        if (! $response->successful()) {
+            return [
+                'items' => [],
+                'pagination' => [
+                    'current_page' => $page,
+                    'last_page' => 1,
+                    'total' => 0,
+                    'per_page' => $perPage,
+                ],
+            ];
+        }
+
+        $data = $response->json();
+        $items = data_get($data, 'data.data', data_get($data, 'data', data_get($data, 'users', [])));
+
+        return [
+            'items' => is_array($items) ? $items : [],
+            'pagination' => [
+                'current_page' => (int) data_get($data, 'meta.current_page', $page),
+                'last_page' => (int) data_get($data, 'meta.last_page', max(1, (int) ceil((count($items) ?: 1) / max(1, $perPage)))),
+                'total' => (int) data_get($data, 'meta.total', count($items)),
+                'per_page' => $perPage,
+            ],
+        ];
+    }
+
+    /**
      * Créer un utilisateur via l'API backend.
      */
     public function createUser(array $data): array

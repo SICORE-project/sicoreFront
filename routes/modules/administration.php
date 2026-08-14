@@ -12,7 +12,6 @@ use App\Http\Controllers\Admin\UserController;
 
 
 Route::middleware('sicore.auth')
-    ->prefix('administration')
     ->group(function (): void {
 
         /*
@@ -20,7 +19,7 @@ Route::middleware('sicore.auth')
 |  USERS
 |--------------------------------------------------------------------------
 */
-        Route::view('/utilisateurs', 'pages.administration.utilisateurs')
+        Route::get('/utilisateurs', [UserController::class, 'index'])
             ->name('utilisateurs.index');
 
         Route::get('/utilisateurs/nouveau', [UserController::class, 'create'])

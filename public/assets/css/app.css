@@ -803,11 +803,22 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 18px;
+  align-items: start;
+}
+
+.form-grid--balanced {
+  align-items: end;
 }
 
 .form-group {
   display: grid;
   gap: 7px;
+  min-width: 0;
+}
+
+.form-grid .form-control,
+.form-grid .password-field {
+  width: 100%;
 }
 
 .form-group.full {
