@@ -301,18 +301,44 @@
                                                 Modifier
                                             </a>
                                         @endif
-                                        <form
-                                            method="POST"
-                                            action="{{ route('indemnites.convocations.destroy', $ligne['convocation_id']) }}"
-                                            onsubmit="return confirm('Supprimer définitivement cette convocation ?');"
-                                            style="display:inline;"
-                                        >
-                                            @csrf
-                                            @method('DELETE')
-                                            <button class="table-action danger" type="submit">
-                                                Supprimer
-                                            </button>
-                                        </form>
+                                        @if (! empty($ligne['centre_id']))
+                                            {{-- Une ligne = un centre : ne supprime QUE ce centre de CETTE
+                                                 convocation, jamais les autres centres du meme objet — voir
+                                                 ConvocationCentreController::destroy() cote back. Le message
+                                                 nomme explicitement le centre ET la convocation concernes. --}}
+                                            @php
+                                                $messageConfirmation = 'Supprimer le centre « '.($ligne['centre'] ?? '—').' » de la convocation « '.($ligne['objet'] ?? '—').' » ?'
+                                                    .' Les autres centres de cette convocation ne seront pas supprimés.';
+                                            @endphp
+                                            <form
+                                                method="POST"
+                                                action="{{ route('indemnites.convocations.centres.destroy', [$ligne['convocation_id'], $ligne['centre_id']]) }}"
+                                                onsubmit="return confirm({{ \Illuminate\Support\Js::from($messageConfirmation) }});"
+                                                style="display:inline;"
+                                            >
+                                                @csrf
+                                                @method('DELETE')
+                                                <button class="table-action danger" type="submit">
+                                                    Supprimer
+                                                </button>
+                                            </form>
+                                        @else
+                                            @php
+                                                $messageConfirmation = 'Supprimer définitivement la convocation « '.($ligne['objet'] ?? '—').' » (aucun centre n\'y est rattaché) ?';
+                                            @endphp
+                                            <form
+                                                method="POST"
+                                                action="{{ route('indemnites.convocations.destroy', $ligne['convocation_id']) }}"
+                                                onsubmit="return confirm({{ \Illuminate\Support\Js::from($messageConfirmation) }});"
+                                                style="display:inline;"
+                                            >
+                                                @csrf
+                                                @method('DELETE')
+                                                <button class="table-action danger" type="submit">
+                                                    Supprimer
+                                                </button>
+                                            </form>
+                                        @endif
                                     </div>
                                 </td>
                             </tr>
