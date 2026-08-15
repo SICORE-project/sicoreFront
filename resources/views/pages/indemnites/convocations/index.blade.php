@@ -125,6 +125,7 @@
                     action="{{ route('indemnites.convocations.import') }}"
                     enctype="multipart/form-data"
                     class="import-panel-form"
+                    data-import-form
                 >
                     @csrf
 
@@ -156,7 +157,7 @@
                     </div>
 
                     <div class="actions-group">
-                        <button class="btn-primary" type="submit">
+                        <button class="btn-primary" type="submit" data-import-submit>
                             Importer
                         </button>
                     </div>
@@ -305,10 +306,15 @@
                                             {{-- Une ligne = un centre : ne supprime QUE ce centre de CETTE
                                                  convocation, jamais les autres centres du meme objet — voir
                                                  ConvocationCentreController::destroy() cote back. Le message
-                                                 nomme explicitement le centre ET la convocation concernes. --}}
+                                                 nomme explicitement le centre ET la convocation concernes, et
+                                                 previent si c'est le DERNIER centre : dans ce cas la
+                                                 convocation entiere est supprimee avec (voir
+                                                 'dernier_centre' dans construireLignesCentres()), pas de
+                                                 fiche "fantome" sans centre laissee dans la liste. --}}
                                             @php
-                                                $messageConfirmation = 'Supprimer le centre « '.($ligne['centre'] ?? '—').' » de la convocation « '.($ligne['objet'] ?? '—').' » ?'
-                                                    .' Les autres centres de cette convocation ne seront pas supprimés.';
+                                                $messageConfirmation = ! empty($ligne['dernier_centre'])
+                                                    ? 'Supprimer le centre « '.($ligne['centre'] ?? '—').' » ? C\'est le dernier centre de la convocation « '.($ligne['objet'] ?? '—').' » : la convocation entière sera donc supprimée aussi.'
+                                                    : 'Supprimer le centre « '.($ligne['centre'] ?? '—').' » de la convocation « '.($ligne['objet'] ?? '—').' » ? Les autres centres de cette convocation ne seront pas supprimés.';
                                             @endphp
                                             <form
                                                 method="POST"
@@ -588,6 +594,50 @@
                 ouvrirModal(modaleImport);
             }
         @endif
+    })();
+</script>
+
+{{-- ================================================================
+     SCRIPT — etat "chargement" du bouton "Importer" : le fichier Word
+     peut prendre quelques secondes a etre lu et traite cote back (voir
+     ConvocationImportController), et sans retour visuel un double-clic
+     pendant ce temps soumettait le formulaire une seconde fois - meme
+     souci que le bouton "Enregistrer" du wizard (convocation-wizard.js).
+================================================================ --}}
+
+<script>
+    (function () {
+        "use strict";
+
+        var formulaireImport = document.querySelector("[data-import-form]");
+        var boutonImport = document.querySelector("[data-import-submit]");
+
+        if (!formulaireImport || !boutonImport) {
+            return;
+        }
+
+        // Verrou explicite (pas seulement "disabled" sur le bouton) :
+        // bloque tout second envoi meme si le style "disabled" n'a pas eu
+        // le temps de s'afficher (double-clic tres rapide, navigateur lent
+        // a repeindre) - le premier "submit" pose le verrou, tout "submit"
+        // suivant tant qu'il est pose est annule avant meme de partir.
+        var envoiEnCours = false;
+
+        formulaireImport.addEventListener("submit", function (event) {
+            if (envoiEnCours) {
+                event.preventDefault();
+
+                return;
+            }
+
+            envoiEnCours = true;
+
+            boutonImport.disabled = true;
+            boutonImport.setAttribute("aria-busy", "true");
+            boutonImport.dataset.labelOriginal = boutonImport.innerHTML;
+            boutonImport.innerHTML =
+                '<i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i> Import en cours…';
+        });
     })();
 </script>
 

@@ -143,6 +143,12 @@ class ConvocationsController extends Controller
                 $lignes[] = array_merge($ligneCommune, [
                     'centre_id' => $centre['id'] ?? null,
                     'centre' => $centre['centre'] ?? null,
+                    // Supprimer le dernier centre d'une convocation supprime
+                    // la convocation elle-meme (voir
+                    // ConvocationCentreController::destroy() cote back) : le
+                    // bouton "Supprimer" de la liste doit le dire a l'avance
+                    // plutot que de le decouvrir apres coup.
+                    'dernier_centre' => count($centres) === 1,
                 ]);
             }
         }

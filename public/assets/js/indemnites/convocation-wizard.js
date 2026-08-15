@@ -1569,7 +1569,21 @@
 
     hydrateFromPrefill();
 
+    // Verrou explicite (pas seulement "disabled" sur le bouton) : bloque
+    // tout second envoi meme si le style "disabled" n'a pas eu le temps de
+    // s'afficher (double-clic tres rapide, navigateur lent a repeindre) -
+    // le premier "submit" qui passe toutes les validations pose le verrou,
+    // tout "submit" suivant tant qu'il est pose est annule avant meme de
+    // repartir dans les validations.
+    var envoiEnCours = false;
+
     form.addEventListener("submit", function (event) {
+      if (envoiEnCours) {
+        event.preventDefault();
+
+        return;
+      }
+
       if (!validateAllSteps()) {
         event.preventDefault();
 
@@ -1630,12 +1644,16 @@
 
       prepareFormData();
 
+      envoiEnCours = true;
+
       var submitButton = form.querySelector("[data-wizard-submit]");
 
       if (submitButton) {
         submitButton.disabled = true;
-
         submitButton.setAttribute("aria-busy", "true");
+        submitButton.dataset.labelOriginal = submitButton.innerHTML;
+        submitButton.innerHTML =
+          '<i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i> Enregistrement en cours…';
       }
     });
 
