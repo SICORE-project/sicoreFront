@@ -95,7 +95,22 @@ class ConvocationsController extends Controller
             // Selectionne dans le formulaire d'import (modal) : le type
             // n'est plus un champ du document Word, voir import() ci-dessous.
             'typesConvocation' => $this->typesConvocationPourImport(),
+            // Menus deroulants des filtres (Date/Objet/Metier/Centre) :
+            // valeurs distinctes de TOUTE la base, independantes de la page/
+            // du filtre courant — pas seulement celles de $items (page de
+            // 10) — sinon un filtre applique retirerait ses propres options
+            // du menu. Voir ConvocationsController::optionsFiltres() cote back.
+            'filtreOptions' => $this->optionsFiltresPourVue(),
         ]);
+    }
+
+    private function optionsFiltresPourVue(): array
+    {
+        $resultat = $this->convocations->optionsFiltres();
+
+        $vide = ['objets' => [], 'centres' => [], 'metiers' => [], 'dates' => [], 'statuts' => []];
+
+        return $resultat['success'] ? array_merge($vide, $resultat['data'] ?? []) : $vide;
     }
 
     private function typesConvocationPourImport(): array
@@ -123,7 +138,13 @@ class ConvocationsController extends Controller
             $centres = $item['centres'] ?? [];
 
             $ligneCommune = [
-                'convocation_id' => $item['id'] ?? null,
+                // "ne pas exposer mes donnees" : les liens/checkbox de la
+                // liste utilisent desormais le slug opaque de la
+                // convocation, jamais son id numerique sequentiel — cf.
+                // App\Models\Concerns\HasOpaqueSlug cote back. Fallback sur
+                // l'id si jamais le back n'a pas encore la colonne (avant
+                // migration), pour ne pas casser la page entre-temps.
+                'convocation_id' => $item['slug'] ?? $item['id'] ?? null,
                 'objet' => $item['objet'] ?? null,
                 'date_debut' => $item['date_debut'] ?? null,
                 'date_fin' => $item['date_fin'] ?? null,
@@ -141,7 +162,7 @@ class ConvocationsController extends Controller
 
             foreach ($centres as $centre) {
                 $lignes[] = array_merge($ligneCommune, [
-                    'centre_id' => $centre['id'] ?? null,
+                    'centre_id' => $centre['slug'] ?? $centre['id'] ?? null,
                     'centre' => $centre['centre'] ?? null,
                 ]);
             }
@@ -363,6 +384,11 @@ class ConvocationsController extends Controller
         }
 
         $convocationId = $resultat['data']['id'];
+        // Slug opaque pour le lien de redirection ci-dessous ("ne pas
+        // exposer mes donnees") : $convocationId (numerique) reste utilise
+        // pour les appels internes suivants (creerCentres/ajouterBeneficiaires),
+        // le back les accepte toujours aussi bien que le slug.
+        $convocationSlug = $resultat['data']['slug'] ?? $convocationId;
 
         // Index (position dans "centres") -> id reel renvoye par l'API, pour
         // rattacher chaque beneficiaire a son centre ET a son metier precis
@@ -412,7 +438,7 @@ class ConvocationsController extends Controller
         }
 
         return redirect()
-            ->route('indemnites.convocations.show', $convocationId)
+            ->route('indemnites.convocations.show', $convocationSlug)
             ->with('success', 'Convocation creee avec succes.');
     }
 
@@ -461,8 +487,12 @@ class ConvocationsController extends Controller
         $beneficiaires = $beneficiairesResultat['success'] ? ($beneficiairesResultat['data'] ?? []) : [];
 
         if ($centreId !== null) {
+            // $centreId (parametre de route) est desormais le slug opaque du
+            // centre ("ne pas exposer mes donnees") — on accepte aussi l'id
+            // numerique en fallback (anciens liens/avant migration).
             $centre = $convocation->centres->first(
-                fn ($c) => (int) ($c['id'] ?? 0) === (int) $centreId
+                fn ($c) => (string) ($c['slug'] ?? '') === (string) $centreId
+                    || (string) ($c['id'] ?? '') === (string) $centreId
             );
 
             if (! $centre) {
@@ -473,8 +503,13 @@ class ConvocationsController extends Controller
 
             $convocation->centres = collect([$centre]);
 
-            $beneficiaires = array_values(array_filter($beneficiaires, function ($beneficiaire) use ($centreId) {
-                return (int) ($beneficiaire['pivot']['centre_id'] ?? 0) === (int) $centreId;
+            // Le pivot convocation_enseignant est toujours indexe par l'id
+            // NUMERIQUE reel du centre (jamais expose) : on le retrouve ici
+            // a partir du centre qu'on vient de matcher par slug.
+            $centreIdReel = $centre['id'] ?? null;
+
+            $beneficiaires = array_values(array_filter($beneficiaires, function ($beneficiaire) use ($centreIdReel) {
+                return (int) ($beneficiaire['pivot']['centre_id'] ?? 0) === (int) $centreIdReel;
             }));
         }
 
@@ -965,6 +1000,74 @@ class ConvocationsController extends Controller
         return redirect()
             ->route('indemnites.convocations.centres.edit', [$id, $centreId])
             ->with($resultat['success'] ? 'success' : 'error', $resultat['message'] ?? 'Métier supprimé.');
+    }
+
+    // Envoie la convocation par e-mail a ses beneficiaires (tous par
+    // defaut, ou seulement ceux coches dans le formulaire si un tableau
+    // enseignant_ids est soumis). Message personnalise optionnel.
+    public function envoyer(Request $request, int|string $id): RedirectResponse
+    {
+        $donnees = array_filter([
+            'enseignant_ids' => $request->input('enseignant_ids'),
+            'message' => $request->input('message'),
+        ], fn ($valeur) => $valeur !== null && $valeur !== '');
+
+        $resultat = $this->convocations->envoyer($id, $donnees);
+
+        return redirect()
+            ->route('indemnites.convocations.show', $id)
+            ->with($resultat['success'] ? 'success' : 'error', $resultat['message'] ?? "Échec de l'envoi de la convocation.");
+    }
+
+    // Relance les beneficiaires dont le dernier envoi est en echec (ou
+    // seulement enseignant_ids si soumis).
+    public function relancer(Request $request, int|string $id): RedirectResponse
+    {
+        $donnees = array_filter([
+            'enseignant_ids' => $request->input('enseignant_ids'),
+            'message' => $request->input('message'),
+        ], fn ($valeur) => $valeur !== null && $valeur !== '');
+
+        $resultat = $this->convocations->relancer($id, $donnees);
+
+        return redirect()
+            ->route('indemnites.convocations.suivi', $id)
+            ->with($resultat['success'] ? 'success' : 'error', $resultat['message'] ?? "Échec de la relance.");
+    }
+
+    // Historique des envois + stats rapides de la convocation.
+    public function suivi(int|string $id): View|RedirectResponse
+    {
+        $resultat = $this->convocations->suivi($id);
+
+        if (! $resultat['success']) {
+            return redirect()
+                ->route('indemnites.convocations.show', $id)
+                ->with('error', $resultat['message'] ?? 'Convocation introuvable.');
+        }
+
+        $donnees = $resultat['data'] ?? [];
+        $envois = $donnees['envois'] ?? [];
+
+        // Meme convention de formatage de date que le reste du module
+        // (Carbon::parse protege par try/catch, cf. formatConvocationForView).
+        $envois = array_map(function (array $envoi) {
+            if (! empty($envoi['date_envoi'])) {
+                try {
+                    $envoi['date_envoi'] = Carbon::parse($envoi['date_envoi'])->format('d/m/Y H:i');
+                } catch (\Throwable) {
+                    // Date illisible : on l'affiche telle quelle plutot que de la faire disparaitre.
+                }
+            }
+
+            return $envoi;
+        }, $envois);
+
+        return view('pages.indemnites.convocations.suivi', [
+            'stats' => $donnees['stats'] ?? ['total' => 0, 'envoye' => 0, 'echec' => 0],
+            'envois' => $envois,
+            'id' => $id,
+        ]);
     }
 
     /**

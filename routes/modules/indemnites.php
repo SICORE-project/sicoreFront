@@ -91,6 +91,18 @@ Route::middleware('sicore.auth')
         Route::get('/convocations/{id}/pdf', [ConvocationsController::class, 'downloadPdf'])
             ->name('convocations.pdf');
 
+        // Envoi de la convocation aux beneficiaires par e-mail, relance des
+        // envois en echec, et suivi/historique - doivent rester avant
+        // /convocations/{id} pour ne pas etre capturees par elle.
+        Route::post('/convocations/{id}/envoyer', [ConvocationsController::class, 'envoyer'])
+            ->name('convocations.envoyer');
+
+        Route::post('/convocations/{id}/relancer', [ConvocationsController::class, 'relancer'])
+            ->name('convocations.relancer');
+
+        Route::get('/convocations/{id}/suivi', [ConvocationsController::class, 'suivi'])
+            ->name('convocations.suivi');
+
         Route::get('/convocations/{id}', [ConvocationsController::class, 'show'])
             ->name('convocations.show');
 
