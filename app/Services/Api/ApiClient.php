@@ -68,4 +68,10 @@ class ApiClient
                 $this->baseUrl.'/'.$uri
             );
     }
+
+    public function patch(string $uri, array $data = [])
+    {
+        return $this->request()
+            ->patch($this->baseUrl.'/'.$uri, $data);
+    }
 }
