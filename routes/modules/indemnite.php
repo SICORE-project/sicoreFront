@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Indemnites\NotificationController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -33,6 +34,18 @@ Route::middleware('sicore.auth')
 
         Route::view('/etats-paie', 'pages.indemnites.etats-paie')
             ->name('etats-paie');
+
+       
+        Route::prefix('notifications')->group(function () {
+            Route::get('/', [NotificationController::class, 'index'])
+                ->name('notifications.index');
+            Route::get('/unread-count', [NotificationController::class, 'unreadCount'])
+                ->name('notifications.unread-count');
+            Route::patch('/{id}/read', [NotificationController::class, 'markAsRead'])
+                ->name('notifications.read');
+            Route::patch('/read-all', [NotificationController::class, 'markAllAsRead'])
+                ->name('notifications.read-all');
+        });
 
     });
 
