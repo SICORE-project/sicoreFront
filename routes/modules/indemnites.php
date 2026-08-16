@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Indemnites\ConvocationsController;
+use App\Http\Controllers\Indemnites\PiecesJustificativesController;
 
 /*
 |--------------------------------------------------------------------------
@@ -97,8 +98,14 @@ Route::middleware('sicore.auth')
         Route::view('/services-faits', 'pages.indemnites.services-faits')
             ->name('services-faits');
 
-        Route::view('/pieces-justificatives', 'pages.indemnites.pieces-justificatives')
+        Route::get('/pieces-justificatives', [PiecesJustificativesController::class, 'index'])
             ->name('pieces-justificatives');
+
+        Route::post('/pieces-justificatives/deposer', [PiecesJustificativesController::class, 'deposerPieces'])
+            ->name('pieces-justificatives.deposer');
+
+        Route::get('/pieces-justificatives/{id}/telecharger', [PiecesJustificativesController::class, 'download'])
+            ->name('pieces-justificatives.telecharger');
 
         Route::view('/accuses-reception', 'pages.indemnites.accuses-reception')
             ->name('accuses-reception');

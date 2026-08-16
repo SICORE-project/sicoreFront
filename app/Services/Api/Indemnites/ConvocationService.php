@@ -39,6 +39,16 @@ class ConvocationService
         return $this->wrap($this->api->get('convocations', $filtres));
     }
 
+    /**
+     * Valeurs distinctes deja utilisees (objet/session/centre), pour
+     * peupler des menus deroulants de filtre — voir
+     * ConvocationsController::filtres() cote back.
+     */
+    public function filtres(): array
+    {
+        return $this->wrap($this->api->get('convocations/filtres'));
+    }
+
     public function trouver(int|string $id): array
     {
         return $this->wrap($this->api->get("convocations/{$id}"));

@@ -356,7 +356,11 @@
             </div>
 
             @if (empty($centresLignes))
-                <p class="empty-message">Aucune donnée trouvée.</p>
+                {{-- "show" necessaire : .empty-message est display:none par
+                     defaut dans app.css, et n'est normalement bascule que
+                     par le JS de recherche cote client (filterTable() dans
+                     app.js) — jamais au chargement initial de la page. --}}
+                <p class="empty-message show">Aucune donnée trouvée.</p>
             @endif
 
          
