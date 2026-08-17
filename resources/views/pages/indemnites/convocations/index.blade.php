@@ -143,12 +143,48 @@
                     >
                 </div>
 
-                <div class="actions-group">
-                    <button class="btn-primary" type="submit">
-                        Importer
-                    </button>
-                </div>
-            </form>
+                <form
+                    method="POST"
+                    action="{{ route('indemnites.convocations.import') }}"
+                    enctype="multipart/form-data"
+                    class="import-panel-form"
+                    data-import-form
+                >
+                    @csrf
+
+                    <div class="form-group">
+                        <label for="import-type-convocation">Type de convocation</label>
+                        <select
+                            class="form-control"
+                            id="import-type-convocation"
+                            name="type_convocation_id"
+                            required
+                        >
+                            <option value="">Sélectionner</option>
+                            @foreach ($typesConvocation ?? [] as $type)
+                                <option value="{{ $type['id'] }}">{{ $type['libelle'] }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="import-fichier">Fichier (Word)</label>
+                        <input
+                            class="form-control"
+                            id="import-fichier"
+                            name="fichier"
+                            type="file"
+                            accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                            required
+                        >
+                    </div>
+
+                    <div class="actions-group">
+                        <button class="btn-primary" type="submit" data-import-submit>
+                            Importer
+                        </button>
+                    </div>
+                </form>
 
         </x-module-indemnite>
 
@@ -281,18 +317,49 @@
                                                 Modifier
                                             </a>
                                         @endif
-                                        <form
-                                            method="POST"
-                                            action="{{ route('indemnites.convocations.destroy', $ligne['convocation_id']) }}"
-                                            onsubmit="return confirm('Supprimer définitivement cette convocation ?');"
-                                            style="display:inline;"
-                                        >
-                                            @csrf
-                                            @method('DELETE')
-                                            <button class="table-action danger" type="submit">
-                                                Supprimer
-                                            </button>
-                                        </form>
+                                        @if (! empty($ligne['centre_id']))
+                                            {{-- Une ligne = un centre : ne supprime QUE ce centre de CETTE
+                                                 convocation, jamais les autres centres du meme objet — voir
+                                                 ConvocationCentreController::destroy() cote back. Le message
+                                                 nomme explicitement le centre ET la convocation concernes, et
+                                                 previent si c'est le DERNIER centre : dans ce cas la
+                                                 convocation entiere est supprimee avec (voir
+                                                 'dernier_centre' dans construireLignesCentres()), pas de
+                                                 fiche "fantome" sans centre laissee dans la liste. --}}
+                                            @php
+                                                $messageConfirmation = ! empty($ligne['dernier_centre'])
+                                                    ? 'Supprimer le centre « '.($ligne['centre'] ?? '—').' » ? C\'est le dernier centre de la convocation « '.($ligne['objet'] ?? '—').' » : la convocation entière sera donc supprimée aussi.'
+                                                    : 'Supprimer le centre « '.($ligne['centre'] ?? '—').' » de la convocation « '.($ligne['objet'] ?? '—').' » ? Les autres centres de cette convocation ne seront pas supprimés.';
+                                            @endphp
+                                            <form
+                                                method="POST"
+                                                action="{{ route('indemnites.convocations.centres.destroy', [$ligne['convocation_id'], $ligne['centre_id']]) }}"
+                                                onsubmit="return confirm({{ \Illuminate\Support\Js::from($messageConfirmation) }});"
+                                                style="display:inline;"
+                                            >
+                                                @csrf
+                                                @method('DELETE')
+                                                <button class="table-action danger" type="submit">
+                                                    Supprimer
+                                                </button>
+                                            </form>
+                                        @else
+                                            @php
+                                                $messageConfirmation = 'Supprimer définitivement la convocation « '.($ligne['objet'] ?? '—').' » (aucun centre n\'y est rattaché) ?';
+                                            @endphp
+                                            <form
+                                                method="POST"
+                                                action="{{ route('indemnites.convocations.destroy', $ligne['convocation_id']) }}"
+                                                onsubmit="return confirm({{ \Illuminate\Support\Js::from($messageConfirmation) }});"
+                                                style="display:inline;"
+                                            >
+                                                @csrf
+                                                @method('DELETE')
+                                                <button class="table-action danger" type="submit">
+                                                    Supprimer
+                                                </button>
+                                            </form>
+                                        @endif
                                     </div>
                                 </td>
                             </tr>
@@ -304,7 +371,11 @@
             </div>
 
             @if (empty($centresLignes))
-                <p class="empty-message">Aucune donnée trouvée.</p>
+                {{-- "show" necessaire : .empty-message est display:none par
+                     defaut dans app.css, et n'est normalement bascule que
+                     par le JS de recherche cote client (filterTable() dans
+                     app.js) — jamais au chargement initial de la page. --}}
+                <p class="empty-message show">Aucune donnée trouvée.</p>
             @endif
 
          
@@ -453,6 +524,48 @@
     })();
 </script>
 
+
+<script>
+    (function () {
+        "use strict";
+
+        var formulaireImport = document.querySelector("[data-import-form]");
+        var boutonImport = document.querySelector("[data-import-submit]");
+
+        if (!formulaireImport || !boutonImport) {
+            return;
+        }
+
+        // Verrou explicite (pas seulement "disabled" sur le bouton) :
+        // bloque tout second envoi meme si le style "disabled" n'a pas eu
+        // le temps de s'afficher (double-clic tres rapide, navigateur lent
+        // a repeindre) - le premier "submit" pose le verrou, tout "submit"
+        // suivant tant qu'il est pose est annule avant meme de partir.
+        var envoiEnCours = false;
+
+        formulaireImport.addEventListener("submit", function (event) {
+            if (envoiEnCours) {
+                event.preventDefault();
+
+                return;
+            }
+
+            envoiEnCours = true;
+
+            boutonImport.disabled = true;
+            boutonImport.setAttribute("aria-busy", "true");
+            boutonImport.dataset.labelOriginal = boutonImport.innerHTML;
+            boutonImport.innerHTML =
+                '<i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i> Import en cours…';
+        });
+    })();
+</script>
+
+{{-- ================================================================
+     SCRIPT — selection multiple (cases a cocher) + suppression
+     groupee. Une meme convocation peut apparaitre sur plusieurs lignes
+     (une par centre) : on deduplique cote back (voir
+     destroyMultiple()), donc pas besoin de s'en soucier ici.
 
 
 <script>

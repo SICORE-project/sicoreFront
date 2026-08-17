@@ -171,7 +171,7 @@
                                                     <td>{{ $beneficiaire['nom'] ?? '—' }}</td>
                                                     <td>{{ $beneficiaire['prenom'] ?? '—' }}</td>
                                                     <td>{{ $beneficiaire['pivot']['fonction'] ?? '—' }}</td>
-                                                    <td>{{ $statutsPersonnel[$beneficiaire['categorie_personnel'] ?? null] ?? '—' }}</td>
+                                                    <td>{{ $statutsPersonnel[$beneficiaire['pivot']['categorie_personnel'] ?? null] ?? '—' }}</td>
                                                     <td>{{ $beneficiaire['pivot']['provenance'] ?? '—' }}</td>
                                                     <td>{{ $beneficiaire['telephone'] ?? '—' }}</td>
                                                 </tr>

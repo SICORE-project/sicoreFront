@@ -164,6 +164,12 @@ class ConvocationsController extends Controller
                 $lignes[] = array_merge($ligneCommune, [
                     'centre_id' => $centre['slug'] ?? $centre['id'] ?? null,
                     'centre' => $centre['centre'] ?? null,
+                    // Supprimer le dernier centre d'une convocation supprime
+                    // la convocation elle-meme (voir
+                    // ConvocationCentreController::destroy() cote back) : le
+                    // bouton "Supprimer" de la liste doit le dire a l'avance
+                    // plutot que de le decouvrir apres coup.
+                    'dernier_centre' => count($centres) === 1,
                 ]);
             }
         }
@@ -703,7 +709,7 @@ class ConvocationsController extends Controller
                             'telephone' => $beneficiaire['telephone'] ?? null,
                             'fonction' => $beneficiaire['pivot']['fonction'] ?? null,
                             'provenance' => $beneficiaire['pivot']['provenance'] ?? null,
-                            'categorie_personnel' => $beneficiaire['categorie_personnel'] ?? null,
+                            'categorie_personnel' => $beneficiaire['pivot']['categorie_personnel'] ?? null,
                         ];
                     }, $metier['beneficiaires'] ?? []),
                 ];
@@ -948,16 +954,17 @@ class ConvocationsController extends Controller
             ->with($resultat['success'] ? 'success' : 'error', $resultat['message'] ?? 'Centre mis a jour.');
     }
 
-    // Supprime un centre d'examen (les membres qui y etaient rattaches ne
-    // sont pas supprimes, seul leur rattachement au centre est retire).
-    // Toujours vers la fiche complete (pas de fiche centree possible sur un
-    // centre qui vient d'etre supprime).
+    // Supprime UN centre d'examen (les membres qui y etaient rattaches ne
+    // sont pas supprimes, seul leur rattachement au centre est retire) sans
+    // toucher aux autres centres ni supprimer la convocation elle-meme —
+    // appele depuis le bouton "Supprimer" de la ligne (une ligne = un
+    // centre) sur la liste des convocations, d'ou le retour a la liste.
     public function destroyCentre(int|string $id, int|string $centreId): RedirectResponse
     {
         $resultat = $this->convocations->supprimerCentre($id, $centreId);
 
         return redirect()
-            ->route('indemnites.convocations.edit', $id)
+            ->route('indemnites.convocations')
             ->with($resultat['success'] ? 'success' : 'error', $resultat['message'] ?? 'Centre supprime.');
     }
 
