@@ -40,13 +40,13 @@ class ConvocationService
     }
 
     /**
-     * Valeurs distinctes deja utilisees (objet/session/centre), pour
-     * peupler des menus deroulants de filtre — voir
-     * ConvocationsController::filtres() cote back.
+     * Valeurs distinctes (objet/centre/metier/date/statut) pour remplir les
+     * menus deroulants des filtres de la liste (voir
+     * ConvocationsController::index() cote back, methode optionsFiltres()).
      */
-    public function filtres(): array
+    public function optionsFiltres(): array
     {
-        return $this->wrap($this->api->get('convocations/filtres'));
+        return $this->wrap($this->api->get('convocations/filtres-options'));
     }
 
     public function trouver(int|string $id): array
@@ -216,6 +216,33 @@ class ConvocationService
     public function telechargerModeleWord(): \Illuminate\Http\Client\Response
     {
         return $this->api->get('convocations/modele-word');
+    }
+
+    /**
+     * Envoie la convocation par e-mail a ses beneficiaires (tous par
+     * defaut, ou seulement enseignant_ids si fournis dans $donnees).
+     */
+    public function envoyer(int|string $id, array $donnees = []): array
+    {
+        return $this->wrap($this->api->post("convocations/{$id}/envoyer", $donnees));
+    }
+
+    /**
+     * Relance les beneficiaires dont le dernier envoi est en echec (ou
+     * seulement enseignant_ids si fournis dans $donnees).
+     */
+    public function relancer(int|string $id, array $donnees = []): array
+    {
+        return $this->wrap($this->api->post("convocations/{$id}/relancer", $donnees));
+    }
+
+    /**
+     * Historique des envois + stats rapides, pour la page "Suivi des
+     * envois".
+     */
+    public function suivi(int|string $id): array
+    {
+        return $this->wrap($this->api->get("convocations/{$id}/suivi"));
     }
 
 }

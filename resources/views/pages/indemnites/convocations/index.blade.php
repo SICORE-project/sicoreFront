@@ -17,12 +17,6 @@
 
     <section class="content-area">
 
-        {{-- ============================================================
-             STATISTIQUES
-             NB: $stats est optionnel. S'il n'est pas envoyé par le
-             controller, les valeurs retombent sur 0 / le total du
-             paginator pour ne jamais planter la vue.
-        ============================================================ --}}
 
         <div class="stats-grid four">
 
@@ -97,28 +91,57 @@
 
     
 
-        <div class="modal-backdrop" id="import-convocations" data-modal hidden>
-            <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="import-convocations-title">
+        <x-module-indemnite type="modal" id="import-convocations" title="Importer une convocation" :open="! empty($importAvertissements)">
 
-                <div class="modal-header">
-                    <h2 id="import-convocations-title">Importer une convocation</h2>
-                    <button class="modal-close" type="button" data-modal-close aria-label="Fermer">&times;</button>
+            <a class="btn-secondary modal-modele-link" href="{{ route('indemnites.convocations.modele-word') }}">
+                Télécharger le modèle Word
+            </a>
+
+            @if (! empty($importAvertissements))
+                <div class="form-errors" role="alert">
+                    <p><strong>Points à vérifier sur le dernier import :</strong></p>
+                    <ul>
+                        @foreach ($importAvertissements as $avertissement)
+                            <li>{{ $avertissement }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+
+            <form
+                method="POST"
+                action="{{ route('indemnites.convocations.import') }}"
+                enctype="multipart/form-data"
+                class="import-panel-form"
+            >
+                @csrf
+
+                <div class="form-group">
+                    <label for="import-type-convocation">Type de convocation</label>
+                    <select
+                        class="form-control"
+                        id="import-type-convocation"
+                        name="type_convocation_id"
+                        required
+                    >
+                        <option value="">Sélectionner</option>
+                        @foreach ($typesConvocation ?? [] as $type)
+                            <option value="{{ $type['id'] }}">{{ $type['libelle'] }}</option>
+                        @endforeach
+                    </select>
                 </div>
 
-                <a class="btn-secondary modal-modele-link" href="{{ route('indemnites.convocations.modele-word') }}">
-                    Télécharger le modèle Word
-                </a>
-
-                @if (! empty($importAvertissements))
-                    <div class="form-errors" role="alert">
-                        <p><strong>Points à vérifier sur le dernier import :</strong></p>
-                        <ul>
-                            @foreach ($importAvertissements as $avertissement)
-                                <li>{{ $avertissement }}</li>
-                            @endforeach
-                        </ul>
-                    </div>
-                @endif
+                <div class="form-group">
+                    <label for="import-fichier">Fichier (Word)</label>
+                    <input
+                        class="form-control"
+                        id="import-fichier"
+                        name="fichier"
+                        type="file"
+                        accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                        required
+                    >
+                </div>
 
                 <form
                     method="POST"
@@ -163,66 +186,68 @@
                     </div>
                 </form>
 
-            </div>
-        </div>
+        </x-module-indemnite>
 
         {{-- ============================================================
              FILTRES
         ============================================================ --}}
 
+      
         <form
             id="convocationFilterForm"
             class="filter-panel"
             method="GET"
             action="{{ route('indemnites.convocations') }}"
             aria-label="Filtres de la page"
+            data-auto-submit
         >
 
             <div class="form-group">
                 <label for="convocation-filter-date">Date</label>
-                <input
-                    class="form-control"
-                    id="convocation-filter-date"
-                    type="date"
-                    name="date"
-                    value="{{ request('date') }}"
-                >
+                <select class="form-control" id="convocation-filter-date" name="date">
+                    <option value="">Toutes les dates</option>
+                    @foreach ($filtreOptions['dates'] ?? [] as $dateOption)
+                        <option value="{{ $dateOption }}" @selected(request('date') === $dateOption)>
+                            {{ \Illuminate\Support\Carbon::parse($dateOption)->format('d/m/Y') }}
+                        </option>
+                    @endforeach
+                </select>
             </div>
 
             <div class="form-group">
                 <label for="convocation-filter-objet">Objet</label>
-                <input
-                    class="form-control"
-                    id="convocation-filter-objet"
-                    type="text"
-                    name="objet"
-                    placeholder="Rechercher un objet"
-                    value="{{ request('objet') }}"
-                >
+                <select class="form-control" id="convocation-filter-objet" name="objet">
+                    <option value="">Tous les objets</option>
+                    @foreach ($filtreOptions['objets'] ?? [] as $objetOption)
+                        <option value="{{ $objetOption }}" @selected(request('objet') === $objetOption)>
+                            {{ $objetOption }}
+                        </option>
+                    @endforeach
+                </select>
             </div>
 
             <div class="form-group">
                 <label for="convocation-filter-metier">Métier</label>
-                <input
-                    class="form-control"
-                    id="convocation-filter-metier"
-                    type="text"
-                    name="metier"
-                    placeholder="Rechercher un métier"
-                    value="{{ request('metier') }}"
-                >
+                <select class="form-control" id="convocation-filter-metier" name="metier">
+                    <option value="">Tous les métiers</option>
+                    @foreach ($filtreOptions['metiers'] ?? [] as $metierOption)
+                        <option value="{{ $metierOption }}" @selected(request('metier') === $metierOption)>
+                            {{ $metierOption }}
+                        </option>
+                    @endforeach
+                </select>
             </div>
 
             <div class="form-group">
                 <label for="convocation-filter-centre">Centre</label>
-                <input
-                    class="form-control"
-                    id="convocation-filter-centre"
-                    type="text"
-                    name="centre"
-                    placeholder="Rechercher un centre"
-                    value="{{ request('centre') }}"
-                >
+                <select class="form-control" id="convocation-filter-centre" name="centre">
+                    <option value="">Tous les centres</option>
+                    @foreach ($filtreOptions['centres'] ?? [] as $centreOption)
+                        <option value="{{ $centreOption }}" @selected(request('centre') === $centreOption)>
+                            {{ $centreOption }}
+                        </option>
+                    @endforeach
+                </select>
             </div>
 
             <div class="actions-group">
@@ -273,17 +298,7 @@
                                 <td>{{ $ligne['date_debut'] ? \Illuminate\Support\Carbon::parse($ligne['date_debut'])->format('d/m/Y') : '—' }}</td>
                                 <td>{{ $ligne['date_fin'] ? \Illuminate\Support\Carbon::parse($ligne['date_fin'])->format('d/m/Y') : '—' }}</td>
                                 <td>
-                                    @php
-                                        $statutBadges = [
-                                            'brouillon'    => ['badge-pending', 'Brouillon'],
-                                            'emise'        => ['badge-primary', 'Émise'],
-                                            'envoyee'      => ['badge-active', 'Envoyée'],
-                                            'cloturee'     => ['badge-inactive', 'Clôturée'],
-                                        ];
-                                        [$badgeClass, $badgeLabel] = $statutBadges[$ligne['statut'] ?? null]
-                                            ?? ['badge-pending', ucfirst($ligne['statut'] ?? '—')];
-                                    @endphp
-                                    <span class="badge {{ $badgeClass }}">{{ $badgeLabel }}</span>
+                                    <x-module-indemnite type="statut-convocation" :statut="$ligne['statut'] ?? null" />
                                 </td>
                                 <td class="actions-cell">
                                     <div class="table-actions-inline">
@@ -406,53 +421,6 @@
 @push('styles')
 <style>
 
-    .modal-backdrop {
-        position: fixed;
-        inset: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 20px;
-        background: rgba(15, 23, 42, 0.5);
-        z-index: 1000;
-    }
-
-    .modal-backdrop[hidden] {
-        display: none;
-    }
-
-    .modal-dialog {
-        width: 100%;
-        max-width: 520px;
-        max-height: calc(100vh - 40px);
-        overflow-y: auto;
-        padding: 20px 22px;
-        border-radius: 10px;
-        background: #ffffff;
-        box-shadow: 0 20px 45px rgba(15, 23, 42, 0.25);
-    }
-
-    .modal-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 12px;
-        margin-bottom: 8px;
-    }
-
-    .modal-header h2 {
-        margin: 0;
-        font-size: 1.1rem;
-    }
-
-    .modal-close {
-        border: 0;
-        background: transparent;
-        font-size: 1.4rem;
-        line-height: 1;
-        cursor: pointer;
-        color: inherit;
-    }
 
     .modal-modele-link {
         display: block;
@@ -494,10 +462,7 @@
         text-align: center;
     }
 
-    /* Filtrer / Reinitialiser : sur leur propre ligne (span sur les 4
-       colonnes de .filter-panel, cf. app.css), alignes en bas a droite du
-       panneau plutot qu'a gauche sous les champs, avec des boutons plus
-       compacts que le style par defaut (min-height 40px / padding 10px 18px). */
+  
     #convocationFilterForm .actions-group {
         grid-column: 1 / -1;
         justify-content: flex-end;
@@ -510,9 +475,7 @@
         font-size: 12.5px;
     }
 
-    /* Meme rendu que .pagination (app.css), sous un nom de classe
-       different pour ne pas etre capturee par setupPagination() dans
-       app.js (voir commentaire au-dessus du bloc pagination). */
+    
     .convocation-pagination {
         display: flex;
         align-items: center;
@@ -543,71 +506,24 @@
 ================================================================ --}}
 
 @push('scripts')
+
+
 <script>
     (function () {
         "use strict";
 
-        function ouvrirModal(modal) {
-            modal.hidden = false;
-        }
+        var formulaireFiltres = document.querySelector("[data-auto-submit]");
 
-        function fermerModal(modal) {
-            modal.hidden = true;
-        }
-
-        document.querySelectorAll("[data-modal-open]").forEach(function (bouton) {
-            var modal = document.getElementById(bouton.getAttribute("data-modal-open"));
-
-            if (!modal) {
-                return;
-            }
-
-            bouton.addEventListener("click", function () {
-                ouvrirModal(modal);
-            });
-        });
-
-        document.querySelectorAll("[data-modal]").forEach(function (modal) {
-            modal.addEventListener("click", function (event) {
-                if (event.target === modal) {
-                    fermerModal(modal);
-                }
-            });
-
-            modal.querySelectorAll("[data-modal-close]").forEach(function (bouton) {
-                bouton.addEventListener("click", function () {
-                    fermerModal(modal);
+        if (formulaireFiltres) {
+            formulaireFiltres.querySelectorAll("select, input").forEach(function (champ) {
+                champ.addEventListener("change", function () {
+                    formulaireFiltres.submit();
                 });
             });
-        });
-
-        document.addEventListener("keydown", function (event) {
-            if (event.key !== "Escape") {
-                return;
-            }
-
-            document.querySelectorAll("[data-modal]:not([hidden])").forEach(fermerModal);
-        });
-
-        @if (! empty($importAvertissements))
-            // Rouvre automatiquement la modal apres un import : sinon les
-            // avertissements ("agent non reconnu", ...) restent invisibles
-            // dans la modal fermee et l'utilisateur croit l'import parfait.
-            var modaleImport = document.getElementById("import-convocations");
-            if (modaleImport) {
-                ouvrirModal(modaleImport);
-            }
-        @endif
+        }
     })();
 </script>
 
-{{-- ================================================================
-     SCRIPT — etat "chargement" du bouton "Importer" : le fichier Word
-     peut prendre quelques secondes a etre lu et traite cote back (voir
-     ConvocationImportController), et sans retour visuel un double-clic
-     pendant ce temps soumettait le formulaire une seconde fois - meme
-     souci que le bouton "Enregistrer" du wizard (convocation-wizard.js).
-================================================================ --}}
 
 <script>
     (function () {
@@ -650,7 +566,7 @@
      groupee. Une meme convocation peut apparaitre sur plusieurs lignes
      (une par centre) : on deduplique cote back (voir
      destroyMultiple()), donc pas besoin de s'en soucier ici.
-================================================================ --}}
+
 
 <script>
     (function () {

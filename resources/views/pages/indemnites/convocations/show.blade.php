@@ -14,27 +14,7 @@
 
 <section class="content-area">
 
-    @php
-        $statutBadges = [
-            'brouillon'   => ['badge-pending', 'Brouillon'],
-            'emise'       => ['badge-primary', 'Émise'],
-            'envoyee'     => ['badge-active', 'Envoyée'],
-            'cloturee'    => ['badge-inactive', 'Clôturée'],
-        ];
-        [$badgeClass, $badgeLabel] = $statutBadges[$convocation->statut ?? null]
-            ?? ['badge-pending', ucfirst($convocation->statut ?? '—')];
-    @endphp
 
-    {{-- ============================================================
-         "SHOW AFFICHE PAS TOUT ENLEVE LE CARD" : la classe globale
-         .form-card (app.css) impose max-width:720px ET overflow:hidden -
-         quelle que soit la largeur qu'on lui donne par-dessus (tentatives
-         precedentes), tout ce qui deborde reste silencieusement TRONQUE.
-         Cette page n'utilise donc plus .form-card du tout : plus de
-         plafond de largeur, plus d'overflow:hidden, plus jamais de contenu
-         coupe - cf. .convocation-page ci-dessous (style dedie, sans aucun
-         "overflow: hidden").
-    ============================================================ --}}
 
     <section class="convocation-page">
 
@@ -55,7 +35,7 @@
                 @endif
             </div>
 
-            <span class="badge {{ $badgeClass }}">{{ $badgeLabel }}</span>
+            <x-module-indemnite type="statut-convocation" :statut="$convocation->statut ?? null" />
 
         </div>
 
@@ -109,14 +89,7 @@
 
             </div>
 
-            {{-- ============================================================
-                 CENTRES D'EXAMEN
-                 Meme structure que le PDF (ConvocationPdfController) et que
-                 le modele papier fourni : pour CHAQUE centre, un bloc
-                 d'infos (Centre / Jury / Chef de centre / Téléphone) puis
-                 ses membres groupes par métier (un centre peut en couvrir
-                 plusieurs, chacun avec ses propres membres).
-            ============================================================ --}}
+          
 
             <div class="form-section">
 
@@ -245,6 +218,14 @@
                     Télécharger PDF
                 </a>
 
+                <a class="btn-secondary" href="{{ route('indemnites.convocations.suivi', $id) }}">
+                    Suivi des envois
+                </a>
+
+                <button class="btn-secondary" type="button" data-modal-open="envoyer-convocation">
+                    Envoyer aux bénéficiaires
+                </button>
+
                 <a class="btn-primary" href="{{ ! empty($centreId) ? route('indemnites.convocations.centres.edit', [$id, $centreId]) : route('indemnites.convocations.edit', $id) }}">
                     Modifier
                 </a>
@@ -257,21 +238,40 @@
 
 </section>
 
+{{-- Envoi de la convocation par e-mail aux bénéficiaires — par défaut à
+     tous les bénéficiaires de la convocation, avec un message personnalisé
+     optionnel ajouté au modèle d'e-mail. Le suivi détaillé (par
+     bénéficiaire, avec relance des échecs) se fait depuis la page "Suivi
+     des envois" ci-dessus. --}}
+<x-module-indemnite type="modal" id="envoyer-convocation" title="Envoyer aux bénéficiaires">
+
+    <form method="POST" action="{{ route('indemnites.convocations.envoyer', $id) }}">
+        @csrf
+
+        <p>
+            La convocation sera envoyée par e-mail à tous les bénéficiaires
+            actuellement rattachés à cette convocation.
+        </p>
+
+        <div class="form-group">
+            <label for="envoyer-message">Message personnalisé (optionnel)</label>
+            <textarea class="form-control" id="envoyer-message" name="message" rows="4" maxlength="2000"
+                placeholder="Ce message sera ajouté au modèle de convocation envoyé par e-mail."></textarea>
+        </div>
+
+        <div class="form-actions">
+            <button class="btn-secondary" type="button" data-modal-close>Annuler</button>
+            <button class="btn-primary" type="submit">Envoyer</button>
+        </div>
+
+    </form>
+
+</x-module-indemnite>
+
 </main>
 
 @endsection
 
-{{-- ================================================================
-     STYLES
-     "SHOW AFFICHE PAS TOUT ENLEVE LE CARD" : les tentatives precedentes
-     (elargir .convocation-card, ajouter min-width:0...) laissaient la page
-     sur la classe globale .form-card (app.css), qui impose TOUJOURS
-     max-width:720px ET overflow:hidden - donc un plafond, et tout ce qui
-     le depasse encore reste tronque en silence. Cette page n'herite plus
-     du tout de .form-card : .convocation-page ci-dessous est un style
-     autonome, sans overflow:hidden nulle part, qui prend toute la largeur
-     disponible dans .content-area - il n'y a plus de plafond a atteindre.
-================================================================ --}}
 
 @push('styles')
 <style>
@@ -361,10 +361,7 @@
         font-size: 12px;
     }
 
-    /* Le tableau (.table, min-width:760px) defile tout seul dans
-       .table-responsive (overflow-x:auto, cf. app.css) des qu'il ne rentre
-       pas - inutile, et dangereux, de mettre "overflow: hidden" sur un des
-       parents (c'est exactement ce qui coupait le contenu avant). */
+   
     .convocation-page-body .table-responsive {
         overflow-x: auto;
     }
