@@ -7,6 +7,23 @@
         <x-topbar title="Profils / Rôles" subtitle="Gestion Utilisateur > Profils / Rôles" icon="fa-solid fa-users-cog" />
 
         <section class="content-area">
+            @if (session('success'))
+                <div style="background:#dcfce7; border:1px solid #16a34a; color:#166534; padding:12px 16px; border-radius:8px; margin-bottom:16px;">
+                    {{ session('success') }}
+                </div>
+            @endif
+
+            @if ($errors->any())
+                <div style="background:#fee2e2; border:1px solid #dc2626; color:#991b1b; padding:12px 16px; border-radius:8px; margin-bottom:16px;">
+                    <strong>Erreur :</strong>
+                    <ul style="margin: 4px 0 0 20px;">
+                        @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+
             <!-- Objectifs métier -->
             <section class="objective-card">
                 <h2>Objectifs métier</h2>
@@ -65,9 +82,9 @@
             <div class="actions-row">
                 <p class="breadcrumb">Gestion Utilisateur > Profils / Rôles</p>
                 <div class="actions-group">
-                    <a href="{{ route('admin.roles.create') }}" class="btn-primary">
+                    <button type="button" class="btn-primary" data-modal-open="modal-nouveau-role">
                         <i class="fas fa-plus"></i> Nouveau profil
-                    </a>
+                    </button>
                     <button class="btn-secondary" type="button">Exporter</button>
                 </div>
             </div>
@@ -133,21 +150,18 @@
                                     </td>
                                     <td class="actions-cell">
                                         <div class="action-buttons">
-                                            <a href="{{ route('admin.roles.permissions', $role['id']) }}" class="action-btn"
-                                                title="Permissions">
-                                                <i class="fas fa-key"></i>
+                                            <a href="{{ route('admin.roles.permissions', $role['id']) }}" class="table-action">
+                                                 Voir
                                             </a>
-                                            <a href="{{ route('admin.roles.edit', $role['id']) }}" class="action-btn"
-                                                title="Modifier">
-                                                <i class="fas fa-edit"></i>
+                                            <a href="{{ route('admin.roles.edit', $role['id']) }}" class="table-action">
+                                                 Modifier
                                             </a>
                                             <form action="{{ route('admin.roles.destroy', $role['id']) }}" method="POST"
                                                 style="display: inline;">
                                                 @csrf
                                                 @method('DELETE')
-                                                <button type="submit" class="action-btn delete"
-                                                    onclick="return confirm('Supprimer ce rôle ?')" title="Supprimer">
-                                                    <i class="fas fa-trash"></i>
+                                                <button type="submit" class="table-action danger"
+                                                    onclick="return confirm('Supprimer ce rôle ?')"> Supprimer
                                                 </button>
                                             </form>
                                         </div>
@@ -168,26 +182,118 @@
                 <p class="empty-message" id="empty-message-filtre" style="display: none;">Aucun résultat pour ce filtre.</p>
                 <p class="empty-message">Aucune donnée trouvée.</p>
                 <div class="pagination" aria-label="Pagination">
-                    @if (!empty($roles['links']))
-                        @foreach ($roles['links'] as $link)
-                            @if ($link['url'])
-                                <a href="{{ $link['url'] }}" class="page-btn {{ $link['active'] ? 'active' : '' }}">
-                                    {!! $link['label'] !!}
-                                </a>
-                            @else
-                                <span class="page-btn disabled">{!! $link['label'] !!}</span>
-                            @endif
-                        @endforeach
-                    @else
-                        <button class="page-btn" type="button">←</button>
-                        <button class="page-btn active" type="button">1</button>
-                        <button class="page-btn" type="button">2</button>
-                        <button class="page-btn" type="button">→</button>
-                    @endif
+                    <button class="page-btn" type="button">←</button>
+                    <button class="page-btn active" type="button">1</button>
+                    <button class="page-btn" type="button">2</button>
+                    <button class="page-btn" type="button">→</button>
                 </div>
             </section>
         </section>
     </main>
+
+    <!-- Modale : Nouveau profil -->
+    <div class="modal-overlay" id="modal-nouveau-role" style="display:none;">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3>Nouveau profil</h3>
+                <button type="button" class="modal-close" data-modal-close>&times;</button>
+            </div>
+            <form action="{{ route('admin.roles.store') }}" method="POST">
+                @csrf
+                <div class="modal-body">
+                    <div class="form-group" style="margin-bottom: 16px;">
+                        <label for="modal-nom">Nom *</label>
+                        <input type="text" id="modal-nom" name="nom" required class="form-control">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 16px;">
+                        <label for="modal-slug">Slug *</label>
+                        <input type="text" id="modal-slug" name="slug" required class="form-control">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 16px;">
+                        <label for="modal-description">Description</label>
+                        <textarea id="modal-description" name="description" rows="2" class="form-control"></textarea>
+                    </div>
+                    <div class="filter-panel" style="margin-bottom: 0;">
+                        <div class="form-group">
+                            <label for="modal-niveau">Niveau</label>
+                            <select id="modal-niveau" name="niveau" class="form-control">
+                                <option value="systeme">Système</option>
+                                <option value="admin_metier">Admin Métier</option>
+                                <option value="gestionnaire">Gestionnaire</option>
+                                <option value="consultation">Consultation</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="modal-est_actif">Statut</label>
+                            <select id="modal-est_actif" name="est_actif" class="form-control">
+                                <option value="1">Actif</option>
+                                <option value="0">Inactif</option>
+                            </select>
+                        </div>
+                    </div>
+                    <p style="font-size: 13px; color: #6b7280; margin-top: 12px;">
+                        Les permissions pourront être assignées après la création, via l'action "Voir" du rôle.
+                    </p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-secondary" data-modal-close>Annuler</button>
+                    <button type="submit" class="btn-primary">Enregistrer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    @push('styles')
+    <style>
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        .modal-box {
+            background: #fff;
+            border-radius: 12px;
+            width: 100%;
+            max-width: 520px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 20px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .modal-header h3 {
+            margin: 0;
+            font-size: 1.1rem;
+        }
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            line-height: 1;
+            cursor: pointer;
+            color: #6b7280;
+        }
+        .modal-body {
+            padding: 20px;
+        }
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            padding: 16px 20px;
+            border-top: 1px solid #e5e7eb;
+        }
+    </style>
+    @endpush
 
     @push('scripts')
     <script>
@@ -227,6 +333,31 @@
                     applyFilters();
                 });
             }
+
+            // Gestion des modales
+            document.querySelectorAll('[data-modal-open]').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    const modal = document.getElementById(btn.dataset.modalOpen);
+                    if (modal) modal.style.display = 'flex';
+                });
+            });
+
+            document.querySelectorAll('[data-modal-close]').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    btn.closest('.modal-overlay').style.display = 'none';
+                });
+            });
+
+            document.querySelectorAll('.modal-overlay').forEach(function (overlay) {
+                overlay.addEventListener('click', function (e) {
+                    if (e.target === overlay) overlay.style.display = 'none';
+                });
+            });
+
+            // Rouvre automatiquement la modale s'il y a des erreurs de validation
+            @if ($errors->any())
+                document.getElementById('modal-nouveau-role').style.display = 'flex';
+            @endif
         })();
     </script>
     @endpush
