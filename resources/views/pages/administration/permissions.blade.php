@@ -78,7 +78,7 @@
         <div class="actions-row">
             <p class="breadcrumb">Gestion Utilisateur > Permissions</p>
             <div class="actions-group">
-                <button type="button" class="btn-primary" data-modal-open="modal-nouvelle-permission">
+                <button type="button" class="btn-primary" id="btn-open-modal-permission">
                     <i class="fas fa-plus"></i> Nouvelle permission
                 </button>
                 <button class="btn-secondary" type="button">Exporter</button>
@@ -181,36 +181,39 @@
         <div class="modal-box">
             <div class="modal-header">
                 <h3>Nouvelle permission</h3>
-                <button type="button" class="modal-close" data-modal-close>&times;</button>
+                <button type="button" class="modal-close" id="btn-close-modal-permission">&times;</button>
             </div>
-            <form action="{{ route('admin.permissions.store') }}" method="POST">
+            <form action="{{ route('admin.permissions.store') }}" method="POST" id="form-permission">
                 @csrf
                 <div class="modal-body">
                     <div class="form-group" style="margin-bottom: 16px;">
                         <label for="modal-p-nom">Nom *</label>
-                        <input type="text" id="modal-p-nom" name="nom" required class="form-control">
+                        <input type="text" id="modal-p-nom" name="nom" required class="form-control" placeholder="Ex: Gérer les utilisateurs">
                     </div>
                     <div class="form-group" style="margin-bottom: 16px;">
-                        <label for="modal-p-slug">Slug *</label>
-                        <input type="text" id="modal-p-slug" name="slug" required class="form-control">
+                        <label for="modal-p-slug">Slug</label>
+                        <input type="text" id="modal-p-slug" name="slug" class="form-control" readonly 
+                               style="background:#f3f4f6; cursor:not-allowed; color:#6b7280;" 
+                               placeholder="Généré automatiquement">
+                        <small style="color: #6b7280; font-size: 12px;">Généré automatiquement à partir du nom</small>
                     </div>
                     <div class="filter-panel" style="margin-bottom: 16px;">
                         <div class="form-group">
                             <label for="modal-p-groupe">Groupe *</label>
-                            <input type="text" id="modal-p-groupe" name="groupe" required class="form-control">
+                            <input type="text" id="modal-p-groupe" name="groupe" required class="form-control" placeholder="Ex: administration">
                         </div>
                         <div class="form-group">
                             <label for="modal-p-module">Module *</label>
-                            <input type="text" id="modal-p-module" name="module" required class="form-control">
+                            <input type="text" id="modal-p-module" name="module" required class="form-control" placeholder="Ex: users">
                         </div>
                     </div>
                     <div class="form-group" style="margin-bottom: 16px;">
                         <label for="modal-p-action">Action *</label>
-                        <input type="text" id="modal-p-action" name="action" required class="form-control">
+                        <input type="text" id="modal-p-action" name="action" required class="form-control" placeholder="Ex: manage">
                     </div>
                     <div class="form-group" style="margin-bottom: 16px;">
                         <label for="modal-p-description">Description</label>
-                        <textarea id="modal-p-description" name="description" rows="2" class="form-control"></textarea>
+                        <textarea id="modal-p-description" name="description" rows="2" class="form-control" placeholder="Décrivez cette permission..."></textarea>
                     </div>
                     <div class="form-group">
                         <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
@@ -220,7 +223,7 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn-secondary" data-modal-close>Annuler</button>
+                    <button type="button" class="btn-secondary" id="btn-modal-annuler-permission">Annuler</button>
                     <button type="submit" class="btn-primary">Enregistrer</button>
                 </div>
             </form>
@@ -233,10 +236,14 @@
             position: fixed;
             inset: 0;
             background: rgba(0,0,0,0.5);
-            display: flex;
+            display: none;
             align-items: center;
             justify-content: center;
             z-index: 1000;
+            animation: fadeIn 0.3s ease;
+        }
+        .modal-overlay.active {
+            display: flex;
         }
         .modal-box {
             background: #fff;
@@ -246,6 +253,7 @@
             max-height: 90vh;
             overflow-y: auto;
             box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            animation: slideUp 0.3s ease;
         }
         .modal-header {
             display: flex;
@@ -257,6 +265,7 @@
         .modal-header h3 {
             margin: 0;
             font-size: 1.1rem;
+            font-weight: 600;
         }
         .modal-close {
             background: none;
@@ -265,6 +274,10 @@
             line-height: 1;
             cursor: pointer;
             color: #6b7280;
+            transition: color 0.2s;
+        }
+        .modal-close:hover {
+            color: #dc2626;
         }
         .modal-body {
             padding: 20px;
@@ -276,12 +289,100 @@
             padding: 16px 20px;
             border-top: 1px solid #e5e7eb;
         }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes slideUp {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
     </style>
     @endpush
 
     @push('scripts')
     <script>
         (function () {
+            // ============================================================
+            // 1. GESTION DE LA MODALE PERMISSION
+            // ============================================================
+            const modal = document.getElementById('modal-nouvelle-permission');
+            const btnOpen = document.getElementById('btn-open-modal-permission');
+            const btnClose = document.getElementById('btn-close-modal-permission');
+            const btnAnnuler = document.getElementById('btn-modal-annuler-permission');
+            const form = document.getElementById('form-permission');
+
+            function openModal() {
+                if (modal) {
+                    modal.style.display = 'flex';
+                    document.body.style.overflow = 'hidden';
+                    form?.reset();
+                    document.getElementById('modal-p-slug').value = '';
+                    setTimeout(() => {
+                        document.getElementById('modal-p-nom').focus();
+                    }, 100);
+                }
+            }
+
+            function closeModal() {
+                if (modal) {
+                    modal.style.display = 'none';
+                    document.body.style.overflow = '';
+                }
+            }
+
+            if (btnOpen) {
+                btnOpen.addEventListener('click', openModal);
+            }
+
+            if (btnClose) {
+                btnClose.addEventListener('click', closeModal);
+            }
+
+            if (btnAnnuler) {
+                btnAnnuler.addEventListener('click', closeModal);
+            }
+
+            if (modal) {
+                modal.addEventListener('click', function(e) {
+                    if (e.target === modal) {
+                        closeModal();
+                    }
+                });
+            }
+
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && modal && modal.style.display === 'flex') {
+                    closeModal();
+                }
+            });
+
+            // ============================================================
+            // 2. GÉNÉRATION AUTOMATIQUE DU SLUG (PERMISSION)
+            // ============================================================
+            const nomInput = document.getElementById('modal-p-nom');
+            const slugInput = document.getElementById('modal-p-slug');
+
+            function generateSlug(value) {
+                return value
+                    .toLowerCase()
+                    .replace(/[^a-z0-9]+/g, '-')
+                    .replace(/^-+|-+$/g, '');
+            }
+
+            if (nomInput && slugInput) {
+                nomInput.addEventListener('input', function() {
+                    slugInput.value = generateSlug(this.value);
+                });
+
+                if (nomInput.value) {
+                    slugInput.value = generateSlug(nomInput.value);
+                }
+            }
+
+            // ============================================================
+            // 3. FILTRES
+            // ============================================================
             const btnFiltrer = document.getElementById('btn-filtrer');
             const btnReset = document.getElementById('btn-reset-filtres');
             const selectModule = document.getElementById('filter-module');
@@ -303,7 +404,9 @@
                     if (visible) visibleCount++;
                 });
 
-                emptyMessage.style.display = visibleCount === 0 ? 'block' : 'none';
+                if (emptyMessage) {
+                    emptyMessage.style.display = visibleCount === 0 ? 'block' : 'none';
+                }
             }
 
             if (btnFiltrer) {
@@ -318,29 +421,27 @@
                 });
             }
 
-            // Gestion des modales
-            document.querySelectorAll('[data-modal-open]').forEach(function (btn) {
-                btn.addEventListener('click', function () {
-                    const modal = document.getElementById(btn.dataset.modalOpen);
-                    if (modal) modal.style.display = 'flex';
-                });
-            });
-
-            document.querySelectorAll('[data-modal-close]').forEach(function (btn) {
-                btn.addEventListener('click', function () {
-                    btn.closest('.modal-overlay').style.display = 'none';
-                });
-            });
-
-            document.querySelectorAll('.modal-overlay').forEach(function (overlay) {
-                overlay.addEventListener('click', function (e) {
-                    if (e.target === overlay) overlay.style.display = 'none';
-                });
-            });
-
+            // ============================================================
+            // 4. RÉOUVERTURE AUTOMATIQUE EN CAS D'ERREUR
+            // ============================================================
             @if ($errors->any())
-                document.getElementById('modal-nouvelle-permission').style.display = 'flex';
+                openModal();
             @endif
+
+            // ============================================================
+            // 5. VALIDATION DU FORMULAIRE
+            // ============================================================
+            if (form) {
+                form.addEventListener('submit', function(e) {
+                    const nom = document.getElementById('modal-p-nom').value.trim();
+                    if (!nom) {
+                        e.preventDefault();
+                        alert('Le nom est obligatoire.');
+                        document.getElementById('modal-p-nom').focus();
+                    }
+                });
+            }
+
         })();
     </script>
     @endpush
