@@ -1,5 +1,11 @@
 <?php
 
+/*
+| MENU LATÉRAL DU FRONTEND
+| Lu par resources/views/components/sidebar.blade.php.
+| type=link crée un lien simple ; type=group crée un groupe déroulant.
+| route vient de routes/web.php et active garde le bon lien sélectionné.
+*/
 return [
     [
         'type' => 'link',

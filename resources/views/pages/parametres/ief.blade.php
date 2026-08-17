@@ -1,8 +1,16 @@
 @extends('layouts.app')
 
+{{--
+  PAGE : Paramétrage des IEF — URL /parametres/ief dans routes/web.php.
+  Layout/menu : layouts/app.blade.php et components/sidebar.blade.php.
+  Recherche du tableau : public/assets/js/app.js via data-table-filter.
+  Les données sont actuellement de présentation ; la persistance appartient au
+  backend du module Paramétrage.
+--}}
 @section('title', 'SICORE - IEF')
 @section('content')
 <main class="main-content">
+    {{-- En-tête écrit localement ; il peut être migré plus tard vers <x-topbar>. --}}
     <header class="topbar">
       <div class="page-title-wrap">
         <button class="mobile-menu-btn" type="button" data-sidebar-toggle aria-label="Ouvrir le menu">&#9776;</button>
@@ -48,6 +56,7 @@
         </div>
       </div>
 
+      {{-- Liste des IEF avec actions de présentation. --}}
       <section class="table-card">
         <div class="table-responsive">
           <table class="table" id="iefTable">
@@ -113,4 +122,3 @@
     </section>
   </main>
 @endsection
-

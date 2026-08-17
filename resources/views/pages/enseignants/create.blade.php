@@ -1,5 +1,13 @@
 @extends('layouts.app')
 
+{{--
+  PAGE : Nouvel enseignant — URL /enseignants/nouveau dans routes/web.php.
+  En-tête : components/topbar.blade.php. Menu : config/navigation.php.
+  Assistant à étapes : public/assets/js/form-wizard.js.
+  IA/IEF dépendantes : public/assets/js/education-structures.js.
+  Cette vue présente le formulaire ; une API d'enregistrement devra être reliée
+  par l'équipe responsable du module Enseignants.
+--}}
 @section('title', 'SICORE - Nouvel enseignant')
 @section('content')
 <main class="main-content">
@@ -19,6 +27,7 @@
           <span class="badge badge-primary">3 etapes</span>
         </div>
 
+        {{-- data-teacher-wizard permet à form-wizard.js de piloter les étapes. --}}
         <form class="teacher-form" data-teacher-wizard novalidate>
           <div class="wizard-progress" aria-label="Progression du formulaire">
             <button class="wizard-step" type="button" data-step-indicator="1">
@@ -35,6 +44,7 @@
             </button>
           </div>
 
+          {{-- Étape 1 : identité et informations personnelles. --}}
           <section class="wizard-panel" data-wizard-panel="1">
             <div class="form-section">
               <h3>Informations de l'enseignant</h3>
@@ -75,6 +85,7 @@
             </div>
           </section>
 
+          {{-- Étape 2 : affectation administrative et structure éducative. --}}
           <section class="wizard-panel" data-wizard-panel="2" hidden>
             <div class="form-section">
               <h3>Contact</h3>
@@ -91,6 +102,7 @@
             </div>
           </section>
 
+          {{-- Étape 3 : récapitulatif avant confirmation. --}}
           <section class="wizard-panel" data-wizard-panel="3" hidden>
             <div class="form-section">
               <h3>Profession &amp; affectation</h3>
@@ -142,7 +154,7 @@
 @endsection
 
 @push('scripts')
+  {{-- Scripts propres à ce formulaire, ajoutés dans layouts/base.blade.php. --}}
 <script src="{{ asset('assets/js/education-structures.js') }}" defer></script>
   <script src="{{ asset('assets/js/form-wizard.js') }}" defer></script>
 @endpush
-

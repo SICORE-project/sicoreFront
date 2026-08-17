@@ -1,17 +1,12 @@
-# Intégration future du backend SICORE
+# Connexion API du frontend
 
-Cette archive utilise volontairement une authentification locale de test. Aucun appel API n’est actif.
+`App\Services\SicoreApi` centralise les appels HTTP vers le backend.
 
-Compte temporaire :
+- `AuthController` ouvre et révoque le token Sanctum.
+- `PayrollController` alimente les pages, relaie les actions et les exports.
+- `EnsureSicoreAuthenticated` contrôle la présence et l’expiration de la session.
+- `public/assets/js/payroll.js` pilote les formulaires modaux sans exposer le token.
 
-```text
-admin@sicore.sn / Sicore@2026
-```
-
-Lors de l’intégration du backend, les éléments à remplacer seront principalement :
-
-1. `app/Http/Controllers/AuthController.php` pour envoyer les identifiants au backend.
-2. La session Laravel pour stocker de manière sécurisée le jeton retourné.
-3. Les formulaires et tableaux pour charger ou enregistrer les données par API.
-
-Les layouts, le sidebar, la navigation, les composants Blade et les routes d’affichage peuvent être conservés.
+Les erreurs API sont normalisées par `SicoreApiException` et affichées dans le
+design existant. Les mutations reçoivent une clé d’idempotence générée par le
+navigateur et relayée par le BFF.

@@ -1,5 +1,12 @@
 <?php
 
+/*
+| CATALOGUE VISUEL DES PAGES FONCTIONNELLES
+| Chaque clé est un slug utilisé par <x-module-page>. Pour les pages Paie
+| connectées, ModulePage.php remplace stats, filters, actions, columns et rows
+| par les données de sicoreBack/app/Services/PayrollPageService.php.
+| Aucun calcul financier ne doit être écrit dans ce fichier.
+*/
 return [
     'paie-etats-presence' => [
         'title' => 'États de présence',
@@ -1746,6 +1753,7 @@ return [
             ],
         ],
     ],
+    // Gestion des accusés de réception
     'indemnites-accuses-reception' => [
         'title' => 'Gestion des accusés de réception',
         'icon' => 'AR',
@@ -1816,6 +1824,8 @@ return [
             ],
         ],
     ],
+
+    // Gestion des indemnités
     'indemnites-calcul' => [
         'title' => 'Calcul des indemnités',
         'icon' => 'CI',
@@ -1890,6 +1900,8 @@ return [
             ],
         ],
     ],
+
+    // Gestion des frais de déplacement
     'indemnites-frais-deplacement' => [
         'title' => 'Gestion des frais de déplacement',
         'icon' => 'FD',
@@ -1966,6 +1978,8 @@ return [
             ],
         ],
     ],
+
+    // Gestion des états de paie
     'indemnites-etats-paie' => [
         'title' => 'Génération des états de paie',
         'icon' => 'EP',
@@ -2036,6 +2050,8 @@ return [
             ],
         ],
     ],
+
+    // Gestion des bourses et aides
     'bourses-enregistrer-demande' => [
         'title' => 'Enregistrer une demande',
         'icon' => 'BD',
@@ -2109,6 +2125,8 @@ return [
             ],
         ],
     ],
+
+    // Gestion des bourses et aides
     'bourses-valider-dossier' => [
         'title' => 'Valider un dossier',
         'icon' => 'VD',
@@ -2176,6 +2194,8 @@ return [
             ],
         ],
     ],
+
+    // Gestion des bourses et aides
     'bourses-attribuer-aide' => [
         'title' => 'Attribuer une aide',
         'icon' => 'AA',
@@ -2249,6 +2269,8 @@ return [
             ],
         ],
     ],
+
+    // Gestion des utilisateurs et profils
     'utilisateurs' => [
         'title' => 'Utilisateurs',
         'icon' => 'US',
@@ -2332,6 +2354,8 @@ return [
             ],
         ],
     ],
+
+    // Gestion des profils et rôles
     'profils-roles' => [
         'title' => 'Profils / Rôles',
         'icon' => 'PR',

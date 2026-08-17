@@ -1,6 +1,12 @@
+/*
+ * NOTIFICATIONS TEMPORAIRES (TOASTS)
+ * Chargé sur toutes les pages par layouts/base.blade.php.
+ * app.js et payroll.js appellent window.showToast(type, message).
+ */
 (function () {
   "use strict";
 
+  // Libellé lisible associé à chaque niveau de notification.
   var labels = {
     success: "Succes",
     error: "Erreur",
@@ -8,6 +14,7 @@
     info: "Information"
   };
 
+  /** Crée le conteneur de notifications s'il n'existe pas encore. */
   function ensureToastHost() {
     var host = document.getElementById("toastHost");
     if (host) {
@@ -23,6 +30,7 @@
     return host;
   }
 
+  /** Affiche une notification, permet sa fermeture puis la retire automatiquement. */
   function showToast(type, message) {
     var variant = labels[type] ? type : "info";
     var host = ensureToastHost();
@@ -47,6 +55,7 @@
     }, 4200);
   }
 
+  /** Raccourci conservé pour les anciens formulaires de présentation. */
   function showSuccessToast(message) {
     showToast("success", message);
   }

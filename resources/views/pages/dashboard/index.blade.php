@@ -1,5 +1,12 @@
 @extends('layouts.app')
 
+{{--
+  PAGE : Tableau de bord — URL /dashboard dans routes/web.php.
+  Layout : resources/views/layouts/app.blade.php.
+  En-tête : resources/views/components/topbar.blade.php.
+  Graphiques : public/assets/js/charts.js, chargé en bas avec @push('scripts').
+  Les chiffres présents ici sont actuellement des données de présentation.
+--}}
 @section('title', 'SICORE - Tableau de bord')
 @section('content')
 <main class="main-content">
@@ -12,6 +19,7 @@
     />
 
     <section class="content-area">
+      {{-- Première zone : cartes de synthèse générale. --}}
       <div class="stats-grid">
         <article class="stat-card">
           <div>
@@ -55,6 +63,7 @@
         </article>
       </div>
 
+      {{-- Deuxième zone : graphiques initialisés par charts.js. --}}
       <div class="dashboard-grid">
         <section class="panel">
           <div class="panel-header">
@@ -94,6 +103,6 @@
 @endsection
 
 @push('scripts')
-<script src="{{ asset('assets/js/charts.js') }}" defer></script>
+  {{-- Script spécifique au dashboard, ajouté après les scripts communs. --}}
+  <script src="{{ asset('assets/js/charts.js') }}" defer></script>
 @endpush
-

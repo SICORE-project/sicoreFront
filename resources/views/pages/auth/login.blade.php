@@ -1,9 +1,17 @@
 @extends('layouts.guest')
 
+{{--
+  PAGE : Connexion — URL GET / et envoi POST /login.
+  Routes : routes/web.php. Traitement : app/Http/Controllers/AuthController.php.
+  Appel backend : app/Services/SicoreApi.php → sicoreBack /api/login.
+  Layout sans sidebar : resources/views/layouts/guest.blade.php.
+  Styles : public/assets/css/style.css et responsive.css.
+--}}
 @section('title', 'SICORE - Connexion')
 @section('content')
 <main class="login-wrapper">
     <section class="login-card" aria-label="Connexion SICORE">
+      {{-- Colonne institutionnelle : identité visuelle et contexte SICORE. --}}
       <div class="login-left">
         <div class="login-left-content">
           <div class="republic-block">
@@ -25,11 +33,13 @@
         </div>
       </div>
 
+      {{-- Colonne fonctionnelle : formulaire réellement envoyé à AuthController. --}}
       <div class="login-right">
         <div class="auth-panel">
           <span class="auth-kicker">Bienvenue sur SICORE</span>
           <p class="auth-subtitle">Connectez-vous avec vos identifiants pour acc&eacute;der &agrave; votre espace s&eacute;curis&eacute;.</p>
 
+          {{-- @csrf protège le formulaire contre les soumissions externes. --}}
           <form class="form-stack" method="POST" action="{{ route('login.submit') }}" novalidate>
             @csrf
             <div class="field-group">
@@ -72,12 +82,11 @@
           </form>
 
           <p class="auth-footer">Besoin d&rsquo;aide pour acc&eacute;der &agrave; votre compte ? <a href="#">Contactez l&rsquo;administrateur du syst&egrave;me.</a></p>
-          <p class="demo-credentials">
-              Utilisez vos identifiants professionnels SICORE.
+          <p class="bootstrap-credentials">
+            Compte initial : <strong>{{ config('sicore.bootstrap.email') }}</strong> / <strong>{{ config('sicore.bootstrap.password') }}</strong>
           </p>
         </div>
       </div>
     </section>
   </main>
 @endsection
-

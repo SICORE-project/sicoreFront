@@ -1,24 +1,13 @@
-INSTALLATION — SICORE FRONTEND LARAVEL 12 — MODE TEST
+INSTALLATION — SICORE FRONTEND CONNECTÉ
 
-1. Décompressez le projet dans un dossier simple, par exemple :
-   C:\Users\VotreNom\Downloads\sicore-front-laravel
+1. Démarrer le backend sur http://127.0.0.1:8000.
+2. Vérifier SICORE_API_URL dans .env.
+3. Lancer : php artisan optimize:clear
+4. Lancer : php artisan serve --host=127.0.0.1 --port=8001
+5. Ouvrir : http://127.0.0.1:8001
 
-2. Ouvrez PowerShell dans le dossier du projet.
+Compte initial créé par le seeder du backend :
+admin@sicore.sn / Sicore@2026
 
-3. Nettoyez le cache Laravel :
-   php artisan optimize:clear
-
-4. Démarrez le frontend sur le port 8001 :
-   php artisan serve --host=127.0.0.1 --port=8001
-
-5. Ouvrez dans le navigateur :
-   http://127.0.0.1:8001
-
-6. Utilisez le compte local de test :
-   E-mail : admin@sicore.sn
-   Mot de passe : Sicore@2026
-
-Après la connexion, Laravel redirige vers le dashboard. Toutes les pages du sidebar sont disponibles en mode frontend. La connexion au backend API sera ajoutée ultérieurement.
-
-Commande alternative :
-   .\demarrer-sicore.ps1
+Pour démarrer les deux applications ensemble, utiliser depuis le dossier parent :
+.\demarrer-sicore.ps1

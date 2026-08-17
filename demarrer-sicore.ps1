@@ -29,5 +29,6 @@ if ($envContent -match "(?m)^APP_KEY=$") {
 
 php artisan optimize:clear
 Write-Host "SICORE Frontend : http://127.0.0.1:$Port" -ForegroundColor Green
-Write-Host "Mode test : admin@sicore.sn / Sicore@2026" -ForegroundColor Yellow
+Write-Host "Backend requis : http://127.0.0.1:8000" -ForegroundColor Cyan
+Write-Host "Compte initial : admin@sicore.sn / Sicore@2026" -ForegroundColor Yellow
 php artisan serve --host=127.0.0.1 --port=$Port

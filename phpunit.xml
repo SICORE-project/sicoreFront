@@ -24,7 +24,6 @@
         <env name="MAIL_MAILER" value="array"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="SESSION_DRIVER" value="array"/>
-        <env name="SICORE_TEST_EMAIL" value="admin@sicore.sn"/>
-        <env name="SICORE_TEST_PASSWORD" value="Sicore@2026"/>
+        <env name="SICORE_API_URL" value="http://127.0.0.1:8000"/>
     </php>
 </phpunit>

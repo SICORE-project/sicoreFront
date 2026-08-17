@@ -2,17 +2,33 @@
 
 namespace App\Http\Controllers;
 
+use App\Contracts\SicoreApiClientInterface;
+use App\Exceptions\SicoreApiException;
+use App\Http\Requests\LoginRequest;
 use Illuminate\Http\RedirectResponse;
-use App\Services\Api\AuthService;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
+/**
+ * Gère la connexion et la déconnexion dans l'application frontend.
+ *
+ * Chemin complet :
+ * routes/web.php → AuthController → app/Contracts/SicoreApiClientInterface.php
+ * → app/Services/SicoreApi.php
+ * → backend /api/login ou /api/logout.
+ *
+ * Le mot de passe n'est jamais conservé dans la session frontend. Seuls le
+ * profil utilisateur, le jeton API et sa date d'expiration y sont stockés.
+ */
 class AuthController extends Controller
 {
-    public function __construct(
-        protected AuthService $authService
-    ) {}
-    
+    /** Le contrat API est résolu par app/Providers/ApiClientServiceProvider.php. */
+    public function __construct(private readonly SicoreApiClientInterface $api) {}
+
+    /**
+     * Affiche la vue resources/views/pages/auth/login.blade.php.
+     * Un utilisateur déjà connecté est envoyé directement au tableau de bord.
+     */
     public function showLogin(Request $request): View|RedirectResponse
     {
         if ($request->session()->has('sicore_user')) {
@@ -22,90 +38,66 @@ class AuthController extends Controller
         return view('pages.auth.login');
     }
 
-    public function login(Request $request): RedirectResponse
+    /**
+     * Valide le formulaire de connexion puis transmet les identifiants à l'API.
+     * La route correspondante est POST /login dans routes/web.php.
+     */
+    public function login(LoginRequest $request): RedirectResponse
     {
-        $credentials = $request->validate([
-            'email' => ['required', 'email'],
-            'password' => ['required', 'string'],
-        ]);
+        // Les règles sont centralisées dans app/Http/Requests/LoginRequest.php.
+        $credentials = $request->validated();
 
-        $result = $this->authService->login($credentials);
-
-        if (! $result['success']) {
+        try {
+            // La vérification réelle des identifiants est faite par le backend.
+            $result = $this->api->login($credentials['email'], $credentials['password']);
+        } catch (SicoreApiException $exception) {
             return back()
                 ->withInput($request->only('email'))
                 ->withErrors([
-                    'email' => $result['message'],
+                    'email' => $exception->status >= 500
+                        ? 'Le backend SICORE est indisponible. Vérifiez qu’il est démarré sur le port 8000.'
+                        : $exception->getMessage(),
                 ]);
         }
 
-        $data = $result['data'];
-
+        // Régénérer la session empêche la réutilisation d'un ancien identifiant.
         $request->session()->regenerate();
-
-        $request->session()->put('access_token', $data['access_token']);
-
+        $user = (array) ($result['user'] ?? []);
+        $role = (array) ($user['role'] ?? []);
         $request->session()->put('sicore_user', [
-            'id' => $data['user']['id'],
-            'nom' => $data['user']['nom'],
-            'prenom' => $data['user']['prenom'],
-            'email' => $data['user']['email'],
-            'role' => $data['user']['role']['nom'] ?? null,
-            'role_slug' => $data['user']['role']['slug'] ?? null,
+            ...$user,
+            'name' => trim(($user['prenom'] ?? '').' '.($user['nom'] ?? '')),
+            'role' => $role['libelle'] ?? 'Utilisateur',
         ]);
+        $request->session()->put('sicore_token', (string) $result['token']);
+        $request->session()->put(
+            'sicore_token_expires_at',
+            now()->addMinutes((int) config('sicore.api.token_lifetime'))->timestamp
+        );
 
-        return redirect()
-            ->route('dashboard')
-            ->with('success', $data['message']);
+        return redirect()->route('dashboard')
+            ->with('success', 'Connexion sécurisée au backend SICORE réussie.');
     }
 
-    // public function logout(Request $request): RedirectResponse
-    // {
-    //     if ($request->session()->has('access_token')) {
-    //         $this->authService->logout();
-    //     }
-
-
-    //     $request->session()->invalidate();
-
-    //     $request->session()->regenerateToken();
-
-
-    //     return redirect()
-    //         ->route('login')
-    //         ->with(
-    //             'success',
-    //             'Vous êtes maintenant déconnecté.'
-    //         );
-    // }
+    /**
+     * Révoque le jeton côté backend puis détruit toujours la session locale.
+     * Même si l'API est arrêtée, l'utilisateur est déconnecté du frontend.
+     */
     public function logout(Request $request): RedirectResponse
     {
-        try {
-
-            $this->authService->logout();
-
-        } catch (\Exception $e) {
-
-            // On continue la déconnexion locale
+        $token = (string) $request->session()->get('sicore_token', '');
+        if ($token !== '') {
+            try {
+                $this->api->logout($token);
+            } catch (SicoreApiException) {
+                // La session locale est toujours invalidée, même si l'API est indisponible.
+            }
         }
 
-
-        $request->session()->forget([
-            'access_token',
-            'sicore_user'
-        ]);
-
-
         $request->session()->invalidate();
-
         $request->session()->regenerateToken();
 
-
-        return redirect()
-            ->route('login')
-            ->with(
-                'success',
-                'Vous êtes maintenant déconnecté.'
-            );
+        return redirect()->route('login')
+            ->with('success', 'Vous êtes maintenant déconnecté.');
     }
 }
