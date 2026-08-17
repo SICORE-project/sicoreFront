@@ -143,7 +143,7 @@
                     >
                 </div>
 
-                <form
+                <!-- <form
                     method="POST"
                     action="{{ route('indemnites.convocations.import') }}"
                     enctype="multipart/form-data"
@@ -177,7 +177,7 @@
                             accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                             required
                         >
-                    </div>
+                    </div> -->
 
                     <div class="actions-group">
                         <button class="btn-primary" type="submit" data-import-submit>
@@ -561,11 +561,7 @@
     })();
 </script>
 
-{{-- ================================================================
-     SCRIPT — selection multiple (cases a cocher) + suppression
-     groupee. Une meme convocation peut apparaitre sur plusieurs lignes
-     (une par centre) : on deduplique cote back (voir
-     destroyMultiple()), donc pas besoin de s'en soucier ici.
+.
 
 
 <script>
