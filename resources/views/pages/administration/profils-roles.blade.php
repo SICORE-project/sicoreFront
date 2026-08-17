@@ -82,7 +82,7 @@
             <div class="actions-row">
                 <p class="breadcrumb">Gestion Utilisateur > Profils / Rôles</p>
                 <div class="actions-group">
-                    <button type="button" class="btn-primary" data-modal-open="modal-nouveau-role">
+                    <button type="button" class="btn-primary" id="btn-open-modal">
                         <i class="fas fa-plus"></i> Nouveau profil
                     </button>
                     <button class="btn-secondary" type="button">Exporter</button>
@@ -150,11 +150,11 @@
                                     </td>
                                     <td class="actions-cell">
                                         <div class="action-buttons">
-                                            <a href="{{ route('admin.roles.permissions', $role['id']) }}" class="table-action">
-                                                 Voir
+                                            <a href="{{ route('admin.roles.show', $role['id']) }}" class="table-action">
+                                                Voir
                                             </a>
                                             <a href="{{ route('admin.roles.edit', $role['id']) }}" class="table-action">
-                                                 Modifier
+                                                Modifier
                                             </a>
                                             <form action="{{ route('admin.roles.destroy', $role['id']) }}" method="POST"
                                                 style="display: inline;">
@@ -196,22 +196,23 @@
         <div class="modal-box">
             <div class="modal-header">
                 <h3>Nouveau profil</h3>
-                <button type="button" class="modal-close" data-modal-close>&times;</button>
+                <button type="button" class="modal-close" id="btn-close-modal">&times;</button>
             </div>
-            <form action="{{ route('admin.roles.store') }}" method="POST">
+            <form action="{{ route('admin.roles.store') }}" method="POST" id="form-nouveau-role">
                 @csrf
                 <div class="modal-body">
                     <div class="form-group" style="margin-bottom: 16px;">
                         <label for="modal-nom">Nom *</label>
-                        <input type="text" id="modal-nom" name="nom" required class="form-control">
+                        <input type="text" id="modal-nom" name="nom" required class="form-control" placeholder="Ex: Administrateur">
                     </div>
                     <div class="form-group" style="margin-bottom: 16px;">
-                        <label for="modal-slug">Slug *</label>
-                        <input type="text" id="modal-slug" name="slug" required class="form-control">
+                        <label for="modal-slug">Slug</label>
+                        <input type="text" id="modal-slug" name="slug" class="form-control" readonly style="background:#f3f4f6; cursor:not-allowed;">
+                        <small style="color: #6b7280; font-size: 12px;">Généré automatiquement à partir du nom</small>
                     </div>
                     <div class="form-group" style="margin-bottom: 16px;">
                         <label for="modal-description">Description</label>
-                        <textarea id="modal-description" name="description" rows="2" class="form-control"></textarea>
+                        <textarea id="modal-description" name="description" rows="2" class="form-control" placeholder="Décrire les responsabilités..."></textarea>
                     </div>
                     <div class="filter-panel" style="margin-bottom: 0;">
                         <div class="form-group">
@@ -236,7 +237,7 @@
                     </p>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn-secondary" data-modal-close>Annuler</button>
+                    <button type="button" class="btn-secondary" id="btn-modal-annuler">Annuler</button>
                     <button type="submit" class="btn-primary">Enregistrer</button>
                 </div>
             </form>
@@ -249,10 +250,14 @@
             position: fixed;
             inset: 0;
             background: rgba(0,0,0,0.5);
-            display: flex;
+            display: none;
             align-items: center;
             justify-content: center;
             z-index: 1000;
+            animation: fadeIn 0.3s ease;
+        }
+        .modal-overlay.active {
+            display: flex;
         }
         .modal-box {
             background: #fff;
@@ -262,6 +267,7 @@
             max-height: 90vh;
             overflow-y: auto;
             box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            animation: slideUp 0.3s ease;
         }
         .modal-header {
             display: flex;
@@ -273,6 +279,7 @@
         .modal-header h3 {
             margin: 0;
             font-size: 1.1rem;
+            font-weight: 600;
         }
         .modal-close {
             background: none;
@@ -281,6 +288,10 @@
             line-height: 1;
             cursor: pointer;
             color: #6b7280;
+            transition: color 0.2s;
+        }
+        .modal-close:hover {
+            color: #dc2626;
         }
         .modal-body {
             padding: 20px;
@@ -292,12 +303,106 @@
             padding: 16px 20px;
             border-top: 1px solid #e5e7eb;
         }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes slideUp {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
     </style>
     @endpush
 
     @push('scripts')
     <script>
         (function () {
+            // ============================================================
+            // 1. GESTION DE LA MODALE
+            // ============================================================
+            const modal = document.getElementById('modal-nouveau-role');
+            const btnOpen = document.getElementById('btn-open-modal');
+            const btnClose = document.getElementById('btn-close-modal');
+            const btnAnnuler = document.getElementById('btn-modal-annuler');
+            const form = document.getElementById('form-nouveau-role');
+
+            // Ouvrir la modale
+            function openModal() {
+                modal.style.display = 'flex';
+                document.body.style.overflow = 'hidden';
+                // Réinitialiser le formulaire
+                form.reset();
+                document.getElementById('modal-slug').value = '';
+                // Focus sur le premier champ
+                setTimeout(() => {
+                    document.getElementById('modal-nom').focus();
+                }, 100);
+            }
+
+            // Fermer la modale
+            function closeModal() {
+                modal.style.display = 'none';
+                document.body.style.overflow = '';
+            }
+
+            // Événements d'ouverture
+            if (btnOpen) {
+                btnOpen.addEventListener('click', openModal);
+            }
+
+            // Événements de fermeture
+            if (btnClose) {
+                btnClose.addEventListener('click', closeModal);
+            }
+
+            if (btnAnnuler) {
+                btnAnnuler.addEventListener('click', closeModal);
+            }
+
+            // Fermer en cliquant à l'extérieur
+            if (modal) {
+                modal.addEventListener('click', function(e) {
+                    if (e.target === modal) {
+                        closeModal();
+                    }
+                });
+            }
+
+            // Fermer avec la touche Echap
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && modal.style.display === 'flex') {
+                    closeModal();
+                }
+            });
+
+            // ============================================================
+            // 2. GÉNÉRATION AUTOMATIQUE DU SLUG
+            // ============================================================
+            const nomInput = document.getElementById('modal-nom');
+            const slugInput = document.getElementById('modal-slug');
+
+            function generateSlug(value) {
+                return value
+                    .toLowerCase()
+                    .replace(/[^a-z0-9]+/g, '-')
+                    .replace(/^-+|-+$/g, '');
+            }
+
+            if (nomInput && slugInput) {
+                // Génération en temps réel
+                nomInput.addEventListener('input', function() {
+                    slugInput.value = generateSlug(this.value);
+                });
+
+                // Si le nom est déjà rempli (erreur de validation)
+                if (nomInput.value) {
+                    slugInput.value = generateSlug(nomInput.value);
+                }
+            }
+
+            // ============================================================
+            // 3. FILTRES
+            // ============================================================
             const btnFiltrer = document.getElementById('btn-filtrer');
             const btnReset = document.getElementById('btn-reset-filtres');
             const selectNiveau = document.getElementById('filter-niveau');
@@ -319,7 +424,9 @@
                     if (visible) visibleCount++;
                 });
 
-                emptyMessage.style.display = visibleCount === 0 ? 'block' : 'none';
+                if (emptyMessage) {
+                    emptyMessage.style.display = visibleCount === 0 ? 'block' : 'none';
+                }
             }
 
             if (btnFiltrer) {
@@ -334,30 +441,27 @@
                 });
             }
 
-            // Gestion des modales
-            document.querySelectorAll('[data-modal-open]').forEach(function (btn) {
-                btn.addEventListener('click', function () {
-                    const modal = document.getElementById(btn.dataset.modalOpen);
-                    if (modal) modal.style.display = 'flex';
-                });
-            });
-
-            document.querySelectorAll('[data-modal-close]').forEach(function (btn) {
-                btn.addEventListener('click', function () {
-                    btn.closest('.modal-overlay').style.display = 'none';
-                });
-            });
-
-            document.querySelectorAll('.modal-overlay').forEach(function (overlay) {
-                overlay.addEventListener('click', function (e) {
-                    if (e.target === overlay) overlay.style.display = 'none';
-                });
-            });
-
-            // Rouvre automatiquement la modale s'il y a des erreurs de validation
+            // ============================================================
+            // 4. RÉOUVERTURE AUTOMATIQUE EN CAS D'ERREUR
+            // ============================================================
             @if ($errors->any())
-                document.getElementById('modal-nouveau-role').style.display = 'flex';
+                openModal();
             @endif
+
+            // ============================================================
+            // 5. VALIDATION DU FORMULAIRE
+            // ============================================================
+            if (form) {
+                form.addEventListener('submit', function(e) {
+                    const nom = document.getElementById('modal-nom').value.trim();
+                    if (!nom) {
+                        e.preventDefault();
+                        alert('Le nom est obligatoire.');
+                        document.getElementById('modal-nom').focus();
+                    }
+                });
+            }
+
         })();
     </script>
     @endpush

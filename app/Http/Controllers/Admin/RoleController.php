@@ -134,6 +134,19 @@ class RoleController extends Controller
 
         return view('pages.administration.roles-permissions', compact('role', 'permissions', 'rolePermissions'));
     }
+    public function show($id)
+{
+    $response = Http::withToken(session('access_token'))
+        ->get(config('app.api_url') . '/admin/roles/' . $id);
+
+    $role = $response->successful() ? $response->json()['data'] ?? null : null;
+
+    if (!$role) {
+        return redirect()->route('admin.roles.index')->with('error', 'Rôle non trouvé');
+    }
+
+    return view('pages.administration.roles-show', compact('role'));
+}
 
     public function syncPermissions(Request $request, $id)
     {

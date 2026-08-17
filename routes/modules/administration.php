@@ -34,6 +34,7 @@ Route::middleware('sicore.auth')
             Route::get('/', [RoleController::class, 'index'])->name('index');
             Route::get('/create', [RoleController::class, 'create'])->name('create');
             Route::post('/', [RoleController::class, 'store'])->name('store');
+            Route::get('/{id}', [RoleController::class, 'show'])->name('show');
             Route::get('/{id}/edit', [RoleController::class, 'edit'])->name('edit');
             Route::put('/{id}', [RoleController::class, 'update'])->name('update');
             Route::delete('/{id}', [RoleController::class, 'destroy'])->name('destroy');
@@ -46,6 +47,7 @@ Route::middleware('sicore.auth')
             Route::get('/', [PermissionController::class, 'index'])->name('index');
             Route::get('/create', [PermissionController::class, 'create'])->name('create');
             Route::post('/', [PermissionController::class, 'store'])->name('store');
+            Route::get('/{id}', [PermissionController::class, 'show'])->name('show'); 
             Route::get('/{id}/edit', [PermissionController::class, 'edit'])->name('edit');
             Route::put('/{id}', [PermissionController::class, 'update'])->name('update');
             Route::delete('/{id}', [PermissionController::class, 'destroy'])->name('destroy');
