@@ -123,4 +123,15 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+     /*
+    |--------------------------------------------------------------------------
+    | API URL
+    |--------------------------------------------------------------------------
+    |
+    | This URL is used by the frontend to communicate with the backend API.
+    |
+    */
+
+    'api_url' => env('API_URL', 'http://127.0.0.1:8000/api'),
+
 ];

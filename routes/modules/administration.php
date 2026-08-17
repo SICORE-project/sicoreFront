@@ -1,6 +1,10 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Admin\PermissionController;
+use App\Http\Controllers\Admin\RoleController;
+use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\DashboardController;
 
 /*
 |--------------------------------------------------------------------------
@@ -8,17 +12,51 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 */
 
+
+
 Route::middleware('sicore.auth')
-    ->prefix('administration')
     ->group(function (): void {
 
-        Route::view('/utilisateurs', 'pages.administration.utilisateurs')
+        Route::get('/administration/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
+
+        /*
+|--------------------------------------------------------------------------
+|  USERS
+|--------------------------------------------------------------------------
+*/
+        Route::get('/utilisateurs', [UserController::class, 'index'])
             ->name('utilisateurs.index');
 
-        Route::view('/utilisateurs/profils-roles', 'pages.administration.profils-roles')
+        Route::get('/utilisateurs/nouveau', [UserController::class, 'create'])
+            ->name('utilisateurs.create');
+
+        Route::post('/utilisateurs', [UserController::class, 'store'])
+            ->name('utilisateurs.store');
+
+        Route::get('/utilisateurs/profils-roles', [RoleController::class, 'index'])
             ->name('utilisateurs.profils-roles');
 
-        Route::view('/utilisateurs/permissions', 'pages.administration.permissions')
+        Route::get('/utilisateurs/permissions', [PermissionController::class, 'index'])
             ->name('utilisateurs.permissions');
 
+        Route::prefix('roles')->name('admin.roles.')->group(function (): void {
+            Route::get('/', [RoleController::class, 'index'])->name('index');
+            Route::get('/create', [RoleController::class, 'create'])->name('create');
+            Route::post('/', [RoleController::class, 'store'])->name('store');
+            Route::get('/{id}/edit', [RoleController::class, 'edit'])->name('edit');
+            Route::put('/{id}', [RoleController::class, 'update'])->name('update');
+            Route::delete('/{id}', [RoleController::class, 'destroy'])->name('destroy');
+            Route::get('/{id}/permissions', [RoleController::class, 'permissions'])->name('permissions');
+            Route::put('/{id}/sync-permissions', [RoleController::class, 'syncPermissions'])->name('syncPermissions');
+        });
+
+        Route::prefix('permissions')->name('admin.permissions.')->group(function (): void {
+            Route::get('/', [PermissionController::class, 'index'])->name('index');
+            Route::get('/create', [PermissionController::class, 'create'])->name('create');
+            Route::post('/', [PermissionController::class, 'store'])->name('store');
+            Route::get('/{id}/edit', [PermissionController::class, 'edit'])->name('edit');
+            Route::put('/{id}', [PermissionController::class, 'update'])->name('update');
+            Route::delete('/{id}', [PermissionController::class, 'destroy'])->name('destroy');
+            Route::get('/sync', [PermissionController::class, 'sync'])->name('sync');
+        });
     });
