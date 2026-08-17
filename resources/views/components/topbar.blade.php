@@ -21,6 +21,11 @@
     </div>
   </div>
 
+  @if(session()->has('sicore_user'))
+    <x-notification-bell />
+  @endif
+  
+
   @if ($searchId)
     <div class="search-wrap">
       <label class="sr-only" for="{{ $searchId }}">Rechercher</label>
@@ -33,6 +38,8 @@
       >
     </div>
   @endif
+
+  
 
   {{ $slot }}
 </header>
