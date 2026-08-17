@@ -52,7 +52,7 @@ class PiecesJustificativesController extends Controller
      */
     public function index(Request $request): View
     {
-        $resultatFiltres = $this->convocations->filtres();
+        $resultatFiltres = $this->convocations->optionsFiltres();
         $optionsFiltres = $resultatFiltres['success'] ? ($resultatFiltres['data'] ?? []) : [];
 
         $objet = $request->query('objet');
