@@ -1,0 +1,28 @@
+VÉRIFICATION DU PROJET SICORE
+=============================
+
+- Frontend Laravel 12 conservé sur le port 8001, avec son architecture Blade et son design existants.
+- Backend Laravel 12 / Sanctum exposé localement sur le port 8000.
+- Authentification frontend connectée au backend ; le jeton API reste dans la session Laravel chiffrée.
+- Les 17 écrans du module Gestion de la paie consomment les données du backend.
+- Parcours vérifié : connexion, période, présences, éléments variables, validation des entrées,
+  calcul, validation de la paie, clôture, bulletins, paiements, rapports et exports CSV.
+- Garde-fous vérifiés : rôles et capacités, transactions, idempotence, verrouillage optimiste,
+  journal d'audit, empreinte des bulletins et interdiction de modifier une période clôturée.
+- Middleware de session vérifié : les pages protégées redirigent vers la connexion sans session.
+- Assets servis directement depuis public/assets ; aucun lancement npm/Vite requis.
+- Tests automatisés frontend et backend exécutés avec succès sous Windows/XAMPP.
+- Contrôle visuel effectué sur l'interface de paie et sa fenêtre modale.
+
+Démarrage recommandé depuis la racine :
+    .\demarrer-sicore.ps1
+
+Frontend :
+    http://127.0.0.1:8001
+
+Compte initial de développement :
+    admin@sicore.sn
+    Sicore@2026
+
+Les taux et règles réglementaires fournis sont paramétrables. Ils doivent être validés par
+les responsables métier, finance et conformité avant toute utilisation en production.

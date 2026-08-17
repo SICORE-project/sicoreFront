@@ -1,0 +1,108 @@
+<?php
+
+/*
+| MENU LATÉRAL DU FRONTEND
+| Lu par resources/views/components/sidebar.blade.php.
+| type=link crée un lien simple ; type=group crée un groupe déroulant.
+| route vient de routes/web.php et active garde le bon lien sélectionné.
+*/
+return [
+    [
+        'type' => 'link',
+        'label' => 'Tableau de bord',
+        'icon' => 'fa-solid fa-gauge-high',
+        'route' => 'dashboard',
+    ],
+    [
+        'type' => 'link',
+        'label' => 'Gestion des enseignants',
+        'icon' => 'fa-solid fa-chalkboard-user',
+        'route' => 'enseignants.index',
+        'active' => 'enseignants.*',
+    ],
+    [
+        'type' => 'group',
+        'label' => 'Gestion de la paie',
+        'icon' => 'fa-solid fa-money-check-dollar',
+        'active' => ['paie.*', 'credits.*'],
+        'links' => [
+            ['label' => 'États de présence', 'route' => 'paie.etats-presence', 'icon' => 'fa-solid fa-calendar-check'],
+            ['label' => 'Avance Tabaski', 'route' => 'paie.avance-tabaski', 'icon' => 'fa-solid fa-hand-holding-dollar'],
+            ['label' => 'Retenue Tabaski', 'route' => 'paie.retenue-tabaski', 'icon' => 'fa-solid fa-money-bill-transfer'],
+            ['label' => 'Retenues rappel', 'route' => 'paie.retenues-rappel', 'icon' => 'fa-solid fa-clock-rotate-left'],
+            ['label' => 'Exemptions par enseignant', 'route' => 'paie.exemptions', 'icon' => 'fa-solid fa-user-shield'],
+            ['label' => 'Travaux périodiques', 'route' => 'paie.travaux-periodiques', 'icon' => 'fa-solid fa-list-check'],
+            ['label' => 'Récapitulatif par banque', 'route' => 'paie.recap-banque', 'icon' => 'fa-solid fa-building-columns'],
+            ['label' => 'Cotisations sociales', 'route' => 'paie.cotisations-sociales', 'icon' => 'fa-solid fa-people-group'],
+            ['label' => 'État des salaires', 'route' => 'paie.etat-salaires', 'icon' => 'fa-solid fa-file-invoice-dollar'],
+            ['label' => 'Éléments de saisie', 'route' => 'paie.elements-saisie-dashboard', 'icon' => 'fa-solid fa-chart-line'],
+            ['label' => 'Paie générée par IEF', 'route' => 'paie.generee-ief', 'icon' => 'fa-solid fa-sitemap'],
+            ['label' => 'Fermeture de période', 'route' => 'paie.fermeture-periode', 'icon' => 'fa-solid fa-lock'],
+            ['label' => 'Salaires par banque', 'route' => 'paie.edition-salaires-banque', 'icon' => 'fa-solid fa-building-columns'],
+            ['label' => 'Bulletins des salaires', 'route' => 'paie.bulletins', 'icon' => 'fa-solid fa-file-lines'],
+            ['label' => 'Effectifs par corps', 'route' => 'paie.effectifs-corps', 'icon' => 'fa-solid fa-users'],
+            ['label' => 'Paie non générée', 'route' => 'paie.non-generee', 'icon' => 'fa-solid fa-triangle-exclamation'],
+            ['label' => 'Sommes perçues', 'route' => 'paie.sommes-percues', 'icon' => 'fa-solid fa-wallet'],
+            ['label' => 'Délégation de crédit', 'route' => 'credits.delegation', 'icon' => 'fa-solid fa-scale-balanced'],
+            ['label' => 'Édition des délégations', 'route' => 'credits.edition-delegations', 'icon' => 'fa-solid fa-file-signature'],
+            ['label' => 'Édition des engagements', 'route' => 'credits.edition-engagements', 'icon' => 'fa-solid fa-clipboard-check'],
+        ],
+    ],
+    [
+        'type' => 'group',
+        'label' => 'Gestion des indemnités',
+        'icon' => 'fa-solid fa-coins',
+        'active' => 'indemnites.*',
+        'links' => [
+            ['label' => 'Convocations', 'route' => 'indemnites.convocations', 'icon' => 'fa-solid fa-calendar-check'],
+            ['label' => 'Services faits', 'route' => 'indemnites.services-faits', 'icon' => 'fa-solid fa-list-check'],
+            ['label' => 'Pièces justificatives', 'route' => 'indemnites.pieces-justificatives', 'icon' => 'fa-solid fa-folder-open'],
+            ['label' => 'Accusés de réception', 'route' => 'indemnites.accuses-reception', 'icon' => 'fa-solid fa-receipt'],
+            ['label' => 'Calcul des indemnités', 'route' => 'indemnites.calcul', 'icon' => 'fa-solid fa-calculator'],
+            ['label' => 'Frais de déplacement', 'route' => 'indemnites.frais-deplacement', 'icon' => 'fa-solid fa-route'],
+            ['label' => 'États de paie', 'route' => 'indemnites.etats-paie', 'icon' => 'fa-solid fa-file-export'],
+        ],
+    ],
+    [
+        'type' => 'group',
+        'label' => 'Bourses et aides',
+        'icon' => 'fa-solid fa-graduation-cap',
+        'active' => 'bourses.*',
+        'links' => [
+            ['label' => 'Enregistrer une demande', 'route' => 'bourses.enregistrer-demande', 'icon' => 'fa-solid fa-file-circle-plus'],
+            ['label' => 'Valider un dossier', 'route' => 'bourses.valider-dossier', 'icon' => 'fa-solid fa-circle-check'],
+            ['label' => 'Attribuer une aide', 'route' => 'bourses.attribuer-aide', 'icon' => 'fa-solid fa-hand-holding-heart'],
+        ],
+    ],
+    [
+        'type' => 'group',
+        'label' => 'Paramétrage',
+        'icon' => 'fa-solid fa-gears',
+        'active' => 'parametres.*',
+        'links' => [
+            ['label' => 'Vue générale', 'route' => 'parametres.index', 'icon' => 'fa-solid fa-sliders'],
+            ['label' => 'IEF', 'route' => 'parametres.ief', 'icon' => 'fa-solid fa-sitemap'],
+            ['label' => 'Diplômes', 'route' => 'parametres.index', 'fragment' => 'diplomes', 'icon' => 'fa-solid fa-graduation-cap'],
+            ['label' => 'Corps', 'route' => 'parametres.index', 'fragment' => 'corps', 'icon' => 'fa-solid fa-users-line'],
+            ['label' => 'Catégories', 'route' => 'parametres.index', 'fragment' => 'categories', 'icon' => 'fa-solid fa-layer-group'],
+            ['label' => 'Institutions financières', 'route' => 'parametres.index', 'fragment' => 'institutions-financieres', 'icon' => 'fa-solid fa-building-columns'],
+            ['label' => 'Disciplines', 'route' => 'parametres.index', 'fragment' => 'discipline', 'icon' => 'fa-solid fa-book-open'],
+            ['label' => 'Syndicats', 'route' => 'parametres.index', 'fragment' => 'syndicats', 'icon' => 'fa-solid fa-handshake'],
+            ['label' => 'Année académique', 'route' => 'parametres.index', 'fragment' => 'annee-academique', 'icon' => 'fa-solid fa-calendar-days'],
+            ['label' => 'Période de paie', 'route' => 'parametres.index', 'fragment' => 'periode-paie', 'icon' => 'fa-solid fa-calendar-week'],
+            ['label' => 'Rubriques de paie', 'route' => 'parametres.index', 'fragment' => 'rubrique-paie', 'icon' => 'fa-solid fa-list-ul'],
+            ['label' => 'Lieux de service', 'route' => 'parametres.index', 'fragment' => 'lieu-service', 'icon' => 'fa-solid fa-location-dot'],
+        ],
+    ],
+    [
+        'type' => 'group',
+        'label' => 'Gestion utilisateur',
+        'icon' => 'fa-solid fa-users-gear',
+        'active' => ['utilisateurs.*'],
+        'links' => [
+            ['label' => 'Utilisateurs', 'route' => 'utilisateurs.index', 'icon' => 'fa-solid fa-user-shield'],
+            ['label' => 'Profils / Rôles', 'route' => 'utilisateurs.profils-roles', 'icon' => 'fa-solid fa-id-badge'],
+            ['label' => 'Permissions', 'route' => 'utilisateurs.permissions', 'icon' => 'fa-solid fa-key'],
+        ],
+    ],
+];

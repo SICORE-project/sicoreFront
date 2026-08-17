@@ -1,0 +1,13 @@
+INSTALLATION — SICORE FRONTEND CONNECTÉ
+
+1. Démarrer le backend sur http://127.0.0.1:8000.
+2. Vérifier SICORE_API_URL dans .env.
+3. Lancer : php artisan optimize:clear
+4. Lancer : php artisan serve --host=127.0.0.1 --port=8001
+5. Ouvrir : http://127.0.0.1:8001
+
+Compte initial créé par le seeder du backend :
+admin@sicore.sn / Sicore@2026
+
+Pour démarrer les deux applications ensemble, utiliser depuis le dossier parent :
+.\demarrer-sicore.ps1
