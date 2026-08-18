@@ -49,9 +49,7 @@ return [
         'active' => 'indemnites.*',
         'links' => [
             ['label' => 'Convocations', 'route' => 'indemnites.convocations', 'icon' => 'fa-solid fa-calendar-check'],
-            ['label' => 'Services faits', 'route' => 'indemnites.services-faits', 'icon' => 'fa-solid fa-list-check'],
             ['label' => 'Pièces justificatives', 'route' => 'indemnites.pieces-justificatives', 'icon' => 'fa-solid fa-folder-open'],
-            ['label' => 'Accusés de réception', 'route' => 'indemnites.accuses-reception', 'icon' => 'fa-solid fa-receipt'],
             ['label' => 'Calcul des indemnités', 'route' => 'indemnites.calcul', 'icon' => 'fa-solid fa-calculator'],
             ['label' => 'Frais de déplacement', 'route' => 'indemnites.frais-deplacement', 'icon' => 'fa-solid fa-route'],
             ['label' => 'États de paie', 'route' => 'indemnites.etats-paie', 'icon' => 'fa-solid fa-file-export'],

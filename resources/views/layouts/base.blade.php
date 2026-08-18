@@ -17,7 +17,7 @@
 <body @yield('body_attributes')>
   @yield('body')
 
-  <script src="{{ asset('assets/js/app.js') }}" defer></script>
+  <script src="{{ asset('assets/js/app.js') }}?v={{ filemtime(public_path('assets/js/app.js')) }}" defer></script>
   <script src="{{ asset('assets/js/notifications.js') }}" defer></script>
   @stack('scripts')
 </body>

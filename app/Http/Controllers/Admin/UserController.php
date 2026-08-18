@@ -3,159 +3,143 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Services\Api\ApiClient;
-use App\Services\Organisation\RoleStructureMatrix;
-use Illuminate\Http\RedirectResponse;
+use App\Services\Administration\UserService;
 use Illuminate\Http\Request;
-use Illuminate\Validation\ValidationException;
-use Illuminate\View\View;
+
 
 class UserController extends Controller
 {
-    public function __construct(
-        private ApiClient $apiClient,
-        private RoleStructureMatrix $roleStructureMatrix,
-    ) {}
+    public function __construct(protected UserService $userService) {}
 
-    public function index(): View
+
+    public function index(Request $request)
     {
-        $usersResponse = $this->apiClient->get('admin/users');
-        $optionsResponse = $this->apiClient->get('admin/users/organisation-options');
-        $nationalOptionsResponse = $this->apiClient->get('admin/users/national-organisation-options');
-        $rolesResponse = $this->apiClient->get('admin/roles/all');
-        $users = $usersResponse->successful() ? $usersResponse->json('data', []) : [];
-        $organisation = $optionsResponse->successful() ? $optionsResponse->json('data', []) : [];
-        $structuresNationales = $nationalOptionsResponse->successful() ? $nationalOptionsResponse->json('data', []) : [];
-        $roles = $rolesResponse->successful() ? $rolesResponse->json('data', []) : [];
-        $apiError = ! $usersResponse->successful()
-            ? ($usersResponse->json('message') ?? 'Impossible de charger les utilisateurs.')
-            : (! $optionsResponse->successful() ? ($optionsResponse->json('message') ?? 'Impossible de charger les structures.') : null);
+        $page = max(1, (int) $request->query('page', 1));
+        $perPage = 10;
 
-        return view('pages.administration.utilisateurs', compact('users', 'organisation', 'structuresNationales', 'roles', 'apiError'));
+        $response = $this->userService->getUsers($page, $perPage);
+        $users = $response['items'] ?? [];
+        $pagination = $response['pagination'] ?? [
+            'current_page' => $page,
+            'last_page' => 1,
+            'total' => count($users),
+            'per_page' => $perPage,
+        ];
+
+        $rows = array_map(function (array $user): array {
+            $prenom = (string) data_get($user, 'prenom', '');
+            $nom = (string) data_get($user, 'nom', '');
+            $fullName = trim($prenom . ' ' . $nom);
+            $role = data_get($user, 'role.nom', data_get($user, 'role', '—'));
+            $service = data_get($user, 'service.nom', data_get($user, 'service', '—'));
+            $status = data_get($user, 'statut', data_get($user, 'status', false));
+            $isActive = $status === 'actif' || filter_var($status, FILTER_VALIDATE_BOOLEAN);
+
+            if (is_array($role) && array_key_exists('nom', $role)) {
+                $role = $role['nom'];
+            }
+
+            if (is_array($service) && array_key_exists('nom', $service)) {
+                $service = $service['nom'];
+            }
+
+            return [
+                $fullName !== '' ? $fullName : (string) data_get($user, 'email', '—'),
+                data_get($user, 'email', '—'),
+                is_string($role) ? $role : '—',
+                is_string($service) ? $service : '—',
+                $isActive
+                    ? '<span class="badge badge-active">Actif</span>'
+                    : '<span class="badge badge-suspended">Suspendu</span>',
+                '<div class="table-actions-inline"><button class="table-action " type="button">Voir</button><button class="table-action " type="button">Modifier</button></div>',
+            ];
+        }, $users);
+
+        config()->set('module-pages.utilisateurs.rows', $rows);
+        config()->set('module-pages.utilisateurs.pagination', $pagination);
+        config()->set('module-pages.utilisateurs.actions', [
+            'Nouvel utilisateur',
+            'Exporter',
+        ]);
+
+        $roles = $this->userService->getRoles();
+
+        return view('pages.administration.utilisateurs', compact('roles'));
     }
 
-    public function store(Request $request): RedirectResponse
+    public function create()
+    {
+        $roles = $this->userService->getRoles();
+
+        return view(
+            'pages.administration.utilisateurs.create',
+            compact('roles')
+        );
+    }
+
+    public function store(Request $request)
     {
         $data = $request->validate([
             'nom' => ['required', 'string', 'max:100'],
             'prenom' => ['required', 'string', 'max:100'],
-            'email' => ['required', 'email'],
-            'password' => ['required', 'string', 'min:8'],
-            'role_id' => ['required', 'integer'],
-            'statut' => ['required', 'in:actif,inactif'],
-            'perimetre' => ['required', 'in:national,regional'],
-            'structure_organisationnelle_id' => ['nullable', 'required_if:perimetre,national', 'integer'],
-            'ia_id' => ['nullable', 'required_if:perimetre,regional', 'integer'],
-            'ief_id' => ['nullable', 'integer'],
-        ]);
-
-        $organisation = collect($data)->only(['structure_organisationnelle_id', 'ia_id', 'ief_id'])->all();
-        $this->validateRoleStructure((int) $data['role_id'], $this->roleStructureMatrix->structureType($organisation));
-        $userData = collect($data)->except(['perimetre', 'structure_organisationnelle_id', 'ia_id', 'ief_id'])->all();
-        $response = $this->apiClient->post('admin/users', $userData);
-
-        if (! $response->successful()) {
-            return $this->redirectFromApiResponse($response, '');
-        }
-
-        $userId = $response->json('data.id');
-        if (! $userId) {
-            return back()->withErrors(['api' => "Utilisateur créé, mais identifiant non retourné par l'API."]);
-        }
-
-        $organisationResponse = $this->apiClient->put("admin/users/{$userId}/organisation-access", $organisation);
-        if (! $organisationResponse->successful()) {
-            return back()->withErrors($organisationResponse->json('errors', [
-                'organisation' => "Utilisateur créé, mais lieu de service non affecté.",
-            ]));
-        }
-
-        return back()->with('success', 'Utilisateur créé et lieu de service affecté avec succès.');
-    }
-
-    public function update(Request $request, string $id): RedirectResponse
-    {
-        $data = $request->validate([
-            'nom' => ['required', 'string', 'max:100'],
-            'prenom' => ['required', 'string', 'max:100'],
-            'email' => ['required', 'email'],
+            'email' => ['required', 'email', 'max:255'],
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
             'role_id' => ['required', 'integer'],
             'statut' => ['required', 'in:actif,inactif'],
         ]);
 
-        $userResponse = $this->apiClient->get("admin/users/{$id}");
-        if (! $userResponse->successful()) {
-            return back()->withInput()->withErrors(['api' => "Impossible de vérifier l'affectation organisationnelle de l'utilisateur."]);
+        $response = $this->userService->createUser(
+            $data + [
+                'password_confirmation' => $request->input('password_confirmation'),
+            ]
+        );
+
+        if (! $response['success']) {
+            $redirect = back()
+                ->withInput()
+                ->withErrors($response['errors'] ?? []);
+
+            if (empty($response['errors'])) {
+                $redirect->with(
+                    'error',
+                    $response['message'] ?? 'Une erreur est survenue.'
+                );
+            }
+
+            return $redirect;
         }
 
-        $structureType = $this->roleStructureMatrix->structureTypeFromAccess(
-            $userResponse->json('data.acces_organisationnel', [])
-        );
-        $this->validateRoleStructure((int) $data['role_id'], $structureType);
-
-        return $this->redirectFromApiResponse(
-            $this->apiClient->put("admin/users/{$id}", $data),
-            'Utilisateur modifié avec succès.'
-        );
+        return redirect()
+            ->route('utilisateurs.index')
+            ->with(
+                'success',
+                $response['message'] ?? 'Utilisateur créé avec succès.'
+            );
     }
 
-    public function updateOrganisation(Request $request, string $id): RedirectResponse
+    public function checkEmail(Request $request)
     {
         $data = $request->validate([
-            'ia_id' => ['nullable', 'integer'],
-            'ief_id' => ['nullable', 'integer'],
-            'lieu_service_id' => ['nullable', 'integer'],
-            'structure_organisationnelle_id' => ['nullable', 'integer'],
+            'email' => ['required', 'email'],
         ]);
 
-        $userResponse = $this->apiClient->get("admin/users/{$id}");
-        if (! $userResponse->successful() || ! $userResponse->json('data.role.id')) {
-            return back()->withInput()->withErrors(['api' => "Impossible de vérifier le rôle de l'utilisateur."]);
-        }
-
-        $this->validateRoleStructure(
-            (int) $userResponse->json('data.role.id'),
-            $this->roleStructureMatrix->structureType($data),
-        );
-        $response = $this->apiClient->put("admin/users/{$id}/organisation-access", $data);
-
-        if ($response->successful()) {
-            return back()->with('success', 'Accès organisationnel mis à jour avec succès.');
-        }
-
-        return back()->withInput()->withErrors(
-            $response->json('errors', ['organisation' => $response->json('message') ?? 'Mise à jour impossible.'])
+        return response()->json(
+            $this->userService->checkEmail($data['email'])
         );
     }
 
-    private function redirectFromApiResponse($response, string $successMessage): RedirectResponse
+    public function edit($id)
     {
-        if ($response->successful()) {
-            return back()->with('success', $successMessage);
-        }
-
-        return back()->withInput()->withErrors(
-            $response->json('errors', ['api' => $response->json('message') ?? 'Opération impossible.'])
-        );
+        // Logic to show the form for editing an existing user
     }
 
-    private function validateRoleStructure(int $roleId, ?string $structureType): void
+    public function update(Request $request, $id)
     {
-        $rolesResponse = $this->apiClient->get('admin/roles/all');
-        $role = $rolesResponse->successful()
-            ? collect($rolesResponse->json('data', []))->firstWhere('id', $roleId)
-            : null;
+        // Logic to update an existing user in the database
+    }
 
-        if (! $role) {
-            throw ValidationException::withMessages([
-                'role_id' => "Le rôle sélectionné est introuvable ou n'a pas pu être vérifié.",
-            ]);
-        }
-
-        if (! $structureType || ! $this->roleStructureMatrix->allows($role, $structureType)) {
-            throw ValidationException::withMessages([
-                'role_id' => "Ce rôle n'est pas autorisé pour le type de structure sélectionné.",
-            ]);
-        }
+    public function destroy($id)
+    {
+        // Logic to delete a user from the database
     }
 }

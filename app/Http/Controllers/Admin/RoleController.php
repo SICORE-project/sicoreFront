@@ -11,7 +11,7 @@ class RoleController extends Controller
     public function index(Request $request)
     {
         $response = Http::withToken(session('access_token'))
-            ->get(config('app.api_url') . '/admin/roles', [
+            ->get(config('services.backend.url') . '/admin/roles', [
                 'search' => $request->search,
                 'est_actif' => $request->est_actif,
                 'per_page' => 15,
@@ -27,7 +27,7 @@ class RoleController extends Controller
     public function create()
     {
         $response = Http::withToken(session('access_token'))
-            ->get(config('app.api_url') . '/admin/permissions/all');
+            ->get(config('services.backend.url') . '/admin/permissions/all');
 
         $permissions = $response->successful()
             ? collect($response->json()['data'] ?? [])->groupBy('module')
@@ -39,7 +39,7 @@ class RoleController extends Controller
     public function store(Request $request)
     {
         $response = Http::withToken(session('access_token'))
-            ->post(config('app.api_url') . '/admin/roles', [
+            ->post(config('services.backend.url') . '/admin/roles', [
                 'nom' => $request->nom,
                 'slug' => $request->slug,
                 'description' => $request->description,
@@ -59,7 +59,7 @@ class RoleController extends Controller
     public function edit($id)
     {
         $responseRole = Http::withToken(session('access_token'))
-            ->get(config('app.api_url') . '/admin/roles/' . $id);
+            ->get(config('services.backend.url') . '/admin/roles/' . $id);
 
         $role = $responseRole->successful() ? $responseRole->json()['data'] ?? null : null;
 
@@ -68,7 +68,7 @@ class RoleController extends Controller
         }
 
         $responsePerms = Http::withToken(session('access_token'))
-            ->get(config('app.api_url') . '/admin/permissions/all');
+            ->get(config('services.backend.url') . '/admin/permissions/all');
 
         $permissions = $responsePerms->successful()
             ? collect($responsePerms->json()['data'] ?? [])->groupBy('module')
@@ -82,7 +82,7 @@ class RoleController extends Controller
     public function update(Request $request, $id)
     {
         $response = Http::withToken(session('access_token'))
-            ->put(config('app.api_url') . '/admin/roles/' . $id, [
+            ->put(config('services.backend.url') . '/admin/roles/' . $id, [
                 'nom' => $request->nom,
                 'slug' => $request->slug,
                 'description' => $request->description,
@@ -102,7 +102,7 @@ class RoleController extends Controller
     public function destroy($id)
     {
         $response = Http::withToken(session('access_token'))
-            ->delete(config('app.api_url') . '/admin/roles/' . $id);
+            ->delete(config('services.backend.url') . '/admin/roles/' . $id);
 
         if ($response->successful()) {
             return redirect()->route('admin.roles.index')
@@ -115,7 +115,7 @@ class RoleController extends Controller
     public function permissions($id)
     {
         $responseRole = Http::withToken(session('access_token'))
-            ->get(config('app.api_url') . '/admin/roles/' . $id);
+            ->get(config('services.backend.url') . '/admin/roles/' . $id);
 
         $role = $responseRole->successful() ? $responseRole->json()['data'] ?? null : null;
 
@@ -124,7 +124,7 @@ class RoleController extends Controller
         }
 
         $responsePerms = Http::withToken(session('access_token'))
-            ->get(config('app.api_url') . '/admin/permissions/all');
+            ->get(config('services.backend.url') . '/admin/permissions/all');
 
         $permissions = $responsePerms->successful()
             ? collect($responsePerms->json()['data'] ?? [])->groupBy('module')
@@ -134,24 +134,11 @@ class RoleController extends Controller
 
         return view('pages.administration.roles-permissions', compact('role', 'permissions', 'rolePermissions'));
     }
-    public function show($id)
-{
-    $response = Http::withToken(session('access_token'))
-        ->get(config('app.api_url') . '/admin/roles/' . $id);
-
-    $role = $response->successful() ? $response->json()['data'] ?? null : null;
-
-    if (!$role) {
-        return redirect()->route('admin.roles.index')->with('error', 'Rôle non trouvé');
-    }
-
-    return view('pages.administration.roles-show', compact('role'));
-}
 
     public function syncPermissions(Request $request, $id)
     {
         $response = Http::withToken(session('access_token'))
-            ->post(config('app.api_url') . '/admin/roles/' . $id . '/sync-permissions', [
+            ->post(config('services.backend.url') . '/admin/roles/' . $id . '/sync-permissions', [
                 'permissions' => $request->permissions ?? [],
             ]);
 

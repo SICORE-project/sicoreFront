@@ -1,8 +1,8 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\PermissionController;
+use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\DashboardController;
 
@@ -13,38 +13,39 @@ use App\Http\Controllers\DashboardController;
 */
 
 
+
 Route::middleware('sicore.auth')
-    ->prefix('administration')
     ->group(function (): void {
 
-        Route::get('/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
+        Route::get('/administration/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
 
+        /*
+|--------------------------------------------------------------------------
+|  USERS
+|--------------------------------------------------------------------------
+*/
         Route::get('/utilisateurs', [UserController::class, 'index'])
             ->name('utilisateurs.index');
+
+        Route::get('/utilisateurs/nouveau', [UserController::class, 'create'])
+            ->name('utilisateurs.create');
 
         Route::post('/utilisateurs', [UserController::class, 'store'])
             ->name('utilisateurs.store');
 
-        Route::put('/utilisateurs/{id}', [UserController::class, 'update'])
-            ->name('utilisateurs.update');
+        Route::get('/utilisateurs/verifier-email', [UserController::class, 'checkEmail'])
+            ->name('utilisateurs.check-email');
 
-        Route::put('/utilisateurs/{id}/acces-organisationnel', [UserController::class, 'updateOrganisation'])
-            ->name('utilisateurs.organisation.update');
-
-        // Ces deux routes passent maintenant par les contrôleurs existants (index())
-        // pour récupérer les rôles / permissions réels depuis l'API
         Route::get('/utilisateurs/profils-roles', [RoleController::class, 'index'])
             ->name('utilisateurs.profils-roles');
 
         Route::get('/utilisateurs/permissions', [PermissionController::class, 'index'])
             ->name('utilisateurs.permissions');
 
-        // ===== RÔLES =====
-        Route::prefix('roles')->name('admin.roles.')->group(function () {
+        Route::prefix('roles')->name('admin.roles.')->group(function (): void {
             Route::get('/', [RoleController::class, 'index'])->name('index');
             Route::get('/create', [RoleController::class, 'create'])->name('create');
             Route::post('/', [RoleController::class, 'store'])->name('store');
-            Route::get('/{id}', [RoleController::class, 'show'])->name('show');
             Route::get('/{id}/edit', [RoleController::class, 'edit'])->name('edit');
             Route::put('/{id}', [RoleController::class, 'update'])->name('update');
             Route::delete('/{id}', [RoleController::class, 'destroy'])->name('destroy');
@@ -52,16 +53,13 @@ Route::middleware('sicore.auth')
             Route::put('/{id}/sync-permissions', [RoleController::class, 'syncPermissions'])->name('syncPermissions');
         });
 
-        // ===== PERMISSIONS =====
-        Route::prefix('permissions')->name('admin.permissions.')->group(function () {
+        Route::prefix('permissions')->name('admin.permissions.')->group(function (): void {
             Route::get('/', [PermissionController::class, 'index'])->name('index');
             Route::get('/create', [PermissionController::class, 'create'])->name('create');
             Route::post('/', [PermissionController::class, 'store'])->name('store');
-            Route::get('/{id}', [PermissionController::class, 'show'])->name('show'); 
             Route::get('/{id}/edit', [PermissionController::class, 'edit'])->name('edit');
             Route::put('/{id}', [PermissionController::class, 'update'])->name('update');
             Route::delete('/{id}', [PermissionController::class, 'destroy'])->name('destroy');
             Route::get('/sync', [PermissionController::class, 'sync'])->name('sync');
         });
-
     });

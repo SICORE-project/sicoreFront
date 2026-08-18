@@ -3,28 +3,11 @@
 @section('title', 'SICORE - Modifier une permission')
 
 @section('content')
-<main class="main-content" style="margin-left: 280px; padding: 1.5rem;">
-    <x-topbar title="Modifier une permission" subtitle="Gestion Utilisateur > Permissions > Modifier" icon="fa-solid fa-lock" />
+<main class="main-content">
+    <x-topbar title="Modifier la permission" subtitle="Gestion Utilisateur > Permissions > Modifier" icon="fa-solid fa-lock" />
 
     <section class="content-area">
         <section class="table-card" style="padding: 24px;">
-
-            @if(session('success'))
-                <div style="background:#dcfce7; border:1px solid #16a34a; color:#166534; padding:12px 16px; border-radius:8px; margin-bottom:16px;">
-                    {{ session('success') }}
-                </div>
-            @endif
-
-            @if($errors->any())
-                <div style="background:#fee2e2; border:1px solid #dc2626; color:#991b1b; padding:12px 16px; border-radius:8px; margin-bottom:16px;">
-                    <strong>Erreur :</strong>
-                    <ul style="margin: 4px 0 0 20px;">
-                        @foreach ($errors->all() as $error)
-                            <li>{{ $error }}</li>
-                        @endforeach
-                    </ul>
-                </div>
-            @endif
 
             <form action="{{ route('admin.permissions.update', $permission['id']) }}" method="POST">
                 @csrf
@@ -69,16 +52,14 @@
 
                 <div class="form-group" style="margin-bottom: 24px;">
                     <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                        <input type="checkbox" name="est_actif" value="1" @checked($permission['est_actif'] ?? false)>
+                        <input type="checkbox" name="est_actif" value="1" @checked($permission['est_actif'])>
                         <span style="font-size: 14px; font-weight: 500;">Actif</span>
                     </label>
                 </div>
 
-                <div class="actions-group" style="display: flex; justify-content: flex-end; gap: 12px;">
-                    <a href="{{ route('admin.permissions.index') }}" class="btn-secondary" style="padding: 10px 20px; border: 1px solid #d1d5db; border-radius: 8px; color: #374151; background: #f9fafb; text-decoration: none; transition: all 0.2s;">
-                        Annuler
-                    </a>
-                    <button type="submit" class="btn-primary" style="padding: 10px 24px; background: #2563eb; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; transition: background 0.2s; display: flex; align-items: center; gap: 8px;">
+                <div class="actions-group" style="justify-content: flex-end;">
+                    <a href="{{ route('admin.permissions.index') }}" class="btn-secondary">Annuler</a>
+                    <button type="submit" class="btn-primary">
                         <i class="fas fa-save"></i> Mettre à jour
                     </button>
                 </div>

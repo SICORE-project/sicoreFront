@@ -11,7 +11,7 @@ class PermissionController extends Controller
     public function index(Request $request)
     {
         $response = Http::withToken(session('access_token'))
-            ->get(config('app.api_url') . '/admin/permissions', [
+            ->get(config('services.backend.url') . '/admin/permissions', [
                 'groupe' => $request->groupe,
                 'module' => $request->module,
                 'per_page' => 50,
@@ -32,7 +32,7 @@ class PermissionController extends Controller
     public function store(Request $request)
     {
         $response = Http::withToken(session('access_token'))
-            ->post(config('app.api_url') . '/admin/permissions', [
+            ->post(config('services.backend.url') . '/admin/permissions', [
                 'nom' => $request->nom,
                 'slug' => $request->slug,
                 'groupe' => $request->groupe,
@@ -51,23 +51,23 @@ class PermissionController extends Controller
     }
 
     public function edit($id)
-{
-    $response = Http::withToken(session('access_token'))
-        ->get(config('app.api_url') . '/admin/permissions/' . $id);
+    {
+        $response = Http::withToken(session('access_token'))
+            ->get(config('services.backend.url') . '/admin/permissions/' . $id);
 
-    $permission = $response->successful() ? $response->json()['data'] ?? null : null;
+        $permission = $response->successful() ? $response->json()['data'] ?? null : null;
 
-    if (!$permission) {
-        return redirect()->route('admin.permissions.index')->with('error', 'Permission non trouvée');
+        if (!$permission) {
+            return redirect()->route('admin.permissions.index')->with('error', 'Permission non trouvée');
+        }
+
+        return view('pages.administration.permissions-edit', compact('permission'));
     }
-
-    return view('pages.administration.permissions-edit', compact('permission'));
-}
 
     public function update(Request $request, $id)
     {
         $response = Http::withToken(session('access_token'))
-            ->put(config('app.api_url') . '/admin/permissions/' . $id, [
+            ->put(config('services.backend.url') . '/admin/permissions/' . $id, [
                 'nom' => $request->nom,
                 'slug' => $request->slug,
                 'groupe' => $request->groupe,
@@ -84,24 +84,11 @@ class PermissionController extends Controller
 
         return back()->withErrors($response->json()['errors'] ?? ['error' => 'Erreur lors de la mise à jour']);
     }
-    public function show($id)
-{
-    $response = Http::withToken(session('access_token'))
-        ->get(config('app.api_url') . '/admin/permissions/' . $id);
-
-    $permission = $response->successful() ? $response->json()['data'] ?? null : null;
-
-    if (!$permission) {
-        return redirect()->route('admin.permissions.index')->with('error', 'Permission non trouvée');
-    }
-
-    return view('pages.administration.permissions-show', compact('permission'));
-}
 
     public function destroy($id)
     {
         $response = Http::withToken(session('access_token'))
-            ->delete(config('app.api_url') . '/admin/permissions/' . $id);
+            ->delete(config('services.backend.url') . '/admin/permissions/' . $id);
 
         if ($response->successful()) {
             return redirect()->route('admin.permissions.index')
@@ -114,7 +101,7 @@ class PermissionController extends Controller
     public function sync()
     {
         $response = Http::withToken(session('access_token'))
-            ->post(config('app.api_url') . '/admin/permissions/sync');
+            ->post(config('services.backend.url') . '/admin/permissions/sync');
 
         if ($response->successful()) {
             return redirect()->route('admin.permissions.index')
