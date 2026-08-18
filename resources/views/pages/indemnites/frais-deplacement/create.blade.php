@@ -41,6 +41,12 @@
          reponse de l'utilisatrice a ce sujet.
     ================================================================ --}}
 
+    {{-- ================================================================
+         NOTA — deplace tout en bas de page, en bandeau horizontal (pas de
+         barre laterale : ca "derangeait" le formulaire) — voir bloc NOTA
+         apres le </section> du formulaire, plus bas.
+    ================================================================ --}}
+
     <section class="form-card convocation-card">
 
         <div class="form-card-header">
@@ -244,23 +250,37 @@
 
                     <div class="form-group">
                         <label for="indice_agent">indice</label>
-                        @if (($beneficiaire['categorie_personnel'] ?? null) === 'fonctionnaire' && ! empty($beneficiaire['indice']))
-                            <p>{{ $beneficiaire['indice'] }}</p>
-                            <input type="hidden" name="indice_agent" value="{{ $beneficiaire['indice'] }}">
-                        @else
-                            <input
-                                type="number"
-                                step="0.01"
-                                class="form-control @error('indice_agent') is-invalid @enderror"
-                                id="indice_agent"
-                                name="indice_agent"
-                                value="{{ old('indice_agent') }}"
-                                placeholder="Ex : 849"
-                                @required(($beneficiaire['categorie_personnel'] ?? null) === 'fonctionnaire')
-                            >
-                            @if (($beneficiaire['categorie_personnel'] ?? null) === 'fonctionnaire')
+                        {{--
+                            Demande utilisatrice : "tenir compte du champ indice
+                            si c'est fonctionnaire, contractuelle a remplir et
+                            fix pour vacataire" — l'indice ne s'applique QUE
+                            pour un agent fonctionnaire (sert au calcul par
+                            barème). Pour vacataire/contractuel, ce champ n'a
+                            pas de sens : on l'indique clairement au lieu de
+                            laisser un champ vide sans explication (le montant
+                            de ces deux categories est deja gere plus haut,
+                            dans "Montant" : fixe pour vacataire, a remplir
+                            pour contractuel).
+                        --}}
+                        @if (($beneficiaire['categorie_personnel'] ?? null) === 'fonctionnaire')
+                            @if (! empty($beneficiaire['indice']))
+                                <p>{{ $beneficiaire['indice'] }}</p>
+                                <input type="hidden" name="indice_agent" value="{{ $beneficiaire['indice'] }}">
+                            @else
+                                <input
+                                    type="number"
+                                    step="0.01"
+                                    class="form-control @error('indice_agent') is-invalid @enderror"
+                                    id="indice_agent"
+                                    name="indice_agent"
+                                    value="{{ old('indice_agent') }}"
+                                    placeholder="Ex : 849"
+                                    required
+                                >
                                 <small class="form-hint">Pas encore renseigné sur la fiche de cet agent — sera mémorisé pour la prochaine fois.</small>
                             @endif
+                        @else
+                            <p class="empty-message">Non applicable (uniquement pour un agent fonctionnaire)</p>
                         @endif
                     </div>
 
@@ -493,6 +513,32 @@
 
     </section>
 
+    {{-- ============================================================
+         NOTA — tout en bas de page, bandeau horizontal (pas de barre
+         laterale) reprenant l'encadre "NOTA" + les notes de bas de page
+         (1) a (5) de la feuille papier.
+    ============================================================ --}}
+
+    <section class="sidebar-box nota-bandeau">
+
+        <h3>NOTA</h3>
+
+        <p>
+            Le titulaire de la présente feuille doit s'assurer que toutes les
+            indications nécessaires à la constatation de ses droits ont été
+            apposées par chaque fonctionnaire ou agent compétent.
+        </p>
+
+        <ol class="sidebar-definitions">
+            <li><strong>(1)</strong> Nom et Prénoms</li>
+            <li><strong>(2)</strong> Grade et emploi</li>
+            <li><strong>(3)</strong> Catégorie</li>
+            <li><strong>(4)</strong> Nom et garde de l'autorité qui délivre la feuille de déplacement</li>
+            <li><strong>(5)</strong> Lorsque le fonctionnaire utilise un véhicule dont l'exploitation relève de la règle des Chemins de fer</li>
+        </ol>
+
+    </section>
+
 </section>
 
 </main>
@@ -504,6 +550,63 @@
      que "Nouvelle convocation". --}}
 <link rel="stylesheet" href="{{ asset('assets/css/indemnites/convocation-wizard.css') }}">
 <style>
+    /* NOTA en bandeau horizontal tout en bas de page (plus de barre
+       laterale — ca "derangeait" le formulaire). Meme largeur/centrage que
+       .convocation-card pour rester aligne avec le formulaire au-dessus. */
+    .nota-bandeau {
+        width: calc(100% - 40px);
+        max-width: 1500px;
+        margin: 20px auto 40px;
+        box-sizing: border-box;
+    }
+
+    .sidebar-box {
+        background: #ffffff;
+        border: 1px solid var(--border, #e5e7eb);
+        border-radius: 12px;
+        padding: 20px 24px;
+        box-shadow: var(--shadow-card, 0 1px 3px rgba(0, 0, 0, 0.06));
+    }
+
+    .sidebar-box h3 {
+        margin: 0 0 10px;
+        color: var(--primary);
+        font-size: 14px;
+        font-weight: 900;
+        letter-spacing: 0.02em;
+    }
+
+    .sidebar-box > p {
+        margin: 0 0 14px;
+        font-size: 13px;
+        line-height: 1.5;
+        color: #475569;
+    }
+
+    /* Forme horizontale demandee : les 5 definitions en ligne, cote a
+       cote, qui reviennent a la ligne (wrap) si la fenetre est trop
+       etroite, plutot qu'empilees verticalement. */
+    .sidebar-definitions {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px 28px;
+    }
+
+    .sidebar-definitions li {
+        font-size: 13px;
+        line-height: 1.4;
+        color: #334155;
+        flex: 1 1 220px;
+    }
+
+    .sidebar-definitions strong {
+        color: var(--primary);
+        margin-right: 4px;
+    }
+
     .avance-table th,
     .avance-table td {
         text-align: left;
