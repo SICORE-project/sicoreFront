@@ -146,6 +146,42 @@ Route::middleware('sicore.auth')
         Route::get('/frais-deplacement/{id}', [FraisDeplacementController::class, 'show'])
             ->name('frais-deplacement.show');
 
+        // CRUD de la fiche elle-même (demande utilisatrice : "le CRUD de la
+        // fiche") — doivent rester avant aucune autre route wildcard
+        // conflictuelle : /modifier a un segment de plus, pas de conflit
+        // avec /frais-deplacement/{id} ci-dessus.
+        Route::get('/frais-deplacement/{id}/modifier', [FraisDeplacementController::class, 'edit'])
+            ->name('frais-deplacement.edit');
+
+        Route::put('/frais-deplacement/{id}', [FraisDeplacementController::class, 'update'])
+            ->name('frais-deplacement.update');
+
+        Route::delete('/frais-deplacement/{id}', [FraisDeplacementController::class, 'destroy'])
+            ->name('frais-deplacement.destroy');
+
+        // Téléchargement de la fiche en PDF.
+        Route::get('/frais-deplacement/{id}/telecharger', [FraisDeplacementController::class, 'telechargerPdf'])
+            ->name('frais-deplacement.pdf');
+
+        // Étape "Calcul" directement depuis la fiche (demande utilisatrice :
+        // "gère-moi juste le show du fiche") — pas de page de liste séparée
+        // pour l'instant, le formulaire de lignes de frais vit sur le show.
+        Route::post('/frais-deplacement/{id}/calculer', [FraisDeplacementController::class, 'calculer'])
+            ->name('frais-deplacement.calculer');
+
+        // Téléchargement d'une pièce jointe (recto ou verso) de la fiche.
+        Route::get('/frais-deplacement/{id}/justificatifs/{justificatifId}/telecharger', [FraisDeplacementController::class, 'telechargerJustificatif'])
+            ->name('frais-deplacement.justificatifs.telecharger');
+
+        // Ajout/remplacement et suppression d'une pièce jointe depuis le
+        // détail de la fiche (demande utilisatrice : "télécharger,
+        // modifier, supprimer").
+        Route::post('/frais-deplacement/{id}/justificatifs/remplacer', [FraisDeplacementController::class, 'remplacerJustificatif'])
+            ->name('frais-deplacement.justificatifs.remplacer');
+
+        Route::delete('/frais-deplacement/{id}/justificatifs/{justificatifId}', [FraisDeplacementController::class, 'supprimerJustificatif'])
+            ->name('frais-deplacement.justificatifs.destroy');
+
         Route::view('/etats-paie', 'pages.indemnites.etats-paie')
             ->name('etats-paie');
 

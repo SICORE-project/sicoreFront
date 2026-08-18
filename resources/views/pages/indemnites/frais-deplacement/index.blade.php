@@ -251,6 +251,31 @@
      visible dans le menu deroulant).
 ================================================================ --}}
 
+{{-- ================================================================
+     STYLE — .convocation-pagination/.page-btn (numeros de pagination du
+     tableau) etaient utilises dans le HTML de cette page mais leur CSS
+     n'avait jamais ete ajoutee ici (contrairement a convocations/index.blade.php
+     et pieces-justificatives.blade.php, qui definissent chacune la meme
+     regle dans leur propre @push('styles')) — consequence : les numeros de
+     page s'affichaient sans mise en forme (pas d'alignement a droite, pas
+     d'espacement, pas de bordure superieure). Demande utilisatrice : "les
+     chiffres pour pagination dans l'index doivent etre comme index de
+     convocation" — copie a l'identique depuis convocations/index.blade.php.
+================================================================ --}}
+
+@push('styles')
+<style>
+    .convocation-pagination {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 7px;
+        padding: 14px 18px;
+        border-top: 1px solid var(--border-soft);
+    }
+</style>
+@endpush
+
 @push('scripts')
 <script>
     (function () {

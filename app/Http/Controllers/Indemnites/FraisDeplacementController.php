@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * "Fiche de déplacement" — voir FraisDeplacementController (back) pour la
@@ -223,9 +224,11 @@ class FraisDeplacementController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        $donnees = $request->except(['_token', 'fichier']);
+        // Feuille de déplacement papier = RECTO-VERSO : 2 champs fichier
+        // distincts plutôt qu'un seul (voir FraisDeplacementService::creer()).
+        $donnees = $request->except(['_token', 'fichier_recto', 'fichier_verso']);
 
-        $resultat = $this->fraisDeplacement->creer($donnees, $request->file('fichier'));
+        $resultat = $this->fraisDeplacement->creer($donnees, $request->file('fichier_recto'), $request->file('fichier_verso'));
 
         if (! $resultat['success']) {
             return redirect()
@@ -240,6 +243,274 @@ class FraisDeplacementController extends Controller
         return redirect()
             ->route('indemnites.frais-deplacement.show', $resultat['data']['id'])
             ->with('success', 'Fiche de déplacement créée avec succès.');
+    }
+
+    /**
+     * Étape "Calcul" — lignes de frais saisies dans le tableau du show
+     * (type/quantité/taux/description, mêmes noms de champs indexés que le
+     * tableau "avance" du formulaire de création). Seules les lignes dont
+     * le type ET la quantité sont renseignés sont envoyées au back (voir
+     * CalculerFraisDeplacementRequest côté back : lignes requis, min 1).
+     */
+    public function calculer(Request $request, string $id): RedirectResponse
+    {
+        $types = $request->input('ligne_type_frais', []);
+        $quantites = $request->input('ligne_quantite', []);
+        $taux = $request->input('ligne_taux_unitaire', []);
+        $descriptions = $request->input('ligne_description', []);
+
+        $lignes = [];
+
+        foreach ($types as $index => $type) {
+            if (trim((string) $type) === '' || ! isset($quantites[$index]) || trim((string) $quantites[$index]) === '') {
+                continue;
+            }
+
+            $lignes[] = [
+                'type_frais' => $type,
+                'quantite' => $quantites[$index],
+                'taux_unitaire' => $taux[$index] ?? 0,
+                'description' => $descriptions[$index] ?? null,
+            ];
+        }
+
+        if (empty($lignes)) {
+            return redirect()
+                ->route('indemnites.frais-deplacement.show', $id)
+                ->with('error', 'Ajoutez au moins une ligne de frais (type et quantité) avant de calculer.');
+        }
+
+        $resultat = $this->fraisDeplacement->calculer($id, $lignes);
+
+        if (! $resultat['success']) {
+            return redirect()
+                ->route('indemnites.frais-deplacement.show', $id)
+                ->with('error', $resultat['message'] ?? 'Échec du calcul de la fiche de déplacement.');
+        }
+
+        return redirect()
+            ->route('indemnites.frais-deplacement.show', $id)
+            ->with('success', 'Fiche de déplacement calculée avec succès.');
+    }
+
+    /**
+     * Téléchargement d'une pièce jointe (recto ou verso) de la fiche —
+     * même principe que PiecesJustificativesController::telecharger().
+     */
+    public function telechargerJustificatif(string $id, string $justificatifId): StreamedResponse
+    {
+        $reponse = $this->fraisDeplacement->telechargerJustificatif($id, $justificatifId);
+
+        return response()->streamDownload(function () use ($reponse) {
+            echo $reponse->body();
+        }, 'feuille-deplacement-'.$justificatifId, [
+            'Content-Type' => $reponse->header('Content-Type') ?: 'application/octet-stream',
+        ]);
+    }
+
+    /**
+     * Ajout OU remplacement d'une pièce jointe (recto/verso) depuis le
+     * détail de la fiche — demande utilisatrice : "je veux pouvoir
+     * télécharger, modifier, supprimer". "Modifier" = déposer le nouveau
+     * fichier PUIS supprimer l'ancien (ancien_id, absent si aucun fichier
+     * n'existait encore pour cette face) : pas d'endpoint "update" dédié
+     * côté back, juste deposerJustificatif()/supprimerJustificatif().
+     */
+    public function remplacerJustificatif(Request $request, string $id): RedirectResponse
+    {
+        $fichier = $request->file('fichier');
+
+        if (! $fichier) {
+            return redirect()
+                ->route('indemnites.frais-deplacement.show', $id)
+                ->with('error', 'Choisissez un fichier avant de valider.');
+        }
+
+        $commentaire = $request->input('commentaire');
+        $ancienId = $request->input('ancien_id');
+
+        $resultat = $this->fraisDeplacement->deposerJustificatif($id, $fichier, $commentaire);
+
+        if (! $resultat['success']) {
+            return redirect()
+                ->route('indemnites.frais-deplacement.show', $id)
+                ->with('error', $resultat['message'] ?? 'Échec du dépôt du fichier.');
+        }
+
+        if ($ancienId) {
+            $this->fraisDeplacement->supprimerJustificatif($id, $ancienId);
+        }
+
+        return redirect()
+            ->route('indemnites.frais-deplacement.show', $id)
+            ->with('success', ($commentaire ? $commentaire.' mis à jour' : 'Fichier déposé').' avec succès.');
+    }
+
+    public function supprimerJustificatif(string $id, string $justificatifId): RedirectResponse
+    {
+        $resultat = $this->fraisDeplacement->supprimerJustificatif($id, $justificatifId);
+
+        if (! $resultat['success']) {
+            return redirect()
+                ->route('indemnites.frais-deplacement.show', $id)
+                ->with('error', $resultat['message'] ?? 'Échec de la suppression du fichier.');
+        }
+
+        return redirect()
+            ->route('indemnites.frais-deplacement.show', $id)
+            ->with('success', 'Pièce jointe supprimée avec succès.');
+    }
+
+    /**
+     * CRUD de la fiche elle-même (pas des pièces jointes) — demande
+     * utilisatrice : "je parlais du CRUD de la fiche". Le back
+     * (UpdateFraisDeplacementRequest) n'autorise la modification que du
+     * trajet (lieu/dates/motif/moyen de transport/distance) : le reste
+     * (bénéficiaire, montant, décompte des avances...) est figé après
+     * création, donc le formulaire de modification ne porte que sur ces
+     * champs-là.
+     */
+    public function edit(string $id): View|RedirectResponse
+    {
+        $resultat = $this->fraisDeplacement->trouver($id);
+
+        if (! $resultat['success']) {
+            return redirect()
+                ->route('indemnites.frais-deplacement')
+                ->with('error', $resultat['message'] ?? 'Fiche de déplacement introuvable.');
+        }
+
+        return view('pages.indemnites.frais-deplacement.edit', [
+            'fiche' => $resultat['data'],
+        ]);
+    }
+
+    public function update(Request $request, string $id): RedirectResponse
+    {
+        // Demande utilisatrice : "edit doit être complet, base-toi sur
+        // l'edit de convocation" — même liste de champs que le formulaire
+        // "Nouvelle fiche" (voir create.blade.php), moins convocation_id/
+        // beneficiaire_id (fixés à la création) et fichier_recto/
+        // fichier_verso (pas dans ce formulaire).
+        $donnees = $request->only([
+            'grade_emploi',
+            'lieu_depart',
+            'heure_depart',
+            'lieu_destination',
+            'motif',
+            'date_depart',
+            'date_retour',
+            'distance_km',
+            'moyen_transport',
+            'ordre_service_numero',
+            'ordre_service_date',
+            'ordre_service_emetteur',
+            'accompagne_de',
+            'groupe',
+            'itineraire',
+            'poids_bagages_kg',
+            'delivre_par',
+            'date_emission_fiche',
+            'avance_frais_transport_nombre',
+            'avance_frais_transport_taux',
+            'avance_indemnite_normale_nombre',
+            'avance_indemnite_normale_taux',
+            'avance_indemnite_reduite_nombre',
+            'avance_indemnite_reduite_taux',
+            'avance_indemnite_partielle_nombre',
+            'avance_indemnite_partielle_taux',
+            'indication_requisitions',
+            'poids_bagages_mobilier',
+            'avance_versee',
+            'arrete_somme',
+            'date_fait_avance',
+            // VERSO — "DETAIL DES VISAS ET PAIEMENT SUCCESSIFS EN COURS DE
+            // ROUTE" (voir create.blade.php pour les noms de champs
+            // indexés du tableau des 4 visas).
+            'visa_arrivee_lieu',
+            'visa_arrivee_date',
+            'visa_arrivee_heure',
+            'visa_depart_lieu',
+            'visa_depart_date',
+            'visa_depart_heure',
+            'visa_requisitions',
+            'visa_poids_bagages',
+            'visa_logement_nourriture',
+            'visa_avance_indemnite_normale_nombre',
+            'visa_avance_indemnite_normale_taux',
+            'visa_avance_indemnite_reduite_nombre',
+            'visa_avance_indemnite_reduite_taux',
+            'visa_avance_indemnite_partielle_nombre',
+            'visa_avance_indemnite_partielle_taux',
+            'visa_avance_payer_somme',
+            'visa_avance_lieu',
+            'visa_avance_date',
+            'reglement_indemnite_normale_nombre',
+            'reglement_indemnite_normale_taux',
+            'reglement_indemnite_reduite_nombre',
+            'reglement_indemnite_reduite_taux',
+            'reglement_indemnite_partielle_nombre',
+            'reglement_indemnite_partielle_taux',
+            'reglement_montant_avances',
+            'reglement_arrete_somme',
+            'reglement_lieu',
+            'reglement_date',
+            'observations',
+            'indice_agent',
+            'montant_saisi',
+            'salaire_global_annuel',
+            'lieu_service',
+        ]);
+
+        $resultat = $this->fraisDeplacement->mettreAJour($id, $donnees);
+
+        if (! $resultat['success']) {
+            return redirect()
+                ->route('indemnites.frais-deplacement.edit', $id)
+                ->withInput()
+                ->with('error', $resultat['message'] ?? 'Échec de la mise à jour de la fiche de déplacement.');
+        }
+
+        return redirect()
+            ->route('indemnites.frais-deplacement.show', $id)
+            ->with('success', 'Fiche de déplacement mise à jour avec succès.');
+    }
+
+    public function destroy(string $id): RedirectResponse
+    {
+        $resultat = $this->fraisDeplacement->supprimer($id);
+
+        if (! $resultat['success']) {
+            return redirect()
+                ->route('indemnites.frais-deplacement.show', $id)
+                ->with('error', $resultat['message'] ?? 'Échec de la suppression de la fiche de déplacement.');
+        }
+
+        return redirect()
+            ->route('indemnites.frais-deplacement')
+            ->with('success', 'Fiche de déplacement supprimée avec succès.');
+    }
+
+    /**
+     * Téléchargement de la fiche en PDF — demande utilisatrice : "je veux
+     * pouvoir télécharger la fiche si possible". Même principe que
+     * ConvocationsController::downloadPdf().
+     */
+    public function telechargerPdf(string $id): RedirectResponse|\Illuminate\Http\Response
+    {
+        $reponse = $this->fraisDeplacement->telechargerPdf($id);
+
+        if (! $reponse->successful()) {
+            return redirect()
+                ->route('indemnites.frais-deplacement.show', $id)
+                ->with('error', $reponse->json('message') ?? 'Impossible de générer le PDF de cette fiche de déplacement.');
+        }
+
+        return response($reponse->body(), 200, [
+            'Content-Type' => $reponse->header('Content-Type') ?: 'application/pdf',
+            'Content-Disposition' => $reponse->header('Content-Disposition')
+                ?: 'attachment; filename="fiche-deplacement-'.$id.'.pdf"',
+        ]);
     }
 
     public function show(string $id): View|RedirectResponse
