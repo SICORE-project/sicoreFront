@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Indemnites\ConvocationsController;
+use App\Http\Controllers\Indemnites\FraisDeplacementController;
 use App\Http\Controllers\Indemnites\PiecesJustificativesController;
 
 /*
@@ -110,14 +111,22 @@ Route::middleware('sicore.auth')
         Route::view('/services-faits', 'pages.indemnites.services-faits')
             ->name('services-faits');
 
-        Route::get('/pieces-justificatives', [PiecesJustificativesController::class, 'index'])
-            ->name('pieces-justificatives');
-
-        Route::post('/pieces-justificatives/deposer', [PiecesJustificativesController::class, 'deposerPieces'])
+        // Doivent rester avant /pieces-justificatives (route sans wildcard,
+        // pas de conflit ici) mais AVANT le GET ci-dessous quand meme, par
+        // coherence avec les autres blocs de ce fichier (fixe avant {id}).
+        Route::post('/pieces-justificatives/deposer', [PiecesJustificativesController::class, 'deposer'])
             ->name('pieces-justificatives.deposer');
 
-        Route::get('/pieces-justificatives/{id}/telecharger', [PiecesJustificativesController::class, 'download'])
+        Route::get('/pieces-justificatives/{id}/telecharger', [PiecesJustificativesController::class, 'telecharger'])
             ->name('pieces-justificatives.telecharger');
+
+        // Remplace l'ancien Route::view() (page statique sans donnees) qui
+        // provoquait "Undefined variable $filtreActif" : la vue existante
+        // (~40 Ko, ecrite par un coequipier) attendait deja $filtreActif,
+        // $optionsFiltres, $membres, $stats, $convocations, mais aucun
+        // controleur ne les fournissait encore.
+        Route::get('/pieces-justificatives', [PiecesJustificativesController::class, 'index'])
+            ->name('pieces-justificatives');
 
         Route::view('/accuses-reception', 'pages.indemnites.accuses-reception')
             ->name('accuses-reception');
@@ -125,8 +134,17 @@ Route::middleware('sicore.auth')
         Route::view('/calcul', 'pages.indemnites.calcul')
             ->name('calcul');
 
-        Route::view('/frais-deplacement', 'pages.indemnites.frais-deplacement')
+        Route::get('/frais-deplacement', [FraisDeplacementController::class, 'index'])
             ->name('frais-deplacement');
+
+        Route::get('/frais-deplacement/nouvelle', [FraisDeplacementController::class, 'create'])
+            ->name('frais-deplacement.create');
+
+        Route::post('/frais-deplacement', [FraisDeplacementController::class, 'store'])
+            ->name('frais-deplacement.store');
+
+        Route::get('/frais-deplacement/{id}', [FraisDeplacementController::class, 'show'])
+            ->name('frais-deplacement.show');
 
         Route::view('/etats-paie', 'pages.indemnites.etats-paie')
             ->name('etats-paie');

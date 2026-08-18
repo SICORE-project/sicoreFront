@@ -55,6 +55,25 @@
 
     <span {{ $attributes->merge(['class' => "badge {$classe}"]) }}>{{ $libelle }}</span>
 
+@elseif ($type === 'statut-frais-deplacement')
+
+    {{-- Statut d'une fiche de déplacement (module Frais de déplacement) :
+         brouillon -> calcule -> valide -> rembourse -> cloture (ou rejete). --}}
+    @php
+        $badges = [
+            'brouillon' => ['badge-pending', 'Brouillon'],
+            'calcule' => ['badge-primary', 'Calculée'],
+            'valide' => ['badge-active', 'Validée'],
+            'rejete' => ['badge-inactive', 'Rejetée'],
+            'rembourse' => ['badge-active', 'Remboursée'],
+            'cloture' => ['badge-inactive', 'Clôturée'],
+        ];
+
+        [$classe, $libelle] = $badges[$statut] ?? ['badge-pending', $statut ? ucfirst($statut) : '—'];
+    @endphp
+
+    <span {{ $attributes->merge(['class' => "badge {$classe}"]) }}>{{ $libelle }}</span>
+
 @elseif ($type === 'modal')
 
     {{-- Fenêtre modale générique : CSS + JS d'ouverture/fermeture

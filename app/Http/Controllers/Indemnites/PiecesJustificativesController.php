@@ -8,24 +8,55 @@ use App\Services\Api\Indemnites\PieceJustificativeService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Collection;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
+/**
+ * Page "Pièces justificatives" : un membre (enseignant du jury, chef de
+ * centre ou président du jury — voir ConvocationsController::index() côté
+ * back, commentaire sur l'eager loading centres.chefCentre/presidentJury)
+ * par ligne, avec son dossier de 6 pièces (5 déposées manuellement + le
+ * dossier de convocation, rattaché automatiquement côté back).
+ *
+ * NB : cette page utilisait une vue déjà écrite (pieces-justificatives.blade.php,
+ * ~40 Ko) mais dont la route était restée un simple Route::view() sans
+ * aucune donnée — d'où l'erreur "Undefined variable $filtreActif". Ce
+ * contrôleur a été reconstruit en lisant entièrement la vue existante pour
+ * en extraire le contrat de données exact (variables, clés de tableaux,
+ * routes attendues).
+ */
 class PiecesJustificativesController extends Controller
 {
     /**
-     * Memes 6 types que piece_justificatives::TYPES cote back (pas
-     * d'acces direct au modele backend depuis le front, donc redefini
-     * ici) — sert a construire le dossier complet (6 lignes, presentes ou
-     * non) de chaque membre pour la modale "Voir le dossier".
+     * Les 5 types de pièces déposées manuellement (voir
+     * DeposerLotPiecesJustificativesRequest côté back) — le 6e type,
+     * "dossier_convocation", n'apparaît jamais dans ce dossier de 5 lignes
+     * puisqu'il est rattaché automatiquement, jamais déposé à la main.
      */
-    private const TYPES_PIECES = [
+    private const TYPES_MANUELS = [
         'service_fait' => 'Service fait',
         'ordre_mission' => 'Ordre de mission',
         'rapport_mission' => 'Rapport de mission',
         'bulletin_salaire' => 'Bulletin de salaire',
         'accuse_reception' => 'Accusé de réception',
-        'dossier_convocation' => 'Dossier de convocation',
+    ];
+
+    /**
+     * Les 5 manuels + le "dossier de convocation" auto-rattaché (voir
+     * PieceJustificativesController::attacherDossierConvocation() côté
+     * back) — c'est la définition COMPLÈTE d'un dossier, celle utilisée par
+     * FraisDeplacementController::beneficiairesEligibles() (back) pour
+     * decider si un membre est eligible. A utiliser pour la
+     * lecture/l'affichage du dossier (badge "complet", modal "Voir le
+     * dossier") — TYPES_MANUELS reste utilisé uniquement pour le formulaire
+     * de dépôt (ce 6e type ne se dépose jamais à la main). Avant ce
+     * correctif, le badge "X/5 déposées" pouvait afficher "complet" pour un
+     * dossier auquel il manquait en réalité le dossier de convocation, ce
+     * qui le rendait quand même inéligible côté Frais de déplacement — sans
+     * aucun moyen de le voir sur cette page.
+     */
+    private const TYPES_TOUS = self::TYPES_MANUELS + [
+        'dossier_convocation' => 'Dossier de convocation (automatique)',
     ];
 
     public function __construct(
@@ -33,23 +64,6 @@ class PiecesJustificativesController extends Controller
         protected PieceJustificativeService $pieces
     ) {}
 
-    /**
-     * Cartes en haut de page : une ligne par (convocation x centre
-     * d'examen), la session etant une colonne de la convocation plutot
-     * qu'un axe separe — meme aplatissement que
-     * ConvocationsController::construireLignesCentres().
-     *
-     * Le tableau, lui, reste CACHE tant qu'aucun filtre (session, objet ou
-     * centre) n'est choisi — une fois un filtre choisi, il affiche les
-     * MEMBRES (bénéficiaires) rattaches au centre/a l'objet selectionnes,
-     * pas les dossiers eux-memes — voir construireMembres().
-     *
-     * Les pieces justificatives ne sont pour l'instant rattachees qu'a une
-     * convocation (piece_justificatives.convocation_id), pas a un centre ni
-     * a un membre precis — leur nombre (cartes du haut) est donc affiche
-     * par convocation, reparti sur toutes ses lignes (centres), tant
-     * qu'aucune colonne centre_id/enseignant_id n'existe sur cette table.
-     */
     public function index(Request $request): View
     {
         $resultatFiltres = $this->convocations->optionsFiltres();
@@ -62,87 +76,279 @@ class PiecesJustificativesController extends Controller
         $filtreActif = filled($objet) || filled($session) || filled($centre);
 
         $filtres = array_filter([
-            'objet' => $objet,
-            'session' => $session,
-            'centre' => $centre,
-            'per_page' => 10,
-            'page' => $request->query('page', 1),
+            'session' => $request->query('session'),
+            'objet' => $request->query('objet'),
+            'centre' => $request->query('centre'),
         ]);
 
-        $resultatConvocations = $this->convocations->liste($filtres);
+        $filtreActif = count($filtres) > 0;
 
-        $meta = $resultatConvocations['success'] ? ($resultatConvocations['data'] ?? []) : [];
-        $items = $meta['data'] ?? [];
+        $optionsFiltres = $this->optionsFiltresPourVue();
 
-        if (! $resultatConvocations['success']) {
-            session()->flash('error', $resultatConvocations['message'] ?? 'Impossible de charger les dossiers de pièces justificatives.');
-        }
-
-        // Meme reconstruction de paginator "a la Laravel" que
-        // ConvocationsController::index() (l'API renvoie une pagination
-        // data/current_page/per_page/total, pas un vrai paginateur).
-        $convocationsPage = new LengthAwarePaginator(
-            $items,
-            $meta['total'] ?? count($items),
-            $meta['per_page'] ?? 10,
-            $meta['current_page'] ?? (int) $request->query('page', 1),
-            [
-                'path' => $request->url(),
-                'query' => $request->query(),
-            ]
-        );
-
-        $resultatPieces = $this->pieces->liste(['per_page' => 200]);
-        $pieces = $resultatPieces['success'] ? ($resultatPieces['data']['data'] ?? []) : [];
-
-        $piecesParConvocation = collect($pieces)->groupBy('convocation_id');
-
-        $lignes = $this->construireLignes($items, $piecesParConvocation);
-
+        $membres = [];
         $stats = [
-            'total_dossiers' => count($lignes),
-            'sessions_avec_pieces' => collect($lignes)->where('nb_pieces', '>', 0)->count(),
-            'sessions_sans_pieces' => collect($lignes)->where('nb_pieces', 0)->count(),
-            'pieces_rejetees' => collect($pieces)->where('statut', 'rejete')->count(),
+            'total_dossiers' => 0,
+            'sessions_avec_pieces' => 0,
+            'sessions_sans_pieces' => 0,
+            'pieces_rejetees' => 0,
         ];
 
-        // Cle "convocationId-enseignantId" : chaque piece est maintenant
-        // rattachee a un membre precis (voir migration
-        // add_enseignant_centre_to_piece_justificatives_table), donc son
-        // dossier peut etre reconstitue individuellement pour la modale
-        // "Voir le dossier".
-        $piecesParMembre = collect($pieces)->groupBy(
-            fn (array $p) => ($p['convocation_id'] ?? 'x').'-'.($p['enseignant_id'] ?? 'x')
-        );
+        // Paginator vide par defaut (filtre inactif : la vue n'affiche pas
+        // le tableau, mais boucle quand meme sur $convocations->... plus
+        // bas dans la pagination — un LengthAwarePaginator vide evite tout
+        // "Call to a member function on null").
+        $convocations = new LengthAwarePaginator([], 0, 10, 1, [
+            'path' => $request->url(),
+            'query' => $request->query(),
+        ]);
 
-        // Un appel beneficiaires() par convocation affichee : cout accepte
-        // vu le volume actuel (meme esprit que renderShow()/renderEdit()
-        // dans ConvocationsController, qui enchainent deja plusieurs appels
-        // API cote front pour assembler une page).
-        $membres = $filtreActif ? $this->construireMembres($items, $centre, $piecesParMembre) : [];
+        if ($filtreActif) {
+            $resultat = $this->convocations->liste(array_merge($filtres, [
+                'per_page' => 10,
+                'page' => $request->query('page', 1),
+            ]));
+
+            if (! $resultat['success']) {
+                session()->flash('error', $resultat['message'] ?? 'Impossible de charger les dossiers.');
+            }
+
+            $meta = $resultat['success'] ? ($resultat['data'] ?? []) : [];
+            $items = $meta['data'] ?? [];
+
+            $convocations = new LengthAwarePaginator(
+                $items,
+                $meta['total'] ?? count($items),
+                $meta['per_page'] ?? 10,
+                $meta['current_page'] ?? (int) $request->query('page', 1),
+                [
+                    'path' => $request->url(),
+                    'query' => $request->query(),
+                ]
+            );
+
+            $membres = $this->construireMembres($items);
+
+            $stats = $this->calculerStats($membres);
+        }
 
         return view('pages.indemnites.pieces-justificatives', [
-            'convocations' => $convocationsPage,
-            'lignes' => $lignes,
-            'stats' => $stats,
-            'membres' => $membres,
             'filtreActif' => $filtreActif,
             'optionsFiltres' => $optionsFiltres,
+            'membres' => $membres,
+            'stats' => $stats,
+            'convocations' => $convocations,
+        ]);
+    }
+
+    private function optionsFiltresPourVue(): array
+    {
+        $resultat = $this->convocations->optionsFiltres();
+
+        $vide = ['objets' => [], 'sessions' => [], 'centres' => []];
+
+        return $resultat['success'] ? array_merge($vide, $resultat['data'] ?? []) : $vide;
+    }
+
+    /**
+     * Aplatit les convocations (avec leurs centres imbriqués) en une ligne
+     * par membre : chaque enseignant de la table pivot, PLUS le chef de
+     * centre et le président du jury de chaque centre (qui déposent eux
+     * aussi leurs pièces justificatives — voir le commentaire sur
+     * ConvocationsController::index() côté back).
+     *
+     * NB : un appel API par membre pour récupérer son dossier de pièces
+     * (N+1 sur la page courante) — même limitation déjà acceptée ailleurs
+     * dans ce module (ex. stats de ConvocationsController::index() côté
+     * front, calculées sur la page courante uniquement).
+     */
+    private function construireMembres(array $items): array
+    {
+        $membres = [];
+
+        foreach ($items as $item) {
+            $centres = $item['centres'] ?? [];
+
+            foreach ($centres as $centre) {
+                $centreCommun = [
+                    'convocation_id' => $item['id'] ?? null,
+                    'centre_id' => $centre['id'] ?? null,
+                    'centre' => $centre['centre'] ?? null,
+                    // "typeConvocation()" -> cle JSON "type_convocation" (snake_case,
+                    // voir le meme piege documente dans construireLignes() ci-dessus).
+                    'objet' => $item['objet'] ?? null,
+                    'type_convocation' => $item['type_convocation']['libelle'] ?? null,
+                    'session' => $item['session'] ?? null,
+                ];
+
+                $jury = $centre['centre'] ?? null;
+
+                if (! empty($centre['chef_centre'])) {
+                    $membres[] = $this->construireMembre(
+                        $centreCommun,
+                        $centre['chef_centre'],
+                        'Chef de centre',
+                        'Chef de centre'
+                    );
+                }
+
+                if (! empty($centre['president_jury'])) {
+                    $membres[] = $this->construireMembre(
+                        $centreCommun,
+                        $centre['president_jury'],
+                        'Président du jury',
+                        'Président du jury'
+                    );
+                }
+
+                foreach ($item['enseignants'] ?? [] as $enseignant) {
+                    $pivotCentreId = $enseignant['pivot']['centre_id'] ?? null;
+
+                    if ($pivotCentreId && (int) $pivotCentreId !== (int) ($centre['id'] ?? 0)) {
+                        continue;
+                    }
+
+                    // Convocation a un seul centre : pas d'ambiguite meme
+                    // sans centre_id explicite sur le pivot (ancien format).
+                    if (! $pivotCentreId && count($centres) > 1) {
+                        continue;
+                    }
+
+                    $membres[] = $this->construireMembre(
+                        $centreCommun,
+                        $enseignant,
+                        $enseignant['pivot']['fonction'] ?? 'Membre du jury',
+                        $jury
+                    );
+                }
+            }
+        }
+
+        return $membres;
+    }
+
+    private function construireMembre(array $centreCommun, array $enseignant, string $fonction, ?string $jury): array
+    {
+        $enseignantId = $enseignant['id'] ?? null;
+        $convocationId = $centreCommun['convocation_id'] ?? null;
+
+        $dossier = $this->recupererDossier($convocationId, $enseignantId, $centreCommun['centre_id'] ?? null);
+
+        $deposees = collect($dossier)->filter(fn ($piece) => ! empty($piece['statut']))->count();
+        $complet = collect($dossier)->every(fn ($piece) => ! empty($piece['statut']) && $piece['statut'] !== 'rejete');
+
+        return array_merge($centreCommun, [
+            'enseignant_id' => $enseignantId,
+            'nom' => $enseignant['nom'] ?? null,
+            'prenom' => $enseignant['prenom'] ?? null,
+            'fonction' => $fonction,
+            'jury' => $jury,
+            'provenance' => $enseignant['lieu_service']['libelle'] ?? null,
+            'dossier_complet' => $complet,
+            // Denominateur dynamique (count($dossier), pas TYPES_MANUELS) :
+            // $dossier contient maintenant les 6 types (voir
+            // recupererDossier()), donc ce resume affiche "X/6" et reflete
+            // la vraie definition de "complet" (celle du back).
+            'dossier_resume' => $deposees.'/'.count($dossier).' pièces déposées',
+            'dossier' => $dossier,
         ]);
     }
 
     /**
-     * Depot groupe des pieces d'UN membre depuis la modale "Ajouter une
-     * pièce" (bouton par ligne du tableau) : 5 fichiers obligatoires, un
-     * par type — le 6e ("Dossier de convocation") n'a pas de champ fichier
-     * ici, il est toujours rattache automatiquement cote back a partir du
-     * PDF deja genere pour la convocation (voir
-     * PieceJustificativesController::attacherDossierConvocation()). Total
-     * attendu : 6 documents par membre avant l'enregistrement.
-     *
-     * 100 Ko max par fichier (voir demande utilisateur).
+     * Construit les 6 lignes du dossier (une par type attendu, meme si non
+     * deposee — les 5 manuels + le dossier de convocation auto-rattache)
+     * pour un membre — voir modal "Voir le dossier" cote vue.
      */
-    public function deposerPieces(Request $request): RedirectResponse
+    private function recupererDossier(?int $convocationId, ?int $enseignantId, ?int $centreId): array
+    {
+        $parType = [];
+
+        if ($convocationId && $enseignantId) {
+            // PAS de filtre centre_id ici : les pieces (service fait, ordre
+            // de mission, bulletin de salaire...) sont attachees a la
+            // PERSONNE pour cette convocation, pas a un centre precis — un
+            // enseignant membre de PLUSIEURS centres/metiers d'une meme
+            // convocation ne depose ces documents qu'UNE fois. centre_id
+            // sur piece_justificatives n'est qu'une info de tracking (sous
+            // quel centre le depot a ete fait), pas une cle de partition :
+            // filtrer dessus ici faisait apparaitre un dossier "incomplet"
+            // sur les lignes des AUTRES centres de la meme personne, alors
+            // que ses documents existaient deja (deposes depuis une autre
+            // ligne/centre). Coherent avec FraisDeplacementController::
+            // beneficiairesEligibles() (back), qui calcule deja la
+            // completude par (convocation_id, enseignant_id) sans centre_id.
+            $resultat = $this->pieces->liste(array_filter([
+                'convocation_id' => $convocationId,
+                'enseignant_id' => $enseignantId,
+            ]));
+
+            if ($resultat['success']) {
+                $pieces = $resultat['data']['data'] ?? $resultat['data'] ?? [];
+
+                foreach ($pieces as $piece) {
+                    $type = $piece['type'] ?? null;
+
+                    if ($type && array_key_exists($type, self::TYPES_TOUS)) {
+                        $parType[$type] = $piece;
+                    }
+                }
+            }
+        }
+
+        $dossier = [];
+
+        foreach (self::TYPES_TOUS as $type => $label) {
+            $piece = $parType[$type] ?? null;
+
+            $dossier[] = [
+                'label' => $label,
+                'statut' => $piece['statut'] ?? null,
+                'date_depot' => $piece['date_depot'] ?? null,
+                'id' => $piece['id'] ?? null,
+            ];
+        }
+
+        return $dossier;
+    }
+
+    /**
+     * Stats calculees sur la page courante uniquement (le back ne fournit
+     * pas d'agregat dedie) — meme limitation deja acceptee sur les stats de
+     * ConvocationsController::index() cote front.
+     */
+    private function calculerStats(array $membres): array
+    {
+        $sessionsAvecPieces = [];
+        $sessionsSansPieces = [];
+        $piecesRejetees = 0;
+
+        foreach ($membres as $membre) {
+            $session = $membre['session'] ?? null;
+            $aAuMoinsUnePiece = collect($membre['dossier'] ?? [])->contains(fn ($piece) => ! empty($piece['statut']));
+
+            if ($session) {
+                if ($aAuMoinsUnePiece) {
+                    $sessionsAvecPieces[$session] = true;
+                } else {
+                    $sessionsSansPieces[$session] = true;
+                }
+            }
+
+            foreach ($membre['dossier'] ?? [] as $piece) {
+                if (($piece['statut'] ?? null) === 'rejete') {
+                    $piecesRejetees++;
+                }
+            }
+        }
+
+        return [
+            'total_dossiers' => count($membres),
+            'sessions_avec_pieces' => count($sessionsAvecPieces),
+            'sessions_sans_pieces' => count($sessionsSansPieces),
+            'pieces_rejetees' => $piecesRejetees,
+        ];
+    }
+
+    public function deposer(Request $request): RedirectResponse
     {
         $data = $request->validate([
             'convocation_id' => ['required', 'integer'],
@@ -155,295 +361,41 @@ class PiecesJustificativesController extends Controller
             'accuse_reception' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:100'],
         ]);
 
-        $fichiers = [];
-
-        foreach (['service_fait', 'ordre_mission', 'rapport_mission', 'bulletin_salaire', 'accuse_reception'] as $champ) {
-            if (! $request->hasFile($champ)) {
-                continue;
-            }
-
-            $fichier = $request->file($champ);
-
-            $fichiers[] = [
-                'name' => $champ,
-                'contents' => fopen($fichier->getRealPath(), 'r'),
-                'filename' => $fichier->getClientOriginalName(),
-            ];
-        }
-
-        $resultat = $this->pieces->deposerLot([
+        $donnees = array_filter([
             'convocation_id' => $data['convocation_id'],
             'enseignant_id' => $data['enseignant_id'],
             'centre_id' => $data['centre_id'] ?? null,
-        ], $fichiers);
+        ]);
+
+        $fichiers = [
+            'service_fait' => $request->file('service_fait'),
+            'ordre_mission' => $request->file('ordre_mission'),
+            'rapport_mission' => $request->file('rapport_mission'),
+            'bulletin_salaire' => $request->file('bulletin_salaire'),
+            'accuse_reception' => $request->file('accuse_reception'),
+        ];
+
+        $resultat = $this->pieces->deposerLot($donnees, $fichiers);
+
+        if (! $resultat['success']) {
+            return redirect()
+                ->back()
+                ->with('error', $resultat['message'] ?? "Échec du dépôt des pièces justificatives.");
+        }
 
         return redirect()
             ->back()
-            ->with($resultat['success'] ? 'success' : 'error', $resultat['message'] ?? 'Erreur lors du dépôt des pièces.');
+            ->with('success', 'Pièces justificatives déposées avec succès.');
     }
 
-    /**
-     * Relaie le fichier binaire d'une pièce justificative (bouton
-     * "Télécharger" de la modale "Voir le dossier") — meme principe que
-     * ConvocationsController::downloadPdf(). Affiche le document dans le
-     * navigateur (inline) plutot que de forcer un telechargement immediat —
-     * voir demande utilisateur, et
-     * PieceJustificativesController::download() cote back qui sert deja le
-     * fichier avec ce Content-Disposition.
-     */
-    public function download(int|string $id): RedirectResponse|\Illuminate\Http\Response
+    public function telecharger(string $id): StreamedResponse
     {
         $reponse = $this->pieces->telecharger($id);
 
-        if (! $reponse->successful()) {
-            return redirect()
-                ->back()
-                ->with('error', $reponse->json('message') ?? 'Impossible d\'afficher ce document.');
-        }
-
-        return response($reponse->body(), 200, [
+        return response()->streamDownload(function () use ($reponse) {
+            echo $reponse->body();
+        }, 'piece-justificative-'.$id, [
             'Content-Type' => $reponse->header('Content-Type') ?: 'application/octet-stream',
-            'Content-Disposition' => $reponse->header('Content-Disposition') ?: 'inline',
         ]);
-    }
-
-    /**
-     * Aplati les convocations en lignes "une par centre" pour les cartes —
-     * meme logique que ConvocationsController::construireLignesCentres(),
-     * avec en plus le nombre de pieces deposees/validees pour la
-     * convocation de cette ligne.
-     *
-     * @param  array<int, array<string, mixed>>  $items
-     * @param  Collection<int, Collection<int, array<string, mixed>>>  $piecesParConvocation
-     * @return array<int, array<string, mixed>>
-     */
-    private function construireLignes(array $items, Collection $piecesParConvocation): array
-    {
-        $lignes = [];
-
-        foreach ($items as $item) {
-            $centres = $item['centres'] ?? [];
-            $piecesConvocation = $piecesParConvocation->get($item['id'] ?? null, collect());
-
-            $ligneCommune = [
-                'convocation_id' => $item['id'] ?? null,
-                'objet' => $item['objet'] ?? null,
-                'session' => $item['session'] ?? null,
-                'date_debut' => $item['date_debut'] ?? null,
-                'date_fin' => $item['date_fin'] ?? null,
-                'nb_pieces' => $piecesConvocation->count(),
-                'nb_pieces_validees' => $piecesConvocation->where('statut', 'valide')->count(),
-            ];
-
-            if (empty($centres)) {
-                $lignes[] = array_merge($ligneCommune, [
-                    'centre_id' => null,
-                    'centre' => null,
-                ]);
-
-                continue;
-            }
-
-            foreach ($centres as $centre) {
-                $lignes[] = array_merge($ligneCommune, [
-                    'centre_id' => $centre['id'] ?? null,
-                    'centre' => $centre['centre'] ?? null,
-                ]);
-            }
-        }
-
-        return $lignes;
-    }
-
-    /**
-     * Une ligne par personne devant deposer des pieces justificatives pour
-     * un centre d'une convocation deja filtree par objet/session (filtrage
-     * fait cote API, voir ConvocationsController::filtres()/index()) — le
-     * filtre centre, lui, est applique ici puisqu'une convocation peut
-     * avoir plusieurs centres et qu'on ne veut que les lignes du centre
-     * choisi.
-     *
-     * Deux origines DISTINCTES de lignes, toutes deux necessaires :
-     *  - les bénéficiaires (convocation_enseignant) : membres du jury
-     *    explicitement rattaches a ce centre ;
-     *  - le chef de centre ET le président du jury du centre lui-meme
-     *    (ConvocationCentre.chef_centre_id / president_jury_id) : ce sont
-     *    des roles, pas des "bénéficiaires" au sens pivot, mais ils doivent
-     *    eux aussi deposer leurs propres pieces justificatives — d'ou une
-     *    ligne (et un bouton "Ajouter une pièce") chacun, meme s'ils
-     *    n'apparaissent pas dans la liste des bénéficiaires.
-     *
-     * @param  array<int, array<string, mixed>>  $items
-     * @param  Collection<string, Collection<int, array<string, mixed>>>  $piecesParMembre
-     * @return array<int, array<string, mixed>>
-     */
-    private function construireMembres(array $items, ?string $centreFiltre, Collection $piecesParMembre): array
-    {
-        $membres = [];
-
-        foreach ($items as $item) {
-            $convocationId = $item['id'] ?? null;
-            $typeConvocation = $item['type_convocation']['libelle'] ?? null;
-            $centresParId = collect($item['centres'] ?? [])->keyBy('id');
-
-            $resultatBeneficiaires = $this->convocations->beneficiaires($convocationId);
-            $beneficiaires = $resultatBeneficiaires['success'] ? ($resultatBeneficiaires['data'] ?? []) : [];
-
-            foreach ($beneficiaires as $beneficiaire) {
-                $centreId = $beneficiaire['pivot']['centre_id'] ?? null;
-                $centreObjet = $centreId ? $centresParId->get($centreId) : null;
-                $centreNom = $centreObjet['centre'] ?? null;
-
-                // Un membre non rattache a un centre precis (convocation
-                // sans centre, ou membre ajoute avant l'existence du
-                // rattachement) n'a pas sa place ici : cette page suit les
-                // dossiers PAR centre, et l'afficher avec un centre vide
-                // (tiret) donnait l'impression que le nom du centre
-                // "ne s'affichait pas" plutot que de clairement l'exclure.
-                if (! $centreId) {
-                    continue;
-                }
-
-                if (filled($centreFiltre) && $centreNom !== $centreFiltre) {
-                    continue;
-                }
-
-                $membres[] = $this->ligneMembre(
-                    $convocationId,
-                    $item,
-                    $centreObjet,
-                    $centreId,
-                    $centreNom,
-                    $typeConvocation,
-                    $beneficiaire['id'] ?? null,
-                    $beneficiaire['nom'] ?? null,
-                    $beneficiaire['prenom'] ?? null,
-                    $beneficiaire['pivot']['fonction'] ?? null,
-                    $beneficiaire['pivot']['provenance'] ?? null,
-                    $piecesParMembre
-                );
-            }
-
-            foreach ($centresParId as $centreId => $centreObjet) {
-                $centreNom = $centreObjet['centre'] ?? null;
-
-                if (filled($centreFiltre) && $centreNom !== $centreFiltre) {
-                    continue;
-                }
-
-                $chefCentre = $centreObjet['chef_centre'] ?? null;
-
-                if ($chefCentre) {
-                    $membres[] = $this->ligneMembre(
-                        $convocationId,
-                        $item,
-                        $centreObjet,
-                        $centreId,
-                        $centreNom,
-                        $typeConvocation,
-                        $chefCentre['id'] ?? null,
-                        $chefCentre['nom'] ?? null,
-                        $chefCentre['prenom'] ?? null,
-                        'Chef de centre',
-                        null,
-                        $piecesParMembre
-                    );
-                }
-
-                $presidentJury = $centreObjet['president_jury'] ?? null;
-
-                if ($presidentJury) {
-                    $membres[] = $this->ligneMembre(
-                        $convocationId,
-                        $item,
-                        $centreObjet,
-                        $centreId,
-                        $centreNom,
-                        $typeConvocation,
-                        $presidentJury['id'] ?? null,
-                        $presidentJury['nom'] ?? null,
-                        $presidentJury['prenom'] ?? null,
-                        'Président du jury',
-                        null,
-                        $piecesParMembre
-                    );
-                }
-            }
-        }
-
-        return $membres;
-    }
-
-    /**
-     * @param  array<string, mixed>  $item  la convocation (item brut de l'API)
-     * @param  array<string, mixed>|null  $centreObjet  le centre (item brut de l'API)
-     * @param  Collection<string, Collection<int, array<string, mixed>>>  $piecesParMembre
-     * @return array<string, mixed>
-     */
-    private function ligneMembre(
-        ?int $convocationId,
-        array $item,
-        ?array $centreObjet,
-        ?int $centreId,
-        ?string $centreNom,
-        ?string $typeConvocation,
-        ?int $enseignantId,
-        ?string $nom,
-        ?string $prenom,
-        ?string $fonction,
-        ?string $provenance,
-        Collection $piecesParMembre
-    ): array {
-        $dossier = $this->construireDossier($convocationId, $enseignantId, $piecesParMembre);
-        $nbDeposees = collect($dossier)->whereNotNull('statut')->count();
-
-        return [
-            'convocation_id' => $convocationId,
-            'enseignant_id' => $enseignantId,
-            'objet' => $item['objet'] ?? null,
-            'session' => $item['session'] ?? null,
-            'type_convocation' => $typeConvocation,
-            'centre_id' => $centreId,
-            'centre' => $centreNom,
-            'jury' => $centreObjet['jury'] ?? null,
-            'nom' => $nom,
-            'prenom' => $prenom,
-            'fonction' => $fonction,
-            'provenance' => $provenance,
-            'dossier' => $dossier,
-            'dossier_resume' => $nbDeposees.'/'.count(self::TYPES_PIECES).' déposés',
-            'dossier_complet' => $nbDeposees === count(self::TYPES_PIECES),
-        ];
-    }
-
-    /**
-     * Les 5 types attendus (voir TYPES_PIECES), chacun rapproche de la
-     * piece deja deposee pour ce membre le cas echeant — pour la modale
-     * "Voir le dossier" (statut, date, lien de telechargement) et le
-     * resume affiche dans le tableau ("X/5 déposés").
-     *
-     * @param  Collection<string, Collection<int, array<string, mixed>>>  $piecesParMembre
-     * @return array<int, array<string, mixed>>
-     */
-    private function construireDossier(?int $convocationId, ?int $enseignantId, Collection $piecesParMembre): array
-    {
-        $pieces = $piecesParMembre->get($convocationId.'-'.$enseignantId, collect())->keyBy('type');
-
-        $dossier = [];
-
-        foreach (self::TYPES_PIECES as $type => $libelle) {
-            $piece = $pieces->get($type);
-
-            $dossier[] = [
-                'type' => $type,
-                'label' => $libelle,
-                'id' => $piece['id'] ?? null,
-                'statut' => $piece['statut'] ?? null,
-                'date_depot' => $piece['date_depot'] ?? null,
-                'nom_original' => $piece['nom_original'] ?? null,
-            ];
-        }
-
-        return $dossier;
     }
 }

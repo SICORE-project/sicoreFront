@@ -3,6 +3,7 @@
 namespace App\Services\Api\Indemnites;
 
 use App\Services\Api\ApiClient;
+use Illuminate\Http\UploadedFile;
 
 class PieceJustificativeService
 {
@@ -10,10 +11,6 @@ class PieceJustificativeService
         protected ApiClient $api
     ) {}
 
-    /**
-     * Enveloppe uniforme autour des reponses Http::response() de l'ApiClient
-     * — meme principe que ConvocationService::wrap().
-     */
     protected function wrap($response): array
     {
         if (! $response->successful()) {
@@ -39,29 +36,38 @@ class PieceJustificativeService
         return $this->wrap($this->api->get('pieces-justificatives', $filtres));
     }
 
-    public function trouver(int|string $id): array
-    {
-        return $this->wrap($this->api->get("pieces-justificatives/{$id}"));
-    }
-
     /**
-     * Depot groupe des pieces d'un membre (modale "Ajouter une pièce" —
-     * voir PiecesJustificativesController::deposerPieces()). $fichiers suit
-     * la meme convention que ConvocationService::importer() : un tableau de
-     * ['name' => ..., 'contents' => resource, 'filename' => ...].
+     * Dépôt groupé des 5 pièces manuelles d'UN membre (le 6e document,
+     * "dossier_convocation", est rattaché automatiquement côté back — voir
+     * PieceJustificativesController::deposerLot()). $fichiers est indexé
+     * par type ('service_fait', 'ordre_mission', 'rapport_mission',
+     * 'bulletin_salaire', 'accuse_reception').
      */
     public function deposerLot(array $donnees, array $fichiers): array
     {
-        return $this->wrap($this->api->postMultipart('pieces-justificatives/deposer-lot', $donnees, $fichiers));
+        $fichiersMultipart = [];
+
+        foreach ($fichiers as $type => $fichier) {
+            if (! $fichier instanceof UploadedFile) {
+                continue;
+            }
+
+            $fichiersMultipart[] = [
+                'name' => $type,
+                'contents' => fopen($fichier->getRealPath(), 'r'),
+                'filename' => $fichier->getClientOriginalName(),
+            ];
+        }
+
+        return $this->wrap($this->api->postMultipart('pieces-justificatives/deposer-lot', $donnees, $fichiersMultipart));
     }
 
     /**
-     * Reponse HTTP BRUTE (pas wrap() : le corps n'est pas du JSON mais le
-     * contenu binaire du document) — le contrôleur relaie ce corps et les
-     * en-têtes reçus tels quels au navigateur, meme principe que
+     * Réponse brute (pas de wrap() : corps binaire, pas du JSON) — relayée
+     * telle quelle par le contrôleur, même principe que
      * ConvocationService::telechargerPdf().
      */
-    public function telecharger(int|string $id): \Illuminate\Http\Client\Response
+    public function telecharger(int|string $id)
     {
         return $this->api->get("pieces-justificatives/{$id}/download");
     }

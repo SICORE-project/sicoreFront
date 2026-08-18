@@ -387,8 +387,9 @@
              Consultation seule (statut + date + telechargement) — pas de
              validation/rejet ici pour l'instant. Partagee par tous les
              boutons "Voir le dossier" : le JS lit le JSON encode dans
-             data-dossier-json du bouton clique et construit les 5 lignes
-             (une par type attendu, meme si non deposee) a la volee.
+             data-dossier-json du bouton clique et construit les 6 lignes
+             (les 5 manuelles + le dossier de convocation auto-rattache,
+             une par type attendu meme si non deposee) a la volee.
         ============================================================ --}}
 
         <div
