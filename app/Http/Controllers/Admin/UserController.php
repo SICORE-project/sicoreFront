@@ -33,7 +33,7 @@ class UserController extends Controller
             $role = data_get($user, 'role.nom', data_get($user, 'role', '—'));
             $service = data_get($user, 'service.nom', data_get($user, 'service', '—'));
             $status = data_get($user, 'statut', data_get($user, 'status', false));
-            $isActive = filter_var($status, FILTER_VALIDATE_BOOLEAN);
+            $isActive = $status === 'actif' || filter_var($status, FILTER_VALIDATE_BOOLEAN);
 
             if (is_array($role) && array_key_exists('nom', $role)) {
                 $role = $role['nom'];
@@ -62,7 +62,9 @@ class UserController extends Controller
             'Exporter',
         ]);
 
-        return view('pages.administration.utilisateurs');
+        $roles = $this->userService->getRoles();
+
+        return view('pages.administration.utilisateurs', compact('roles'));
     }
 
     public function create()
@@ -86,10 +88,6 @@ class UserController extends Controller
             'statut' => ['required', 'in:actif,inactif'],
         ]);
 
-        // Le formulaire utilise des libellés lisibles, alors que l'API
-        // attend un booléen pour le statut actif.
-        $data['statut'] = $data['statut'] === 'actif';
-
         $response = $this->userService->createUser(
             $data + [
                 'password_confirmation' => $request->input('password_confirmation'),
@@ -97,13 +95,18 @@ class UserController extends Controller
         );
 
         if (! $response['success']) {
-            return back()
+            $redirect = back()
                 ->withInput()
-                ->withErrors($response['errors'] ?? [])
-                ->with(
+                ->withErrors($response['errors'] ?? []);
+
+            if (empty($response['errors'])) {
+                $redirect->with(
                     'error',
                     $response['message'] ?? 'Une erreur est survenue.'
                 );
+            }
+
+            return $redirect;
         }
 
         return redirect()
@@ -112,6 +115,17 @@ class UserController extends Controller
                 'success',
                 $response['message'] ?? 'Utilisateur créé avec succès.'
             );
+    }
+
+    public function checkEmail(Request $request)
+    {
+        $data = $request->validate([
+            'email' => ['required', 'email'],
+        ]);
+
+        return response()->json(
+            $this->userService->checkEmail($data['email'])
+        );
     }
 
     public function edit($id)

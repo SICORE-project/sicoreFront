@@ -33,6 +33,9 @@ Route::middleware('sicore.auth')
         Route::post('/utilisateurs', [UserController::class, 'store'])
             ->name('utilisateurs.store');
 
+        Route::get('/utilisateurs/verifier-email', [UserController::class, 'checkEmail'])
+            ->name('utilisateurs.check-email');
+
         Route::get('/utilisateurs/profils-roles', [RoleController::class, 'index'])
             ->name('utilisateurs.profils-roles');
 

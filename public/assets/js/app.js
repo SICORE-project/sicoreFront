@@ -403,6 +403,14 @@
         if (!button || button.disabled) {
           return;
         }
+
+        // Les paginations alimentées par le serveur utilisent de vrais
+        // liens. Le navigateur doit suivre leur URL afin de demander les
+        // éléments de la page sélectionnée.
+        if (button.matches("a[href]")) {
+          return;
+        }
+
         event.preventDefault();
         if (button.hasAttribute("data-page-number")) {
           pagination.querySelectorAll(".page-btn").forEach(function (item) {

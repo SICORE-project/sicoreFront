@@ -49,7 +49,7 @@
           @endphp
 
           @if ($isNewUserButton)
-            <a class="{{ $actionClass }}" href="{{ route('utilisateurs.create') }}">{{ $actionText }}</a>
+            <button class="{{ $actionClass }}" type="button" data-modal-open="create-user-modal">{{ $actionText }}</button>
           @elseif ($actionUrl)
             <a class="{{ $actionClass }}" href="{{ $actionUrl }}">{{ $actionText }}</a>
           @else

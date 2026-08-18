@@ -75,10 +75,10 @@ class UserService
         return [
             'items' => is_array($items) ? $items : [],
             'pagination' => [
-                'current_page' => (int) data_get($data, 'meta.current_page', $page),
-                'last_page' => (int) data_get($data, 'meta.last_page', max(1, (int) ceil((count($items) ?: 1) / max(1, $perPage)))),
-                'total' => (int) data_get($data, 'meta.total', count($items)),
-                'per_page' => $perPage,
+                'current_page' => (int) data_get($data, 'data.current_page', data_get($data, 'meta.current_page', $page)),
+                'last_page' => max(1, (int) data_get($data, 'data.last_page', data_get($data, 'meta.last_page', 1))),
+                'total' => (int) data_get($data, 'data.total', data_get($data, 'meta.total', count($items))),
+                'per_page' => (int) data_get($data, 'data.per_page', data_get($data, 'meta.per_page', $perPage)),
             ],
         ];
     }
@@ -116,6 +116,35 @@ class UserService
                 'Impossible de créer l’utilisateur.'
             ),
             'errors' => $response->json('errors', []),
+        ];
+    }
+
+    /**
+     * Vérifier auprès du backend si une adresse e-mail est disponible.
+     */
+    public function checkEmail(string $email): array
+    {
+        try {
+            $response = $this->apiClient->get('admin/users/check-email', [
+                'email' => $email,
+            ]);
+        } catch (ConnectionException) {
+            return [
+                'available' => false,
+                'message' => 'Impossible de vérifier cette adresse pour le moment.',
+            ];
+        }
+
+        if (! $response->successful()) {
+            return [
+                'available' => false,
+                'message' => $response->json('message', 'Impossible de vérifier cette adresse.'),
+            ];
+        }
+
+        return [
+            'available' => (bool) $response->json('available', false),
+            'message' => $response->json('message'),
         ];
     }
 }

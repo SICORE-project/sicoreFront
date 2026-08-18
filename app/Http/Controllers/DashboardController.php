@@ -10,10 +10,10 @@ class DashboardController extends Controller
     public function index()
     {
         $responseRoles = Http::withToken(session('access_token'))  // <-- Changé
-            ->get(config('app.api_url') . '/admin/roles/all');
+            ->get(config('services.backend.url') . '/admin/roles/all');
 
         $responsePermissions = Http::withToken(session('access_token'))  // <-- Changé
-            ->get(config('app.api_url') . '/admin/permissions/all');
+            ->get(config('services.backend.url') . '/admin/permissions/all');
 
         $totalRoles = $responseRoles->successful() ? count($responseRoles->json()['data'] ?? []) : 0;
         $totalPermissions = $responsePermissions->successful() ? count($responsePermissions->json()['data'] ?? []) : 0;
