@@ -213,6 +213,45 @@
   </div>
 </div>
 
+<!-- Modal Montant disponible -->
+<div id="modalMontant" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:1000;">
+  <div style="background:#fff; border-radius:12px; padding:32px; max-width:500px; width:90%; max-height:90vh; overflow-y:auto; margin:auto; position:relative; top:50%; transform:translateY(-50%);">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
+      <h2 style="margin:0; color:#087f5b; font-size:1.25rem;">Définir le montant disponible</h2>
+      <button type="button" id="btnCloseMontant" style="background:none; border:none; font-size:1.5rem; cursor:pointer; color:#666;">&times;</button>
+    </div>
+    <div id="montantInfo" style="background:#f1f3f5; border-radius:8px; padding:16px; margin-bottom:20px;"></div>
+    <form id="formMontant">
+      <input type="hidden" id="montant_delegation_id">
+      <div style="display:grid; gap:16px;">
+        <div class="form-group">
+          <label>Montant initial (FCFA)</label>
+          <input type="text" class="form-control" id="montant_initial_affiche" disabled style="background:#e9ecef;">
+        </div>
+        <div class="form-group">
+          <label>Montant consommé (FCFA)</label>
+          <input type="text" class="form-control" id="montant_consomme_affiche" disabled style="background:#e9ecef;">
+        </div>
+        <div class="form-group">
+          <label for="nouveau_montant_disponible">Nouveau montant disponible (FCFA) *</label>
+          <input type="number" class="form-control" id="nouveau_montant_disponible" min="1" step="1" required>
+          <small id="montantHint" style="color:#868e96; font-size:0.82rem;"></small>
+        </div>
+        <div class="form-group">
+          <label>Nouveau solde estimé</label>
+          <input type="text" class="form-control" id="solde_estime" disabled style="background:#d3f9d8; font-weight:bold; color:#087f5b;">
+        </div>
+      </div>
+      <div style="display:flex; justify-content:flex-end; gap:12px; margin-top:24px;">
+        <button type="button" class="btn-secondary" id="btnAnnulerMontant">Annuler</button>
+        <button type="submit" class="btn-primary" id="btnSubmitMontant">Enregistrer</button>
+      </div>
+      <p id="montantError" style="color:#e03131; margin-top:12px; display:none;"></p>
+      <p id="montantSuccess" style="color:#087f5b; margin-top:12px; display:none;"></p>
+    </form>
+  </div>
+</div>
+
 <!-- Modal Détail -->
 <div id="modalDetail" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:1000;">
   <div style="background:#fff; border-radius:12px; padding:32px; max-width:600px; width:90%; max-height:90vh; overflow-y:auto; margin:auto; position:relative; top:50%; transform:translateY(-50%);">
@@ -326,6 +365,7 @@ function renderTable(data) {
     var structNom = d.structure ? d.structure.nom : '-';
     var servNom = d.service ? d.service.nom : '-';
     var actions = '<button class="table-action" type="button" onclick="voirDetail(' + d.id + ')">Voir</button>';
+    actions += '<button class="table-action" type="button" onclick="ouvrirMontant(' + d.id + ')">Montant</button>';
     actions += '<button class="table-action" type="button" onclick="ouvrirAffectation(' + d.id + ')">Affecter</button>';
     if (d.statut === 'En attente') {
       actions += '<button class="table-action primary" type="button" onclick="validerDelegation(' + d.id + ')">Valider</button>';
@@ -466,6 +506,11 @@ function setupEvents() {
 
   var champRecherche = document.getElementById('delegationSearch');
   if (champRecherche) champRecherche.addEventListener('input', appliquerFiltres);
+
+  document.getElementById('btnCloseMontant').addEventListener('click', fermerMontant);
+  document.getElementById('btnAnnulerMontant').addEventListener('click', fermerMontant);
+  document.getElementById('nouveau_montant_disponible').addEventListener('input', calculerSoldeEstime);
+  document.getElementById('formMontant').addEventListener('submit', soumettreMontant);
 
   document.getElementById('btnCloseAffectation').addEventListener('click', fermerAffectation);
   document.getElementById('btnAnnulerAffectation').addEventListener('click', fermerAffectation);
@@ -695,6 +740,101 @@ function soumettreAffectation(e) {
     document.getElementById('affectationError').style.display = 'block';
     btn.disabled = false;
     btn.textContent = 'Affecter';
+  });
+}
+
+var montantDelegationCache = null;
+
+function ouvrirMontant(id) {
+  var delegation = allDelegations.find(function(d) { return d.id == id; });
+  if (!delegation) return;
+
+  montantDelegationCache = delegation;
+  document.getElementById('montant_delegation_id').value = id;
+  document.getElementById('montantError').style.display = 'none';
+  document.getElementById('montantSuccess').style.display = 'none';
+
+  document.getElementById('montantInfo').innerHTML =
+    '<strong>' + delegation.reference + '</strong> — ' + (delegation.objet || '') +
+    '<br><small>Solde actuel : <strong style="color:#087f5b;">' + formatMontant(delegation.solde) + '</strong></small>';
+
+  var mi = delegation.montant_initial || 0;
+  var mc = delegation.montant_consomme || 0;
+  document.getElementById('montant_initial_affiche').value = formatMontant(mi);
+  document.getElementById('montant_consomme_affiche').value = formatMontant(mc);
+  document.getElementById('nouveau_montant_disponible').value = delegation.montant_disponible || '';
+  document.getElementById('montantHint').textContent = mi > 0
+    ? 'Max : ' + formatMontant(mi) + ' | Min : ' + formatMontant(mc > 0 ? mc : 1)
+    : '';
+
+  calculerSoldeEstime();
+  document.getElementById('modalMontant').style.display = 'block';
+}
+
+function fermerMontant() {
+  document.getElementById('modalMontant').style.display = 'none';
+  montantDelegationCache = null;
+}
+
+function calculerSoldeEstime() {
+  var md = parseFloat(document.getElementById('nouveau_montant_disponible').value) || 0;
+  var mc = montantDelegationCache ? (montantDelegationCache.montant_consomme || 0) : 0;
+  var solde = md - mc;
+  document.getElementById('solde_estime').value = formatMontant(solde);
+  document.getElementById('solde_estime').style.color = solde >= 0 ? '#087f5b' : '#e03131';
+  document.getElementById('solde_estime').style.background = solde >= 0 ? '#d3f9d8' : '#ffe3e3';
+}
+
+function soumettreMontant(e) {
+  e.preventDefault();
+  var id = document.getElementById('montant_delegation_id').value;
+  var montant = parseFloat(document.getElementById('nouveau_montant_disponible').value);
+  var btn = document.getElementById('btnSubmitMontant');
+
+  if (!montant || montant <= 0) {
+    document.getElementById('montantError').textContent = 'Le montant doit être supérieur à zéro.';
+    document.getElementById('montantError').style.display = 'block';
+    return;
+  }
+
+  if (montantDelegationCache && montantDelegationCache.montant_initial && montant > montantDelegationCache.montant_initial) {
+    document.getElementById('montantError').textContent = 'Le montant ne peut pas dépasser le montant initial (' + formatMontant(montantDelegationCache.montant_initial) + ').';
+    document.getElementById('montantError').style.display = 'block';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Enregistrement...';
+
+  fetch(API + '/delegation-credits/' + id + '/montant-disponible', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+    body: JSON.stringify({ montant_disponible: montant })
+  })
+  .then(function(res) {
+    return res.json().then(function(result) {
+      if (!res.ok) {
+        var errMsg = result.errors
+          ? Object.values(result.errors).flat().join(', ')
+          : result.message;
+        document.getElementById('montantError').textContent = errMsg;
+        document.getElementById('montantError').style.display = 'block';
+        document.getElementById('montantSuccess').style.display = 'none';
+      } else {
+        document.getElementById('montantSuccess').textContent = result.message;
+        document.getElementById('montantSuccess').style.display = 'block';
+        document.getElementById('montantError').style.display = 'none';
+        setTimeout(function() { fermerMontant(); loadDelegations(); }, 1000);
+      }
+      btn.disabled = false;
+      btn.textContent = 'Enregistrer';
+    });
+  })
+  .catch(function() {
+    document.getElementById('montantError').textContent = 'Erreur de connexion au serveur.';
+    document.getElementById('montantError').style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = 'Enregistrer';
   });
 }
 
