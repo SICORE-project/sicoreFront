@@ -73,7 +73,7 @@
 
           <p class="auth-footer">Besoin d&rsquo;aide pour acc&eacute;der &agrave; votre compte ? <a href="#">Contactez l&rsquo;administrateur du syst&egrave;me.</a></p>
           <p class="demo-credentials">
-            Mode test : <strong>{{ config('sicore.test.email') }}</strong> / <strong>{{ config('sicore.test.password') }}</strong>
+              Utilisez vos identifiants professionnels SICORE.
           </p>
         </div>
       </div>

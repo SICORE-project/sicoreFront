@@ -98,10 +98,13 @@
           <thead>
             <tr>
               <th>Référence</th>
+              <th>Libellé</th>
               <th>Structure</th>
               <th>Service</th>
-              <th>Montant alloué</th>
-              <th>Date</th>
+              <th>Montant initial</th>
+              <th>Montant disponible</th>
+              <th>Début validité</th>
+              <th>Fin validité</th>
               <th>Statut</th>
               <th class="actions-cell">Actions</th>
             </tr>
@@ -111,6 +114,7 @@
         </table>
       </div>
       <p class="empty-message" id="emptyMsg" style="display:none;">Aucune délégation trouvée.</p>
+      <div class="pagination" id="paginationControls"></div>
     </section>
   </section>
 </main>
@@ -130,7 +134,7 @@
         </div>
         <div class="form-group">
           <label for="reference">Référence *</label>
-          <input type="text" class="form-control" id="reference" name="reference" placeholder="DEL-2026-001" required>
+          <input type="text" class="form-control" id="reference" name="reference" placeholder="DC-2026-001" required>
         </div>
         <div class="form-group" style="grid-column:span 2;">
           <label for="objet">Objet *</label>
@@ -149,12 +153,20 @@
           </select>
         </div>
         <div class="form-group">
+          <label for="montant_initial">Montant initial (FCFA)</label>
+          <input type="number" class="form-control" id="montant_initial" name="montant_initial" min="0" step="1">
+        </div>
+        <div class="form-group">
           <label for="montant_disponible">Montant disponible (FCFA) *</label>
           <input type="number" class="form-control" id="montant_disponible" name="montant_disponible" min="0" step="1" required>
         </div>
         <div class="form-group">
-          <label for="date_delegation">Date de délégation *</label>
+          <label for="date_delegation">Date début de validité *</label>
           <input type="date" class="form-control" id="date_delegation" name="date_delegation" required>
+        </div>
+        <div class="form-group">
+          <label for="date_fin">Date fin de validité</label>
+          <input type="date" class="form-control" id="date_fin" name="date_fin">
         </div>
       </div>
       <div style="display:flex; justify-content:flex-end; gap:12px; margin-top:24px;">
@@ -163,6 +175,40 @@
       </div>
       <p id="formError" style="color:#e03131; margin-top:12px; display:none;"></p>
       <p id="formSuccess" style="color:#087f5b; margin-top:12px; display:none;"></p>
+    </form>
+  </div>
+</div>
+
+<!-- Modal Affectation -->
+<div id="modalAffectation" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:1000;">
+  <div style="background:#fff; border-radius:12px; padding:32px; max-width:500px; width:90%; max-height:90vh; overflow-y:auto; margin:auto; position:relative; top:50%; transform:translateY(-50%);">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
+      <h2 style="margin:0; color:#087f5b; font-size:1.25rem;">Affecter la délégation</h2>
+      <button type="button" id="btnCloseAffectation" style="background:none; border:none; font-size:1.5rem; cursor:pointer; color:#666;">&times;</button>
+    </div>
+    <div id="affectationInfo" style="background:#f1f3f5; border-radius:8px; padding:16px; margin-bottom:20px;"></div>
+    <form id="formAffectation">
+      <input type="hidden" id="affectation_delegation_id">
+      <div style="display:grid; gap:16px;">
+        <div class="form-group">
+          <label for="affectation_structure_id">Structure *</label>
+          <select class="form-control" id="affectation_structure_id" name="structure_id" required>
+            <option value="">-- Choisir une structure --</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="affectation_service_id">Service (optionnel)</label>
+          <select class="form-control" id="affectation_service_id" name="service_id">
+            <option value="">-- Aucun service --</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:flex; justify-content:flex-end; gap:12px; margin-top:24px;">
+        <button type="button" class="btn-secondary" id="btnAnnulerAffectation">Annuler</button>
+        <button type="submit" class="btn-primary" id="btnSubmitAffectation">Affecter</button>
+      </div>
+      <p id="affectationError" style="color:#e03131; margin-top:12px; display:none;"></p>
+      <p id="affectationSuccess" style="color:#087f5b; margin-top:12px; display:none;"></p>
     </form>
   </div>
 </div>
@@ -181,56 +227,63 @@
 
 @push('scripts')
 <script>
-const API = 'http://127.0.0.1:8000/api';
-let allDelegations = [];
-let allStructures = [];
+var API = 'http://127.0.0.1:8000/api';
+var allDelegations = [];
+var allStructures = [];
+var filteredDelegations = [];
+var currentPage = 1;
+var perPage = 5;
 
-document.addEventListener('DOMContentLoaded', async () => {
-  await Promise.all([loadStructures(), loadDelegations()]);
-  setupEvents();
+document.addEventListener('DOMContentLoaded', function() {
+  Promise.all([loadStructures(), loadDelegations()]).then(function() {
+    setupEvents();
+  });
 });
 
-async function loadStructures() {
-  try {
-    const res = await fetch(API + '/structures');
-    allStructures = await res.json();
-    const filterSelect = document.getElementById('filterStructure');
-    const formSelect = document.getElementById('structure_id');
-    allStructures.forEach(s => {
-      filterSelect.innerHTML += `<option value="${s.id}">${s.nom}</option>`;
-      formSelect.innerHTML += `<option value="${s.id}">${s.nom}</option>`;
+function loadStructures() {
+  return fetch(API + '/structures')
+    .then(function(res) { return res.json(); })
+    .then(function(data) {
+      allStructures = data;
+      var filterSelect = document.getElementById('filterStructure');
+      var formSelect = document.getElementById('structure_id');
+      allStructures.forEach(function(s) {
+        filterSelect.innerHTML += '<option value="' + s.id + '">' + s.nom + '</option>';
+        formSelect.innerHTML += '<option value="' + s.id + '">' + s.nom + '</option>';
+      });
+      majServicesFiltre();
+    })
+    .catch(function(e) {
+      console.error('Erreur chargement structures:', e);
     });
-    // Sans cela, la liste Service reste vide tant qu'aucune structure n'est choisie.
-    majServicesFiltre();
-  } catch(e) {
-    console.error('Erreur chargement structures:', e);
-  }
 }
 
-async function loadDelegations() {
-  try {
-    const res = await fetch(API + '/delegation-credits');
-    allDelegations = await res.json();
-    renderTable(allDelegations);
-    updateStats(allDelegations);
-  } catch(e) {
-    console.error('Erreur chargement délégations:', e);
-    document.getElementById('emptyMsg').style.display = 'block';
-    document.getElementById('emptyMsg').textContent = 'Erreur de connexion au serveur backend (port 8000).';
-  }
+function loadDelegations() {
+  return fetch(API + '/delegation-credits')
+    .then(function(res) { return res.json(); })
+    .then(function(response) {
+      allDelegations = response.data || response;
+      renderTable(allDelegations);
+      updateStats(allDelegations);
+    })
+    .catch(function(e) {
+      console.error('Erreur chargement délégations:', e);
+      document.getElementById('emptyMsg').style.display = 'block';
+      document.getElementById('emptyMsg').textContent = 'Erreur de connexion au serveur backend (port 8000).';
+    });
 }
 
 function updateStats(data) {
-  const total = data.length;
-  const validees = data.filter(d => d.statut === 'Validée').length;
-  const attente = data.filter(d => d.statut === 'En attente').length;
-  const rejetees = data.filter(d => d.statut === 'Rejetée').length;
+  var total = data.length;
+  var validees = data.filter(function(d) { return d.statut === 'Validée' || d.statut === 'Validee'; }).length;
+  var attente = data.filter(function(d) { return d.statut === 'En attente'; }).length;
+  var rejetees = data.filter(function(d) { return d.statut === 'Rejetée' || d.statut === 'Rejetee'; }).length;
 
   document.getElementById('statTotal').textContent = total;
   document.getElementById('statValidees').textContent = validees;
   document.getElementById('statAttente').textContent = attente;
   document.getElementById('statRejetees').textContent = rejetees;
-  document.getElementById('statValideesPct').textContent = total > 0 ? Math.round(validees/total*100) + '% traités' : '0% traités';
+  document.getElementById('statValideesPct').textContent = total > 0 ? Math.round(validees / total * 100) + '% traités' : '0% traités';
 }
 
 function formatMontant(val) {
@@ -239,95 +292,134 @@ function formatMontant(val) {
 
 function formatDate(dateStr) {
   if (!dateStr) return '-';
-  const d = new Date(dateStr);
+  var d = new Date(dateStr);
   return d.toLocaleDateString('fr-FR');
 }
 
 function badgeClass(statut) {
-  if (statut === 'Validée') return 'badge-active';
-  if (statut === 'Rejetée') return 'badge-rejected';
+  if (statut === 'Validée' || statut === 'Validee') return 'badge-active';
+  if (statut === 'Rejetée' || statut === 'Rejetee') return 'badge-rejected';
   return 'badge-pending';
 }
 
 function renderTable(data) {
-  const tbody = document.getElementById('delegationBody');
-  const empty = document.getElementById('emptyMsg');
+  filteredDelegations = data;
+  var totalPages = Math.ceil(data.length / perPage);
+  if (currentPage > totalPages) currentPage = totalPages || 1;
+
+  var tbody = document.getElementById('delegationBody');
+  var empty = document.getElementById('emptyMsg');
 
   if (data.length === 0) {
     tbody.innerHTML = '';
     empty.style.display = 'block';
     empty.textContent = 'Aucune délégation trouvée.';
+    document.getElementById('paginationControls').innerHTML = '';
     return;
   }
   empty.style.display = 'none';
 
-  tbody.innerHTML = data.map(d => `
-    <tr>
-      <td>${d.reference}</td>
-      <td>${d.structure ? d.structure.nom : '-'}</td>
-      <td>${d.service ? d.service.nom : '-'}</td>
-      <td>${formatMontant(d.montant_disponible)}</td>
-      <td>${formatDate(d.date_delegation)}</td>
-      <td><span class="badge ${badgeClass(d.statut)}">${d.statut}</span></td>
-      <td class="actions-cell">
-        <div class="table-actions-inline">
-          <button class="table-action" type="button" onclick="voirDetail(${d.id})">Voir</button>
-          ${d.statut === 'En attente' ? `<button class="table-action primary" type="button" onclick="validerDelegation(${d.id})">Valider</button>` : ''}
-        </div>
-      </td>
-    </tr>
-  `).join('');
-}
+  var start = (currentPage - 1) * perPage;
+  var pageData = data.slice(start, start + perPage);
 
-// Remplit la liste Service : tous les services (groupes par structure) si aucune
-// structure n'est selectionnee, sinon ceux de la structure choisie.
-function majServicesFiltre() {
-  const structureId = document.getElementById('filterStructure').value;
-  const select = document.getElementById('filterService');
-  const ancienChoix = select.value;
-  const structures = structureId
-    ? allStructures.filter(s => s.id == structureId)
-    : allStructures;
-
-  select.innerHTML = '<option value="">Tous</option>' + structures.map(s => {
-    const services = s.services || [];
-    if (services.length === 0) return '';
-    const options = services.map(svc => `<option value="${svc.id}">${svc.nom}</option>`).join('');
-    // Sans structure choisie, on groupe pour distinguer les services homonymes.
-    return structureId ? options : `<optgroup label="${s.nom}">${options}</optgroup>`;
+  tbody.innerHTML = pageData.map(function(d) {
+    var structNom = d.structure ? d.structure.nom : '-';
+    var servNom = d.service ? d.service.nom : '-';
+    var actions = '<button class="table-action" type="button" onclick="voirDetail(' + d.id + ')">Voir</button>';
+    actions += '<button class="table-action" type="button" onclick="ouvrirAffectation(' + d.id + ')">Affecter</button>';
+    if (d.statut === 'En attente') {
+      actions += '<button class="table-action primary" type="button" onclick="validerDelegation(' + d.id + ')">Valider</button>';
+    }
+    return '<tr>' +
+      '<td>' + d.reference + '</td>' +
+      '<td>' + (d.objet || '-') + '</td>' +
+      '<td>' + structNom + '</td>' +
+      '<td>' + servNom + '</td>' +
+      '<td>' + (d.montant_initial ? formatMontant(d.montant_initial) : '-') + '</td>' +
+      '<td>' + formatMontant(d.montant_disponible) + '</td>' +
+      '<td>' + formatDate(d.date_delegation) + '</td>' +
+      '<td>' + (d.date_fin ? formatDate(d.date_fin) : '-') + '</td>' +
+      '<td><span class="badge ' + badgeClass(d.statut) + '">' + d.statut + '</span></td>' +
+      '<td class="actions-cell"><div class="table-actions-inline">' + actions + '</div></td>' +
+      '</tr>';
   }).join('');
 
-  const encoreDisponible = [...select.options].some(o => o.value === ancienChoix);
+  renderPagination(totalPages);
+}
+
+function renderPagination(totalPages) {
+  var container = document.getElementById('paginationControls');
+  if (totalPages <= 1) { container.innerHTML = ''; return; }
+
+  var html = '';
+
+  html += '<button class="page-btn" ' + (currentPage === 1 ? 'disabled' : '') +
+    ' onclick="goToPage(' + (currentPage - 1) + ')">&laquo;</button>';
+
+  for (var i = 1; i <= totalPages; i++) {
+    html += '<button class="page-btn' + (i === currentPage ? ' active' : '') +
+      '" onclick="goToPage(' + i + ')">' + i + '</button>';
+  }
+
+  html += '<button class="page-btn" ' + (currentPage === totalPages ? 'disabled' : '') +
+    ' onclick="goToPage(' + (currentPage + 1) + ')">&raquo;</button>';
+
+  container.innerHTML = html;
+}
+
+function goToPage(page) {
+  currentPage = page;
+  renderTable(filteredDelegations);
+}
+
+function majServicesFiltre() {
+  var structureId = document.getElementById('filterStructure').value;
+  var select = document.getElementById('filterService');
+  var ancienChoix = select.value;
+  var structures = structureId
+    ? allStructures.filter(function(s) { return s.id == structureId; })
+    : allStructures;
+
+  var html = '<option value="">Tous</option>';
+  structures.forEach(function(s) {
+    var services = s.services || [];
+    if (services.length === 0) return;
+    var options = services.map(function(svc) {
+      return '<option value="' + svc.id + '">' + svc.nom + '</option>';
+    }).join('');
+    html += structureId ? options : '<optgroup label="' + s.nom + '">' + options + '</optgroup>';
+  });
+  select.innerHTML = html;
+
+  var encoreDisponible = Array.from(select.options).some(function(o) { return o.value === ancienChoix; });
   select.value = encoreDisponible ? ancienChoix : '';
 }
 
 function appliquerFiltres() {
-  const structureId = document.getElementById('filterStructure').value;
-  const serviceId = document.getElementById('filterService').value;
-  const statut = document.getElementById('filterStatut').value;
-  const champRecherche = document.getElementById('delegationSearch');
-  const recherche = champRecherche ? champRecherche.value.trim().toLowerCase() : '';
+  var structureId = document.getElementById('filterStructure').value;
+  var serviceId = document.getElementById('filterService').value;
+  var statut = document.getElementById('filterStatut').value;
+  var champRecherche = document.getElementById('delegationSearch');
+  var recherche = champRecherche ? champRecherche.value.trim().toLowerCase() : '';
 
-  let filtered = allDelegations;
-  if (structureId) filtered = filtered.filter(d => d.structure_id == structureId);
-  if (serviceId) filtered = filtered.filter(d => d.service_id == serviceId);
-  if (statut) filtered = filtered.filter(d => d.statut === statut);
+  var filtered = allDelegations;
+  if (structureId) filtered = filtered.filter(function(d) { return d.structure_id == structureId; });
+  if (serviceId) filtered = filtered.filter(function(d) { return d.service_id == serviceId; });
+  if (statut) filtered = filtered.filter(function(d) { return d.statut === statut; });
   if (recherche) {
-    filtered = filtered.filter(d => [
-      d.reference,
-      d.objet,
-      d.structure ? d.structure.nom : '',
-      d.service ? d.service.nom : '',
-      d.statut
-    ].join(' ').toLowerCase().includes(recherche));
+    filtered = filtered.filter(function(d) {
+      return [d.reference, d.objet, d.structure ? d.structure.nom : '', d.service ? d.service.nom : '', d.statut]
+        .join(' ').toLowerCase().indexOf(recherche) !== -1;
+    });
   }
 
+  currentPage = 1;
   renderTable(filtered);
   updateStats(filtered);
 }
 
 function setupEvents() {
-  document.getElementById('btnNouvelleDelegation').addEventListener('click', () => {
+  document.getElementById('btnNouvelleDelegation').addEventListener('click', function() {
     document.getElementById('modalDelegation').style.display = 'block';
     document.getElementById('formError').style.display = 'none';
     document.getElementById('formSuccess').style.display = 'none';
@@ -335,96 +427,105 @@ function setupEvents() {
 
   document.getElementById('btnCloseModal').addEventListener('click', closeModal);
   document.getElementById('btnAnnuler').addEventListener('click', closeModal);
-  document.getElementById('btnCloseDetail').addEventListener('click', () => {
+  document.getElementById('btnCloseDetail').addEventListener('click', function() {
     document.getElementById('modalDetail').style.display = 'none';
   });
 
   document.getElementById('structure_id').addEventListener('change', function() {
-    const structureId = this.value;
-    const serviceSelect = document.getElementById('service_id');
+    var structureId = this.value;
+    var serviceSelect = document.getElementById('service_id');
     serviceSelect.innerHTML = '<option value="">-- Choisir --</option>';
     if (!structureId) return;
-    const structure = allStructures.find(s => s.id == structureId);
+    var structure = allStructures.find(function(s) { return s.id == structureId; });
     if (structure && structure.services) {
-      structure.services.forEach(svc => {
-        serviceSelect.innerHTML += `<option value="${svc.id}">${svc.nom}</option>`;
+      structure.services.forEach(function(svc) {
+        serviceSelect.innerHTML += '<option value="' + svc.id + '">' + svc.nom + '</option>';
       });
     }
   });
 
-  document.getElementById('filterStructure').addEventListener('change', () => {
+  document.getElementById('filterStructure').addEventListener('change', function() {
     majServicesFiltre();
     appliquerFiltres();
   });
 
-  // Le filtrage est immediat : le bouton Filtrer reste disponible mais n'est plus indispensable.
-  ['filterService', 'filterStatut'].forEach(id => {
+  ['filterService', 'filterStatut'].forEach(function(id) {
     document.getElementById(id).addEventListener('change', appliquerFiltres);
   });
   document.getElementById('btnFiltrer').addEventListener('click', appliquerFiltres);
 
-  document.getElementById('btnReinitialiser').addEventListener('click', () => {
+  document.getElementById('btnReinitialiser').addEventListener('click', function() {
     document.getElementById('filterStructure').value = '';
     document.getElementById('filterStatut').value = '';
-    // Vide avant majServicesFiltre(), qui conserve sinon le service deja choisi.
     document.getElementById('filterService').value = '';
-    const recherche = document.getElementById('delegationSearch');
+    var recherche = document.getElementById('delegationSearch');
     if (recherche) recherche.value = '';
     majServicesFiltre();
     appliquerFiltres();
   });
 
-  // La recherche du bandeau passe par le meme filtrage, sinon un clic sur Filtrer
-  // reconstruit le tableau et fait perdre le terme recherche.
-  const champRecherche = document.getElementById('delegationSearch');
+  var champRecherche = document.getElementById('delegationSearch');
   if (champRecherche) champRecherche.addEventListener('input', appliquerFiltres);
+
+  document.getElementById('btnCloseAffectation').addEventListener('click', fermerAffectation);
+  document.getElementById('btnAnnulerAffectation').addEventListener('click', fermerAffectation);
+  document.getElementById('affectation_structure_id').addEventListener('change', function() {
+    majServicesAffectation(null);
+  });
+  document.getElementById('formAffectation').addEventListener('submit', soumettreAffectation);
 
   document.getElementById('btnExporter').addEventListener('click', exporterCSV);
 
-  document.getElementById('formDelegation').addEventListener('submit', async (e) => {
+  document.getElementById('formDelegation').addEventListener('submit', function(e) {
     e.preventDefault();
-    const btn = document.getElementById('btnSubmit');
+    var btn = document.getElementById('btnSubmit');
     btn.disabled = true;
     btn.textContent = 'Création en cours...';
 
-    const formData = {
+    var montantInitial = document.getElementById('montant_initial').value;
+    var dateFin = document.getElementById('date_fin').value;
+
+    var formData = {
       annee_academique: document.getElementById('annee_academique').value,
       reference: document.getElementById('reference').value,
       objet: document.getElementById('objet').value,
       structure_id: parseInt(document.getElementById('structure_id').value),
       service_id: parseInt(document.getElementById('service_id').value),
+      montant_initial: montantInitial ? parseFloat(montantInitial) : null,
       montant_disponible: parseFloat(document.getElementById('montant_disponible').value),
       date_delegation: document.getElementById('date_delegation').value,
+      date_fin: dateFin || null,
     };
 
-    try {
-      const res = await fetch(API + '/delegation-credits', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-        body: JSON.stringify(formData)
+    fetch(API + '/delegation-credits', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify(formData)
+    })
+    .then(function(res) {
+      return res.json().then(function(result) {
+        if (!res.ok) {
+          var errMsg = result.errors ? Object.values(result.errors).flat().join(', ') : result.message;
+          document.getElementById('formError').textContent = errMsg;
+          document.getElementById('formError').style.display = 'block';
+          document.getElementById('formSuccess').style.display = 'none';
+        } else {
+          document.getElementById('formSuccess').textContent = 'Délégation créée avec succès !';
+          document.getElementById('formSuccess').style.display = 'block';
+          document.getElementById('formError').style.display = 'none';
+          document.getElementById('formDelegation').reset();
+          setTimeout(function() { closeModal(); loadDelegations(); }, 1000);
+        }
+        btn.disabled = false;
+        btn.textContent = 'Créer la délégation';
       });
-
-      const result = await res.json();
-
-      if (!res.ok) {
-        const errMsg = result.errors ? Object.values(result.errors).flat().join(', ') : result.message;
-        document.getElementById('formError').textContent = errMsg;
-        document.getElementById('formError').style.display = 'block';
-        document.getElementById('formSuccess').style.display = 'none';
-      } else {
-        document.getElementById('formSuccess').textContent = 'Délégation créée avec succès !';
-        document.getElementById('formSuccess').style.display = 'block';
-        document.getElementById('formError').style.display = 'none';
-        document.getElementById('formDelegation').reset();
-        setTimeout(() => { closeModal(); loadDelegations(); }, 1000);
-      }
-    } catch(e) {
+    })
+    .catch(function(e) {
       document.getElementById('formError').textContent = 'Erreur de connexion au serveur.';
       document.getElementById('formError').style.display = 'block';
-    }
-
-    btn.disabled = false;
-    btn.textContent = 'Créer la délégation';
+      btn.disabled = false;
+      btn.textContent = 'Créer la délégation';
+    });
   });
 }
 
@@ -433,34 +534,32 @@ function closeModal() {
   document.getElementById('formDelegation').reset();
 }
 
-// Exporte les lignes actuellement affichees du tableau (filtres et recherche compris).
 function exporterCSV() {
-  const table = document.getElementById('delegationTable');
+  var table = document.getElementById('delegationTable');
+  var entetes = Array.from(table.querySelectorAll('thead th'))
+    .filter(function(th) { return !th.classList.contains('actions-cell'); })
+    .map(function(th) { return th.textContent.trim(); });
 
-  const entetes = [...table.querySelectorAll('thead th')]
-    .filter(th => !th.classList.contains('actions-cell'))
-    .map(th => th.textContent.trim());
-
-  const lignes = [...table.querySelectorAll('tbody tr')]
-    .filter(tr => !tr.classList.contains('is-hidden'))
-    .map(tr => [...tr.querySelectorAll('td')]
-      .filter(td => !td.classList.contains('actions-cell'))
-      .map(td => td.textContent.trim()));
+  var lignes = Array.from(table.querySelectorAll('tbody tr'))
+    .map(function(tr) {
+      return Array.from(tr.querySelectorAll('td'))
+        .filter(function(td) { return !td.classList.contains('actions-cell'); })
+        .map(function(td) { return td.textContent.trim(); });
+    });
 
   if (lignes.length === 0) {
     alert('Aucune délégation à exporter.');
     return;
   }
 
-  const echapper = valeur => '"' + String(valeur).replace(/"/g, '""') + '"';
-  const csv = [entetes, ...lignes]
-    .map(ligne => ligne.map(echapper).join(';'))
+  var echapper = function(valeur) { return '"' + String(valeur).replace(/"/g, '""') + '"'; };
+  var csv = [entetes].concat(lignes)
+    .map(function(ligne) { return ligne.map(echapper).join(';'); })
     .join('\r\n');
 
-  // BOM UTF-8 : sans lui, Excel affiche mal les accents.
-  const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const lien = document.createElement('a');
+  var blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+  var url = URL.createObjectURL(blob);
+  var lien = document.createElement('a');
   lien.href = url;
   lien.download = 'delegations-credit-' + new Date().toISOString().slice(0, 10) + '.csv';
   document.body.appendChild(lien);
@@ -469,48 +568,145 @@ function exporterCSV() {
   URL.revokeObjectURL(url);
 }
 
-async function voirDetail(id) {
-  try {
-    const res = await fetch(API + '/delegation-credits/' + id + '/etat');
-    const data = await res.json();
+function voirDetail(id) {
+  fetch(API + '/delegation-credits/' + id + '/etat')
+    .then(function(res) { return res.json(); })
+    .then(function(data) {
+      var paiementsHtml = '';
+      if (data.paiements && data.paiements.length > 0) {
+        paiementsHtml = '<h3 style="margin-top:24px; color:#087f5b;">Paiements associés</h3>' +
+          '<table class="table" style="margin-top:8px;"><thead><tr><th>Agent</th><th>Mois</th><th>Montant</th><th>Date</th></tr></thead><tbody>' +
+          data.paiements.map(function(p) {
+            return '<tr><td>' + p.nom_agent + '</td><td>' + p.mois + '</td><td>' + formatMontant(p.montant) + '</td><td>' + formatDate(p.date_paiement) + '</td></tr>';
+          }).join('') + '</tbody></table>';
+      } else {
+        paiementsHtml = '<p style="margin-top:16px; color:#868e96;">Aucun paiement associé.</p>';
+      }
 
-    document.getElementById('detailContent').innerHTML = `
-      <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
-        <div><strong>Référence :</strong> ${data.reference}</div>
-        <div><strong>Année académique :</strong> ${data.annee_academique}</div>
-        <div><strong>Montant disponible :</strong> ${formatMontant(data.montant_disponible)}</div>
-        <div><strong>Montant engagé :</strong> ${formatMontant(data.montant_engage)}</div>
-        <div><strong>Montant consommé :</strong> ${formatMontant(data.montant_consomme)}</div>
-        <div><strong>Solde restant :</strong> <span style="color:${data.solde > 0 ? '#087f5b' : '#e03131'}; font-weight:bold;">${formatMontant(data.solde)}</span></div>
-      </div>
-      ${data.paiements && data.paiements.length > 0 ? `
-        <h3 style="margin-top:24px; color:#087f5b;">Paiements associés</h3>
-        <table class="table" style="margin-top:8px;">
-          <thead><tr><th>Agent</th><th>Mois</th><th>Montant</th><th>Date</th></tr></thead>
-          <tbody>
-            ${data.paiements.map(p => `<tr><td>${p.nom_agent}</td><td>${p.mois}</td><td>${formatMontant(p.montant)}</td><td>${formatDate(p.date_paiement)}</td></tr>`).join('')}
-          </tbody>
-        </table>
-      ` : '<p style="margin-top:16px; color:#868e96;">Aucun paiement associé.</p>'}
-    `;
-    document.getElementById('modalDetail').style.display = 'block';
-  } catch(e) {
-    alert('Erreur lors du chargement des détails.');
+      document.getElementById('detailContent').innerHTML =
+        '<div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">' +
+          '<div><strong>Référence :</strong> ' + data.reference + '</div>' +
+          '<div><strong>Exercice budgétaire :</strong> ' + data.annee_academique + '</div>' +
+          '<div style="grid-column:span 2;"><strong>Libellé :</strong> ' + (data.objet || '-') + '</div>' +
+          '<div><strong>Montant initial :</strong> ' + (data.montant_initial ? formatMontant(data.montant_initial) : '-') + '</div>' +
+          '<div><strong>Montant disponible :</strong> ' + formatMontant(data.montant_disponible) + '</div>' +
+          '<div><strong>Montant engagé :</strong> ' + formatMontant(data.montant_engage) + '</div>' +
+          '<div><strong>Montant consommé :</strong> ' + formatMontant(data.montant_consomme) + '</div>' +
+          '<div><strong>Solde restant :</strong> <span style="color:' + (data.solde > 0 ? '#087f5b' : '#e03131') + '; font-weight:bold;">' + formatMontant(data.solde) + '</span></div>' +
+          '<div><strong>Statut :</strong> ' + (data.statut || '-') + '</div>' +
+          '<div><strong>Début validité :</strong> ' + formatDate(data.date_delegation) + '</div>' +
+          '<div><strong>Fin validité :</strong> ' + (data.date_fin ? formatDate(data.date_fin) : '-') + '</div>' +
+        '</div>' + paiementsHtml;
+      document.getElementById('modalDetail').style.display = 'block';
+    })
+    .catch(function(e) {
+      alert('Erreur lors du chargement des détails.');
+    });
+}
+
+function ouvrirAffectation(id) {
+  var delegation = allDelegations.find(function(d) { return d.id == id; });
+  if (!delegation) return;
+
+  document.getElementById('affectation_delegation_id').value = id;
+  document.getElementById('affectationError').style.display = 'none';
+  document.getElementById('affectationSuccess').style.display = 'none';
+
+  document.getElementById('affectationInfo').innerHTML =
+    '<strong>' + delegation.reference + '</strong> — ' + (delegation.objet || '') +
+    '<br><small>Structure actuelle : <strong>' + (delegation.structure ? delegation.structure.nom : 'Aucune') + '</strong>' +
+    ' | Service actuel : <strong>' + (delegation.service ? delegation.service.nom : 'Aucun') + '</strong></small>';
+
+  var structSelect = document.getElementById('affectation_structure_id');
+  structSelect.innerHTML = '<option value="">-- Choisir une structure --</option>';
+  allStructures.forEach(function(s) {
+    var selected = delegation.structure_id == s.id ? ' selected' : '';
+    structSelect.innerHTML += '<option value="' + s.id + '"' + selected + '>' + s.nom + '</option>';
+  });
+
+  majServicesAffectation(delegation.service_id);
+
+  document.getElementById('modalAffectation').style.display = 'block';
+}
+
+function majServicesAffectation(selectedServiceId) {
+  var structureId = document.getElementById('affectation_structure_id').value;
+  var serviceSelect = document.getElementById('affectation_service_id');
+  serviceSelect.innerHTML = '<option value="">-- Aucun service --</option>';
+  if (!structureId) return;
+  var structure = allStructures.find(function(s) { return s.id == structureId; });
+  if (structure && structure.services) {
+    structure.services.forEach(function(svc) {
+      var selected = selectedServiceId == svc.id ? ' selected' : '';
+      serviceSelect.innerHTML += '<option value="' + svc.id + '"' + selected + '>' + svc.nom + '</option>';
+    });
   }
 }
 
-async function validerDelegation(id) {
-  if (!confirm('Voulez-vous valider cette délégation ?')) return;
-  try {
-    await fetch(API + '/delegation-credits/' + id, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-      body: JSON.stringify({ statut: 'Validée' })
-    });
-    loadDelegations();
-  } catch(e) {
-    alert('Erreur lors de la validation.');
+function fermerAffectation() {
+  document.getElementById('modalAffectation').style.display = 'none';
+}
+
+function soumettreAffectation(e) {
+  e.preventDefault();
+  var id = document.getElementById('affectation_delegation_id').value;
+  var structureId = document.getElementById('affectation_structure_id').value;
+  var serviceId = document.getElementById('affectation_service_id').value;
+  var btn = document.getElementById('btnSubmitAffectation');
+
+  if (!structureId) {
+    document.getElementById('affectationError').textContent = 'Veuillez sélectionner une structure.';
+    document.getElementById('affectationError').style.display = 'block';
+    return;
   }
+
+  btn.disabled = true;
+  btn.textContent = 'Affectation en cours...';
+
+  var body = { structure_id: parseInt(structureId) };
+  if (serviceId) body.service_id = parseInt(serviceId);
+
+  fetch(API + '/delegation-credits/' + id + '/affectation', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+    body: JSON.stringify(body)
+  })
+  .then(function(res) {
+    return res.json().then(function(result) {
+      if (!res.ok) {
+        var errMsg = result.errors
+          ? Object.values(result.errors).flat().join(', ')
+          : result.message;
+        document.getElementById('affectationError').textContent = errMsg;
+        document.getElementById('affectationError').style.display = 'block';
+        document.getElementById('affectationSuccess').style.display = 'none';
+      } else {
+        document.getElementById('affectationSuccess').textContent = result.message;
+        document.getElementById('affectationSuccess').style.display = 'block';
+        document.getElementById('affectationError').style.display = 'none';
+        setTimeout(function() { fermerAffectation(); loadDelegations(); }, 1000);
+      }
+      btn.disabled = false;
+      btn.textContent = 'Affecter';
+    });
+  })
+  .catch(function() {
+    document.getElementById('affectationError').textContent = 'Erreur de connexion au serveur.';
+    document.getElementById('affectationError').style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = 'Affecter';
+  });
+}
+
+function validerDelegation(id) {
+  if (!confirm('Voulez-vous valider cette délégation ?')) return;
+  fetch(API + '/delegation-credits/' + id, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+    body: JSON.stringify({ statut: 'Validée' })
+  })
+  .then(function() { loadDelegations(); })
+  .catch(function() { alert('Erreur lors de la validation.'); });
 }
 </script>
 @endpush

@@ -63,44 +63,19 @@
 
     <section class="filter-panel" aria-label="Filtres de la page">
       @foreach ($page['filters'] as $index => $filter)
-        @php
-          $filterId = $slug.'-filter-'.$index;
-          $filterLower = mb_strtolower($filter);
-          $colIndex = -1;
-          foreach ($page['columns'] as $ci => $col) {
-              $colLower = mb_strtolower(strip_tags($col));
-              if ($colLower === $filterLower) { $colIndex = $ci; break; }
-          }
-          if ($colIndex === -1) {
-              foreach ($page['columns'] as $ci => $col) {
-                  $colLower = mb_strtolower(strip_tags($col));
-                  if (str_contains($colLower, $filterLower) || str_contains($filterLower, $colLower)) { $colIndex = $ci; break; }
-              }
-          }
-          $options = [];
-          if ($colIndex >= 0) {
-              foreach ($page['rows'] as $row) {
-                  if (isset($row[$colIndex])) {
-                      $text = trim(strip_tags($row[$colIndex]));
-                      if ($text !== '' && !in_array($text, $options, true)) {
-                          $options[] = $text;
-                      }
-                  }
-              }
-          }
-        @endphp
+        @php($filterId = $slug.'-filter-'.$index)
         <div class="form-group">
           <label for="{{ $filterId }}">{{ $filter }}</label>
-          <select class="form-control" id="{{ $filterId }}" data-filter-col="{{ $colIndex }}">
+          <select class="form-control" id="{{ $filterId }}">
             <option value="">Tous</option>
-            @foreach ($options as $opt)
-              <option value="{{ $opt }}">{{ $opt }}</option>
-            @endforeach
+            <option>Juin 2026</option>
+            <option>IA Dakar</option>
+            <option>Validé</option>
           </select>
         </div>
       @endforeach
       <div class="actions-group">
-        <button class="btn-secondary" type="button" data-apply-filters>Filtrer</button>
+        <button class="btn-secondary" type="button">Filtrer</button>
       </div>
     </section>
 
@@ -166,52 +141,3 @@
     </section>
   </section>
 </main>
-
-@once
-@push('scripts')
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-  var btn = document.querySelector('[data-apply-filters]');
-  if (!btn) return;
-
-  function applyFilters() {
-    var panel = btn.closest('.filter-panel');
-    if (!panel) return;
-    var selects = panel.querySelectorAll('select[data-filter-col]');
-    var table = document.querySelector('#moduleTable');
-    if (!table) return;
-
-    var rows = table.querySelectorAll('tbody tr');
-    var visible = 0;
-
-    rows.forEach(function (row) {
-      var cells = row.querySelectorAll('td');
-      var show = true;
-      selects.forEach(function (select) {
-        var ci = parseInt(select.getAttribute('data-filter-col'), 10);
-        if (ci < 0 || !select.value) return;
-        if (ci < cells.length) {
-          var cellText = (cells[ci].textContent || '').trim();
-          if (cellText.indexOf(select.value) === -1) show = false;
-        }
-      });
-      row.classList.toggle('is-hidden', !show);
-      if (show) visible++;
-    });
-
-    var card = table.closest('.table-card');
-    var empty = card ? card.querySelector('.empty-message') : null;
-    if (empty) empty.classList.toggle('show', visible === 0);
-  }
-
-  btn.addEventListener('click', applyFilters);
-  var panel = btn.closest('.filter-panel');
-  if (panel) {
-    panel.querySelectorAll('select[data-filter-col]').forEach(function (select) {
-      select.addEventListener('change', applyFilters);
-    });
-  }
-});
-</script>
-@endpush
-@endonce
