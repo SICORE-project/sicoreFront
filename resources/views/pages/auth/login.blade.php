@@ -56,7 +56,7 @@
                 <input type="checkbox" name="remember" value="1" {{ old('remember', true) ? 'checked' : '' }}>
                 <span>Se souvenir de moi</span>
               </label>
-              <a class="forgot-link" href="#">Mot de passe oubli&eacute; ?</a>
+              <a class="forgot-link" href="{{ route('password.reset.form') }}">Mot de passe oublié ?</a>
             </div>
 
             @if ($errors->any())
