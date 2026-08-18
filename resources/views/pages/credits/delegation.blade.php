@@ -327,6 +327,85 @@
   </div>
 </div>
 
+<!-- Modal Consommer (enregistrer un paiement) -->
+<div id="modalConsommer" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:1000;">
+  <div style="background:#fff; border-radius:12px; padding:32px; max-width:500px; width:90%; max-height:90vh; overflow-y:auto; margin:auto; position:relative; top:50%; transform:translateY(-50%);">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
+      <h2 style="margin:0; color:#087f5b; font-size:1.25rem;">Enregistrer un paiement</h2>
+      <button type="button" id="btnCloseConsommer" style="background:none; border:none; font-size:1.5rem; cursor:pointer; color:#666;">&times;</button>
+    </div>
+    <div id="consommerInfo" style="background:#f1f3f5; border-radius:8px; padding:16px; margin-bottom:20px;"></div>
+    <form id="formConsommer">
+      <input type="hidden" id="consommer_delegation_id">
+      <div style="display:grid; gap:16px;">
+        <div class="form-group">
+          <label for="consommer_agent">Nom de l'agent *</label>
+          <input type="text" class="form-control" id="consommer_agent" placeholder="Ex : Diallo Mamadou" required>
+        </div>
+        <div class="form-group">
+          <label for="consommer_mois">Mois *</label>
+          <input type="text" class="form-control" id="consommer_mois" placeholder="Ex : Juin 2026" required>
+        </div>
+        <div class="form-group">
+          <label for="consommer_montant">Montant (FCFA) *</label>
+          <input type="number" class="form-control" id="consommer_montant" min="1" step="1" required>
+          <small id="consommerHint" style="color:#868e96; font-size:0.82rem;"></small>
+        </div>
+        <div class="form-group">
+          <label for="consommer_date">Date du paiement</label>
+          <input type="date" class="form-control" id="consommer_date">
+        </div>
+      </div>
+      <div style="display:flex; justify-content:flex-end; gap:12px; margin-top:24px;">
+        <button type="button" class="btn-secondary" id="btnAnnulerConsommer">Annuler</button>
+        <button type="submit" class="btn-primary" id="btnSubmitConsommer">Enregistrer le paiement</button>
+      </div>
+      <p id="consommerError" style="color:#e03131; margin-top:12px; display:none;"></p>
+      <p id="consommerSuccess" style="color:#087f5b; margin-top:12px; display:none;"></p>
+    </form>
+  </div>
+</div>
+
+<!-- Modal Historique Consommations -->
+<div id="modalHistConso" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:1000;">
+  <div style="background:#fff; border-radius:12px; padding:32px; max-width:750px; width:95%; max-height:90vh; overflow-y:auto; margin:auto; position:relative; top:50%; transform:translateY(-50%);">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
+      <h2 style="margin:0; color:#087f5b; font-size:1.25rem;">Suivi des consommations</h2>
+      <button type="button" id="btnCloseHistConso" style="background:none; border:none; font-size:1.5rem; cursor:pointer; color:#666;">&times;</button>
+    </div>
+    <div id="histConsoResume" style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; margin-bottom:20px;"></div>
+    <div style="display:flex; gap:12px; margin-bottom:16px; flex-wrap:wrap; align-items:flex-end;">
+      <div class="form-group" style="margin:0;">
+        <label for="consoDateDebut" style="font-size:0.82rem;">Date début</label>
+        <input type="date" class="form-control" id="consoDateDebut" style="padding:6px 10px;">
+      </div>
+      <div class="form-group" style="margin:0;">
+        <label for="consoDateFin" style="font-size:0.82rem;">Date fin</label>
+        <input type="date" class="form-control" id="consoDateFin" style="padding:6px 10px;">
+      </div>
+      <div class="form-group" style="margin:0;">
+        <label for="consoAgent" style="font-size:0.82rem;">Agent</label>
+        <input type="text" class="form-control" id="consoAgent" placeholder="Nom…" style="padding:6px 10px; width:140px;">
+      </div>
+      <button class="btn-secondary" type="button" id="btnConsoFiltrer" style="padding:7px 14px;">Filtrer</button>
+    </div>
+    <div class="table-responsive">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Agent</th>
+            <th>Mois</th>
+            <th>Montant</th>
+          </tr>
+        </thead>
+        <tbody id="histConsoBody"></tbody>
+      </table>
+    </div>
+    <p id="histConsoEmpty" style="display:none; color:#868e96; text-align:center; margin-top:12px;">Aucun paiement enregistré.</p>
+  </div>
+</div>
+
 <!-- Modal Détail -->
 <div id="modalDetail" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:1000;">
   <div style="background:#fff; border-radius:12px; padding:32px; max-width:600px; width:90%; max-height:90vh; overflow-y:auto; margin:auto; position:relative; top:50%; transform:translateY(-50%);">
@@ -443,6 +522,8 @@ function renderTable(data) {
     actions += '<button class="table-action" type="button" onclick="ouvrirMontant(' + d.id + ')">Montant</button>';
     actions += '<button class="table-action" type="button" onclick="ouvrirEngager(' + d.id + ')">Engager</button>';
     actions += '<button class="table-action" type="button" onclick="ouvrirHistorique(' + d.id + ')">Suivi</button>';
+    actions += '<button class="table-action" type="button" onclick="ouvrirConsommer(' + d.id + ')">Payer</button>';
+    actions += '<button class="table-action" type="button" onclick="ouvrirHistConso(' + d.id + ')">Conso.</button>';
     actions += '<button class="table-action" type="button" onclick="ouvrirAffectation(' + d.id + ')">Affecter</button>';
     if (d.statut === 'En attente') {
       actions += '<button class="table-action primary" type="button" onclick="validerDelegation(' + d.id + ')">Valider</button>';
@@ -592,6 +673,13 @@ function setupEvents() {
   document.getElementById('btnCloseEngager').addEventListener('click', fermerEngager);
   document.getElementById('btnAnnulerEngager').addEventListener('click', fermerEngager);
   document.getElementById('formEngager').addEventListener('submit', soumettreEngagement);
+
+  document.getElementById('btnCloseConsommer').addEventListener('click', fermerConsommer);
+  document.getElementById('btnAnnulerConsommer').addEventListener('click', fermerConsommer);
+  document.getElementById('formConsommer').addEventListener('submit', soumettreConsommation);
+
+  document.getElementById('btnCloseHistConso').addEventListener('click', function() { document.getElementById('modalHistConso').style.display = 'none'; });
+  document.getElementById('btnConsoFiltrer').addEventListener('click', filtrerHistConso);
 
   document.getElementById('btnCloseHistorique').addEventListener('click', function() { document.getElementById('modalHistorique').style.display = 'none'; });
   document.getElementById('btnHistFiltrer').addEventListener('click', filtrerHistorique);
@@ -1072,6 +1160,163 @@ function chargerHistorique(id) {
     })
     .catch(function(e) {
       console.error('Erreur historique:', e);
+    });
+}
+
+function ouvrirConsommer(id) {
+  var delegation = allDelegations.find(function(d) { return d.id == id; });
+  if (!delegation) return;
+
+  document.getElementById('consommer_delegation_id').value = id;
+  document.getElementById('consommerError').style.display = 'none';
+  document.getElementById('consommerSuccess').style.display = 'none';
+  document.getElementById('consommer_agent').value = '';
+  document.getElementById('consommer_mois').value = '';
+  document.getElementById('consommer_montant').value = '';
+  document.getElementById('consommer_date').value = new Date().toISOString().slice(0, 10);
+
+  var resteSolde = delegation.montant_disponible - delegation.montant_consomme;
+  document.getElementById('consommerInfo').innerHTML =
+    '<strong>' + delegation.reference + '</strong> — ' + (delegation.objet || '') +
+    '<br><small>Disponible : <strong>' + formatMontant(delegation.montant_disponible) + '</strong>' +
+    ' | Consommé : <strong>' + formatMontant(delegation.montant_consomme) + '</strong>' +
+    ' | Solde : <strong style="color:' + (resteSolde > 0 ? '#087f5b' : '#e03131') + ';">' + formatMontant(resteSolde) + '</strong></small>';
+
+  document.getElementById('consommerHint').textContent = 'Maximum : ' + formatMontant(resteSolde);
+
+  document.getElementById('modalConsommer').style.display = 'block';
+}
+
+function fermerConsommer() {
+  document.getElementById('modalConsommer').style.display = 'none';
+}
+
+function soumettreConsommation(e) {
+  e.preventDefault();
+  var id = document.getElementById('consommer_delegation_id').value;
+  var btn = document.getElementById('btnSubmitConsommer');
+  var montant = parseFloat(document.getElementById('consommer_montant').value);
+  var agent = document.getElementById('consommer_agent').value.trim();
+  var mois = document.getElementById('consommer_mois').value.trim();
+
+  if (!agent || !mois) {
+    document.getElementById('consommerError').textContent = 'L\'agent et le mois sont obligatoires.';
+    document.getElementById('consommerError').style.display = 'block';
+    return;
+  }
+  if (!montant || montant <= 0) {
+    document.getElementById('consommerError').textContent = 'Le montant doit être supérieur à zéro.';
+    document.getElementById('consommerError').style.display = 'block';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Enregistrement...';
+
+  fetch(API + '/delegation-credits/' + id + '/consommer', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+    body: JSON.stringify({
+      montant: montant,
+      nom_agent: agent,
+      mois: mois,
+      date_paiement: document.getElementById('consommer_date').value || null,
+    })
+  })
+  .then(function(res) {
+    return res.json().then(function(result) {
+      if (!res.ok) {
+        var errMsg = result.errors ? Object.values(result.errors).flat().join(', ') : result.message;
+        document.getElementById('consommerError').textContent = errMsg;
+        document.getElementById('consommerError').style.display = 'block';
+        document.getElementById('consommerSuccess').style.display = 'none';
+      } else {
+        document.getElementById('consommerSuccess').textContent = result.message;
+        document.getElementById('consommerSuccess').style.display = 'block';
+        document.getElementById('consommerError').style.display = 'none';
+        setTimeout(function() { fermerConsommer(); loadDelegations(); }, 1000);
+      }
+      btn.disabled = false;
+      btn.textContent = 'Enregistrer le paiement';
+    });
+  })
+  .catch(function() {
+    document.getElementById('consommerError').textContent = 'Erreur de connexion au serveur.';
+    document.getElementById('consommerError').style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = 'Enregistrer le paiement';
+  });
+}
+
+var histConsoDelegationId = null;
+
+function ouvrirHistConso(id) {
+  histConsoDelegationId = id;
+  document.getElementById('consoDateDebut').value = '';
+  document.getElementById('consoDateFin').value = '';
+  document.getElementById('consoAgent').value = '';
+  chargerHistConso(id);
+  document.getElementById('modalHistConso').style.display = 'block';
+}
+
+function filtrerHistConso() {
+  if (histConsoDelegationId) chargerHistConso(histConsoDelegationId);
+}
+
+function chargerHistConso(id) {
+  var params = [];
+  var dd = document.getElementById('consoDateDebut').value;
+  var df = document.getElementById('consoDateFin').value;
+  var ag = document.getElementById('consoAgent').value.trim();
+  if (dd) params.push('date_debut=' + dd);
+  if (df) params.push('date_fin_filtre=' + df);
+  if (ag) params.push('nom_agent=' + encodeURIComponent(ag));
+  var qs = params.length ? '?' + params.join('&') : '';
+
+  fetch(API + '/delegation-credits/' + id + '/consommations' + qs)
+    .then(function(res) { return res.json(); })
+    .then(function(data) {
+      var d = data.delegation;
+      var taux = d.taux_consommation || 0;
+      var couleurTaux = taux > 80 ? '#e03131' : (taux > 50 ? '#e67700' : '#087f5b');
+
+      document.getElementById('histConsoResume').innerHTML =
+        '<div style="background:#e7f5ff; border-radius:8px; padding:12px; text-align:center;">' +
+          '<div style="font-size:0.78rem; color:#495057;">Disponible</div>' +
+          '<div style="font-size:1.1rem; font-weight:bold; color:#1971c2;">' + formatMontant(d.montant_disponible) + '</div></div>' +
+        '<div style="background:#ffe3e3; border-radius:8px; padding:12px; text-align:center;">' +
+          '<div style="font-size:0.78rem; color:#495057;">Consommé</div>' +
+          '<div style="font-size:1.1rem; font-weight:bold; color:#c92a2a;">' + formatMontant(d.montant_consomme) + '</div>' +
+          '<div style="font-size:0.75rem; color:' + couleurTaux + '; font-weight:600;">' + taux + '% consommé</div></div>' +
+        '<div style="background:#d3f9d8; border-radius:8px; padding:12px; text-align:center;">' +
+          '<div style="font-size:0.78rem; color:#495057;">Solde</div>' +
+          '<div style="font-size:1.1rem; font-weight:bold; color:#087f5b;">' + formatMontant(d.solde) + '</div></div>';
+
+      var paiements = data.paiements || [];
+      var tbody = document.getElementById('histConsoBody');
+      var empty = document.getElementById('histConsoEmpty');
+
+      if (paiements.length === 0) {
+        tbody.innerHTML = '';
+        empty.style.display = 'block';
+      } else {
+        empty.style.display = 'none';
+        tbody.innerHTML = paiements.map(function(p) {
+          return '<tr>' +
+            '<td>' + formatDate(p.date_paiement) + '</td>' +
+            '<td>' + p.nom_agent + '</td>' +
+            '<td>' + p.mois + '</td>' +
+            '<td style="font-weight:600;">' + formatMontant(p.montant) + '</td>' +
+            '</tr>';
+        }).join('');
+
+        tbody.innerHTML += '<tr style="font-weight:bold; background:#f1f3f5;">' +
+          '<td colspan="3">Total (' + data.nombre + ' paiement(s))</td>' +
+          '<td>' + formatMontant(data.total) + '</td></tr>';
+      }
+    })
+    .catch(function(e) {
+      console.error('Erreur historique conso:', e);
     });
 }
 
