@@ -445,6 +445,74 @@
     <div id="soldeDetails" style="display:grid; grid-template-columns:1fr 1fr; gap:12px;"></div>
   </div>
 </div>
+
+<!-- Modal Associer Bulletin -->
+<div id="modalAssocier" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:1000; justify-content:center; align-items:center;">
+  <div style="background:#fff; border-radius:12px; padding:32px; max-width:750px; width:95%; max-height:90vh; overflow-y:auto; margin:auto; position:relative; top:50%; transform:translateY(-50%);">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+      <h2 style="margin:0; color:#087f5b; font-size:1.25rem;"><i class="fa-solid fa-link"></i> Associer un bulletin de salaire</h2>
+      <button type="button" id="btnCloseAssocier" style="background:none; border:none; font-size:1.5rem; cursor:pointer; color:#666;">&times;</button>
+    </div>
+    <div id="associerInfo" style="margin-bottom:16px; padding:12px; background:#f8f9fa; border-radius:8px;"></div>
+    <p id="associerError" style="display:none; background:#ffe3e3; color:#c92a2a; padding:10px; border-radius:6px; font-size:0.88rem;"></p>
+    <p id="associerSuccess" style="display:none; background:#d3f9d8; color:#087f5b; padding:10px; border-radius:6px; font-size:0.88rem;"></p>
+    <input type="hidden" id="associer_delegation_id">
+    <div style="margin-bottom:16px;">
+      <label for="associerSearch" style="font-weight:600; font-size:0.88rem;">Rechercher un bulletin :</label>
+      <div style="display:flex; gap:8px; margin-top:6px;">
+        <input type="text" class="form-control" id="associerSearch" placeholder="Nom, matricule ou référence..." style="flex:1;">
+        <button type="button" class="btn-secondary" id="btnAssocierRechercher">Rechercher</button>
+      </div>
+    </div>
+    <div style="overflow-x:auto;">
+      <table class="table" id="associerTable" style="font-size:0.85rem;">
+        <thead>
+          <tr>
+            <th>Référence</th>
+            <th>Agent</th>
+            <th>Période</th>
+            <th>Net à payer</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="associerBody"></tbody>
+      </table>
+    </div>
+    <p id="associerEmpty" style="display:none; text-align:center; color:#868e96; padding:20px;">Aucun bulletin validé disponible.</p>
+  </div>
+</div>
+
+<!-- Modal Historique Associations -->
+<div id="modalHistAssoc" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:1000; justify-content:center; align-items:center;">
+  <div style="background:#fff; border-radius:12px; padding:32px; max-width:750px; width:95%; max-height:90vh; overflow-y:auto; margin:auto; position:relative; top:50%; transform:translateY(-50%);">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+      <h2 style="margin:0; color:#087f5b; font-size:1.25rem;"><i class="fa-solid fa-clock-rotate-left"></i> Bulletins associés</h2>
+      <button type="button" id="btnCloseHistAssoc" style="background:none; border:none; font-size:1.5rem; cursor:pointer; color:#666;">&times;</button>
+    </div>
+    <div id="histAssocResume" style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; margin-bottom:16px;"></div>
+    <div style="display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap;">
+      <input type="date" class="form-control" id="histAssocDateDebut" style="max-width:150px;">
+      <input type="date" class="form-control" id="histAssocDateFin" style="max-width:150px;">
+      <input type="text" class="form-control" id="histAssocAgent" placeholder="Nom agent..." style="max-width:180px;">
+      <button type="button" class="btn-secondary" id="btnHistAssocFiltrer">Filtrer</button>
+    </div>
+    <div style="overflow-x:auto;">
+      <table class="table" style="font-size:0.85rem;">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Bulletin</th>
+            <th>Agent</th>
+            <th>Période</th>
+            <th>Montant</th>
+          </tr>
+        </thead>
+        <tbody id="histAssocBody"></tbody>
+      </table>
+    </div>
+    <p id="histAssocEmpty" style="display:none; text-align:center; color:#868e96; padding:20px;">Aucune association trouvée.</p>
+  </div>
+</div>
 @endsection
 
 @push('scripts')
@@ -554,6 +622,8 @@ function renderTable(data) {
     actions += '<button class="table-action" type="button" onclick="ouvrirConsommer(' + d.id + ')">Payer</button>';
     actions += '<button class="table-action" type="button" onclick="ouvrirHistConso(' + d.id + ')">Conso.</button>';
     actions += '<button class="table-action" type="button" onclick="ouvrirSolde(' + d.id + ')">Solde</button>';
+    actions += '<button class="table-action" type="button" onclick="ouvrirAssocier(' + d.id + ')">Associer</button>';
+    actions += '<button class="table-action" type="button" onclick="ouvrirHistAssoc(' + d.id + ')">Assoc.</button>';
     actions += '<button class="table-action" type="button" onclick="ouvrirAffectation(' + d.id + ')">Affecter</button>';
     if (d.statut === 'En attente') {
       actions += '<button class="table-action primary" type="button" onclick="validerDelegation(' + d.id + ')">Valider</button>';
@@ -731,6 +801,24 @@ function setupEvents() {
   document.getElementById('formAffectation').addEventListener('submit', soumettreAffectation);
 
   document.getElementById('btnCloseSolde').addEventListener('click', function() { document.getElementById('modalSolde').style.display = 'none'; });
+
+  document.getElementById('btnCloseAssocier').addEventListener('click', function() { document.getElementById('modalAssocier').style.display = 'none'; });
+  document.getElementById('btnAssocierRechercher').addEventListener('click', function() {
+    var id = document.getElementById('associer_delegation_id').value;
+    if (id) chargerBulletinsDisponibles(id);
+  });
+  document.getElementById('associerSearch').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      var id = document.getElementById('associer_delegation_id').value;
+      if (id) chargerBulletinsDisponibles(id);
+    }
+  });
+
+  document.getElementById('btnCloseHistAssoc').addEventListener('click', function() { document.getElementById('modalHistAssoc').style.display = 'none'; });
+  document.getElementById('btnHistAssocFiltrer').addEventListener('click', function() {
+    if (histAssocDelegationId) chargerHistAssoc(histAssocDelegationId);
+  });
 
   document.getElementById('btnExporter').addEventListener('click', exporterCSV);
 
@@ -1358,6 +1446,161 @@ function chargerHistConso(id) {
     })
     .catch(function(e) {
       console.error('Erreur historique conso:', e);
+    });
+}
+
+function ouvrirAssocier(id) {
+  var delegation = allDelegations.find(function(d) { return d.id == id; });
+  if (!delegation) return;
+
+  document.getElementById('associer_delegation_id').value = id;
+  document.getElementById('associerError').style.display = 'none';
+  document.getElementById('associerSuccess').style.display = 'none';
+  document.getElementById('associerSearch').value = '';
+
+  var soldeRestant = delegation.montant_disponible - delegation.montant_consomme;
+  document.getElementById('associerInfo').innerHTML =
+    '<strong>' + delegation.reference + '</strong> — ' + (delegation.objet || '') +
+    '<br><small>Solde restant : <strong style="color:' + (soldeRestant > 0 ? '#087f5b' : '#e03131') + ';">' + formatMontant(soldeRestant) + '</strong>' +
+    ' | Statut : <strong>' + delegation.statut + '</strong></small>';
+
+  chargerBulletinsDisponibles(id);
+  document.getElementById('modalAssocier').style.display = 'block';
+}
+
+function chargerBulletinsDisponibles(id) {
+  var search = document.getElementById('associerSearch').value.trim();
+  var qs = search ? '?search=' + encodeURIComponent(search) : '';
+
+  fetch(API + '/delegation-credits/' + id + '/bulletins-disponibles' + qs)
+    .then(function(res) { return res.json(); })
+    .then(function(data) {
+      var bulletins = data.bulletins || [];
+      var tbody = document.getElementById('associerBody');
+      var empty = document.getElementById('associerEmpty');
+
+      if (bulletins.length === 0) {
+        tbody.innerHTML = '';
+        empty.style.display = 'block';
+      } else {
+        empty.style.display = 'none';
+        tbody.innerHTML = bulletins.map(function(b) {
+          var depStyle = b.depassement ? ' style="color:#e03131; font-weight:bold;"' : ' style="font-weight:600;"';
+          var btnDisabled = b.depassement ? ' disabled title="Solde insuffisant"' : '';
+          var btnClass = b.depassement ? 'table-action" style="opacity:0.5; cursor:not-allowed;"' : 'table-action primary"';
+          return '<tr>' +
+            '<td>' + (b.reference || '-') + '</td>' +
+            '<td>' + b.nom_complet + '<br><small style="color:#868e96;">' + b.matricule + ' | ' + b.corps + '</small></td>' +
+            '<td>' + (b.mois_validite || '-') + '</td>' +
+            '<td' + depStyle + '>' + formatMontant(b.net_a_payer) + (b.depassement ? ' <i class="fa-solid fa-triangle-exclamation" style="color:#e03131;"></i>' : '') + '</td>' +
+            '<td><button class="' + btnClass + ' type="button"' + btnDisabled + ' onclick="confirmerAssociation(' + id + ', ' + b.id + ', \'' + (b.reference || '') + '\', ' + b.net_a_payer + ')">Associer</button></td>' +
+            '</tr>';
+        }).join('');
+      }
+    })
+    .catch(function(e) {
+      console.error('Erreur bulletins:', e);
+    });
+}
+
+function confirmerAssociation(delegationId, bultinId, refBulletin, montant) {
+  if (!confirm('Associer le bulletin ' + refBulletin + ' (' + formatMontant(montant) + ') à cette délégation ?')) return;
+
+  document.getElementById('associerError').style.display = 'none';
+  document.getElementById('associerSuccess').style.display = 'none';
+
+  fetch(API + '/delegation-credits/' + delegationId + '/associer-bulletin', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+    body: JSON.stringify({ bultin_id: bultinId })
+  })
+  .then(function(res) {
+    return res.json().then(function(result) {
+      if (!res.ok) {
+        document.getElementById('associerError').textContent = result.message || 'Erreur lors de l\'association.';
+        document.getElementById('associerError').style.display = 'block';
+      } else {
+        document.getElementById('associerSuccess').textContent = result.message;
+        document.getElementById('associerSuccess').style.display = 'block';
+        chargerBulletinsDisponibles(delegationId);
+        setTimeout(function() { loadDelegations(); }, 1500);
+      }
+    });
+  })
+  .catch(function() {
+    document.getElementById('associerError').textContent = 'Erreur de connexion au serveur.';
+    document.getElementById('associerError').style.display = 'block';
+  });
+}
+
+var histAssocDelegationId = null;
+
+function ouvrirHistAssoc(id) {
+  histAssocDelegationId = id;
+  document.getElementById('histAssocDateDebut').value = '';
+  document.getElementById('histAssocDateFin').value = '';
+  document.getElementById('histAssocAgent').value = '';
+  chargerHistAssoc(id);
+  document.getElementById('modalHistAssoc').style.display = 'block';
+}
+
+function chargerHistAssoc(id) {
+  var params = [];
+  var dd = document.getElementById('histAssocDateDebut').value;
+  var df = document.getElementById('histAssocDateFin').value;
+  var ag = document.getElementById('histAssocAgent').value.trim();
+  if (dd) params.push('date_debut=' + dd);
+  if (df) params.push('date_fin_filtre=' + df);
+  if (ag) params.push('nom_agent=' + encodeURIComponent(ag));
+  var qs = params.length ? '?' + params.join('&') : '';
+
+  fetch(API + '/delegation-credits/' + id + '/associations' + qs)
+    .then(function(res) { return res.json(); })
+    .then(function(data) {
+      var d = data.delegation;
+      var taux = d.montant_disponible > 0
+        ? Math.round((d.montant_consomme / d.montant_disponible) * 100 * 10) / 10
+        : 0;
+      var couleurTaux = taux > 80 ? '#e03131' : (taux > 50 ? '#e67700' : '#087f5b');
+
+      document.getElementById('histAssocResume').innerHTML =
+        '<div style="background:#e7f5ff; border-radius:8px; padding:12px; text-align:center;">' +
+          '<div style="font-size:0.78rem; color:#495057;">Disponible</div>' +
+          '<div style="font-size:1.1rem; font-weight:bold; color:#1971c2;">' + formatMontant(d.montant_disponible) + '</div></div>' +
+        '<div style="background:#ffe3e3; border-radius:8px; padding:12px; text-align:center;">' +
+          '<div style="font-size:0.78rem; color:#495057;">Consommé (bulletins)</div>' +
+          '<div style="font-size:1.1rem; font-weight:bold; color:#c92a2a;">' + formatMontant(d.montant_consomme) + '</div>' +
+          '<div style="font-size:0.75rem; color:' + couleurTaux + '; font-weight:600;">' + taux + '%</div></div>' +
+        '<div style="background:#d3f9d8; border-radius:8px; padding:12px; text-align:center;">' +
+          '<div style="font-size:0.78rem; color:#495057;">Solde</div>' +
+          '<div style="font-size:1.1rem; font-weight:bold; color:#087f5b;">' + formatMontant(d.solde) + '</div></div>';
+
+      var associations = data.associations || [];
+      var tbody = document.getElementById('histAssocBody');
+      var empty = document.getElementById('histAssocEmpty');
+
+      if (associations.length === 0) {
+        tbody.innerHTML = '';
+        empty.style.display = 'block';
+      } else {
+        empty.style.display = 'none';
+        tbody.innerHTML = associations.map(function(a) {
+          return '<tr>' +
+            '<td>' + formatDate(a.date_paiement) + '</td>' +
+            '<td>' + a.bulletin_reference + '</td>' +
+            '<td>' + a.nom_agent + '</td>' +
+            '<td>' + a.mois + '</td>' +
+            '<td style="font-weight:600;">' + formatMontant(a.montant) + '</td>' +
+            '</tr>';
+        }).join('');
+
+        tbody.innerHTML += '<tr style="font-weight:bold; background:#f1f3f5;">' +
+          '<td colspan="4">Total (' + data.nombre + ' bulletin(s))</td>' +
+          '<td>' + formatMontant(data.total) + '</td></tr>';
+      }
+    })
+    .catch(function(e) {
+      console.error('Erreur historique associations:', e);
     });
 }
 
