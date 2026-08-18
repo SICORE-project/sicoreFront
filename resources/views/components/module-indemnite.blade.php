@@ -1,7 +1,7 @@
 {{--
     Composant unique pour tout le module Indemnités — badge de statut de
     convocation, badge de statut d'envoi, fenêtre modale — regroupés dans
-    UN SEUL fichier (à la demande de l'utilisatrice) plutôt que 3 fichiers
+    UN SEUL fichier plutôt que 3 fichiers
     séparés, pour que n'importe quelle page du module Indemnités
     (convocations, et les autres pages du module plus tard) y trouve tout
     au même endroit sans avoir à chercher plusieurs composants.

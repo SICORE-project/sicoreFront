@@ -1,23 +1,28 @@
 @extends('layouts.app')
 
-@section('title', 'SICORE - Nouvelle fiche de déplacement')
+@section('title', 'SICORE - Modifier la fiche de déplacement')
 
 @section('content')
 
 <main class="main-content">
 
 <x-topbar
-    title="Nouvelle fiche de déplacement"
-    subtitle="Indemnites > Frais de déplacement > Nouvelle fiche"
+    title="Modifier la fiche de déplacement"
+    subtitle="Indemnites > Frais de déplacement > Modifier"
     icon="fa-solid fa-route"
 />
 
 <section class="content-area">
 
     {{-- ================================================================
-         NOTA — tout en haut de page (demande utilisatrice), bandeau
-         horizontal reprenant l'encadre "NOTA" + les notes de bas de page
-         (1) a (5) de la feuille de deplacement papier.
+         "EDIT DOIT ETRE COMPLET, BASE TOI SUR L'EDIT DE CONVOCATION" —
+         même principe que convocations/edit.blade.php ("IL FAUT QUE EDIT
+         SOIT EXACTEMENT COMME CREATE MAIS PREREMPLI") : ce formulaire est
+         structurellement IDENTIQUE à create.blade.php (même wizard en 3
+         étapes, mêmes champs, même JS frais-deplacement-wizard.js) — seules
+         différences : method PUT, tout préreempli depuis $fiche, et pas de
+         champs fichier recto/verso (gérés depuis le détail de la fiche,
+         pas ce formulaire).
     ================================================================ --}}
 
     <section class="sidebar-box nota-bandeau">
@@ -40,50 +45,35 @@
 
     </section>
 
-    {{-- ================================================================
-         FORMULAIRE EN 3 ETAPES — meme mecanique que "Nouvelle convocation"
-         (wizard-progress / wizard-panel / data-wizard-next/prev/submit,
-         voir resources/views/pages/indemnites/convocations/create.blade.php
-         et public/assets/js/indemnites/frais-deplacement-wizard.js, une
-         version generique/allegee de convocation-wizard.js sans tout ce
-         qui est specifique aux convocations).
-
-         Les champs suivent le RECTO de la feuille de deplacement papier
-         (Ministere des Finances et du Budget, Direction du Materiel et du
-         Transit Administratif), repartis en 3 etapes :
-           1. Beneficiaire (identite, categorie, montant/indice)
-           2. Trajet et ordre de mission
-           3. Decompte des avances au depart + pieces jointes (recto/verso)
-
-         Tous les champs obligatoires ont leur libelle en gras (classe
-         "required-label") — demande utilisatrice.
-    ================================================================ --}}
-
     <section class="form-card wizard-card convocation-card">
 
         <div class="form-card-header">
             <div>
-                <h2>Feuille de déplacement</h2>
+                <h2>Modifier la fiche de déplacement</h2>
                 <p class="breadcrumb">
-                    {{ $convocation['objet'] ?? '—' }}
-                    &middot; {{ $convocation['session'] ?? '—' }}
+                    {{ $fiche['reference'] ?? '—' }}
+                    &middot; {{ trim(($fiche['beneficiaire']['prenom'] ?? '') . ' ' . ($fiche['beneficiaire']['nom'] ?? '')) ?: '—' }}
                 </p>
             </div>
+
+            <x-module-indemnite type="statut-frais-deplacement" :statut="$fiche['statut'] ?? null" />
         </div>
 
-        <form
-            method="POST"
-            action="{{ route('indemnites.frais-deplacement.store') }}"
-            enctype="multipart/form-data"
-            class="convocation-form"
-            id="ficheDeplacementForm"
-            data-frais-deplacement-wizard
-            novalidate
-        >
-            @csrf
+        {{--
+            Demande utilisatrice : "Pièces jointes (recto/verso) doit être
+            étape 5, juste au lieu de le mettre tout le temps en bas" — le
+            data-frais-deplacement-wizard (et donc la portée des
+            data-wizard-panel/data-step-indicator du JS) est maintenant
+            porté par ce <div> englobant, PAS par le <form> lui-même : ça
+            permet à l'étape 5 (pièces jointes, ses propres <form> par
+            face) et à la barre d'actions de vivre HORS du <form>
+            principal (un <form> ne peut pas en contenir un autre), tout en
+            restant une étape du même wizard. Le bouton "Enregistrer les
+            modifications" référence le <form> via son attribut form="…"
+            (HTML5), puisqu'il n'en est plus un descendant direct.
+        --}}
 
-            <input type="hidden" name="convocation_id" value="{{ $convocationId }}">
-            <input type="hidden" name="beneficiaire_id" value="{{ $beneficiaire['id'] }}">
+        <div class="convocation-form" data-frais-deplacement-wizard>
 
             {{-- ============================================================
                  PROGRESSION
@@ -100,7 +90,7 @@
                 </button>
                 <button class="wizard-step" type="button" data-step-indicator="3">
                     <span class="wizard-step-number">3</span>
-                    <span>Décompte des avances</span>
+                    <span>Décompte</span>
                 </button>
                 <button class="wizard-step" type="button" data-step-indicator="4">
                     <span class="wizard-step-number">4</span>
@@ -123,6 +113,15 @@
                 </div>
             @endif
 
+            <form
+                method="POST"
+                action="{{ route('indemnites.frais-deplacement.update', $fiche['id']) }}"
+                id="ficheDeplacementForm"
+                novalidate
+            >
+                @csrf
+                @method('PUT')
+
             {{-- ============================================================
                  ETAPE 1 — BENEFICIAIRE
             ============================================================ --}}
@@ -138,58 +137,47 @@
                         <div class="form-group full">
                             <label>Délivré à M. (1)</label>
                             <p>
-                                {{ trim(($beneficiaire['prenom'] ?? '') . ' ' . ($beneficiaire['nom'] ?? '')) ?: '—' }}
-                                &middot; Matricule {{ $beneficiaire['matricule'] ?? '—' }}
+                                {{ trim(($fiche['beneficiaire']['prenom'] ?? '') . ' ' . ($fiche['beneficiaire']['nom'] ?? '')) ?: '—' }}
+                                &middot; Matricule {{ $fiche['beneficiaire']['matricule'] ?? '—' }}
                             </p>
                         </div>
 
                         <div class="form-group">
                             <label>Type de bénéficiaire</label>
-                            <p>{{ ucfirst($beneficiaire['categorie_personnel'] ?? '—') }}</p>
+                            <p>{{ ucfirst($fiche['statut_agent'] ?? '—') }}</p>
                         </div>
 
                         {{--
-                            Demande utilisatrice : "si c'est fonctionnaire le
-                            champs indice s'affiche tout juste après type
-                            fonctionnaire, si c'est vacataire champ avec
-                            montant fixe à 150 000 et contractuelle champ
-                            libre" — ce champ (indice/montant selon la
-                            categorie) est directement a cote de "Type de
-                            beneficiaire", pas plus loin dans le formulaire.
+                            Catégorie non modifiable ici (fixée à la
+                            création) — seul le champ correspondant est
+                            éditable : indice pour fonctionnaire, montant
+                            pour contractuel, rien pour vacataire (montant
+                            fixe).
                         --}}
-                        @if (($beneficiaire['categorie_personnel'] ?? null) === 'vacataire')
+                        @if (($fiche['statut_agent'] ?? null) === 'vacataire')
 
                             <div class="form-group">
                                 <label>Montant</label>
                                 <p><strong>150 000 FCFA</strong> (montant fixe vacataire)</p>
                             </div>
 
-                        @elseif (($beneficiaire['categorie_personnel'] ?? null) === 'fonctionnaire')
+                        @elseif (($fiche['statut_agent'] ?? null) === 'fonctionnaire')
 
                             <div class="form-group">
-                                <label for="indice_agent" @class(['required-label' => empty($beneficiaire['indice'])])>
-                                    Indice
-                                    @if (empty($beneficiaire['indice']))<span class="required">*</span>@endif
-                                </label>
-                                @if (! empty($beneficiaire['indice']))
-                                    <p>{{ $beneficiaire['indice'] }}</p>
-                                    <input type="hidden" name="indice_agent" value="{{ $beneficiaire['indice'] }}">
-                                @else
-                                    <input
-                                        type="number"
-                                        step="0.01"
-                                        class="form-control @error('indice_agent') is-invalid @enderror"
-                                        id="indice_agent"
-                                        name="indice_agent"
-                                        value="{{ old('indice_agent') }}"
-                                        placeholder="Ex : 849"
-                                        required
-                                    >
-                                    <small class="form-hint">Pas encore renseigné sur la fiche de cet agent — sera mémorisé pour la prochaine fois.</small>
-                                @endif
+                                <label for="indice_agent" class="required-label">Indice <span class="required">*</span></label>
+                                <input
+                                    type="number"
+                                    step="0.01"
+                                    class="form-control @error('indice_agent') is-invalid @enderror"
+                                    id="indice_agent"
+                                    name="indice_agent"
+                                    value="{{ old('indice_agent', $fiche['indice_agent'] ?? '') }}"
+                                    placeholder="Ex : 849"
+                                    required
+                                >
                             </div>
 
-                        @elseif (($beneficiaire['categorie_personnel'] ?? null) === 'contractuel')
+                        @elseif (($fiche['statut_agent'] ?? null) === 'contractuel')
 
                             <div class="form-group">
                                 <label for="montant_saisi" class="required-label">Montant <span class="required">*</span></label>
@@ -200,7 +188,7 @@
                                     class="form-control @error('montant_saisi') is-invalid @enderror"
                                     id="montant_saisi"
                                     name="montant_saisi"
-                                    value="{{ old('montant_saisi') }}"
+                                    value="{{ old('montant_saisi', $fiche['montant_calcule'] ?? '') }}"
                                     placeholder="Montant en FCFA"
                                     required
                                 >
@@ -222,7 +210,7 @@
                                 class="form-control @error('grade_emploi') is-invalid @enderror"
                                 id="grade_emploi"
                                 name="grade_emploi"
-                                value="{{ old('grade_emploi') }}"
+                                value="{{ old('grade_emploi', $fiche['grade_emploi'] ?? '') }}"
                             >
                         </div>
 
@@ -251,7 +239,7 @@
                                 class="form-control @error('lieu_depart') is-invalid @enderror"
                                 id="lieu_depart"
                                 name="lieu_depart"
-                                value="{{ old('lieu_depart', 'Dakar') }}"
+                                value="{{ old('lieu_depart', $fiche['lieu_depart'] ?? '') }}"
                                 required
                             >
                         </div>
@@ -263,7 +251,7 @@
                                 class="form-control @error('date_depart') is-invalid @enderror"
                                 id="date_depart"
                                 name="date_depart"
-                                value="{{ old('date_depart') }}"
+                                value="{{ old('date_depart', ! empty($fiche['date_depart']) ? \Illuminate\Support\Carbon::parse($fiche['date_depart'])->format('Y-m-d') : '') }}"
                                 required
                             >
                         </div>
@@ -275,7 +263,7 @@
                                 class="form-control @error('heure_depart') is-invalid @enderror"
                                 id="heure_depart"
                                 name="heure_depart"
-                                value="{{ old('heure_depart') }}"
+                                value="{{ old('heure_depart', $fiche['heure_depart'] ?? '') }}"
                             >
                         </div>
 
@@ -286,7 +274,7 @@
                                 class="form-control @error('lieu_destination') is-invalid @enderror"
                                 id="lieu_destination"
                                 name="lieu_destination"
-                                value="{{ old('lieu_destination', $convocation['lieu_examen'] ?? '') }}"
+                                value="{{ old('lieu_destination', $fiche['lieu_destination'] ?? '') }}"
                                 required
                             >
                         </div>
@@ -298,7 +286,7 @@
                                 class="form-control @error('ordre_service_numero') is-invalid @enderror"
                                 id="ordre_service_numero"
                                 name="ordre_service_numero"
-                                value="{{ old('ordre_service_numero') }}"
+                                value="{{ old('ordre_service_numero', $fiche['ordre_service_numero'] ?? '') }}"
                                 placeholder="Ex : 00107/MEFPT"
                             >
                         </div>
@@ -310,7 +298,7 @@
                                 class="form-control @error('ordre_service_date') is-invalid @enderror"
                                 id="ordre_service_date"
                                 name="ordre_service_date"
-                                value="{{ old('ordre_service_date') }}"
+                                value="{{ old('ordre_service_date', ! empty($fiche['ordre_service_date']) ? \Illuminate\Support\Carbon::parse($fiche['ordre_service_date'])->format('Y-m-d') : '') }}"
                             >
                         </div>
 
@@ -321,7 +309,7 @@
                                 class="form-control @error('ordre_service_emetteur') is-invalid @enderror"
                                 id="ordre_service_emetteur"
                                 name="ordre_service_emetteur"
-                                value="{{ old('ordre_service_emetteur') }}"
+                                value="{{ old('ordre_service_emetteur', $fiche['ordre_service_emetteur'] ?? '') }}"
                             >
                         </div>
 
@@ -332,7 +320,7 @@
                                 class="form-control @error('accompagne_de') is-invalid @enderror"
                                 id="accompagne_de"
                                 name="accompagne_de"
-                                value="{{ old('accompagne_de') }}"
+                                value="{{ old('accompagne_de', $fiche['accompagne_de'] ?? '') }}"
                             >
                         </div>
 
@@ -343,7 +331,7 @@
                                 class="form-control @error('groupe') is-invalid @enderror"
                                 id="groupe"
                                 name="groupe"
-                                value="{{ old('groupe') }}"
+                                value="{{ old('groupe', $fiche['groupe'] ?? '') }}"
                                 placeholder="Ex : III"
                             >
                         </div>
@@ -355,7 +343,7 @@
                                 id="itineraire"
                                 name="itineraire"
                                 rows="2"
-                            >{{ old('itineraire') }}</textarea>
+                            >{{ old('itineraire', $fiche['itineraire'] ?? '') }}</textarea>
                         </div>
 
                         <div class="form-group">
@@ -365,7 +353,7 @@
                                 class="form-control @error('date_retour') is-invalid @enderror"
                                 id="date_retour"
                                 name="date_retour"
-                                value="{{ old('date_retour') }}"
+                                value="{{ old('date_retour', ! empty($fiche['date_retour']) ? \Illuminate\Support\Carbon::parse($fiche['date_retour'])->format('Y-m-d') : '') }}"
                                 required
                             >
                         </div>
@@ -377,7 +365,7 @@
                                 class="form-control @error('motif') is-invalid @enderror"
                                 id="motif"
                                 name="motif"
-                                value="{{ old('motif', 'Mission') }}"
+                                value="{{ old('motif', $fiche['motif'] ?? '') }}"
                             >
                         </div>
 
@@ -388,7 +376,7 @@
                                 class="form-control @error('moyen_transport') is-invalid @enderror"
                                 id="moyen_transport"
                                 name="moyen_transport"
-                                value="{{ old('moyen_transport') }}"
+                                value="{{ old('moyen_transport', $fiche['moyen_transport'] ?? '') }}"
                             >
                         </div>
 
@@ -401,7 +389,7 @@
                                 class="form-control @error('distance_km') is-invalid @enderror"
                                 id="distance_km"
                                 name="distance_km"
-                                value="{{ old('distance_km') }}"
+                                value="{{ old('distance_km', $fiche['distance_km'] ?? '') }}"
                             >
                         </div>
 
@@ -414,7 +402,7 @@
                                 class="form-control @error('poids_bagages_kg') is-invalid @enderror"
                                 id="poids_bagages_kg"
                                 name="poids_bagages_kg"
-                                value="{{ old('poids_bagages_kg') }}"
+                                value="{{ old('poids_bagages_kg', $fiche['poids_bagages_kg'] ?? '') }}"
                             >
                         </div>
 
@@ -425,7 +413,7 @@
                                 class="form-control @error('delivre_par') is-invalid @enderror"
                                 id="delivre_par"
                                 name="delivre_par"
-                                value="{{ old('delivre_par') }}"
+                                value="{{ old('delivre_par', $fiche['delivre_par'] ?? '') }}"
                             >
                         </div>
 
@@ -436,7 +424,7 @@
                                 class="form-control @error('date_emission_fiche') is-invalid @enderror"
                                 id="date_emission_fiche"
                                 name="date_emission_fiche"
-                                value="{{ old('date_emission_fiche', date('Y-m-d')) }}"
+                                value="{{ old('date_emission_fiche', ! empty($fiche['date_emission_fiche']) ? \Illuminate\Support\Carbon::parse($fiche['date_emission_fiche'])->format('Y-m-d') : '') }}"
                             >
                         </div>
 
@@ -448,11 +436,6 @@
 
             {{-- ============================================================
                  ETAPE 3 — DECOMPTE DES AVANCES
-
-                 Demande utilisatrice : "pièces jointes devrait être l'étape
-                 5" — déplacé dans sa propre étape (voir plus bas), après le
-                 VERSO, pour ne pas mélanger saisie de décompte et dépôt de
-                 fichiers.
             ============================================================ --}}
 
             <section class="wizard-panel" data-wizard-panel="3" hidden>
@@ -463,14 +446,9 @@
 
                     {{--
                         Demande utilisatrice : "avoir les tableaux
-                        exactement comme les exemples" — le tableau papier
-                        a 2 colonnes en plus de Nombre/Taux/Décompte,
-                        chacune une remarque libre qui couvre tout le
-                        tableau (rowspan), pas une valeur par ligne :
-                        "INDICATION des Réquisitions délivrées au départ"
-                        et "Poids des bagages et du mobilier constaté,
-                        indiquer si la nourriture et le logement sont
-                        assurés".
+                        exactement comme les exemples" — voir
+                        create.blade.php pour le détail des 2 colonnes
+                        ajoutées (rowspan, remarques libres).
                     --}}
                     <div class="table-responsive">
                         <table class="table avance-table" id="avanceTable">
@@ -487,32 +465,32 @@
                             <tbody>
                                 <tr>
                                     <td>Frais de voyage et de transport (5)</td>
-                                    <td><input type="number" step="0.01" min="0" class="form-control" name="avance_frais_transport_nombre" value="{{ old('avance_frais_transport_nombre') }}" data-avance-nombre></td>
-                                    <td><input type="number" step="0.01" min="0" class="form-control" name="avance_frais_transport_taux" value="{{ old('avance_frais_transport_taux') }}" data-avance-taux></td>
+                                    <td><input type="number" step="0.01" min="0" class="form-control" name="avance_frais_transport_nombre" value="{{ old('avance_frais_transport_nombre', $fiche['avance_frais_transport_nombre'] ?? '') }}" data-avance-nombre></td>
+                                    <td><input type="number" step="0.01" min="0" class="form-control" name="avance_frais_transport_taux" value="{{ old('avance_frais_transport_taux', $fiche['avance_frais_transport_taux'] ?? '') }}" data-avance-taux></td>
                                     <td class="avance-decompte" data-avance-decompte>0</td>
                                     <td rowspan="4">
-                                        <textarea class="form-control" name="indication_requisitions" rows="4">{{ old('indication_requisitions') }}</textarea>
+                                        <textarea class="form-control" name="indication_requisitions" rows="4">{{ old('indication_requisitions', $fiche['indication_requisitions'] ?? '') }}</textarea>
                                     </td>
                                     <td rowspan="4">
-                                        <textarea class="form-control" name="poids_bagages_mobilier" rows="4">{{ old('poids_bagages_mobilier') }}</textarea>
+                                        <textarea class="form-control" name="poids_bagages_mobilier" rows="4">{{ old('poids_bagages_mobilier', $fiche['poids_bagages_mobilier'] ?? '') }}</textarea>
                                     </td>
                                 </tr>
                                 <tr>
                                     <td>Indemnité journalière normale</td>
-                                    <td><input type="number" step="0.01" min="0" class="form-control" name="avance_indemnite_normale_nombre" value="{{ old('avance_indemnite_normale_nombre') }}" data-avance-nombre></td>
-                                    <td><input type="number" step="0.01" min="0" class="form-control" name="avance_indemnite_normale_taux" value="{{ old('avance_indemnite_normale_taux') }}" data-avance-taux></td>
+                                    <td><input type="number" step="0.01" min="0" class="form-control" name="avance_indemnite_normale_nombre" value="{{ old('avance_indemnite_normale_nombre', $fiche['avance_indemnite_normale_nombre'] ?? '') }}" data-avance-nombre></td>
+                                    <td><input type="number" step="0.01" min="0" class="form-control" name="avance_indemnite_normale_taux" value="{{ old('avance_indemnite_normale_taux', $fiche['avance_indemnite_normale_taux'] ?? '') }}" data-avance-taux></td>
                                     <td class="avance-decompte" data-avance-decompte>0</td>
                                 </tr>
                                 <tr>
                                     <td>réduite</td>
-                                    <td><input type="number" step="0.01" min="0" class="form-control" name="avance_indemnite_reduite_nombre" value="{{ old('avance_indemnite_reduite_nombre') }}" data-avance-nombre></td>
-                                    <td><input type="number" step="0.01" min="0" class="form-control" name="avance_indemnite_reduite_taux" value="{{ old('avance_indemnite_reduite_taux') }}" data-avance-taux></td>
+                                    <td><input type="number" step="0.01" min="0" class="form-control" name="avance_indemnite_reduite_nombre" value="{{ old('avance_indemnite_reduite_nombre', $fiche['avance_indemnite_reduite_nombre'] ?? '') }}" data-avance-nombre></td>
+                                    <td><input type="number" step="0.01" min="0" class="form-control" name="avance_indemnite_reduite_taux" value="{{ old('avance_indemnite_reduite_taux', $fiche['avance_indemnite_reduite_taux'] ?? '') }}" data-avance-taux></td>
                                     <td class="avance-decompte" data-avance-decompte>0</td>
                                 </tr>
                                 <tr>
                                     <td>partielle</td>
-                                    <td><input type="number" step="0.01" min="0" class="form-control" name="avance_indemnite_partielle_nombre" value="{{ old('avance_indemnite_partielle_nombre') }}" data-avance-nombre></td>
-                                    <td><input type="number" step="0.01" min="0" class="form-control" name="avance_indemnite_partielle_taux" value="{{ old('avance_indemnite_partielle_taux') }}" data-avance-taux></td>
+                                    <td><input type="number" step="0.01" min="0" class="form-control" name="avance_indemnite_partielle_nombre" value="{{ old('avance_indemnite_partielle_nombre', $fiche['avance_indemnite_partielle_nombre'] ?? '') }}" data-avance-nombre></td>
+                                    <td><input type="number" step="0.01" min="0" class="form-control" name="avance_indemnite_partielle_taux" value="{{ old('avance_indemnite_partielle_taux', $fiche['avance_indemnite_partielle_taux'] ?? '') }}" data-avance-taux></td>
                                     <td class="avance-decompte" data-avance-decompte>0</td>
                                 </tr>
                             </tbody>
@@ -535,7 +513,7 @@
                                 class="form-control @error('arrete_somme') is-invalid @enderror"
                                 id="arrete_somme"
                                 name="arrete_somme"
-                                value="{{ old('arrete_somme') }}"
+                                value="{{ old('arrete_somme', $fiche['arrete_somme'] ?? '') }}"
                                 placeholder="Ex : cent cinquante mille francs"
                             >
                         </div>
@@ -549,7 +527,7 @@
                                 class="form-control @error('avance_versee') is-invalid @enderror"
                                 id="avance_versee"
                                 name="avance_versee"
-                                value="{{ old('avance_versee') }}"
+                                value="{{ old('avance_versee', $fiche['avance_versee'] ?? '') }}"
                             >
                         </div>
 
@@ -560,7 +538,7 @@
                                 class="form-control @error('date_fait_avance') is-invalid @enderror"
                                 id="date_fait_avance"
                                 name="date_fait_avance"
-                                value="{{ old('date_fait_avance') }}"
+                                value="{{ old('date_fait_avance', ! empty($fiche['date_fait_avance']) ? \Illuminate\Support\Carbon::parse($fiche['date_fait_avance'])->format('Y-m-d') : '') }}"
                             >
                         </div>
 
@@ -572,17 +550,14 @@
 
             {{-- ============================================================
                  ETAPE 4 — VERSO : DETAIL DES VISAS ET PAIEMENT SUCCESSIFS
-                 EN COURS DE ROUTE
-
-                 Demande utilisatrice : "tu peux faire le verso ?" (reporté
-                 depuis "Verso plus tard" lors du RECTO). Reprend "exactement
-                 comme les exemples" (photo du VERSO) : 4 lignes fixes de
-                 visas (à l'arrivée / au départ, réquisitions, poids des
-                 bagages, logement et nourriture), puis les 2 mini-tableaux
-                 "Avance ou compte perçus en route" et "Règlement définitif"
-                 (même mécanique Nombre x Taux que le tableau RECTO), et une
-                 zone Observations.
+                 EN COURS DE ROUTE — voir create.blade.php pour le détail,
+                 préreempli ici depuis $fiche (visas_route / visa_avance_* /
+                 reglement_* / observations).
             ============================================================ --}}
+
+            @php
+                $visasRoute = $fiche['visas_route'] ?? [];
+            @endphp
 
             <section class="wizard-panel" data-wizard-panel="4" hidden>
 
@@ -612,17 +587,20 @@
                             </thead>
                             <tbody>
                                 @for ($i = 0; $i < 4; $i++)
+                                    @php
+                                        $visa = $visasRoute[$i] ?? [];
+                                    @endphp
                                     <tr>
                                         <td>Visa {{ $i + 1 }}</td>
-                                        <td><input type="text" class="form-control" name="visa_arrivee_lieu[]" value="{{ old('visa_arrivee_lieu.' . $i) }}"></td>
-                                        <td><input type="date" class="form-control" name="visa_arrivee_date[]" value="{{ old('visa_arrivee_date.' . $i) }}"></td>
-                                        <td><input type="time" class="form-control" name="visa_arrivee_heure[]" value="{{ old('visa_arrivee_heure.' . $i) }}"></td>
-                                        <td><input type="text" class="form-control" name="visa_depart_lieu[]" value="{{ old('visa_depart_lieu.' . $i) }}"></td>
-                                        <td><input type="date" class="form-control" name="visa_depart_date[]" value="{{ old('visa_depart_date.' . $i) }}"></td>
-                                        <td><input type="time" class="form-control" name="visa_depart_heure[]" value="{{ old('visa_depart_heure.' . $i) }}"></td>
-                                        <td><input type="text" class="form-control" name="visa_requisitions[]" value="{{ old('visa_requisitions.' . $i) }}"></td>
-                                        <td><input type="text" class="form-control" name="visa_poids_bagages[]" value="{{ old('visa_poids_bagages.' . $i) }}"></td>
-                                        <td><input type="text" class="form-control" name="visa_logement_nourriture[]" value="{{ old('visa_logement_nourriture.' . $i) }}"></td>
+                                        <td><input type="text" class="form-control" name="visa_arrivee_lieu[]" value="{{ old('visa_arrivee_lieu.' . $i, $visa['arrivee_lieu'] ?? '') }}"></td>
+                                        <td><input type="date" class="form-control" name="visa_arrivee_date[]" value="{{ old('visa_arrivee_date.' . $i, ! empty($visa['arrivee_date']) ? \Illuminate\Support\Carbon::parse($visa['arrivee_date'])->format('Y-m-d') : '') }}"></td>
+                                        <td><input type="time" class="form-control" name="visa_arrivee_heure[]" value="{{ old('visa_arrivee_heure.' . $i, $visa['arrivee_heure'] ?? '') }}"></td>
+                                        <td><input type="text" class="form-control" name="visa_depart_lieu[]" value="{{ old('visa_depart_lieu.' . $i, $visa['depart_lieu'] ?? '') }}"></td>
+                                        <td><input type="date" class="form-control" name="visa_depart_date[]" value="{{ old('visa_depart_date.' . $i, ! empty($visa['depart_date']) ? \Illuminate\Support\Carbon::parse($visa['depart_date'])->format('Y-m-d') : '') }}"></td>
+                                        <td><input type="time" class="form-control" name="visa_depart_heure[]" value="{{ old('visa_depart_heure.' . $i, $visa['depart_heure'] ?? '') }}"></td>
+                                        <td><input type="text" class="form-control" name="visa_requisitions[]" value="{{ old('visa_requisitions.' . $i, $visa['requisitions'] ?? '') }}"></td>
+                                        <td><input type="text" class="form-control" name="visa_poids_bagages[]" value="{{ old('visa_poids_bagages.' . $i, $visa['poids_bagages'] ?? '') }}"></td>
+                                        <td><input type="text" class="form-control" name="visa_logement_nourriture[]" value="{{ old('visa_logement_nourriture.' . $i, $visa['logement_nourriture'] ?? '') }}"></td>
                                     </tr>
                                 @endfor
                             </tbody>
@@ -648,20 +626,20 @@
                             <tbody>
                                 <tr>
                                     <td>Indemnité journalière normale</td>
-                                    <td><input type="number" step="0.01" min="0" class="form-control" name="visa_avance_indemnite_normale_nombre" value="{{ old('visa_avance_indemnite_normale_nombre') }}" data-avance-nombre></td>
-                                    <td><input type="number" step="0.01" min="0" class="form-control" name="visa_avance_indemnite_normale_taux" value="{{ old('visa_avance_indemnite_normale_taux') }}" data-avance-taux></td>
+                                    <td><input type="number" step="0.01" min="0" class="form-control" name="visa_avance_indemnite_normale_nombre" value="{{ old('visa_avance_indemnite_normale_nombre', $fiche['visa_avance_indemnite_normale_nombre'] ?? '') }}" data-avance-nombre></td>
+                                    <td><input type="number" step="0.01" min="0" class="form-control" name="visa_avance_indemnite_normale_taux" value="{{ old('visa_avance_indemnite_normale_taux', $fiche['visa_avance_indemnite_normale_taux'] ?? '') }}" data-avance-taux></td>
                                     <td class="avance-decompte" data-avance-decompte>0</td>
                                 </tr>
                                 <tr>
                                     <td>réduite</td>
-                                    <td><input type="number" step="0.01" min="0" class="form-control" name="visa_avance_indemnite_reduite_nombre" value="{{ old('visa_avance_indemnite_reduite_nombre') }}" data-avance-nombre></td>
-                                    <td><input type="number" step="0.01" min="0" class="form-control" name="visa_avance_indemnite_reduite_taux" value="{{ old('visa_avance_indemnite_reduite_taux') }}" data-avance-taux></td>
+                                    <td><input type="number" step="0.01" min="0" class="form-control" name="visa_avance_indemnite_reduite_nombre" value="{{ old('visa_avance_indemnite_reduite_nombre', $fiche['visa_avance_indemnite_reduite_nombre'] ?? '') }}" data-avance-nombre></td>
+                                    <td><input type="number" step="0.01" min="0" class="form-control" name="visa_avance_indemnite_reduite_taux" value="{{ old('visa_avance_indemnite_reduite_taux', $fiche['visa_avance_indemnite_reduite_taux'] ?? '') }}" data-avance-taux></td>
                                     <td class="avance-decompte" data-avance-decompte>0</td>
                                 </tr>
                                 <tr>
                                     <td>partielle</td>
-                                    <td><input type="number" step="0.01" min="0" class="form-control" name="visa_avance_indemnite_partielle_nombre" value="{{ old('visa_avance_indemnite_partielle_nombre') }}" data-avance-nombre></td>
-                                    <td><input type="number" step="0.01" min="0" class="form-control" name="visa_avance_indemnite_partielle_taux" value="{{ old('visa_avance_indemnite_partielle_taux') }}" data-avance-taux></td>
+                                    <td><input type="number" step="0.01" min="0" class="form-control" name="visa_avance_indemnite_partielle_nombre" value="{{ old('visa_avance_indemnite_partielle_nombre', $fiche['visa_avance_indemnite_partielle_nombre'] ?? '') }}" data-avance-nombre></td>
+                                    <td><input type="number" step="0.01" min="0" class="form-control" name="visa_avance_indemnite_partielle_taux" value="{{ old('visa_avance_indemnite_partielle_taux', $fiche['visa_avance_indemnite_partielle_taux'] ?? '') }}" data-avance-taux></td>
                                     <td class="avance-decompte" data-avance-decompte>0</td>
                                 </tr>
                             </tbody>
@@ -683,7 +661,7 @@
                                 class="form-control @error('visa_avance_payer_somme') is-invalid @enderror"
                                 id="visa_avance_payer_somme"
                                 name="visa_avance_payer_somme"
-                                value="{{ old('visa_avance_payer_somme') }}"
+                                value="{{ old('visa_avance_payer_somme', $fiche['visa_avance_payer_somme'] ?? '') }}"
                                 placeholder="Ex : cinquante mille francs"
                             >
                         </div>
@@ -695,7 +673,7 @@
                                 class="form-control @error('visa_avance_lieu') is-invalid @enderror"
                                 id="visa_avance_lieu"
                                 name="visa_avance_lieu"
-                                value="{{ old('visa_avance_lieu') }}"
+                                value="{{ old('visa_avance_lieu', $fiche['visa_avance_lieu'] ?? '') }}"
                             >
                         </div>
 
@@ -706,7 +684,7 @@
                                 class="form-control @error('visa_avance_date') is-invalid @enderror"
                                 id="visa_avance_date"
                                 name="visa_avance_date"
-                                value="{{ old('visa_avance_date') }}"
+                                value="{{ old('visa_avance_date', ! empty($fiche['visa_avance_date']) ? \Illuminate\Support\Carbon::parse($fiche['visa_avance_date'])->format('Y-m-d') : '') }}"
                             >
                         </div>
 
@@ -731,20 +709,20 @@
                             <tbody>
                                 <tr>
                                     <td>Indemnité journalière normale</td>
-                                    <td><input type="number" step="0.01" min="0" class="form-control" name="reglement_indemnite_normale_nombre" value="{{ old('reglement_indemnite_normale_nombre') }}" data-avance-nombre></td>
-                                    <td><input type="number" step="0.01" min="0" class="form-control" name="reglement_indemnite_normale_taux" value="{{ old('reglement_indemnite_normale_taux') }}" data-avance-taux></td>
+                                    <td><input type="number" step="0.01" min="0" class="form-control" name="reglement_indemnite_normale_nombre" value="{{ old('reglement_indemnite_normale_nombre', $fiche['reglement_indemnite_normale_nombre'] ?? '') }}" data-avance-nombre></td>
+                                    <td><input type="number" step="0.01" min="0" class="form-control" name="reglement_indemnite_normale_taux" value="{{ old('reglement_indemnite_normale_taux', $fiche['reglement_indemnite_normale_taux'] ?? '') }}" data-avance-taux></td>
                                     <td class="avance-decompte" data-avance-decompte>0</td>
                                 </tr>
                                 <tr>
                                     <td>réduite</td>
-                                    <td><input type="number" step="0.01" min="0" class="form-control" name="reglement_indemnite_reduite_nombre" value="{{ old('reglement_indemnite_reduite_nombre') }}" data-avance-nombre></td>
-                                    <td><input type="number" step="0.01" min="0" class="form-control" name="reglement_indemnite_reduite_taux" value="{{ old('reglement_indemnite_reduite_taux') }}" data-avance-taux></td>
+                                    <td><input type="number" step="0.01" min="0" class="form-control" name="reglement_indemnite_reduite_nombre" value="{{ old('reglement_indemnite_reduite_nombre', $fiche['reglement_indemnite_reduite_nombre'] ?? '') }}" data-avance-nombre></td>
+                                    <td><input type="number" step="0.01" min="0" class="form-control" name="reglement_indemnite_reduite_taux" value="{{ old('reglement_indemnite_reduite_taux', $fiche['reglement_indemnite_reduite_taux'] ?? '') }}" data-avance-taux></td>
                                     <td class="avance-decompte" data-avance-decompte>0</td>
                                 </tr>
                                 <tr>
                                     <td>partielle</td>
-                                    <td><input type="number" step="0.01" min="0" class="form-control" name="reglement_indemnite_partielle_nombre" value="{{ old('reglement_indemnite_partielle_nombre') }}" data-avance-nombre></td>
-                                    <td><input type="number" step="0.01" min="0" class="form-control" name="reglement_indemnite_partielle_taux" value="{{ old('reglement_indemnite_partielle_taux') }}" data-avance-taux></td>
+                                    <td><input type="number" step="0.01" min="0" class="form-control" name="reglement_indemnite_partielle_nombre" value="{{ old('reglement_indemnite_partielle_nombre', $fiche['reglement_indemnite_partielle_nombre'] ?? '') }}" data-avance-nombre></td>
+                                    <td><input type="number" step="0.01" min="0" class="form-control" name="reglement_indemnite_partielle_taux" value="{{ old('reglement_indemnite_partielle_taux', $fiche['reglement_indemnite_partielle_taux'] ?? '') }}" data-avance-taux></td>
                                     <td class="avance-decompte" data-avance-decompte>0</td>
                                 </tr>
                             </tbody>
@@ -768,7 +746,7 @@
                                 class="form-control @error('reglement_montant_avances') is-invalid @enderror"
                                 id="reglement_montant_avances"
                                 name="reglement_montant_avances"
-                                value="{{ old('reglement_montant_avances') }}"
+                                value="{{ old('reglement_montant_avances', $fiche['reglement_montant_avances'] ?? '') }}"
                             >
                             <small class="form-hint">Le reste à payer est recalculé automatiquement (Total − Avances déjà perçues).</small>
                         </div>
@@ -780,7 +758,7 @@
                                 class="form-control @error('reglement_arrete_somme') is-invalid @enderror"
                                 id="reglement_arrete_somme"
                                 name="reglement_arrete_somme"
-                                value="{{ old('reglement_arrete_somme') }}"
+                                value="{{ old('reglement_arrete_somme', $fiche['reglement_arrete_somme'] ?? '') }}"
                                 placeholder="Ex : cent cinquante mille francs"
                             >
                         </div>
@@ -792,7 +770,7 @@
                                 class="form-control @error('reglement_lieu') is-invalid @enderror"
                                 id="reglement_lieu"
                                 name="reglement_lieu"
-                                value="{{ old('reglement_lieu') }}"
+                                value="{{ old('reglement_lieu', $fiche['reglement_lieu'] ?? '') }}"
                             >
                         </div>
 
@@ -803,7 +781,7 @@
                                 class="form-control @error('reglement_date') is-invalid @enderror"
                                 id="reglement_date"
                                 name="reglement_date"
-                                value="{{ old('reglement_date') }}"
+                                value="{{ old('reglement_date', ! empty($fiche['reglement_date']) ? \Illuminate\Support\Carbon::parse($fiche['reglement_date'])->format('Y-m-d') : '') }}"
                             >
                         </div>
 
@@ -824,7 +802,7 @@
                                 id="observations"
                                 name="observations"
                                 rows="3"
-                            >{{ old('observations') }}</textarea>
+                            >{{ old('observations', $fiche['observations'] ?? '') }}</textarea>
                         </div>
 
                     </div>
@@ -833,51 +811,83 @@
 
             </section>
 
+            </form>
+
             {{-- ============================================================
                  ETAPE 5 — PIECES JOINTES (RECTO/VERSO)
 
-                 Demande utilisatrice : "pièces jointes devrait être l'étape
-                 5" — anciennement mêlé à l'étape 3 ("Décompte et pièces
-                 jointes"), maintenant sa propre étape, dernière du wizard.
+                 Demande utilisatrice : "Pièces jointes (recto/verso) doit
+                 être étape 5, juste au lieu de le mettre tout le temps en
+                 bas" — chaque face a son propre <form> multipart, posté
+                 directement vers FraisDeplacementController::
+                 remplacerJustificatif() (front), HORS du <form> principal
+                 de la fiche (un <form> ne peut pas en contenir un autre).
+                 Mêmes routes que celles déjà utilisées auparavant sur le
+                 show (telecharger/remplacer/destroy).
             ============================================================ --}}
+
+            @php
+                $justificatifsParCommentaire = collect($fiche['justificatifs'] ?? [])->groupBy(fn ($j) => $j['commentaire'] ?? '');
+                $recto = $justificatifsParCommentaire->get('Recto', collect())->first();
+                $verso = $justificatifsParCommentaire->get('Verso', collect())->first();
+            @endphp
 
             <section class="wizard-panel" data-wizard-panel="5" hidden>
 
                 <div class="form-section">
 
-                    {{--
-                        Demande utilisatrice : "fiche de déplacement c'est
-                        recto verso donc faut prendre en compte de ça à
-                        l'upload" — 2 champs fichier distincts (une face
-                        chacun) plutôt qu'un seul comme avant.
-                    --}}
                     <h3>Feuille de déplacement (fichier — recto et verso)</h3>
 
                     <div class="form-grid">
 
-                        <div class="form-group">
-                            <label for="fichier_recto">Recto (scan ou photo)</label>
-                            <input
-                                type="file"
-                                class="form-control @error('fichier_recto') is-invalid @enderror"
-                                id="fichier_recto"
-                                name="fichier_recto"
-                                accept=".pdf,.jpg,.jpeg,.png"
-                            >
-                            <small class="form-hint">PDF, JPG ou PNG, 5 Mo maximum. Optionnel à cette étape.</small>
-                        </div>
+                        @foreach (['Recto' => $recto, 'Verso' => $verso] as $face => $justificatif)
 
-                        <div class="form-group">
-                            <label for="fichier_verso">Verso (scan ou photo)</label>
-                            <input
-                                type="file"
-                                class="form-control @error('fichier_verso') is-invalid @enderror"
-                                id="fichier_verso"
-                                name="fichier_verso"
-                                accept=".pdf,.jpg,.jpeg,.png"
-                            >
-                            <small class="form-hint">PDF, JPG ou PNG, 5 Mo maximum. Optionnel à cette étape, peut être ajouté après coup.</small>
-                        </div>
+                            <div class="form-group">
+                                <label>{{ $face }}</label>
+
+                                @if ($justificatif)
+
+                                    <p>
+                                        <i class="fa-solid fa-paperclip" aria-hidden="true"></i>
+                                        {{ $justificatif['nom_original'] ?? 'Fichier' }}
+                                    </p>
+
+                                    <div class="piece-actions">
+                                        <a class="btn-secondary" href="{{ route('indemnites.frais-deplacement.justificatifs.telecharger', [$fiche['id'], $justificatif['id']]) }}">
+                                            <i class="fa-solid fa-download" aria-hidden="true"></i>
+                                            Télécharger
+                                        </a>
+                                        <form method="POST" action="{{ route('indemnites.frais-deplacement.justificatifs.destroy', [$fiche['id'], $justificatif['id']]) }}" onsubmit="return confirm('Supprimer ce fichier ({{ $face }}) ?');">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button class="btn-secondary" type="submit">
+                                                <i class="fa-solid fa-trash" aria-hidden="true"></i>
+                                                Supprimer
+                                            </button>
+                                        </form>
+                                    </div>
+
+                                @else
+
+                                    <p class="empty-message">Non déposé.</p>
+
+                                @endif
+
+                                <form method="POST" action="{{ route('indemnites.frais-deplacement.justificatifs.remplacer', $fiche['id']) }}" enctype="multipart/form-data" class="piece-form">
+                                    @csrf
+                                    <input type="hidden" name="commentaire" value="{{ $face }}">
+                                    @if ($justificatif)
+                                        <input type="hidden" name="ancien_id" value="{{ $justificatif['id'] }}">
+                                    @endif
+                                    <input type="file" name="fichier" accept=".pdf,.jpg,.jpeg,.png" required>
+                                    <button class="btn-secondary" type="submit">
+                                        {{ $justificatif ? 'Remplacer' : 'Déposer' }}
+                                    </button>
+                                </form>
+
+                            </div>
+
+                        @endforeach
 
                     </div>
 
@@ -887,10 +897,14 @@
 
             {{-- ============================================================
                  ACTIONS
+
+                 Hors du <form> principal désormais (voir plus haut) — le
+                 bouton d'enregistrement lui est rattaché via l'attribut
+                 HTML5 form="ficheDeplacementForm".
             ============================================================ --}}
 
             <div class="form-actions">
-                <a class="btn-secondary" href="{{ route('indemnites.frais-deplacement', ['objet' => $convocation['objet'] ?? null]) }}" data-wizard-cancel>
+                <a class="btn-secondary" href="{{ route('indemnites.frais-deplacement.show', $fiche['id']) }}" data-wizard-cancel>
                     Annuler
                 </a>
                 <button class="btn-secondary" type="button" data-wizard-prev hidden>
@@ -901,13 +915,13 @@
                     Suivant
                     <i class="fa-solid fa-arrow-right"></i>
                 </button>
-                <button class="btn-primary" type="submit" data-wizard-submit hidden>
+                <button class="btn-primary" type="submit" form="ficheDeplacementForm" data-wizard-submit hidden>
                     <i class="fa-solid fa-floppy-disk" aria-hidden="true"></i>
-                    Créer la fiche de déplacement
+                    Enregistrer les modifications
                 </button>
             </div>
 
-        </form>
+        </div>
 
     </section>
 
@@ -916,25 +930,17 @@
 </main>
 
 @push('styles')
-{{-- Feuille de style partagee du wizard "convocations" — voir l'entete de
-     ce fichier CSS : c'est de la ou viennent .convocation-card/.form-card-header/
-     .form-section/.form-grid/.convocation-form/.wizard-progress/.wizard-panel,
-     exactement le meme habillage que "Nouvelle convocation". --}}
 <link rel="stylesheet" href="{{ asset('assets/css/indemnites/convocation-wizard.css') }}">
 <style>
-    /* Formulaire plus large que le max-width partage de .convocation-card
-       (1500px, meme valeur que "Nouvelle convocation") — demande
-       utilisatrice "elargi un peu le formulaire", puis ré-élargi ("y'a
-       des infos qui ne s'affichent pas parce que c'est étroit") pour
-       laisser respirer les tableaux VERSO (9 colonnes) et le tableau des
-       avances (6 colonnes). */
+    /* Demande utilisatrice : "il faut élargir le formulaire, y'a des infos
+       qui ne s'affichent pas parce que c'est étroit" — les tableaux VERSO
+       (9 colonnes) et le tableau des avances (6 colonnes) ont besoin de
+       plus de place que le max-width partagé (1500px, voir
+       convocation-wizard.css) ; élargi ici comme pour "Nouvelle fiche". */
     .convocation-card {
         max-width: 2200px;
     }
 
-    /* NOTA en bandeau horizontal — demande utilisatrice : tout en haut de
-       page, forme horizontale (les 5 definitions cote a cote plutot
-       qu'empilees). */
     .nota-bandeau {
         width: calc(100% - 40px);
         max-width: 2200px;
@@ -986,7 +992,6 @@
         margin-right: 4px;
     }
 
-    /* Champs obligatoires en gras — demande utilisatrice. */
     .form-group label.required-label {
         font-weight: 800;
     }
@@ -1005,6 +1010,31 @@
         font-variant-numeric: tabular-nums;
         white-space: nowrap;
     }
+
+    /* Section "Pièces jointes (recto/verso)" ajoutée sous le wizard —
+       mêmes classes que show.blade.php (piece-actions/piece-form). */
+    .piece-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 10px;
+    }
+
+    .piece-actions form {
+        display: inline;
+    }
+
+    .piece-form {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+        margin-top: 4px;
+    }
+
+    .piece-form input[type="file"] {
+        max-width: 220px;
+    }
 </style>
 @endpush
 
@@ -1014,14 +1044,11 @@
     (function () {
         "use strict";
 
-        // Calcule en direct chaque ligne (Nombre x Taux) et le TOTAL de
-        // CHAQUE tableau "Nombre x Taux" de la fiche — purement indicatif
-        // cote front, le montant enregistre est toujours recalcule cote
-        // serveur (voir FraisDeplacementController::store()/update()).
-        // 3 tableaux au total : "Décompte des avances au départ" (RECTO,
-        // id="avanceTable"/"avanceTotal") + les 2 mini-tableaux du VERSO
-        // ("Avance ou compte perçus en route" et "Règlement définitif",
-        // chacun via son attribut data-avance-total-target).
+        // 3 tableaux "Nombre x Taux" sur cette page : "Décompte des avances
+        // au départ" (RECTO, id="avanceTable"/"avanceTotal") + les 2
+        // mini-tableaux du VERSO ("Avance ou compte perçus en route" et
+        // "Règlement définitif", via data-avance-total-target) — voir
+        // create.blade.php, même mécanique.
         function nombre(valeur) {
             var n = parseFloat(valeur);
             return isNaN(n) ? 0 : n;
