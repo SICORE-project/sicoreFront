@@ -252,6 +252,81 @@
   </div>
 </div>
 
+<!-- Modal Engager -->
+<div id="modalEngager" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:1000;">
+  <div style="background:#fff; border-radius:12px; padding:32px; max-width:500px; width:90%; max-height:90vh; overflow-y:auto; margin:auto; position:relative; top:50%; transform:translateY(-50%);">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
+      <h2 style="margin:0; color:#087f5b; font-size:1.25rem;">Enregistrer un engagement</h2>
+      <button type="button" id="btnCloseEngager" style="background:none; border:none; font-size:1.5rem; cursor:pointer; color:#666;">&times;</button>
+    </div>
+    <div id="engagerInfo" style="background:#f1f3f5; border-radius:8px; padding:16px; margin-bottom:20px;"></div>
+    <form id="formEngager">
+      <input type="hidden" id="engager_delegation_id">
+      <div style="display:grid; gap:16px;">
+        <div class="form-group">
+          <label for="engager_motif">Motif de l'engagement *</label>
+          <input type="text" class="form-control" id="engager_motif" placeholder="Ex : Paie juin 2026" required>
+        </div>
+        <div class="form-group">
+          <label for="engager_montant">Montant (FCFA) *</label>
+          <input type="number" class="form-control" id="engager_montant" min="1" step="1" required>
+          <small id="engagerHint" style="color:#868e96; font-size:0.82rem;"></small>
+        </div>
+        <div class="form-group">
+          <label for="engager_date">Date d'engagement</label>
+          <input type="date" class="form-control" id="engager_date">
+        </div>
+        <div class="form-group">
+          <label for="engager_ref">Référence opération</label>
+          <input type="text" class="form-control" id="engager_ref" placeholder="Optionnel">
+        </div>
+      </div>
+      <div style="display:flex; justify-content:flex-end; gap:12px; margin-top:24px;">
+        <button type="button" class="btn-secondary" id="btnAnnulerEngager">Annuler</button>
+        <button type="submit" class="btn-primary" id="btnSubmitEngager">Engager</button>
+      </div>
+      <p id="engagerError" style="color:#e03131; margin-top:12px; display:none;"></p>
+      <p id="engagerSuccess" style="color:#087f5b; margin-top:12px; display:none;"></p>
+    </form>
+  </div>
+</div>
+
+<!-- Modal Historique Engagements -->
+<div id="modalHistorique" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:1000;">
+  <div style="background:#fff; border-radius:12px; padding:32px; max-width:750px; width:95%; max-height:90vh; overflow-y:auto; margin:auto; position:relative; top:50%; transform:translateY(-50%);">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
+      <h2 style="margin:0; color:#087f5b; font-size:1.25rem;">Suivi des engagements</h2>
+      <button type="button" id="btnCloseHistorique" style="background:none; border:none; font-size:1.5rem; cursor:pointer; color:#666;">&times;</button>
+    </div>
+    <div id="historiqueResume" style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; margin-bottom:20px;"></div>
+    <div style="display:flex; gap:12px; margin-bottom:16px; flex-wrap:wrap; align-items:flex-end;">
+      <div class="form-group" style="margin:0;">
+        <label for="histDateDebut" style="font-size:0.82rem;">Date début</label>
+        <input type="date" class="form-control" id="histDateDebut" style="padding:6px 10px;">
+      </div>
+      <div class="form-group" style="margin:0;">
+        <label for="histDateFin" style="font-size:0.82rem;">Date fin</label>
+        <input type="date" class="form-control" id="histDateFin" style="padding:6px 10px;">
+      </div>
+      <button class="btn-secondary" type="button" id="btnHistFiltrer" style="padding:7px 14px;">Filtrer</button>
+    </div>
+    <div class="table-responsive">
+      <table class="table" id="historiqueTable">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Motif</th>
+            <th>Référence</th>
+            <th>Montant</th>
+          </tr>
+        </thead>
+        <tbody id="historiqueBody"></tbody>
+      </table>
+    </div>
+    <p id="historiqueEmpty" style="display:none; color:#868e96; text-align:center; margin-top:12px;">Aucun engagement enregistré.</p>
+  </div>
+</div>
+
 <!-- Modal Détail -->
 <div id="modalDetail" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:1000;">
   <div style="background:#fff; border-radius:12px; padding:32px; max-width:600px; width:90%; max-height:90vh; overflow-y:auto; margin:auto; position:relative; top:50%; transform:translateY(-50%);">
@@ -366,6 +441,8 @@ function renderTable(data) {
     var servNom = d.service ? d.service.nom : '-';
     var actions = '<button class="table-action" type="button" onclick="voirDetail(' + d.id + ')">Voir</button>';
     actions += '<button class="table-action" type="button" onclick="ouvrirMontant(' + d.id + ')">Montant</button>';
+    actions += '<button class="table-action" type="button" onclick="ouvrirEngager(' + d.id + ')">Engager</button>';
+    actions += '<button class="table-action" type="button" onclick="ouvrirHistorique(' + d.id + ')">Suivi</button>';
     actions += '<button class="table-action" type="button" onclick="ouvrirAffectation(' + d.id + ')">Affecter</button>';
     if (d.statut === 'En attente') {
       actions += '<button class="table-action primary" type="button" onclick="validerDelegation(' + d.id + ')">Valider</button>';
@@ -511,6 +588,13 @@ function setupEvents() {
   document.getElementById('btnAnnulerMontant').addEventListener('click', fermerMontant);
   document.getElementById('nouveau_montant_disponible').addEventListener('input', calculerSoldeEstime);
   document.getElementById('formMontant').addEventListener('submit', soumettreMontant);
+
+  document.getElementById('btnCloseEngager').addEventListener('click', fermerEngager);
+  document.getElementById('btnAnnulerEngager').addEventListener('click', fermerEngager);
+  document.getElementById('formEngager').addEventListener('submit', soumettreEngagement);
+
+  document.getElementById('btnCloseHistorique').addEventListener('click', function() { document.getElementById('modalHistorique').style.display = 'none'; });
+  document.getElementById('btnHistFiltrer').addEventListener('click', filtrerHistorique);
 
   document.getElementById('btnCloseAffectation').addEventListener('click', fermerAffectation);
   document.getElementById('btnAnnulerAffectation').addEventListener('click', fermerAffectation);
@@ -836,6 +920,159 @@ function soumettreMontant(e) {
     btn.disabled = false;
     btn.textContent = 'Enregistrer';
   });
+}
+
+function ouvrirEngager(id) {
+  var delegation = allDelegations.find(function(d) { return d.id == id; });
+  if (!delegation) return;
+
+  document.getElementById('engager_delegation_id').value = id;
+  document.getElementById('engagerError').style.display = 'none';
+  document.getElementById('engagerSuccess').style.display = 'none';
+  document.getElementById('engager_motif').value = '';
+  document.getElementById('engager_montant').value = '';
+  document.getElementById('engager_ref').value = '';
+  document.getElementById('engager_date').value = new Date().toISOString().slice(0, 10);
+
+  var creditDispo = delegation.montant_disponible - delegation.montant_engage;
+  document.getElementById('engagerInfo').innerHTML =
+    '<strong>' + delegation.reference + '</strong> — ' + (delegation.objet || '') +
+    '<br><small>Disponible : <strong>' + formatMontant(delegation.montant_disponible) + '</strong>' +
+    ' | Déjà engagé : <strong>' + formatMontant(delegation.montant_engage) + '</strong>' +
+    ' | Reste : <strong style="color:#087f5b;">' + formatMontant(creditDispo) + '</strong></small>';
+
+  document.getElementById('engagerHint').textContent = 'Maximum : ' + formatMontant(creditDispo);
+
+  document.getElementById('modalEngager').style.display = 'block';
+}
+
+function fermerEngager() {
+  document.getElementById('modalEngager').style.display = 'none';
+}
+
+function soumettreEngagement(e) {
+  e.preventDefault();
+  var id = document.getElementById('engager_delegation_id').value;
+  var montant = parseFloat(document.getElementById('engager_montant').value);
+  var motif = document.getElementById('engager_motif').value.trim();
+  var btn = document.getElementById('btnSubmitEngager');
+
+  if (!motif) {
+    document.getElementById('engagerError').textContent = 'Le motif est obligatoire.';
+    document.getElementById('engagerError').style.display = 'block';
+    return;
+  }
+  if (!montant || montant <= 0) {
+    document.getElementById('engagerError').textContent = 'Le montant doit être supérieur à zéro.';
+    document.getElementById('engagerError').style.display = 'block';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Enregistrement...';
+
+  fetch(API + '/delegation-credits/' + id + '/engager', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+    body: JSON.stringify({
+      montant: montant,
+      motif: motif,
+      date_engagement: document.getElementById('engager_date').value || null,
+      reference_operation: document.getElementById('engager_ref').value || null,
+    })
+  })
+  .then(function(res) {
+    return res.json().then(function(result) {
+      if (!res.ok) {
+        var errMsg = result.errors ? Object.values(result.errors).flat().join(', ') : result.message;
+        document.getElementById('engagerError').textContent = errMsg;
+        document.getElementById('engagerError').style.display = 'block';
+        document.getElementById('engagerSuccess').style.display = 'none';
+      } else {
+        document.getElementById('engagerSuccess').textContent = result.message;
+        document.getElementById('engagerSuccess').style.display = 'block';
+        document.getElementById('engagerError').style.display = 'none';
+        setTimeout(function() { fermerEngager(); loadDelegations(); }, 1000);
+      }
+      btn.disabled = false;
+      btn.textContent = 'Engager';
+    });
+  })
+  .catch(function() {
+    document.getElementById('engagerError').textContent = 'Erreur de connexion au serveur.';
+    document.getElementById('engagerError').style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = 'Engager';
+  });
+}
+
+var historiqueDelegationId = null;
+
+function ouvrirHistorique(id) {
+  historiqueDelegationId = id;
+  document.getElementById('histDateDebut').value = '';
+  document.getElementById('histDateFin').value = '';
+  chargerHistorique(id);
+  document.getElementById('modalHistorique').style.display = 'block';
+}
+
+function filtrerHistorique() {
+  if (historiqueDelegationId) chargerHistorique(historiqueDelegationId);
+}
+
+function chargerHistorique(id) {
+  var params = [];
+  var dd = document.getElementById('histDateDebut').value;
+  var df = document.getElementById('histDateFin').value;
+  if (dd) params.push('date_debut=' + dd);
+  if (df) params.push('date_fin_filtre=' + df);
+  var qs = params.length ? '?' + params.join('&') : '';
+
+  fetch(API + '/delegation-credits/' + id + '/engagements' + qs)
+    .then(function(res) { return res.json(); })
+    .then(function(data) {
+      var d = data.delegation;
+      var taux = d.taux_engagement || 0;
+      var couleurTaux = taux > 80 ? '#e03131' : (taux > 50 ? '#e67700' : '#087f5b');
+
+      document.getElementById('historiqueResume').innerHTML =
+        '<div style="background:#e7f5ff; border-radius:8px; padding:12px; text-align:center;">' +
+          '<div style="font-size:0.78rem; color:#495057;">Disponible</div>' +
+          '<div style="font-size:1.1rem; font-weight:bold; color:#1971c2;">' + formatMontant(d.montant_disponible) + '</div></div>' +
+        '<div style="background:#fff3bf; border-radius:8px; padding:12px; text-align:center;">' +
+          '<div style="font-size:0.78rem; color:#495057;">Engagé</div>' +
+          '<div style="font-size:1.1rem; font-weight:bold; color:#e67700;">' + formatMontant(d.montant_engage) + '</div>' +
+          '<div style="font-size:0.75rem; color:' + couleurTaux + '; font-weight:600;">' + taux + '% engagé</div></div>' +
+        '<div style="background:#d3f9d8; border-radius:8px; padding:12px; text-align:center;">' +
+          '<div style="font-size:0.78rem; color:#495057;">Solde</div>' +
+          '<div style="font-size:1.1rem; font-weight:bold; color:#087f5b;">' + formatMontant(d.solde) + '</div></div>';
+
+      var engagements = data.engagements || [];
+      var tbody = document.getElementById('historiqueBody');
+      var empty = document.getElementById('historiqueEmpty');
+
+      if (engagements.length === 0) {
+        tbody.innerHTML = '';
+        empty.style.display = 'block';
+      } else {
+        empty.style.display = 'none';
+        tbody.innerHTML = engagements.map(function(e) {
+          return '<tr>' +
+            '<td>' + formatDate(e.date_engagement) + '</td>' +
+            '<td>' + e.motif + '</td>' +
+            '<td>' + (e.reference_operation || '-') + '</td>' +
+            '<td style="font-weight:600;">' + formatMontant(e.montant) + '</td>' +
+            '</tr>';
+        }).join('');
+
+        tbody.innerHTML += '<tr style="font-weight:bold; background:#f1f3f5;">' +
+          '<td colspan="3">Total (' + data.nombre + ' opération(s))</td>' +
+          '<td>' + formatMontant(data.total) + '</td></tr>';
+      }
+    })
+    .catch(function(e) {
+      console.error('Erreur historique:', e);
+    });
 }
 
 function validerDelegation(id) {
