@@ -113,78 +113,34 @@
                 action="{{ route('indemnites.convocations.import') }}"
                 enctype="multipart/form-data"
                 class="import-panel-form"
+                data-import-form
             >
                 @csrf
 
                 <div class="form-group">
-                    <label for="import-type-convocation">Type de convocation</label>
-                    <select
-                        class="form-control"
-                        id="import-type-convocation"
-                        name="type_convocation_id"
-                        required
-                    >
-                        <option value="">Sélectionner</option>
-                        @foreach ($typesConvocation ?? [] as $type)
-                            <option value="{{ $type['id'] }}">{{ $type['libelle'] }}</option>
-                        @endforeach
-                    </select>
-                </div>
-
-                <div class="form-group">
                     <label for="import-fichier">Fichier (Word)</label>
-                    <input
-                        class="form-control"
-                        id="import-fichier"
-                        name="fichier"
-                        type="file"
-                        accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                        required
-                    >
-                </div>
-
-                <!-- <form
-                    method="POST"
-                    action="{{ route('indemnites.convocations.import') }}"
-                    enctype="multipart/form-data"
-                    class="import-panel-form"
-                    data-import-form
-                >
-                    @csrf
-
-                    <div class="form-group">
-                        <label for="import-type-convocation">Type de convocation</label>
-                        <select
-                            class="form-control"
-                            id="import-type-convocation"
-                            name="type_convocation_id"
-                            required
-                        >
-                            <option value="">Sélectionner</option>
-                            @foreach ($typesConvocation ?? [] as $type)
-                                <option value="{{ $type['id'] }}">{{ $type['libelle'] }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="import-fichier">Fichier (Word)</label>
+                    <div class="dropzone" data-dropzone>
+                        <div class="dropzone-visual">
+                            <i class="fa-solid fa-cloud-arrow-up" aria-hidden="true"></i>
+                            <span class="dropzone-text" data-dropzone-text>Cliquez pour joindre un fichier</span>
+                        </div>
                         <input
-                            class="form-control"
+                            class="dropzone-input"
                             id="import-fichier"
                             name="fichier"
                             type="file"
                             accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                             required
                         >
-                    </div> -->
-
-                    <div class="actions-group">
-                        <button class="btn-primary" type="submit" data-import-submit>
-                            Importer
-                        </button>
                     </div>
-                </form>
+                </div>
+
+                <div class="actions-group">
+                    <button class="btn-primary" type="submit" data-import-submit>
+                        Importer
+                    </button>
+                </div>
+            </form>
 
         </x-module-indemnite>
 
@@ -457,6 +413,72 @@
         width: 100%;
     }
 
+    /* Zone de depot façon "dropzone" pour le fichier Word — remplace le
+       <input type="file"> brut du navigateur. L'input reste en place, en
+       pleine largeur/hauteur mais invisible (opacity, pas display:none qui
+       exclurait le champ "required" de la validation native dans certains
+       navigateurs) : il capte le clic sur toute la zone, pas besoin de JS
+       pour ouvrir le selecteur de fichier. */
+    .dropzone {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px 12px;
+        border: 1.5px dashed #cbd5e1;
+        border-radius: 10px;
+        background: #fafbfc;
+        text-align: center;
+        transition: border-color .15s ease, background-color .15s ease;
+    }
+
+    .dropzone:hover {
+        border-color: var(--blue, #2563eb);
+        background: #f4f7ff;
+    }
+
+    .dropzone-visual {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        pointer-events: none;
+    }
+
+    .dropzone-visual i {
+        font-size: 22px;
+        color: #94a3b8;
+    }
+
+    .dropzone-text {
+        font-size: 13px;
+        color: var(--text-muted);
+    }
+
+    .dropzone-input {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        opacity: 0;
+        cursor: pointer;
+    }
+
+    .dropzone.has-file {
+        border-style: solid;
+        border-color: var(--blue, #2563eb);
+        background: #eff4ff;
+    }
+
+    .dropzone.has-file .dropzone-visual i {
+        color: var(--blue, #2563eb);
+    }
+
+    .dropzone.has-file .dropzone-text {
+        color: #1e293b;
+        font-weight: 600;
+    }
+
     .checkbox-cell {
         width: 40px;
         text-align: center;
@@ -511,6 +533,23 @@
 <script>
     (function () {
         "use strict";
+
+        document.querySelectorAll("[data-dropzone] [data-piece-fichier], [data-dropzone] input[type=\"file\"]").forEach(function (champ) {
+            var zone = champ.closest("[data-dropzone]");
+            var texte = zone ? zone.querySelector("[data-dropzone-text]") : null;
+
+            champ.addEventListener("change", function () {
+                var fichier = champ.files && champ.files[0];
+
+                if (zone) {
+                    zone.classList.toggle("has-file", !!fichier);
+                }
+
+                if (texte) {
+                    texte.textContent = fichier ? fichier.name : "Cliquez pour joindre un fichier";
+                }
+            });
+        });
 
         var formulaireFiltres = document.querySelector("[data-auto-submit]");
 

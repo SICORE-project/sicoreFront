@@ -8,6 +8,7 @@ use App\Services\Api\Indemnites\PieceJustificativeService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -126,7 +127,7 @@ class PiecesJustificativesController extends Controller
                 ]
             );
 
-            $membres = $this->construireMembres($items);
+            $membres = $this->construireMembres($items, $filtres['centre'] ?? null);
 
             $stats = $this->calculerStats($membres);
         }
@@ -160,8 +161,17 @@ class PiecesJustificativesController extends Controller
      * (N+1 sur la page courante) — même limitation déjà acceptée ailleurs
      * dans ce module (ex. stats de ConvocationsController::index() côté
      * front, calculées sur la page courante uniquement).
+     *
+     * $filtreCentre : le filtre "centre" (ConvocationsController::index()
+     * côté back) ne s'applique qu'au niveau de la CONVOCATION — whereHas()
+     * renvoie toute convocation ayant AU MOINS un centre correspondant, y
+     * compris ses AUTRES centres qui ne correspondent pas. Sans ce filtre
+     * réappliqué ici centre par centre, une convocation à plusieurs centres
+     * affichait les membres de tous ses centres dès qu'un seul filtrait,
+     * même ceux d'un centre non sélectionné (ex: filtrer "CFP Pikine"
+     * affichait aussi les membres de "CFP Dakar" sur la même convocation).
      */
-    private function construireMembres(array $items): array
+    private function construireMembres(array $items, ?string $filtreCentre = null): array
     {
         $membres = [];
 
@@ -169,14 +179,18 @@ class PiecesJustificativesController extends Controller
             $centres = $item['centres'] ?? [];
 
             foreach ($centres as $centre) {
+                if ($filtreCentre && ! str_contains(
+                    Str::lower($centre['centre'] ?? ''),
+                    Str::lower($filtreCentre)
+                )) {
+                    continue;
+                }
+
                 $centreCommun = [
                     'convocation_id' => $item['id'] ?? null,
                     'centre_id' => $centre['id'] ?? null,
                     'centre' => $centre['centre'] ?? null,
-                    // "typeConvocation()" -> cle JSON "type_convocation" (snake_case,
-                    // voir le meme piege documente dans construireLignes() ci-dessus).
                     'objet' => $item['objet'] ?? null,
-                    'type_convocation' => $item['type_convocation']['libelle'] ?? null,
                     'session' => $item['session'] ?? null,
                 ];
 
@@ -241,6 +255,7 @@ class PiecesJustificativesController extends Controller
             'nom' => $enseignant['nom'] ?? null,
             'prenom' => $enseignant['prenom'] ?? null,
             'fonction' => $fonction,
+            'type_convocation' => $this->determinerTypeConvocation($fonction),
             'jury' => $jury,
             'provenance' => $enseignant['lieu_service']['libelle'] ?? null,
             'dossier_complet' => $complet,
@@ -251,6 +266,32 @@ class PiecesJustificativesController extends Controller
             'dossier_resume' => $deposees.'/'.count($dossier).' pièces déposées',
             'dossier' => $dossier,
         ]);
+    }
+
+    /**
+     * Chaque membre a son propre type de convocation (Président de jury,
+     * Président de centre, Correction, Surveillance), déduit de sa fonction
+     * — il n'y a plus de type unique choisi pour toute la convocation à
+     * l'import (voir modal "Importer une convocation"). "Membre du jury"
+     * n'a pas de type dédié (retourne null, affiché "—" dans la vue).
+     *
+     * L'ordre des tests compte pour les anciennes données saisies avec la
+     * fonction "Surveillant/correcteur" (avant la séparation en deux
+     * options distinctes) : elles contiennent à la fois "surveillant" et
+     * "correcteur", et retombent sur "Correction" faute de mieux.
+     */
+    private function determinerTypeConvocation(string $fonction): ?string
+    {
+        $normalisee = Str::of($fonction)->lower()->ascii()->toString();
+
+        return match (true) {
+            str_contains($normalisee, 'president') && str_contains($normalisee, 'jury') => 'Président de jury',
+            str_contains($normalisee, 'chef') && str_contains($normalisee, 'centre') => 'Président de centre',
+            str_contains($normalisee, 'president') && str_contains($normalisee, 'centre') => 'Président de centre',
+            str_contains($normalisee, 'correct') => 'Correction',
+            str_contains($normalisee, 'surveill') => 'Surveillance',
+            default => null,
+        };
     }
 
     /**

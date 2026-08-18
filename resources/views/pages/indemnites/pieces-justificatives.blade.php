@@ -194,16 +194,7 @@
                                     </td>
                                     <td class="actions-cell">
                                         <div class="table-actions-inline">
-                                            <button
-                                                class="table-action"
-                                                type="button"
-                                                data-modal-open="modal-voir-dossier"
-                                                data-dossier-label="{{ trim(($membre['prenom'] ?? '').' '.($membre['nom'] ?? '')) }} — {{ $membre['centre'] ?? '—' }}"
-                                                data-dossier-json="{{ json_encode($membre['dossier'] ?? []) }}"
-                                            >
-                                                Voir le dossier
-                                            </button>
-                                            <button
+                                              <button
                                                 class="table-action"
                                                 type="button"
                                                 data-modal-open="modal-piece-justificative"
@@ -214,6 +205,16 @@
                                             >
                                                 Ajouter une pièce
                                             </button>
+                                            <button
+                                                class="table-action"
+                                                type="button"
+                                                data-modal-open="modal-voir-dossier"
+                                                data-dossier-label="{{ trim(($membre['prenom'] ?? '').' '.($membre['nom'] ?? '')) }} — {{ $membre['centre'] ?? '—' }}"
+                                                data-dossier-json="{{ json_encode($membre['dossier'] ?? []) }}"
+                                            >
+                                                Voir le dossier
+                                            </button>
+                                          
                                         </div>
                                     </td>
                                 </tr>
@@ -304,27 +305,57 @@
 
                         <div class="form-group">
                             <label for="piece-service-fait">Service fait <span class="form-group-hint">(PDF, JPG, PNG — 100 Ko max)</span></label>
-                            <input class="form-control" id="piece-service-fait" type="file" name="service_fait" accept=".pdf,.jpg,.jpeg,.png" required data-piece-fichier="service_fait">
+                            <div class="dropzone" data-dropzone>
+                                <div class="dropzone-visual">
+                                    <i class="fa-solid fa-cloud-arrow-up" aria-hidden="true"></i>
+                                    <span class="dropzone-text" data-dropzone-text>Cliquez pour joindre un fichier</span>
+                                </div>
+                                <input class="dropzone-input" id="piece-service-fait" type="file" name="service_fait" accept=".pdf,.jpg,.jpeg,.png" required data-piece-fichier="service_fait">
+                            </div>
                         </div>
 
                         <div class="form-group">
                             <label for="piece-ordre-mission">Ordre de mission <span class="form-group-hint">(PDF, JPG, PNG — 100 Ko max)</span></label>
-                            <input class="form-control" id="piece-ordre-mission" type="file" name="ordre_mission" accept=".pdf,.jpg,.jpeg,.png" required data-piece-fichier="ordre_mission">
+                            <div class="dropzone" data-dropzone>
+                                <div class="dropzone-visual">
+                                    <i class="fa-solid fa-cloud-arrow-up" aria-hidden="true"></i>
+                                    <span class="dropzone-text" data-dropzone-text>Cliquez pour joindre un fichier</span>
+                                </div>
+                                <input class="dropzone-input" id="piece-ordre-mission" type="file" name="ordre_mission" accept=".pdf,.jpg,.jpeg,.png" required data-piece-fichier="ordre_mission">
+                            </div>
                         </div>
 
                         <div class="form-group">
                             <label for="piece-rapport-mission">Rapport de mission <span class="form-group-hint">(PDF, JPG, PNG — 100 Ko max)</span></label>
-                            <input class="form-control" id="piece-rapport-mission" type="file" name="rapport_mission" accept=".pdf,.jpg,.jpeg,.png" required data-piece-fichier="rapport_mission">
+                            <div class="dropzone" data-dropzone>
+                                <div class="dropzone-visual">
+                                    <i class="fa-solid fa-cloud-arrow-up" aria-hidden="true"></i>
+                                    <span class="dropzone-text" data-dropzone-text>Cliquez pour joindre un fichier</span>
+                                </div>
+                                <input class="dropzone-input" id="piece-rapport-mission" type="file" name="rapport_mission" accept=".pdf,.jpg,.jpeg,.png" required data-piece-fichier="rapport_mission">
+                            </div>
                         </div>
 
                         <div class="form-group">
                             <label for="piece-bulletin-salaire">Bulletin de salaire <span class="form-group-hint">(PDF, JPG, PNG — 100 Ko max)</span></label>
-                            <input class="form-control" id="piece-bulletin-salaire" type="file" name="bulletin_salaire" accept=".pdf,.jpg,.jpeg,.png" required data-piece-fichier="bulletin_salaire">
+                            <div class="dropzone" data-dropzone>
+                                <div class="dropzone-visual">
+                                    <i class="fa-solid fa-cloud-arrow-up" aria-hidden="true"></i>
+                                    <span class="dropzone-text" data-dropzone-text>Cliquez pour joindre un fichier</span>
+                                </div>
+                                <input class="dropzone-input" id="piece-bulletin-salaire" type="file" name="bulletin_salaire" accept=".pdf,.jpg,.jpeg,.png" required data-piece-fichier="bulletin_salaire">
+                            </div>
                         </div>
 
                         <div class="form-group">
                             <label for="piece-accuse-reception">Accusé de réception <span class="form-group-hint">(PDF, JPG, PNG — 100 Ko max)</span></label>
-                            <input class="form-control" id="piece-accuse-reception" type="file" name="accuse_reception" accept=".pdf,.jpg,.jpeg,.png" required data-piece-fichier="accuse_reception">
+                            <div class="dropzone" data-dropzone>
+                                <div class="dropzone-visual">
+                                    <i class="fa-solid fa-cloud-arrow-up" aria-hidden="true"></i>
+                                    <span class="dropzone-text" data-dropzone-text>Cliquez pour joindre un fichier</span>
+                                </div>
+                                <input class="dropzone-input" id="piece-accuse-reception" type="file" name="accuse_reception" accept=".pdf,.jpg,.jpeg,.png" required data-piece-fichier="accuse_reception">
+                            </div>
                         </div>
 
                     </div>
@@ -544,6 +575,72 @@
 
     .import-panel-form .actions-group {
         margin: 0;
+    }
+
+    /* Zone de depot façon "dropzone" pour les 5 champs fichiers — remplace
+       le <input type="file"> brut du navigateur. L'input reste en place,
+       en pleine largeur/hauteur mais invisible (opacity, pas display:none
+       qui exclurait le champ "required" de la validation native dans
+       certains navigateurs) : il capte le clic sur toute la zone, pas
+       besoin de JS pour ouvrir le selecteur de fichier. */
+    .dropzone {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px 12px;
+        border: 1.5px dashed #cbd5e1;
+        border-radius: 10px;
+        background: #fafbfc;
+        text-align: center;
+        transition: border-color .15s ease, background-color .15s ease;
+    }
+
+    .dropzone:hover {
+        border-color: var(--blue);
+        background: #f4f7ff;
+    }
+
+    .dropzone-visual {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        pointer-events: none;
+    }
+
+    .dropzone-visual i {
+        font-size: 22px;
+        color: #94a3b8;
+    }
+
+    .dropzone-text {
+        font-size: 13px;
+        color: var(--text-muted);
+    }
+
+    .dropzone-input {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        opacity: 0;
+        cursor: pointer;
+    }
+
+    .dropzone.has-file {
+        border-style: solid;
+        border-color: var(--blue);
+        background: #eff4ff;
+    }
+
+    .dropzone.has-file .dropzone-visual i {
+        color: var(--blue);
+    }
+
+    .dropzone.has-file .dropzone-text {
+        color: #1e293b;
+        font-weight: 600;
     }
 
     .import-panel-form .actions-group .btn-primary {
@@ -787,10 +884,28 @@
             }
         }
 
+        function mettreAJourDropzone(champ) {
+            var zone = champ.closest("[data-dropzone]");
+
+            if (!zone) {
+                return;
+            }
+
+            var texte = zone.querySelector("[data-dropzone-text]");
+            var fichier = champ.files && champ.files[0];
+
+            zone.classList.toggle("has-file", !!fichier);
+
+            if (texte) {
+                texte.textContent = fichier ? fichier.name : "Cliquez pour joindre un fichier";
+            }
+        }
+
         if (formulairePiece) {
             formulairePiece.querySelectorAll("[data-piece-fichier]").forEach(function (champ) {
                 champ.addEventListener("change", function () {
                     verifierTailleFichier(champ);
+                    mettreAJourDropzone(champ);
                     mettreAJourRecap();
                 });
             });

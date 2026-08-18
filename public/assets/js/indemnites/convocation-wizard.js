@@ -250,6 +250,45 @@
     updateProgressBar();
   }
 
+  /*
+    Apres un rechargement suite a une erreur de validation cote serveur
+    (redirection back()->withErrors()), l'assistant redemarrait toujours a
+    l'etape 1 - si l'erreur portait sur un champ de l'etape 2 (centres,
+    membres), elle restait invisible tant que l'utilisateur ne cliquait pas
+    lui-meme sur l'onglet "2. Centres, jurys et membres". Cette fonction
+    detecte le premier champ marque en erreur par Blade (".is-invalid" sur
+    l'input, ou ".field-error" pour les erreurs de tableau comme "centres")
+    et bascule directement sur son etape, sans passer par goToStep() (qui
+    bloquerait un saut en avant tant que l'etape 1 n'est pas valide cote
+    client).
+  */
+  function jumpToServerErrorStep() {
+    var form = getWizard();
+
+    if (!form) {
+      return;
+    }
+
+    var champErreur = form.querySelector(".is-invalid, .field-error");
+
+    if (!champErreur) {
+      return;
+    }
+
+    var panel = champErreur.closest("[data-wizard-panel]");
+
+    if (!panel) {
+      return;
+    }
+
+    var step = Number(panel.getAttribute("data-wizard-panel"));
+
+    if (step && step !== currentStep) {
+      currentStep = step;
+      updateProgressBar();
+    }
+  }
+
   function previousStep() {
     currentStep = Math.max(currentStep - 1, 1);
 
@@ -1568,6 +1607,8 @@
     initCentres();
 
     hydrateFromPrefill();
+
+    jumpToServerErrorStep();
 
     // Verrou explicite (pas seulement "disabled" sur le bouton) : bloque
     // tout second envoi meme si le style "disabled" n'a pas eu le temps de

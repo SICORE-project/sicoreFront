@@ -52,11 +52,6 @@
                 <div class="form-grid">
 
                     <div class="form-group">
-                        <label>Type de convocation</label>
-                        <p>{{ $convocation->type_convocation['libelle'] ?? '—' }}</p>
-                    </div>
-
-                    <div class="form-group">
                         <label>Session</label>
                         <p>{{ $convocation->session ?? '—' }}</p>
                     </div>

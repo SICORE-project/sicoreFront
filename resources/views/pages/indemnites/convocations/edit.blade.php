@@ -112,29 +112,6 @@
                             @error('session')<p class="field-error">{{ $message }}</p>@enderror
                         </div>
 
-                        <div class="form-group full">
-                            <label for="type_convocation_id">Type de convocation</label>
-                            <select
-                                class="form-control @error('type_convocation_id') is-invalid @enderror"
-                                id="type_convocation_id"
-                                name="type_convocation_id"
-                            >
-                                <option value="">Sélectionner</option>
-                                @foreach ($typesConvocation ?? [] as $type)
-                                    <option
-                                        value="{{ $type['id'] }}"
-                                        @selected((string) old('type_convocation_id', $convocation->type_convocation_id ?? '') === (string) $type['id'])
-                                    >
-                                        {{ $type['libelle'] }}
-                                    </option>
-                                @endforeach
-                            </select>
-                            <p class="section-description" style="margin: 6px 0 0;">
-                                Détermine le modèle utilisé pour le PDF (ex : tableau centre/jury/métier pour un jury d'examen).
-                            </p>
-                            @error('type_convocation_id')<p class="field-error">{{ $message }}</p>@enderror
-                        </div>
-
                         <div class="form-group">
                             <label for="date_emission">Date d'émission <span class="required">*</span></label>
                             <input
@@ -402,7 +379,7 @@
                                 <tr>
                                     <th>Prénom</th>
                                     <th>Nom</th>
-                                    <th>Fonction</th>
+                                    <th>Type de convocation</th>
                                     <th>Statut</th>
                                     <th>Provenance</th>
                                     <th>Téléphone</th>
@@ -453,13 +430,11 @@
                     <td data-label="Nom">
                         <input class="form-control" type="text" placeholder="Nom" data-member-nom>
                     </td>
-                    <td data-label="Fonction">
+                    <td data-label="Type de convocation">
                         <select class="form-control" data-member-fonction>
                             <option value="">Sélectionner</option>
-                            <option value="Président de jury">Président de jury</option>
-                            <option value="Membre du jury">Membre du jury</option>
-                            <option value="Surveillant/correcteur">Surveillant/correcteur</option>
-                            <option value="Chef de centre">Chef de centre</option>
+                            <option value="Correction">Correction</option>
+                            <option value="Surveillant">Surveillant</option>
                         </select>
                     </td>
                     <td data-label="Statut">

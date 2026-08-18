@@ -186,12 +186,11 @@ class ConvocationsController extends Controller
     {
         $data = $request->validate([
             'fichier' => ['required', 'file', 'mimes:docx', 'max:5120'],
-            'type_convocation_id' => ['required', 'integer'],
         ]);
 
         $utilisateurId = session('sicore_user.id');
 
-        $resultat = $this->convocations->importer($request->file('fichier'), $utilisateurId, $data['type_convocation_id']);
+        $resultat = $this->convocations->importer($request->file('fichier'), $utilisateurId);
 
         if (! $resultat['success']) {
             return redirect()
@@ -385,7 +384,7 @@ class ConvocationsController extends Controller
 
         if (! $resultat['success']) {
             return back()->withInput()->withErrors(
-                $resultat['errors'] ?? ['objet' => $resultat['message'] ?? 'Erreur lors de la creation.']
+                $resultat['errors'] ?? ['erreur_generale' => $resultat['message'] ?? 'Erreur lors de la creation des informations générales de la convocation.']
             );
         }
 
@@ -406,16 +405,29 @@ class ConvocationsController extends Controller
         $centreIdParIndex = [];
         $metierIdParIndexParCentre = [];
 
+        // La convocation existe deja a ce stade (creee ci-dessus) : un echec
+        // sur les centres ou les beneficiaires ne doit plus etre ignore en
+        // silence — avant ce correctif, la page redirigeait quand meme vers
+        // "Convocation creee avec succes." meme si aucun centre/membre
+        // n'avait ete enregistre, sans aucun moyen de savoir ce qui avait
+        // vraiment ete sauvegarde. On redirige desormais vers la page
+        // "Modifier" de la convocation deja creee (pas back(), qui ferait
+        // perdre la saisie ET donnerait l'illusion que rien n'a ete
+        // enregistre) avec un message d'erreur precis sur l'etape en cause.
         if (! empty($centres)) {
             $centresResultat = $this->convocations->creerCentres($convocationId, $centres);
 
-            if ($centresResultat['success']) {
-                foreach (($centresResultat['data'] ?? []) as $index => $centreCree) {
-                    $centreIdParIndex[$index] = $centreCree['id'] ?? null;
+            if (! $centresResultat['success']) {
+                return redirect()
+                    ->route('indemnites.convocations.edit', $convocationSlug)
+                    ->with('error', "La convocation a été enregistrée, mais l'ajout des centres d'examen a échoué : ".($centresResultat['message'] ?? 'erreur inconnue').". Complétez l'étape « Centres, jurys et membres » ci-dessous pour réessayer.");
+            }
 
-                    foreach (($centreCree['metiers'] ?? []) as $position => $metierCree) {
-                        $metierIdParIndexParCentre[$index][$position] = $metierCree['id'] ?? null;
-                    }
+            foreach (($centresResultat['data'] ?? []) as $index => $centreCree) {
+                $centreIdParIndex[$index] = $centreCree['id'] ?? null;
+
+                foreach (($centreCree['metiers'] ?? []) as $position => $metierCree) {
+                    $metierIdParIndexParCentre[$index][$position] = $metierCree['id'] ?? null;
                 }
             }
         }
@@ -440,7 +452,13 @@ class ConvocationsController extends Controller
                 ];
             }, $beneficiaires);
 
-            $this->convocations->ajouterBeneficiairesAvecFonction($convocationId, $beneficiaires);
+            $beneficiairesResultat = $this->convocations->ajouterBeneficiairesAvecFonction($convocationId, $beneficiaires);
+
+            if (! $beneficiairesResultat['success']) {
+                return redirect()
+                    ->route('indemnites.convocations.edit', $convocationSlug)
+                    ->with('error', "La convocation et ses centres ont été enregistrés, mais l'ajout des membres du jury a échoué : ".($beneficiairesResultat['message'] ?? 'erreur inconnue').". Ajoutez-les depuis l'étape « Centres, jurys et membres » ci-dessous.");
+            }
         }
 
         return redirect()
@@ -784,7 +802,7 @@ class ConvocationsController extends Controller
 
         if (! $resultat['success']) {
             return back()->withInput()->withErrors(
-                $resultat['errors'] ?? ['objet' => $resultat['message'] ?? 'Erreur lors de la mise a jour.']
+                $resultat['errors'] ?? ['erreur_generale' => $resultat['message'] ?? 'Erreur lors de la mise a jour.']
             );
         }
 
