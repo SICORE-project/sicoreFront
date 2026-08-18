@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\PermissionController;
+use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\DashboardController;
 
 /*
@@ -18,8 +19,17 @@ Route::middleware('sicore.auth')
 
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
 
-        Route::view('/utilisateurs', 'pages.administration.utilisateurs')
+        Route::get('/utilisateurs', [UserController::class, 'index'])
             ->name('utilisateurs.index');
+
+        Route::post('/utilisateurs', [UserController::class, 'store'])
+            ->name('utilisateurs.store');
+
+        Route::put('/utilisateurs/{id}', [UserController::class, 'update'])
+            ->name('utilisateurs.update');
+
+        Route::put('/utilisateurs/{id}/acces-organisationnel', [UserController::class, 'updateOrganisation'])
+            ->name('utilisateurs.organisation.update');
 
         // Ces deux routes passent maintenant par les contrôleurs existants (index())
         // pour récupérer les rôles / permissions réels depuis l'API
