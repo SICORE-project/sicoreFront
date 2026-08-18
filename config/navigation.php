@@ -40,6 +40,7 @@ return [
             ['label' => 'Délégation de crédit', 'route' => 'credits.delegation', 'icon' => 'fa-solid fa-scale-balanced'],
             ['label' => 'Édition des délégations', 'route' => 'credits.edition-delegations', 'icon' => 'fa-solid fa-file-signature'],
             ['label' => 'Édition des engagements', 'route' => 'credits.edition-engagements', 'icon' => 'fa-solid fa-clipboard-check'],
+            ['label' => 'État des crédits', 'route' => 'credits.etat-credits', 'icon' => 'fa-solid fa-chart-pie'],
         ],
     ],
     [

@@ -87,4 +87,7 @@ Route::middleware('sicore.auth')
         Route::view('/edition-engagements', 'pages.credits.edition-engagements')
             ->name('edition-engagements');
 
+        Route::view('/etat-credits', 'pages.credits.etat-credits')
+            ->name('etat-credits');
+
     });
