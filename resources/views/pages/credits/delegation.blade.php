@@ -102,9 +102,10 @@
               <th>Structure</th>
               <th>Service</th>
               <th>Montant initial</th>
-              <th>Montant disponible</th>
-              <th>Début validité</th>
-              <th>Fin validité</th>
+              <th>Disponible</th>
+              <th>Engagé</th>
+              <th>Consommé</th>
+              <th>Solde</th>
               <th>Statut</th>
               <th class="actions-cell">Actions</th>
             </tr>
@@ -416,6 +417,34 @@
     <div id="detailContent"></div>
   </div>
 </div>
+
+<!-- Modal Solde -->
+<div id="modalSolde" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:1000; justify-content:center; align-items:center;">
+  <div style="background:#fff; border-radius:12px; padding:32px; max-width:650px; width:90%; max-height:90vh; overflow-y:auto; margin:auto; position:relative; top:50%; transform:translateY(-50%);">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
+      <h2 style="margin:0; color:#087f5b; font-size:1.25rem;"><i class="fa-solid fa-wallet"></i> Suivi du solde</h2>
+      <button type="button" id="btnCloseSolde" style="background:none; border:none; font-size:1.5rem; cursor:pointer; color:#666;">&times;</button>
+    </div>
+    <div id="soldeAlerteBanner" style="display:none; padding:12px 16px; border-radius:8px; margin-bottom:16px; font-weight:600;"></div>
+    <div id="soldeInfo" style="margin-bottom:16px; padding:12px; background:#f8f9fa; border-radius:8px;"></div>
+    <div id="soldeBarreContainer" style="margin-bottom:20px;">
+      <div style="display:flex; justify-content:space-between; font-size:0.8rem; color:#868e96; margin-bottom:4px;">
+        <span>Consommation du crédit</span>
+        <span id="soldePctLabel">0%</span>
+      </div>
+      <div style="background:#e9ecef; border-radius:8px; height:24px; overflow:hidden; position:relative;">
+        <div id="barreEngage" style="position:absolute; left:0; top:0; height:100%; background:#ffd43b; border-radius:8px 0 0 8px; transition:width 0.5s;"></div>
+        <div id="barreConsomme" style="position:absolute; left:0; top:0; height:100%; background:#ff6b6b; border-radius:8px 0 0 8px; transition:width 0.5s;"></div>
+      </div>
+      <div style="display:flex; justify-content:space-between; font-size:0.72rem; color:#868e96; margin-top:4px;">
+        <span><span style="display:inline-block;width:10px;height:10px;background:#ff6b6b;border-radius:2px;margin-right:4px;"></span>Consommé</span>
+        <span><span style="display:inline-block;width:10px;height:10px;background:#ffd43b;border-radius:2px;margin-right:4px;"></span>Engagé</span>
+        <span><span style="display:inline-block;width:10px;height:10px;background:#e9ecef;border-radius:2px;margin-right:4px;"></span>Solde libre</span>
+      </div>
+    </div>
+    <div id="soldeDetails" style="display:grid; grid-template-columns:1fr 1fr; gap:12px;"></div>
+  </div>
+</div>
 @endsection
 
 @push('scripts')
@@ -524,10 +553,19 @@ function renderTable(data) {
     actions += '<button class="table-action" type="button" onclick="ouvrirHistorique(' + d.id + ')">Suivi</button>';
     actions += '<button class="table-action" type="button" onclick="ouvrirConsommer(' + d.id + ')">Payer</button>';
     actions += '<button class="table-action" type="button" onclick="ouvrirHistConso(' + d.id + ')">Conso.</button>';
+    actions += '<button class="table-action" type="button" onclick="ouvrirSolde(' + d.id + ')">Solde</button>';
     actions += '<button class="table-action" type="button" onclick="ouvrirAffectation(' + d.id + ')">Affecter</button>';
     if (d.statut === 'En attente') {
       actions += '<button class="table-action primary" type="button" onclick="validerDelegation(' + d.id + ')">Valider</button>';
     }
+
+    var solde = parseFloat(d.solde) || 0;
+    var dispo = parseFloat(d.montant_disponible) || 0;
+    var pctSolde = dispo > 0 ? (solde / dispo) * 100 : 0;
+    var soldeColor = pctSolde <= 0 ? '#e03131' : (pctSolde <= 20 ? '#e67700' : '#087f5b');
+    var soldeBg = pctSolde <= 0 ? '#ffe3e3' : (pctSolde <= 20 ? '#fff3bf' : '#d3f9d8');
+    var alerteIcon = pctSolde <= 20 ? ' <i class="fa-solid fa-triangle-exclamation" style="color:' + soldeColor + ';"></i>' : '';
+
     return '<tr>' +
       '<td>' + d.reference + '</td>' +
       '<td>' + (d.objet || '-') + '</td>' +
@@ -535,8 +573,9 @@ function renderTable(data) {
       '<td>' + servNom + '</td>' +
       '<td>' + (d.montant_initial ? formatMontant(d.montant_initial) : '-') + '</td>' +
       '<td>' + formatMontant(d.montant_disponible) + '</td>' +
-      '<td>' + formatDate(d.date_delegation) + '</td>' +
-      '<td>' + (d.date_fin ? formatDate(d.date_fin) : '-') + '</td>' +
+      '<td style="color:#e67700; font-weight:600;">' + formatMontant(d.montant_engage) + '</td>' +
+      '<td style="color:#c92a2a; font-weight:600;">' + formatMontant(d.montant_consomme) + '</td>' +
+      '<td><span style="background:' + soldeBg + '; color:' + soldeColor + '; font-weight:bold; padding:2px 8px; border-radius:4px;">' + formatMontant(solde) + alerteIcon + '</span></td>' +
       '<td><span class="badge ' + badgeClass(d.statut) + '">' + d.statut + '</span></td>' +
       '<td class="actions-cell"><div class="table-actions-inline">' + actions + '</div></td>' +
       '</tr>';
@@ -690,6 +729,8 @@ function setupEvents() {
     majServicesAffectation(null);
   });
   document.getElementById('formAffectation').addEventListener('submit', soumettreAffectation);
+
+  document.getElementById('btnCloseSolde').addEventListener('click', function() { document.getElementById('modalSolde').style.display = 'none'; });
 
   document.getElementById('btnExporter').addEventListener('click', exporterCSV);
 
@@ -1317,6 +1358,65 @@ function chargerHistConso(id) {
     })
     .catch(function(e) {
       console.error('Erreur historique conso:', e);
+    });
+}
+
+function ouvrirSolde(id) {
+  fetch(API + '/delegation-credits/' + id + '/solde')
+    .then(function(res) { return res.json(); })
+    .then(function(data) {
+      var banner = document.getElementById('soldeAlerteBanner');
+      if (data.alerte) {
+        var bgAlert = data.alerte.niveau === 'critique' ? '#ffe3e3' : '#fff3bf';
+        var colorAlert = data.alerte.niveau === 'critique' ? '#c92a2a' : '#e67700';
+        var iconAlert = data.alerte.niveau === 'critique' ? 'fa-circle-xmark' : 'fa-triangle-exclamation';
+        banner.style.display = 'block';
+        banner.style.background = bgAlert;
+        banner.style.color = colorAlert;
+        banner.innerHTML = '<i class="fa-solid ' + iconAlert + '"></i> ' + data.alerte.message;
+      } else {
+        banner.style.display = 'none';
+      }
+
+      document.getElementById('soldeInfo').innerHTML =
+        '<strong>' + data.reference + '</strong>' + (data.objet ? ' — ' + data.objet : '') +
+        (data.structure ? '<br><small>Structure : ' + data.structure + (data.service ? ' | Service : ' + data.service : '') + '</small>' : '');
+
+      var tauxConso = data.taux_consommation || 0;
+      var tauxEng = data.taux_engagement || 0;
+      var pctSolde = data.pct_solde || 0;
+
+      document.getElementById('soldePctLabel').textContent = tauxConso + '% consommé';
+      document.getElementById('barreConsomme').style.width = Math.min(tauxConso, 100) + '%';
+      document.getElementById('barreEngage').style.width = Math.min(tauxEng, 100) + '%';
+
+      var soldeColor = pctSolde <= 0 ? '#c92a2a' : (pctSolde <= 20 ? '#e67700' : '#087f5b');
+
+      document.getElementById('soldeDetails').innerHTML =
+        '<div style="background:#e7f5ff; border-radius:8px; padding:14px; text-align:center;">' +
+          '<div style="font-size:0.78rem; color:#495057;">Montant initial</div>' +
+          '<div style="font-size:1.1rem; font-weight:bold; color:#1971c2;">' + formatMontant(data.montant_initial) + '</div></div>' +
+        '<div style="background:#d3f9d8; border-radius:8px; padding:14px; text-align:center;">' +
+          '<div style="font-size:0.78rem; color:#495057;">Montant disponible</div>' +
+          '<div style="font-size:1.1rem; font-weight:bold; color:#087f5b;">' + formatMontant(data.montant_disponible) + '</div></div>' +
+        '<div style="background:#fff3bf; border-radius:8px; padding:14px; text-align:center;">' +
+          '<div style="font-size:0.78rem; color:#495057;">Montant engagé</div>' +
+          '<div style="font-size:1.1rem; font-weight:bold; color:#e67700;">' + formatMontant(data.montant_engage) + '</div>' +
+          '<div style="font-size:0.75rem; color:#868e96;">' + tauxEng + '% du disponible</div></div>' +
+        '<div style="background:#ffe3e3; border-radius:8px; padding:14px; text-align:center;">' +
+          '<div style="font-size:0.78rem; color:#495057;">Montant consommé</div>' +
+          '<div style="font-size:1.1rem; font-weight:bold; color:#c92a2a;">' + formatMontant(data.montant_consomme) + '</div>' +
+          '<div style="font-size:0.75rem; color:#868e96;">' + tauxConso + '% du disponible</div></div>' +
+        '<div style="grid-column:span 2; background:linear-gradient(135deg, ' + (pctSolde <= 20 ? '#fff3bf' : '#d3f9d8') + ', #fff); border-radius:8px; padding:16px; text-align:center; border:2px solid ' + soldeColor + ';">' +
+          '<div style="font-size:0.85rem; color:#495057;">Solde restant</div>' +
+          '<div style="font-size:1.5rem; font-weight:bold; color:' + soldeColor + ';">' + formatMontant(data.solde) + '</div>' +
+          '<div style="font-size:0.8rem; color:' + soldeColor + ';">' + pctSolde + '% du crédit disponible</div></div>';
+
+      document.getElementById('modalSolde').style.display = 'block';
+    })
+    .catch(function(e) {
+      console.error('Erreur solde:', e);
+      alert('Erreur lors du chargement du solde.');
     });
 }
 
