@@ -24,7 +24,7 @@
           <p class="breadcrumb">Administration &gt; Param&eacute;trage &gt; R&eacute;f&eacute;rentiels</p>
         </div>
         <div class="actions-group">
-          <button class="btn-primary" type="button">+ Nouveau param&egrave;tre</button>
+          <button class="btn-primary" type="button" data-modal-open="create-syndicat-modal">+ Nouveau syndicat</button>
           <button class="btn-secondary" type="button">Importer</button>
           <button class="btn-secondary" type="button">Exporter</button>
         </div>
@@ -82,7 +82,7 @@
                 <td>SYN</td>
                 <td>Syndicats</td>
                 <td><span class="badge badge-active">Actif</span></td>
-                <td class="actions-cell"><button class="icon-action" title="Voir">&#128065;</button><button class="icon-action" title="Modifier">&#9998;</button><button class="icon-action" title="Supprimer">&#128465;</button></td>
+                <td class="actions-cell"><button class="icon-action" type="button" data-modal-open="create-syndicat-modal" title="Ajouter un syndicat" aria-label="Ajouter un syndicat"><i class="fa-solid fa-plus"></i></button><a class="icon-action" href="{{ route('parametres.syndicats.index') }}" title="Voir les syndicats" aria-label="Voir les syndicats">&#128065;</a><button class="icon-action" title="Modifier">&#9998;</button><button class="icon-action" title="Supprimer">&#128465;</button></td>
               </tr>
               <tr id="annee-academique">
                 <td>AA</td>
@@ -127,5 +127,26 @@
       </section>
     </section>
   </main>
+
+  <x-module-indemnite
+    type="modal"
+    id="create-syndicat-modal"
+    title="Ajouter un syndicat"
+    :open="$errors->any()"
+  >
+    @include('pages.parametres.syndicats.create')
+  </x-module-indemnite>
 @endsection
+
+@push('styles')
+  <style>
+    #create-syndicat-modal .modal-dialog { max-width: 760px; }
+    #create-syndicat-modal .teacher-form { margin-top: 18px; }
+    #create-syndicat-modal .form-alert { margin: 12px 0; padding: 12px 16px; border-radius: 8px; background: #fef2f2; color: #b91c1c; }
+  </style>
+@endpush
+
+@push('scripts')
+  <script src="{{ asset('assets/js/syndicat-form.js') }}" defer></script>
+@endpush
 

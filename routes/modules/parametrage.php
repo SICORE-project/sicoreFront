@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Parametrage\SyndicatController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -35,5 +36,14 @@ Route::middleware('sicore.auth')
 
         Route::view('/parametres/ief', 'pages.parametres.ief')
             ->name('parametres.ief');
+
+        Route::post('/parametres/syndicats', [SyndicatController::class, 'store'])
+            ->name('parametres.syndicats.store');
+
+        Route::get('/parametres/syndicats', [SyndicatController::class, 'index'])
+            ->name('parametres.syndicats.index');
+
+        Route::get('/parametres/syndicats/verifier-unicite', [SyndicatController::class, 'checkUniqueness'])
+            ->name('parametres.syndicats.check-uniqueness');
 
     });
