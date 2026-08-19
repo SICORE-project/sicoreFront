@@ -12,49 +12,20 @@
     />
 
     <section class="content-area">
-      <div class="stats-grid">
-        <article class="stat-card">
-          <div>
-            <p class="stat-label">Parametres</p>
-            <p class="stat-value">24</p>
-            <p class="stat-note">+3 cette semaine</p>
-          </div>
-          <span class="stat-icon green">&#9881;</span>
-        </article>
-        <article class="stat-card">
-          <div>
-            <p class="stat-label">Alertes actives</p>
-            <p class="stat-value">5</p>
-            <p class="stat-note">+2 nouvelles</p>
-          </div>
-          <span class="stat-icon red">!</span>
-        </article>
-        <article class="stat-card">
-          <div>
-            <p class="stat-label">Cessions</p>
-            <p class="stat-value">12</p>
-            <p class="stat-note neutral">4 en cours</p>
-          </div>
-          <span class="stat-icon blue">C</span>
-        </article>
-        <article class="stat-card">
-          <div>
-            <p class="stat-label">Groupes IPM</p>
-            <p class="stat-value">8</p>
-            <p class="stat-note">1 nouveau</p>
-          </div>
-          <span class="stat-icon purple">IP</span>
-        </article>
-        <article class="stat-card">
-          <div>
-            <p class="stat-label">Categories</p>
-            <p class="stat-value">15</p>
-            <p class="stat-note neutral">2 modifiees</p>
-          </div>
-          <span class="stat-icon yellow">CA</span>
-        </article>
+      <section class="objective-card {{ $isScoped ? 'sensitive-panel' : '' }}">
+        <h2>{{ $isScoped ? 'Tableau de bord de votre structure' : 'Tableau de bord global' }}</h2>
+        <p>Les indicateurs et listes sont limites a : <strong>{{ $scopeLabel }}</strong>.</p>
+      </section>
+      <div class="stats-grid four">
+        @foreach ([
+          ['label' => 'Utilisateurs', 'key' => 'utilisateurs', 'icon' => 'fa-solid fa-users', 'color' => 'green'],
+          ['label' => 'Enseignants', 'key' => 'enseignants', 'icon' => 'fa-solid fa-chalkboard-user', 'color' => 'blue'],
+          ['label' => 'Dossiers en cours', 'key' => 'dossiers_en_cours', 'icon' => 'fa-solid fa-folder-open', 'color' => 'yellow'],
+          ['label' => 'Alertes', 'key' => 'alertes', 'icon' => 'fa-solid fa-triangle-exclamation', 'color' => 'red'],
+        ] as $stat)
+          <article class="stat-card"><div><p class="stat-label">{{ $stat['label'] }}</p><p class="stat-value">{{ data_get($metrics, $stat['key'], 0) }}</p><p class="stat-note">{{ $scopeLabel }}</p></div><span class="stat-icon {{ $stat['color'] }}"><i class="{{ $stat['icon'] }}" aria-hidden="true"></i></span></article>
+        @endforeach
       </div>
-
       <div class="dashboard-grid">
         <section class="panel">
           <div class="panel-header">
