@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Parametrage;
 
 use App\Http\Controllers\Controller;
+use App\Services\Parametrage\CompteBancaireEnseignantService;
 use App\Services\Parametrage\InstitutionFinanciereService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -10,7 +11,7 @@ use Illuminate\View\View;
 
 class InstitutionFinanciereController extends Controller
 {
-    public function index(Request $request, InstitutionFinanciereService $service): View|RedirectResponse
+    public function index(Request $request, InstitutionFinanciereService $service, CompteBancaireEnseignantService $bankAccounts): View|RedirectResponse
     {
         $result = $service->getAll(max(1, $request->integer('page', 1)), 10);
 
@@ -21,6 +22,9 @@ class InstitutionFinanciereController extends Controller
 
             return redirect()->route('login')->with('warning', $result['error']);
         }
+
+        $result['teachers'] = $bankAccounts->getTeachers();
+        $result['availableInstitutions'] = $service->getAll(1, 100)['items'];
 
         $items = collect($result['items']);
         $isActive = static function (array $institution): bool {
@@ -130,6 +134,44 @@ class InstitutionFinanciereController extends Controller
             }
 
             return back()->with('error', $result['message']);
+        }
+
+        return redirect()->route('parametres.institutions-financieres')
+            ->with('success', $result['message']);
+    }
+    public function storeTeacherBankAccount(Request $request, CompteBancaireEnseignantService $service): RedirectResponse
+    {
+        $data = $request->validateWithBag('bankAccount', [
+            'enseignant_id' => ['required', 'integer'],
+            'institut_financier_id' => ['required', 'integer'],
+            'numero_compte' => ['required', 'string', 'max:100'],
+            'rib' => ['required', 'string', 'max:100'],
+            'est_actif' => ['required', 'boolean'],
+        ], [
+            'required' => 'Le champ :attribute est obligatoire.',
+            'boolean' => 'Le statut du compte bancaire est invalide.',
+        ]);
+
+        $teacherId = (int) $data['enseignant_id'];
+        unset($data['enseignant_id']);
+        $data['est_actif'] = (bool) $data['est_actif'];
+        $result = $service->create($teacherId, $data);
+
+        if (! $result['success']) {
+            if ($result['unauthorized'] ?? false) {
+                $request->session()->forget(['access_token', 'sicore_user']);
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
+
+                return redirect()->route('login')->with('warning', 'Votre session backend a expiré. Veuillez vous reconnecter.');
+            }
+
+            $redirect = back()->withInput()->withErrors($result['errors'] ?? [], 'bankAccount')->with('bank_account_form_open', true);
+            if (empty($result['errors'])) {
+                $redirect->with('error', $result['message']);
+            }
+
+            return $redirect;
         }
 
         return redirect()->route('parametres.institutions-financieres')

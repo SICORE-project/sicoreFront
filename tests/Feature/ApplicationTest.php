@@ -476,4 +476,42 @@ class ApplicationTest extends TestCase
             ->assertSee('id="institution-form-modal"', false)
             ->assertSee('data-modal  hidden', false);
     }
+    public function test_bank_account_can_be_associated_to_a_teacher(): void
+    {
+        Http::fake([
+            '*/enseignants/8/comptes-bancaires' => Http::response([
+                'message' => 'Compte bancaire associé avec succès.',
+                'data' => ['id' => 25],
+            ], 201),
+        ]);
+
+        $payload = [
+            'enseignant_id' => 8,
+            'institut_financier_id' => 3,
+            'numero_compte' => 'SN00123456789',
+            'rib' => 'SN08 0001 0002 1234 5678 9012',
+            'est_actif' => '1',
+        ];
+
+        $this->withSession([
+            'sicore_user' => ['name' => 'Gestionnaire', 'role' => 'Gestionnaire'],
+            'access_token' => 'valid-token',
+        ])->post('/parametrage/parametres/comptes-bancaires-enseignants', $payload)
+            ->assertRedirect(route('parametres.institutions-financieres'))
+            ->assertSessionHas('success');
+
+        Http::assertSent(fn ($request): bool => $request->method() === 'POST'
+            && str_ends_with($request->url(), '/enseignants/8/comptes-bancaires')
+            && $request['institut_financier_id'] === 3
+            && ! isset($request['enseignant_id'])
+            && $request['est_actif'] === true);
+    }
+
+    public function test_teacher_bank_account_required_fields_are_validated(): void
+    {
+        $this->withSession([
+            'sicore_user' => ['name' => 'Gestionnaire', 'role' => 'Gestionnaire'],
+        ])->post('/parametrage/parametres/comptes-bancaires-enseignants', [])
+            ->assertSessionHasErrors(['enseignant_id', 'institut_financier_id', 'numero_compte', 'rib', 'est_actif'], null, 'bankAccount');
+    }
 }

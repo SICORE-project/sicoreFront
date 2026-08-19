@@ -47,6 +47,7 @@
       <p class="breadcrumb"><a href="{{ route('parametres.index') }}">Paramétrage</a> &gt; Institutions financières</p>
       <div class="actions-group">
         <button class="btn-primary" type="button" id="newInstitution" data-modal-open="institution-form-modal">+ Nouvelle institution</button>
+        <button class="btn-secondary" type="button" data-modal-open="teacher-bank-account-modal">Associer à un enseignant</button>
         <input class="sr-only" id="importInstitutionsFile" type="file" accept=".csv,.xlsx,.xls">
         <label class="btn-secondary" for="importInstitutionsFile">Importer</label>
         <label class="sr-only" for="institutionStatusFilter">Filtrer par statut</label>
@@ -164,6 +165,47 @@
       <button class="btn-secondary" type="button" data-modal-close>Annuler</button>
       <button class="btn-primary" type="submit">Enregistrer</button>
     </div>
+  </form>
+</x-module-indemnite>
+<x-module-indemnite type="modal" id="teacher-bank-account-modal" title="Associer une institution à un enseignant" :open="$errors->bankAccount->any() || session()->has('bank_account_form_open')">
+  <p class="breadcrumb">Créer un compte bancaire distinct rattaché à l’enseignant.</p>
+  <form class="teacher-form" method="POST" action="{{ route('parametres.comptes-bancaires-enseignants.store') }}">
+    @csrf    @if ($errors->bankAccount->any())
+      <div class="alert alert-error" role="alert"><strong>Veuillez corriger le formulaire.</strong><ul>@foreach ($errors->bankAccount->all() as $message)<li>{{ $message }}</li>@endforeach</ul></div>
+    @endif
+    <p class="form-required-note"><span class="required" aria-hidden="true">*</span> Champs obligatoires</p>
+    <div class="form-grid form-grid--balanced">
+      <div class="form-group full">
+        <label for="bankTeacher">Enseignant <span class="required">*</span></label>
+        <select class="form-control" id="bankTeacher" name="enseignant_id" required>
+          <option value="">Sélectionner un enseignant</option>
+          @foreach ($teachers as $teacher)
+            <option value="{{ data_get($teacher, 'id') }}" @selected((string) old('enseignant_id') === (string) data_get($teacher, 'id'))>{{ trim(data_get($teacher, 'prenom', '').' '.data_get($teacher, 'nom', '')) }} — {{ data_get($teacher, 'matricule', 'Sans matricule') }}</option>
+          @endforeach
+        </select>
+      </div>
+      <div class="form-group full">
+        <label for="bankInstitution">Institution financière active <span class="required">*</span></label>
+        <select class="form-control" id="bankInstitution" name="institut_financier_id" required>
+          <option value="">Sélectionner une institution</option>
+          @foreach ($availableInstitutions as $institution)
+            @php
+              $bankStatus = data_get($institution, 'est_actif', data_get($institution, 'is_active', data_get($institution, 'statut', data_get($institution, 'status'))));
+              $bankStatus = is_string($bankStatus) ? mb_strtolower(trim($bankStatus)) : $bankStatus;
+              $bankIsActive = in_array($bankStatus, [true, 1, '1', 'actif', 'active', 'true', 'oui', 'yes'], true);
+              $bankId = data_get($institution, 'id', data_get($institution, 'uuid'));
+            @endphp
+            @if ($bankIsActive && $bankId)
+              <option value="{{ $bankId }}" @selected((string) old('institut_financier_id') === (string) $bankId)>{{ data_get($institution, 'nom', data_get($institution, 'libelle')) }} ({{ data_get($institution, 'sigle') }})</option>
+            @endif
+          @endforeach
+        </select>
+      </div>
+      <div class="form-group"><label for="bankAccountNumber">Numéro de compte <span class="required">*</span></label><input class="form-control" id="bankAccountNumber" name="numero_compte" value="{{ old('numero_compte') }}" maxlength="100" required></div>
+      <div class="form-group"><label for="bankRib">RIB <span class="required">*</span></label><input class="form-control" id="bankRib" name="rib" value="{{ old('rib') }}" maxlength="100" required></div>
+      <div class="form-group"><label for="bankAccountStatus">Statut du compte <span class="required">*</span></label><select class="form-control" id="bankAccountStatus" name="est_actif" required><option value="1" @selected(old('est_actif', '1') === '1')>Actif</option><option value="0" @selected(old('est_actif') === '0')>Inactif</option></select></div>
+    </div>
+    <div class="form-actions"><button class="btn-secondary" type="button" data-modal-close>Annuler</button><button class="btn-primary" type="submit">Enregistrer l’association</button></div>
   </form>
 </x-module-indemnite>
 @endsection
