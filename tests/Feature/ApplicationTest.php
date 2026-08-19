@@ -117,7 +117,7 @@ class ApplicationTest extends TestCase
             'password' => 'motdepasse',
             'password_confirmation' => 'motdepasse',
             'role_id' => 4,
-            'statut' => 'actif',
+            'is_active' => true,
         ])->assertRedirect(route('utilisateurs.index'));
 
         Http::assertSent(function ($request): bool {
@@ -140,7 +140,7 @@ class ApplicationTest extends TestCase
                 'prenom' => 'Test',
                 'email' => "user{$id}@example.sn",
                 'role' => ['nom' => 'Agent'],
-                'statut' => 'actif',
+                'is_active' => true,
             ], range(11, 20));
 
             return Http::response([
@@ -217,7 +217,7 @@ class ApplicationTest extends TestCase
             'password' => 'motdepasse',
             'password_confirmation' => 'motdepasse',
             'role_id' => 4,
-            'statut' => 'actif',
+            'is_active' => true,
         ])->assertRedirect('/utilisateurs')
             ->assertSessionHasErrors([
                 'email' => 'Cette adresse e-mail est déjà utilisée.',
@@ -283,5 +283,114 @@ class ApplicationTest extends TestCase
                 ->assertSee($expectedText, false)
                 ->assertSee('sidebar', false);
         }
+    }
+
+    public function test_financial_institutions_page_displays_required_information(): void
+    {
+        Http::fake([
+            '*/parametrage/institutions-financieres*' => Http::response([
+                'data' => [[
+                    'code' => 'IF001',
+                    'nom' => 'Banque Test',
+                    'sigle' => 'BT',
+                    'type_institution' => 'Banque',
+                    'telephone' => '+221 33 000 00 00',
+                    'email' => 'contact@banque.test',
+                    'adresse' => 'Dakar',
+                    'is_active' => true,
+                ], [
+                    'code' => 'IF002',
+                    'nom' => 'Institution inactive',
+                    'sigle' => 'II',
+                    'type_institution' => 'Microfinance',
+                    'telephone' => '+221 33 111 11 11',
+                    'email' => 'contact@inactive.test',
+                    'adresse' => 'Thiès',
+                    'statut' => 'inactif',
+                ]],
+            ]),
+        ]);
+
+        $response = $this->withSession([
+            'sicore_user' => ['name' => 'Admin', 'role' => 'Administrateur'],
+        ])->get('/parametrage/parametres/institutions-financieres');
+
+        $response->assertOk()
+            ->assertSee('Institutions financières')
+            ->assertSee('Nom ou libellé')
+            ->assertSee('Type d’institution')
+            ->assertSee('Téléphone')
+            ->assertSee('E-mail')
+            ->assertSee('Adresse')
+            ->assertSee('Actif')
+            ->assertSee('Inactif')
+            ->assertSee('id="institutionStatusFilter"', false)
+            ->assertSee('id="exportInstitutions"', false)
+            ->assertSee('aria-label="Pagination"', false)
+            ->assertSee('title="Voir"', false)
+            ->assertSee('title="Modifier"', false)
+            ->assertSee('Objectifs métier')
+            ->assertSee('id="newInstitution"', false)
+            ->assertSee('id="importInstitutionsFile"', false)
+            ->assertSee('Toutes catégories');
+    }
+    public function test_expired_backend_token_forces_a_new_login(): void
+    {
+        Http::fake([
+            '*/parametrage/institutions-financieres*' => Http::response([
+                'message' => 'Non authentifié.',
+            ], 401),
+        ]);
+
+        $response = $this->withSession([
+            'sicore_user' => ['name' => 'Admin', 'role' => 'Administrateur'],
+            'access_token' => 'expired-token',
+        ])->get('/parametrage/parametres/institutions-financieres');
+
+        $response->assertRedirect(route('login'))
+            ->assertSessionHas('warning', 'Votre session backend a expiré. Veuillez vous reconnecter.');
+
+        $this->assertNull(session('access_token'));
+        $this->assertNull(session('sicore_user'));
+    }
+    public function test_financial_institution_can_be_created(): void
+    {
+        Http::fake([
+            '*/parametrage/institutions-financieres' => Http::response([
+                'message' => 'Institution financière créée avec succès.',
+                'data' => ['id' => 10],
+            ], 201),
+        ]);
+
+        $payload = [
+            'code' => 'IF010',
+            'nom' => 'Banque Nouvelle',
+            'sigle' => 'BN',
+            'type_institution' => 'Banque',
+            'adresse' => 'Dakar',
+            'telephone' => '+221 33 000 00 00',
+            'email' => 'contact@banque.sn',
+            'statut' => 'actif',
+        ];
+
+        $this->withSession([
+            'sicore_user' => ['name' => 'Admin', 'role' => 'Administrateur'],
+            'access_token' => 'valid-token',
+        ])->post('/parametrage/parametres/institutions-financieres', $payload)
+            ->assertRedirect(route('parametres.institutions-financieres'))
+            ->assertSessionHas('success');
+
+        Http::assertSent(fn ($request): bool => $request->method() === 'POST'
+            && str_ends_with($request->url(), '/parametrage/institutions-financieres')
+            && $request['code'] === 'IF010'
+            && $request['statut'] === 'actif');
+    }
+
+    public function test_financial_institution_required_fields_are_validated(): void
+    {
+        $this->withSession([
+            'sicore_user' => ['name' => 'Admin', 'role' => 'Administrateur'],
+        ])->post('/parametrage/parametres/institutions-financieres', [])
+            ->assertSessionHasErrors(['code', 'nom', 'sigle', 'type_institution', 'statut']);
     }
 }

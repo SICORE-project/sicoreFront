@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Parametrage\InstitutionFinanciereController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -35,5 +36,10 @@ Route::middleware('sicore.auth')
 
         Route::view('/parametres/ief', 'pages.parametres.ief')
             ->name('parametres.ief');
+
+        Route::get('/parametres/institutions-financieres', [InstitutionFinanciereController::class, 'index'])
+            ->name('parametres.institutions-financieres');
+        Route::post('/parametres/institutions-financieres', [InstitutionFinanciereController::class, 'store'])
+            ->name('parametres.institutions-financieres.store');
 
     });
