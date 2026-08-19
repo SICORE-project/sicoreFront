@@ -1,1 +1,0 @@
-<?php /**PATH C:\projets\sicoreFront\resources\views\pages\indemnites\accuses-reception-modeles.blade.php ENDPATH**/ ?>
