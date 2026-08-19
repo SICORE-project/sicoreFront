@@ -73,6 +73,53 @@ class InstitutionFinanciereService
             'errors' => $response->json('errors', []),
         ];
     }
+    public function update(string|int $id, array $data): array
+    {
+        try {
+            $response = $this->apiClient->put("parametrage/institutions-financieres/{$id}", $data);
+        } catch (ConnectionException) {
+            return ['success' => false, 'message' => 'Le service backend est momentanément inaccessible.', 'errors' => []];
+        }
+
+        if ($response->successful()) {
+            return [
+                'success' => true,
+                'message' => $response->json('message', 'Institution financière modifiée avec succès.'),
+                'data' => $response->json('data'),
+            ];
+        }
+
+        return [
+            'success' => false,
+            'unauthorized' => $response->unauthorized(),
+            'message' => $response->json('message', 'Impossible de modifier l’institution financière.'),
+            'errors' => $response->json('errors', []),
+        ];
+    }
+    public function updateStatus(string|int $id, bool $isActive): array
+    {
+        try {
+            $response = $this->apiClient->patch("parametrage/institutions-financieres/{$id}/statut", [
+                'est_actif' => $isActive,
+            ]);
+        } catch (ConnectionException) {
+            return ['success' => false, 'message' => 'Le service backend est momentanément inaccessible.', 'errors' => []];
+        }
+
+        if ($response->successful()) {
+            return [
+                'success' => true,
+                'message' => $response->json('message', $isActive ? 'Institution financière activée.' : 'Institution financière désactivée.'),
+            ];
+        }
+
+        return [
+            'success' => false,
+            'unauthorized' => $response->unauthorized(),
+            'message' => $response->json('message', 'Impossible de modifier le statut de l’institution financière.'),
+            'errors' => $response->json('errors', []),
+        ];
+    }
     private function emptyResult(int $page, int $perPage, string $message): array
     {
         return [

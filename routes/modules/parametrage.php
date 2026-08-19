@@ -41,5 +41,9 @@ Route::middleware('sicore.auth')
             ->name('parametres.institutions-financieres');
         Route::post('/parametres/institutions-financieres', [InstitutionFinanciereController::class, 'store'])
             ->name('parametres.institutions-financieres.store');
+        Route::put('/parametres/institutions-financieres/{institution}', [InstitutionFinanciereController::class, 'update'])
+            ->name('parametres.institutions-financieres.update');
+        Route::patch('/parametres/institutions-financieres/{institution}/statut', [InstitutionFinanciereController::class, 'updateStatus'])
+            ->name('parametres.institutions-financieres.status');
 
     });

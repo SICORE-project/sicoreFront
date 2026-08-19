@@ -393,4 +393,87 @@ class ApplicationTest extends TestCase
         ])->post('/parametrage/parametres/institutions-financieres', [])
             ->assertSessionHasErrors(['code', 'nom', 'sigle', 'type_institution', 'statut']);
     }
+    public function test_financial_institution_can_be_updated_without_changing_status(): void
+    {
+        Http::fake([
+            '*/parametrage/institutions-financieres/15' => Http::response([
+                'message' => 'Institution financière modifiée avec succès.',
+            ]),
+        ]);
+
+        $payload = [
+            'code' => 'IF015',
+            'nom' => 'Banque Mise à Jour',
+            'sigle' => 'BMJ',
+            'type_institution' => 'Banque',
+            'adresse' => 'Dakar',
+            'telephone' => '+221 33 222 22 22',
+            'email' => 'contact@bmj.sn',
+        ];
+
+        $this->withSession([
+            'sicore_user' => ['name' => 'Admin', 'role' => 'Administrateur'],
+            'access_token' => 'valid-token',
+        ])->put('/parametrage/parametres/institutions-financieres/15', $payload)
+            ->assertRedirect(route('parametres.institutions-financieres'))
+            ->assertSessionHas('success');
+
+        Http::assertSent(fn ($request): bool => $request->method() === 'PUT'
+            && str_ends_with($request->url(), '/parametrage/institutions-financieres/15')
+            && $request['nom'] === 'Banque Mise à Jour'
+            && ! isset($request['statut']));
+    }
+    public function test_financial_institution_can_be_deactivated_without_deletion(): void
+    {
+        Http::fake([
+            '*/parametrage/institutions-financieres/15/statut' => Http::response([
+                'message' => 'Institution financière désactivée.',
+            ]),
+        ]);
+
+        $this->withSession([
+            'sicore_user' => ['name' => 'Admin', 'role' => 'Administrateur'],
+            'access_token' => 'valid-token',
+        ])->patch('/parametrage/parametres/institutions-financieres/15/statut', [
+            'est_actif' => false,
+        ])->assertRedirect(route('parametres.institutions-financieres'))
+            ->assertSessionHas('success');
+
+        Http::assertSent(fn ($request): bool => $request->method() === 'PATCH'
+            && str_ends_with($request->url(), '/parametrage/institutions-financieres/15/statut')
+            && $request['est_actif'] === false);
+    }
+
+    public function test_financial_institution_status_only_accepts_known_values(): void
+    {
+        $this->withSession([
+            'sicore_user' => ['name' => 'Admin', 'role' => 'Administrateur'],
+        ])->patch('/parametrage/parametres/institutions-financieres/15/statut', [
+            'est_actif' => 'invalide',
+        ])->assertSessionHasErrors('est_actif');
+    }
+    public function test_status_api_error_does_not_open_the_edit_form(): void
+    {
+        Http::fake([
+            '*/parametrage/institutions-financieres/15/statut' => Http::response([
+                'message' => 'Changement de statut impossible.',
+            ], 500),
+            '*/parametrage/institutions-financieres*' => Http::response(['data' => []]),
+        ]);
+
+        $session = [
+            'sicore_user' => ['name' => 'Admin', 'role' => 'Administrateur'],
+            'access_token' => 'valid-token',
+        ];
+
+        $this->withSession($session)
+            ->patch('/parametrage/parametres/institutions-financieres/15/statut', ['est_actif' => false])
+            ->assertSessionHas('error');
+
+        $this->withSession($session)
+            ->get('/parametrage/parametres/institutions-financieres')
+            ->assertOk()
+            ->assertSee('id="institution-form-modal"', false)
+            ->assertSee('data-modal  hidden', false);
+    }
 }

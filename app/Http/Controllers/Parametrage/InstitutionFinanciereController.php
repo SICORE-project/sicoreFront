@@ -64,12 +64,72 @@ class InstitutionFinanciereController extends Controller
                 return redirect()->route('login')->with('warning', 'Votre session backend a expiré. Veuillez vous reconnecter.');
             }
 
-            $redirect = back()->withInput()->withErrors($result['errors'] ?? []);
+            $redirect = back()->withInput()->withErrors($result['errors'] ?? [])->with('institution_form_open', true);
             if (empty($result['errors'])) {
                 $redirect->with('error', $result['message']);
             }
 
             return $redirect;
+        }
+
+        return redirect()->route('parametres.institutions-financieres')
+            ->with('success', $result['message']);
+    }
+    public function update(Request $request, string $institution, InstitutionFinanciereService $service): RedirectResponse
+    {
+        $data = $request->validate([
+            'code' => ['required', 'string', 'max:30'],
+            'nom' => ['required', 'string', 'max:255'],
+            'sigle' => ['required', 'string', 'max:30'],
+            'type_institution' => ['required', 'string', 'max:100'],
+            'adresse' => ['nullable', 'string', 'max:500'],
+            'telephone' => ['nullable', 'string', 'max:30'],
+            'email' => ['nullable', 'email', 'max:255'],
+        ], [
+            'required' => 'Le champ :attribute est obligatoire.',
+            'email' => 'L’adresse e-mail doit être valide.',
+        ]);
+
+        $result = $service->update($institution, $data);
+
+        if (! $result['success']) {
+            if ($result['unauthorized'] ?? false) {
+                $request->session()->forget(['access_token', 'sicore_user']);
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
+
+                return redirect()->route('login')->with('warning', 'Votre session backend a expiré. Veuillez vous reconnecter.');
+            }
+
+            $redirect = back()->withInput()->withErrors($result['errors'] ?? [])->with('institution_form_open', true);
+            if (empty($result['errors'])) {
+                $redirect->with('error', $result['message']);
+            }
+
+            return $redirect;
+        }
+
+        return redirect()->route('parametres.institutions-financieres')
+            ->with('success', $result['message']);
+    }
+    public function updateStatus(Request $request, string $institution, InstitutionFinanciereService $service): RedirectResponse
+    {
+        $data = $request->validate([
+            'est_actif' => ['required', 'boolean'],
+        ]);
+
+        $result = $service->updateStatus($institution, (bool) $data['est_actif']);
+
+        if (! $result['success']) {
+            if ($result['unauthorized'] ?? false) {
+                $request->session()->forget(['access_token', 'sicore_user']);
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
+
+                return redirect()->route('login')->with('warning', 'Votre session backend a expiré. Veuillez vous reconnecter.');
+            }
+
+            return back()->with('error', $result['message']);
         }
 
         return redirect()->route('parametres.institutions-financieres')

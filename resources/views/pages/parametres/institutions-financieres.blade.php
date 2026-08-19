@@ -84,6 +84,7 @@
                 $status = data_get($institution, 'statut', data_get($institution, 'status', data_get($institution, 'actif', data_get($institution, 'active', data_get($institution, 'is_active', data_get($institution, 'est_actif'))))));
                 $normalizedStatus = is_string($status) ? mb_strtolower(trim($status)) : $status;
                 $active = in_array($normalizedStatus, [true, 1, '1', 'actif', 'active', 'true', 'oui', 'yes'], true);
+                $institutionId = data_get($institution, 'id', data_get($institution, 'uuid', data_get($institution, 'code')));
               @endphp
               <tr data-institution-status="{{ $active ? 'actif' : 'inactif' }}">
                 <td>{{ data_get($institution, 'code', '—') }}</td>
@@ -96,7 +97,13 @@
                 <td><span class="badge {{ $active ? 'badge-active' : 'badge-suspended' }}">{{ $active ? 'Actif' : 'Inactif' }}</span></td>
                 <td class="actions-cell">
                   <button class="table-action" type="button" title="Voir" data-modal-open="view-institution-modal" data-institution-view='@json($institution)'>Voir</button>
-                  <button class="table-action" type="button" title="Modifier" data-modal-open="institution-form-modal" data-institution-edit='@json($institution)'>Modifier</button>
+                  <button class="table-action" type="button" title="Modifier" data-modal-open="institution-form-modal" data-update-url="{{ route('parametres.institutions-financieres.update', ['institution' => $institutionId]) }}" data-institution-edit='@json($institution)'>Modifier</button>
+                  <form class="inline-form" method="POST" action="{{ route('parametres.institutions-financieres.status', ['institution' => $institutionId]) }}" onsubmit="return confirm('{{ $active ? 'Désactiver cette institution ? Elle ne sera plus proposée dans les nouveaux dossiers.' : 'Activer cette institution ? Elle pourra être sélectionnée dans les nouveaux dossiers.' }}');">
+                    @csrf
+                    @method('PATCH')
+                    <input type="hidden" name="est_actif" value="{{ $active ? '0' : '1' }}">
+                    <button class="table-action" type="submit">{{ $active ? 'Désactiver' : 'Activer' }}</button>
+                  </form>
                 </td>
               </tr>
             @endforeach
@@ -134,9 +141,10 @@
   <div class="form-actions"><button class="btn-secondary" type="button" data-modal-close>Fermer</button></div>
 </x-module-indemnite>
 
-<x-module-indemnite type="modal" id="institution-form-modal" title="Institution financière" :open="$errors->any() || session()->has('error')">
-  <form id="institutionForm" class="teacher-form" method="POST" action="{{ route('parametres.institutions-financieres.store') }}">
+<x-module-indemnite type="modal" id="institution-form-modal" title="Institution financière" :open="$errors->any() || session()->has('institution_form_open')">
+  <form id="institutionForm" class="teacher-form" method="POST" action="{{ route('parametres.institutions-financieres.store') }}" data-create-url="{{ route('parametres.institutions-financieres.store') }}">
     @csrf
+    <input id="institutionMethod" type="hidden" name="_method" value="PUT" disabled>
     @if ($errors->any())
       <div class="alert alert-error" role="alert"><strong>Veuillez corriger les champs obligatoires.</strong><ul>@foreach ($errors->all() as $message)<li>{{ $message }}</li>@endforeach</ul></div>
     @endif
@@ -148,7 +156,8 @@
       <div class="form-group"><label for="institutionType">Type d’institution <span class="required" aria-hidden="true">*</span></label><input class="form-control" id="institutionType" name="type_institution" value="{{ old('type_institution') }}" maxlength="100" required aria-required="true"></div>
       <div class="form-group"><label for="institutionTelephone">Téléphone <span class="form-optional">(facultatif)</span></label><input class="form-control" id="institutionTelephone" name="telephone" type="tel" value="{{ old('telephone') }}" maxlength="30"></div>
       <div class="form-group"><label for="institutionEmail">E-mail <span class="form-optional">(facultatif)</span></label><input class="form-control" id="institutionEmail" name="email" type="email" value="{{ old('email') }}" maxlength="255"></div>
-      <div class="form-group"><label for="institutionStatut">Statut <span class="required" aria-hidden="true">*</span></label><select class="form-control" id="institutionStatut" name="statut" required aria-required="true"><option value="actif" @selected(old('statut', 'actif') === 'actif')>Actif</option><option value="inactif" @selected(old('statut') === 'inactif')>Inactif</option></select></div>
+      <div class="form-group" id="institutionStatusField"><label for="institutionStatut">Statut <span class="required" aria-hidden="true">*</span></label><select class="form-control" id="institutionStatut" name="statut" required aria-required="true"><option value="actif" @selected(old('statut', 'actif') === 'actif')>Actif</option><option value="inactif" @selected(old('statut') === 'inactif')>Inactif</option></select></div>
+      <aside class="objective-card full" id="institutionStatusCard" hidden><h3>Statut de l’institution</h3><p>Statut actuel : <strong id="institutionCurrentStatus">—</strong></p><small>Le changement de statut est géré séparément et ne sera pas envoyé lors de cette modification.</small></aside>
       <div class="form-group full"><label for="institutionAdresse">Adresse <span class="form-optional">(facultatif)</span></label><textarea class="form-control" id="institutionAdresse" name="adresse" rows="2" maxlength="500">{{ old('adresse') }}</textarea></div>
     </div>
     <div class="form-actions">
@@ -199,17 +208,35 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 
   const form = document.getElementById('institutionForm');
+  const methodOverride = document.getElementById('institutionMethod');
+  const statusField = document.getElementById('institutionStatusField');
+  const statusSelect = document.getElementById('institutionStatut');
+  const statusCard = document.getElementById('institutionStatusCard');
+  const currentStatus = document.getElementById('institutionCurrentStatus');
   const newButton = document.getElementById('newInstitution');
   const setField = (id, value) => { document.getElementById(id).value = value === '—' ? '' : value; };
   newButton.addEventListener('click', function () {
     form.dataset.mode = 'create';
+    form.action = form.dataset.createUrl;
+    methodOverride.disabled = true;
+    statusSelect.disabled = false;
+    statusSelect.required = true;
+    statusField.hidden = false;
+    statusCard.hidden = true;
     form.reset();
     document.getElementById('institution-form-modal-title').textContent = 'Nouvelle institution financière';
   });
   document.querySelectorAll('[data-institution-edit]').forEach(function (button) {
     button.addEventListener('click', function () {
       form.dataset.mode = 'edit';
+      form.action = button.dataset.updateUrl;
+      methodOverride.disabled = false;
+      statusSelect.disabled = true;
+      statusSelect.required = false;
+      statusField.hidden = true;
+      statusCard.hidden = false;
       const institution = JSON.parse(button.dataset.institutionEdit);
+      currentStatus.textContent = isActive(institution) ? 'Actif' : 'Inactif';
       document.getElementById('institution-form-modal-title').textContent = 'Modifier l’institution financière';
       setField('institutionCode', valueOf(institution, 'code'));
       setField('institutionSigle', valueOf(institution, 'sigle'));
@@ -223,12 +250,6 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 
 
-  form.addEventListener('submit', function (event) {
-    if (form.dataset.mode === 'edit') {
-      event.preventDefault();
-      if (typeof window.showToast === 'function') window.showToast('info', 'La mise à jour sera activée avec l’US de modification.');
-    }
-  });
 
   statusFilter.addEventListener('change', function () {
     let visible = 0;

@@ -691,6 +691,10 @@
   text-align: right;
   white-space: nowrap;
 }
+.inline-form {
+  display: inline;
+  margin: 0;
+}
 
 .icon-action {
   width: 32px;
