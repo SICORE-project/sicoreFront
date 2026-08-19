@@ -46,4 +46,15 @@ Route::middleware('sicore.auth')
         Route::get('/parametres/syndicats/verifier-unicite', [SyndicatController::class, 'checkUniqueness'])
             ->name('parametres.syndicats.check-uniqueness');
 
+        Route::get('/parametres/syndicats/options-association', [SyndicatController::class, 'associationOptions'])
+            ->name('parametres.syndicats.association-options');
+
+        Route::put('/parametres/syndicats/{id}', [SyndicatController::class, 'update'])
+            ->whereNumber('id')
+            ->name('parametres.syndicats.update');
+
+        Route::delete('/parametres/syndicats/{id}', [SyndicatController::class, 'destroy'])
+            ->whereNumber('id')
+            ->name('parametres.syndicats.destroy');
+
     });
