@@ -96,10 +96,7 @@
             <!-- Boutons -->
             <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 16px; border-top: 1px solid #e5e7eb; padding-top: 20px;">
                 <a href="{{ route('admin.roles.index') }}" class="btn-secondary" style="padding: 10px 20px; border: 1px solid #d1d5db; border-radius: 8px; color: #374151; background: #f9fafb; text-decoration: none; transition: all 0.2s;">
-                    <i class="fas fa-arrow-left"></i> Retour
-                </a>
-                <a href="{{ route('admin.roles.edit', $role['id']) }}" class="btn-warning" style="padding: 10px 20px; background: #f59e0b; color: white; border: none; border-radius: 8px; text-decoration: none; font-weight: 600; transition: background 0.2s; display: inline-flex; align-items: center; gap: 6px;">
-                    <i class="fas fa-edit"></i> Modifier
+                    Retour
                 </a>
             </div>
 

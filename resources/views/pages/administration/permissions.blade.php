@@ -22,6 +22,9 @@
     @endphp
 
     <section class="content-area">
+        @if (!empty($permissionsError))
+            <div class="alert alert-danger">{{ $permissionsError }}</div>
+        @endif
         <!-- Objectifs métier -->
         <section class="objective-card">
             <h2>Objectifs métier</h2>
@@ -124,18 +127,14 @@
                                 </span>
                             </td>
                             <td class="actions-cell">
-                                <div class="action-buttons">
-                                    <a href="{{ route('admin.permissions.edit', $permission['id']) }}" 
-                                       class="action-btn" title="Modifier">
-                                        <i class="fas fa-edit"></i>
-                                    </a>
+                                <div class="table-actions-inline">
+                                    <a href="{{ route('admin.permissions.show', $permission['id']) }}" class="table-action">Voir</a>
+                                    <a href="{{ route('admin.permissions.edit', $permission['id']) }}" class="table-action">Modifier</a>
                                     <form action="{{ route('admin.permissions.destroy', $permission['id']) }}" method="POST" style="display: inline;">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" class="action-btn delete" 
-                                                onclick="return confirm('Supprimer cette permission ?')" title="Supprimer">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
+                                        <button type="submit" class="table-action delete"
+                                                onclick="return confirm('Supprimer cette permission ?')">Supprimer</button>
                                     </form>
                                 </div>
                             </td>
@@ -158,10 +157,10 @@
                     @foreach ($permissions['links'] as $link)
                         @if ($link['url'])
                             <a href="{{ $link['url'] }}" class="page-btn {{ $link['active'] ? 'active' : '' }}">
-                                {!! $link['label'] !!}
+                                {{ $loop->first ? '←' : ($loop->last ? '→' : $link['label']) }}
                             </a>
                         @else
-                            <span class="page-btn disabled">{!! $link['label'] !!}</span>
+                            <span class="page-btn disabled">{{ $loop->first ? '←' : ($loop->last ? '→' : $link['label']) }}</span>
                         @endif
                     @endforeach
                 @else

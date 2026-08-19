@@ -33,6 +33,22 @@ class RoleStructureMatrixTest extends TestCase
         $this->assertTrue($this->matrix->allows($role, 'ief'));
     }
 
+    public function test_specific_manager_roles_are_limited_to_their_structure_level(): void
+    {
+        $this->assertSame(['ia'], $this->matrix->allowedStructureTypes([
+            'slug' => 'gestionnaire_ia',
+            'niveau' => 'gestionnaire',
+        ]));
+        $this->assertSame(['ief'], $this->matrix->allowedStructureTypes([
+            'slug' => 'gestionnaire_ief',
+            'niveau' => 'gestionnaire',
+        ]));
+        $this->assertSame(['national'], $this->matrix->allowedStructureTypes([
+            'slug' => 'drh',
+            'niveau' => 'gestionnaire',
+        ]));
+    }
+
     public function test_unknown_role_level_is_denied(): void
     {
         $this->assertFalse($this->matrix->allows(['niveau' => 'inconnu'], 'national'));

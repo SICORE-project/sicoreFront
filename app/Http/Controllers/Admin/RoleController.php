@@ -4,22 +4,29 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 
 class RoleController extends Controller
 {
     public function index(Request $request)
     {
         $response = Http::withToken(session('access_token'))
-            ->get(config('services.backend.url') . '/admin/roles', [
-                'search' => $request->search,
-                'est_actif' => $request->est_actif,
-                'per_page' => 15,
-            ]);
+            ->get(config('services.backend.url') . '/admin/roles/all');
 
-        $roles = $response->successful()
-            ? $response->json()['data'] ?? []
-            : [];
+        $items = $response->successful() ? $response->json('data', []) : [];
+        $items = is_array($items) ? array_values($items) : [];
+        $perPage = 10;
+        $page = max(1, $request->integer('page', 1));
+        $paginator = new LengthAwarePaginator(
+            array_slice($items, ($page - 1) * $perPage, $perPage),
+            count($items),
+            $perPage,
+            $page,
+            ['path' => $request->url(), 'query' => $request->query()]
+        );
+        $roles = $paginator->toArray();
 
         return view('pages.administration.profils-roles', compact('roles'));
     }
@@ -36,12 +43,33 @@ class RoleController extends Controller
         return view('pages.administration.roles-create', compact('permissions'));
     }
 
+    public function show($id)
+    {
+        $response = Http::withToken(session('access_token'))
+            ->get(config('services.backend.url') . '/admin/roles/' . $id);
+
+        $role = $response->successful() ? $response->json('data') : null;
+
+        if (!$role) {
+            return redirect()->route('admin.roles.index')
+                ->with('error', $response->json('message', 'Rôle non trouvé.'));
+        }
+
+        return view('pages.administration.roles-show', compact('role'));
+    }
+
     public function store(Request $request)
     {
+        $request->validate([
+            'nom' => ['required', 'string', 'max:50'],
+            'niveau' => ['required', 'in:systeme,admin_metier,gestionnaire,consultation'],
+            'est_actif' => ['required', 'boolean'],
+        ]);
+
         $response = Http::withToken(session('access_token'))
             ->post(config('services.backend.url') . '/admin/roles', [
                 'nom' => $request->nom,
-                'slug' => $request->slug,
+                'slug' => $this->roleSlug($request->nom),
                 'description' => $request->description,
                 'niveau' => $request->niveau,
                 'est_actif' => $request->est_actif ?? true,
@@ -81,10 +109,16 @@ class RoleController extends Controller
 
     public function update(Request $request, $id)
     {
+        $request->validate([
+            'nom' => ['required', 'string', 'max:50'],
+            'niveau' => ['required', 'in:systeme,admin_metier,gestionnaire,consultation'],
+            'est_actif' => ['required', 'boolean'],
+        ]);
+
         $response = Http::withToken(session('access_token'))
             ->put(config('services.backend.url') . '/admin/roles/' . $id, [
                 'nom' => $request->nom,
-                'slug' => $request->slug,
+                'slug' => $this->roleSlug($request->nom),
                 'description' => $request->description,
                 'niveau' => $request->niveau,
                 'est_actif' => $request->est_actif ?? true,
@@ -110,6 +144,16 @@ class RoleController extends Controller
         }
 
         return back()->with('error', $response->json()['message'] ?? 'Erreur lors de la suppression');
+    }
+
+    private function roleSlug(mixed $name): string
+    {
+        return Str::of((string) $name)
+            ->ascii()
+            ->lower()
+            ->replaceMatches('/[^a-z0-9]+/', '_')
+            ->trim('_')
+            ->toString();
     }
 
     public function permissions($id)

@@ -6,7 +6,12 @@ class RoleStructureMatrix
 {
     public function allowedStructureTypes(array $role): array
     {
-        return config('organisation-access.role_levels.'.($role['niveau'] ?? ''), []);
+        $slug = $this->normalise($role['slug'] ?? $role['code'] ?? $role['nom'] ?? null);
+        if ($slug && config()->has('organisation-access.role_slugs.'.$slug)) {
+            return config('organisation-access.role_slugs.'.$slug, []);
+        }
+
+        return config('organisation-access.role_levels.'.$this->normalise($role['niveau'] ?? null), []);
     }
 
     public function allows(array $role, string $structureType): bool
@@ -48,5 +53,11 @@ class RoleStructureMatrix
         }
 
         return null;
+    }
+
+    private function normalise(mixed $value): string
+    {
+        return str((string) $value)->ascii()->lower()
+            ->replaceMatches('/[^a-z0-9]+/', '_')->trim('_')->toString();
     }
 }

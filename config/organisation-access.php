@@ -12,4 +12,21 @@ return [
         'admin_metier' => ['national'],
         'gestionnaire' => ['national', 'ia', 'ief'],
     ],
+
+    // Une règle par slug est prioritaire sur la règle générale du niveau.
+    'role_slugs' => [
+        'super_admin' => ['national'],
+        'admin' => ['national'],
+        'gestionnaire_ia' => ['ia'],
+        'gestionnaire_ief' => ['ief'],
+        'agent_ia' => ['ia'],
+        'agent_ief' => ['ief'],
+        'ia' => ['ia'],
+        'ief' => ['ief'],
+        'dage' => ['national'],
+        'decpc' => ['national'],
+        'drh' => ['national'],
+        'gestionnaire_paie' => ['national'],
+        'gestionnaire_budget' => ['national'],
+    ],
 ];

@@ -42,10 +42,14 @@ Route::middleware('sicore.auth')
         Route::get('/utilisateurs/permissions', [PermissionController::class, 'index'])
             ->name('utilisateurs.permissions');
 
+        Route::get('/utilisateurs/{id}', [UserController::class, 'show'])->name('utilisateurs.show');
+        Route::get('/utilisateurs/{id}/modifier', [UserController::class, 'edit'])->name('utilisateurs.edit');
+        Route::put('/utilisateurs/{id}', [UserController::class, 'update'])->name('utilisateurs.update');
         Route::prefix('roles')->name('admin.roles.')->group(function (): void {
             Route::get('/', [RoleController::class, 'index'])->name('index');
             Route::get('/create', [RoleController::class, 'create'])->name('create');
             Route::post('/', [RoleController::class, 'store'])->name('store');
+            Route::get('/{id}', [RoleController::class, 'show'])->name('show');
             Route::get('/{id}/edit', [RoleController::class, 'edit'])->name('edit');
             Route::put('/{id}', [RoleController::class, 'update'])->name('update');
             Route::delete('/{id}', [RoleController::class, 'destroy'])->name('destroy');
@@ -57,9 +61,10 @@ Route::middleware('sicore.auth')
             Route::get('/', [PermissionController::class, 'index'])->name('index');
             Route::get('/create', [PermissionController::class, 'create'])->name('create');
             Route::post('/', [PermissionController::class, 'store'])->name('store');
+            Route::get('/sync', [PermissionController::class, 'sync'])->name('sync');
+            Route::get('/{id}', [PermissionController::class, 'show'])->name('show');
             Route::get('/{id}/edit', [PermissionController::class, 'edit'])->name('edit');
             Route::put('/{id}', [PermissionController::class, 'update'])->name('update');
             Route::delete('/{id}', [PermissionController::class, 'destroy'])->name('destroy');
-            Route::get('/sync', [PermissionController::class, 'sync'])->name('sync');
         });
     });
