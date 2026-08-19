@@ -42,9 +42,13 @@ class UserController extends Controller
             $structure = data_get($user, 'acces_organisationnel.lieu_service')
                 ?? data_get($user, 'acces_organisationnel.ief')
                 ?? data_get($user, 'acces_organisationnel.ia')
-                ?? data_get($user, 'acces_organisationnel.structure');
+                ?? data_get($user, 'acces_organisationnel.structure')
+                ?? data_get($user, 'structure_organisationnelle');
             $service = is_array($structure)
-                ? implode(' — ', array_filter([$structure['code'] ?? null, $structure['libelle'] ?? null]))
+                ? implode(' — ', array_unique(array_filter([
+                    $structure['code'] ?? $structure['type'] ?? null,
+                    $structure['libelle'] ?? $structure['nom'] ?? null,
+                ])))
                 : '—';
             $status = data_get($user, 'statut', data_get($user, 'status', false));
             $isActive = $status === 'actif' || filter_var($status, FILTER_VALIDATE_BOOLEAN);

@@ -27,7 +27,7 @@ class OrganisationContext
     {
         $access = $this->access();
         $structure = data_get($access, 'ief', data_get($access, 'ia', data_get($access, 'structure')));
-        if (! is_array($structure)) return 'PÃ©rimÃ¨tre global';
+        if (! is_array($structure)) return 'Périmètre global';
         $parts = [data_get($structure, 'code'), data_get($structure, 'libelle'), data_get($structure, 'nom')];
         return collect($parts)->filter()->unique()->join(' — ') ?: 'Périmètre organisationnel';
     }

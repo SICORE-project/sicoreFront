@@ -4,8 +4,14 @@
 @php
   $access = data_get($user, 'acces_organisationnel', []);
   $role = data_get($user, 'role.nom', data_get($user, 'role', '—'));
-  $structure = data_get($access, 'lieu_service', data_get($access, 'ief', data_get($access, 'ia', data_get($access, 'structure'))));
-  $structureLabel = is_array($structure) ? collect([data_get($structure, 'code'), data_get($structure, 'libelle', data_get($structure, 'nom')])->filter()->join(' — ') : ($structure ?: '—');
+  $structure = data_get($access, 'lieu_service')
+    ?? data_get($access, 'ief')
+    ?? data_get($access, 'ia')
+    ?? data_get($access, 'structure')
+    ?? data_get($user, 'structure_organisationnelle');
+  $structureLabel = is_array($structure)
+    ? collect([data_get($structure, 'code', data_get($structure, 'type')), data_get($structure, 'libelle', data_get($structure, 'nom'))])->filter()->unique()->join(' — ')
+    : ($structure ?: '—');
   $type = data_get($access, 'niveau', data_get($access, 'type_structure', data_get($access, 'ief') ? 'IEF' : (data_get($access, 'ia') ? 'IA' : 'National')));
 @endphp
 <main class="main-content"><x-topbar title="Fiche utilisateur" subtitle="Administration > Utilisateurs" icon="fa-solid fa-user-shield" />

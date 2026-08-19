@@ -119,7 +119,7 @@
     });
   }
 
-  function drawDonut(canvas) {
+  function drawDonut(canvas, percentage) {
     var sized = sizeCanvas(canvas, 260);
     var ctx = sized.ctx;
     var width = sized.width;
@@ -127,11 +127,10 @@
     var centerX = width / 2;
     var centerY = height / 2;
     var radius = Math.min(width, height) * 0.32;
+    var value = Math.max(0, Math.min(100, percentage));
     var segments = [
-      { value: 44, color: palette.primary },
-      { value: 26, color: palette.blue },
-      { value: 18, color: palette.green },
-      { value: 12, color: "#facc15" }
+      { value: value, color: palette.primary },
+      { value: 100 - value, color: palette.grid }
     ];
     var total = segments.reduce(function (sum, item) {
       return sum + item.value;
@@ -157,20 +156,25 @@
     ctx.fillStyle = palette.text;
     ctx.font = "800 26px Segoe UI, Arial, sans-serif";
     ctx.textAlign = "center";
-    ctx.fillText("75%", centerX, centerY + 6);
+    ctx.fillText(value + "%", centerX, centerY + 6);
     ctx.fillStyle = palette.muted;
     ctx.font = "12px Segoe UI, Arial, sans-serif";
-    ctx.fillText("execution", centerX, centerY + 27);
+    ctx.fillText("comptes actifs", centerX, centerY + 27);
   }
 
   function renderCharts() {
     document.querySelectorAll("[data-chart]").forEach(function (canvas) {
       var chart = canvas.getAttribute("data-chart");
       if (chart === "main-bars") {
-        drawSimpleBars(canvas, ["Jan", "Fev", "Mar", "Avr", "Mai", "Juin"], [18, 26, 21, 34, 30, 42], palette.blue);
+        drawSimpleBars(
+          canvas,
+          JSON.parse(canvas.getAttribute("data-labels") || "[]"),
+          JSON.parse(canvas.getAttribute("data-values") || "[]"),
+          palette.blue
+        );
       }
       if (chart === "main-donut") {
-        drawDonut(canvas);
+        drawDonut(canvas, Number(canvas.getAttribute("data-percentage") || 0));
       }
       if (chart === "teacher-bars") {
         drawGroupedBars(
