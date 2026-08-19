@@ -1159,12 +1159,20 @@
         '[data-field="chef_centre_telephone"]',
       );
 
+      var chefProvenanceInput = centre.querySelector(
+        '[data-field="chef_centre_provenance"]',
+      );
+
       var presidentInput = centre.querySelector(
         '[data-field="president_jury_id"]',
       );
 
       var presidentTelephoneInput = centre.querySelector(
         '[data-field="president_jury_telephone"]',
+      );
+
+      var presidentProvenanceInput = centre.querySelector(
+        '[data-field="president_jury_provenance"]',
       );
 
       var metierGroups = Array.prototype.slice.call(
@@ -1201,6 +1209,11 @@
       );
 
       addHidden(
+        "centres[" + centresIndex + "][chef_centre_provenance]",
+        chefProvenanceInput ? chefProvenanceInput.value : "",
+      );
+
+      addHidden(
         "centres[" + centresIndex + "][president_jury_id]",
         presidentInput ? presidentInput.value : "",
       );
@@ -1208,6 +1221,11 @@
       addHidden(
         "centres[" + centresIndex + "][president_jury_telephone]",
         presidentTelephoneInput ? presidentTelephoneInput.value : "",
+      );
+
+      addHidden(
+        "centres[" + centresIndex + "][president_jury_provenance]",
+        presidentProvenanceInput ? presidentProvenanceInput.value : "",
       );
 
       // N'avance que pour les groupes avec un NOM de métier renseigné — le
@@ -1410,6 +1428,11 @@
       );
       setFieldValue(
         centreCard,
+        '[data-field="chef_centre_provenance"]',
+        centreData.chef_centre_provenance,
+      );
+      setFieldValue(
+        centreCard,
         '[data-field="president_jury_id"]',
         centreData.president_jury_id,
       );
@@ -1417,6 +1440,11 @@
         centreCard,
         '[data-field="president_jury_telephone"]',
         centreData.president_jury_telephone,
+      );
+      setFieldValue(
+        centreCard,
+        '[data-field="president_jury_provenance"]',
+        centreData.president_jury_provenance,
       );
 
       // Le champ visible (texte) du widget de recherche n'est pas

@@ -140,6 +140,15 @@ Route::middleware('sicore.auth')
         Route::get('/frais-deplacement/nouvelle', [FraisDeplacementController::class, 'create'])
             ->name('frais-deplacement.create');
 
+        // Calcul du montant pour tous les membres éligibles d'une même
+        // convocation en une seule page (au lieu d'une fiche à la fois) —
+        // doit rester avant /frais-deplacement/{id} (segment fixe).
+        Route::get('/frais-deplacement/calcul-groupe', [FraisDeplacementController::class, 'calculGroupe'])
+            ->name('frais-deplacement.calcul-groupe');
+
+        Route::post('/frais-deplacement/calcul-groupe', [FraisDeplacementController::class, 'storeGroupe'])
+            ->name('frais-deplacement.calcul-groupe.store');
+
         Route::post('/frais-deplacement', [FraisDeplacementController::class, 'store'])
             ->name('frais-deplacement.store');
 

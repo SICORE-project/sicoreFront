@@ -294,6 +294,12 @@
                         </div>
 
                         <div class="form-group">
+                            <label>Provenance du président du jury</label>
+                            <input class="form-control" type="text" placeholder="Ex : Dakar" data-field="president_jury_provenance">
+                            <p class="section-description" style="margin: 6px 0 0;">Lieu où il exerce habituellement — sert au calcul des frais de déplacement.</p>
+                        </div>
+
+                        <div class="form-group">
                             <label>Chef de centre</label>
                             <div class="enseignant-search" data-chef-search>
                                 <input class="form-control" type="text" placeholder="Rechercher le chef de centre..." autocomplete="off" data-chef-search-input>
@@ -305,6 +311,12 @@
                         <div class="form-group">
                             <label>Téléphone du chef de centre</label>
                             <input class="form-control" type="text" placeholder="33 901 10 71" data-chef-telephone-input data-field="chef_centre_telephone">
+                        </div>
+
+                        <div class="form-group">
+                            <label>Provenance du chef de centre</label>
+                            <input class="form-control" type="text" placeholder="Ex : Dakar" data-field="chef_centre_provenance">
+                            <p class="section-description" style="margin: 6px 0 0;">Lieu où il exerce habituellement — sert au calcul des frais de déplacement.</p>
                         </div>
 
                     </div>

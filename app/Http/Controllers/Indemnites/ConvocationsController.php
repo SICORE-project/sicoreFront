@@ -352,8 +352,10 @@ class ConvocationsController extends Controller
             'centres.*.metiers.*' => ['nullable', 'string', 'max:255'],
             'centres.*.chef_centre_id' => ['nullable', 'integer'],
             'centres.*.chef_centre_telephone' => ['nullable', 'string', 'max:30'],
+            'centres.*.chef_centre_provenance' => ['nullable', 'string', 'max:255'],
             'centres.*.president_jury_id' => ['nullable', 'integer'],
             'centres.*.president_jury_telephone' => ['nullable', 'string', 'max:30'],
+            'centres.*.president_jury_provenance' => ['nullable', 'string', 'max:255'],
 
             // Membres du jury (etape 2 du wizard) : un enseignant, sa
             // fonction propre a cette convocation, et le centre/metier
@@ -573,8 +575,10 @@ class ConvocationsController extends Controller
                     'jury' => null,
                     'president_jury' => null,
                     'president_jury_telephone' => null,
+                    'president_jury_provenance' => null,
                     'chef_centre' => null,
                     'chef_centre_telephone' => null,
+                    'chef_centre_provenance' => null,
                     'metiers' => [
                         ['id' => null, 'metier' => 'Non classés', 'beneficiaires' => $beneficiairesSansCentre],
                     ],
@@ -779,8 +783,10 @@ class ConvocationsController extends Controller
             'centres.*.metiers.*.metier' => ['nullable', 'string', 'max:255'],
             'centres.*.chef_centre_id' => ['nullable', 'integer'],
             'centres.*.chef_centre_telephone' => ['nullable', 'string', 'max:30'],
+            'centres.*.chef_centre_provenance' => ['nullable', 'string', 'max:255'],
             'centres.*.president_jury_id' => ['nullable', 'integer'],
             'centres.*.president_jury_telephone' => ['nullable', 'string', 'max:30'],
+            'centres.*.president_jury_provenance' => ['nullable', 'string', 'max:255'],
 
             'beneficiaires' => ['nullable', 'array'],
             // "distinct" : "UN BENEFICIAIRE NE PEUT PAS ETRE CONVOQUE PLUS

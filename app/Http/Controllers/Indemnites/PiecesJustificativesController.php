@@ -199,7 +199,7 @@ class PiecesJustificativesController extends Controller
                 if (! empty($centre['chef_centre'])) {
                     $membres[] = $this->construireMembre(
                         $centreCommun,
-                        $centre['chef_centre'],
+                        array_merge($centre['chef_centre'], ['provenance_override' => $centre['chef_centre_provenance'] ?? null]),
                         'Chef de centre',
                         'Chef de centre'
                     );
@@ -208,7 +208,7 @@ class PiecesJustificativesController extends Controller
                 if (! empty($centre['president_jury'])) {
                     $membres[] = $this->construireMembre(
                         $centreCommun,
-                        $centre['president_jury'],
+                        array_merge($centre['president_jury'], ['provenance_override' => $centre['president_jury_provenance'] ?? null]),
                         'Président du jury',
                         'Président du jury'
                     );
@@ -257,7 +257,16 @@ class PiecesJustificativesController extends Controller
             'fonction' => $fonction,
             'type_convocation' => $this->determinerTypeConvocation($fonction),
             'jury' => $jury,
-            'provenance' => $enseignant['lieu_service']['libelle'] ?? null,
+            // Priorité : provenance dédiée du centre pour un chef de
+            // centre/président de jury (colonne chef_centre_provenance /
+            // president_jury_provenance, injectée par construireMembres()
+            // sous 'provenance_override' — ces deux rôles n'ont pas de
+            // ligne pivot) > provenance saisie pour CETTE convocation
+            // (pivot convocation_enseignant.provenance, ex: import Word,
+            // pour un membre du jury ordinaire) > lieu de service permanent
+            // de l'enseignant (souvent vide en pratique) — même priorité
+            // que FraisDeplacementController::provenanceEnseignant() côté back.
+            'provenance' => $enseignant['provenance_override'] ?? $enseignant['pivot']['provenance'] ?? $enseignant['lieu_service']['libelle'] ?? null,
             'dossier_complet' => $complet,
             // Denominateur dynamique (count($dossier), pas TYPES_MANUELS) :
             // $dossier contient maintenant les 6 types (voir

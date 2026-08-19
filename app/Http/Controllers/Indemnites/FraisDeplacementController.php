@@ -222,6 +222,119 @@ class FraisDeplacementController extends Controller
         ]);
     }
 
+    /**
+     * Calcul du montant pour TOUS les membres éligibles d'une convocation
+     * en une seule page (demande utilisatrice : "tu dois le faire pour
+     * tous les membres qui sont sur la convocation") — au lieu de "Nouvelle
+     * fiche" qui ne traite qu'un bénéficiaire à la fois. Le barème
+     * (Groupe/Taux/ajustement lieu/jours) est appliqué et affiché en
+     * direct côté JS pour prévisualisation ; le montant qui fait foi reste
+     * celui recalculé côté back à la création de chaque fiche (voir
+     * storeGroupe() ci-dessous et FraisDeplacementController::store() côté
+     * back).
+     */
+    public function calculGroupe(Request $request): View|RedirectResponse
+    {
+        $convocationId = $request->query('convocation_id');
+
+        if (! $convocationId) {
+            return redirect()
+                ->route('indemnites.frais-deplacement')
+                ->with('error', 'Choisissez une convocation pour calculer les frais de tous ses membres.');
+        }
+
+        $convocationResultat = $this->convocations->trouver($convocationId);
+
+        if (! $convocationResultat['success']) {
+            return redirect()
+                ->route('indemnites.frais-deplacement')
+                ->with('error', $convocationResultat['message'] ?? 'Convocation introuvable.');
+        }
+
+        $eligiblesResultat = $this->fraisDeplacement->beneficiairesEligibles($convocationId);
+
+        if (! $eligiblesResultat['success']) {
+            return redirect()
+                ->route('indemnites.frais-deplacement')
+                ->with('error', $eligiblesResultat['message'] ?? "Impossible de charger les bénéficiaires éligibles.");
+        }
+
+        $complets = $eligiblesResultat['data']['complets'] ?? [];
+
+        return view('pages.indemnites.frais-deplacement.calcul-groupe', [
+            'convocation' => $convocationResultat['data'],
+            'convocationId' => $convocationId,
+            'membres' => $complets,
+        ]);
+    }
+
+    /**
+     * Crée une fiche (statut "calculée") pour chaque membre coché, en
+     * réutilisant l'endpoint de création existant (une fiche = un appel,
+     * comme depuis "Nouvelle fiche") — pas de nouvel endpoint back, chaque
+     * membre reste soumis à la même validation/règles métier
+     * (dossierComplet(), fiche pas déjà existante, etc.).
+     */
+    public function storeGroupe(Request $request): RedirectResponse
+    {
+        $convocationId = $request->input('convocation_id');
+        $lieuExamen = $request->input('lieu_examen');
+        $dateDebut = $request->input('date_debut');
+        $dateFin = $request->input('date_fin');
+        $beneficiaireIds = array_filter((array) $request->input('beneficiaire_id', []));
+
+        if (empty($beneficiaireIds)) {
+            return redirect()
+                ->route('indemnites.frais-deplacement.calcul-groupe', ['convocation_id' => $convocationId])
+                ->with('error', 'Sélectionnez au moins un membre à calculer.');
+        }
+
+        $creees = 0;
+        $erreurs = [];
+
+        foreach ($beneficiaireIds as $beneficiaireId) {
+            // "provenance" (où le bénéficiaire exerce habituellement) est
+            // soumise comme le champ "lieu_service" attendu par le back —
+            // le "lieu d'affectation" (centre de cet examen) n'est jamais
+            // soumis, il est toujours recalculé côté serveur (voir
+            // FraisDeplacementController::centreAffectationEnseignant()).
+            $provenance = $request->input("provenance.{$beneficiaireId}");
+
+            $donnees = [
+                'convocation_id' => $convocationId,
+                'beneficiaire_id' => $beneficiaireId,
+                'motif' => $request->input('motif') ?: null,
+                'lieu_depart' => $provenance,
+                'lieu_destination' => $lieuExamen,
+                'lieu_service' => $provenance,
+                // Période de trajet par défaut = période d'examen de la
+                // convocation (le barème se base dessus - voir
+                // nombreJoursPeriodeExamen() côté back) ; ajustable ensuite
+                // au cas par cas depuis la fiche ("Modifier").
+                'date_depart' => $dateDebut,
+                'date_retour' => $dateFin,
+                'indice_agent' => $request->input("indice.{$beneficiaireId}"),
+                'montant_saisi' => $request->input("montant_mensuel.{$beneficiaireId}"),
+            ];
+
+            $resultat = $this->fraisDeplacement->creer($donnees);
+
+            if ($resultat['success']) {
+                $creees++;
+            } else {
+                $erreurs[] = ($request->input("nom.{$beneficiaireId}") ?: "Bénéficiaire #{$beneficiaireId}").' : '.($resultat['message'] ?? 'échec');
+            }
+        }
+
+        $message = $creees > 0
+            ? "{$creees} fiche(s) de déplacement créée(s)."
+            : "Aucune fiche n'a pu être créée.";
+
+        return redirect()
+            ->route('indemnites.frais-deplacement.calcul-groupe', ['convocation_id' => $convocationId])
+            ->with(empty($erreurs) ? 'success' : 'error', empty($erreurs) ? $message : $message.' Erreurs : '.implode(' — ', $erreurs));
+    }
+
     public function store(Request $request): RedirectResponse
     {
         // Feuille de déplacement papier = RECTO-VERSO : 2 champs fichier

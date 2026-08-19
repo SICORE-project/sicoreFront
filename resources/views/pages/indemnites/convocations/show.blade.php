@@ -24,9 +24,6 @@
                 <h2>{{ $convocation->objet ?? '—' }}</h2>
                 <p class="breadcrumb">
                     Émise le {{ optional($convocation->date_emission)->format('d/m/Y') ?? '—' }}
-                    @if (! empty($convocation->type_convocation['libelle'] ?? null))
-                        &middot; {{ $convocation->type_convocation['libelle'] }}
-                    @endif
                 </p>
                 @if (! empty($centreId))
                     <p class="breadcrumb">
@@ -127,6 +124,11 @@
                             </div>
 
                             <div class="form-group">
+                                <label>Provenance du président du jury</label>
+                                <p>{{ $centre['president_jury_provenance'] ?? '—' }}</p>
+                            </div>
+
+                            <div class="form-group">
                                 <label>Chef de centre</label>
                                 <p>{{ trim(($centre['chef_centre']['prenom'] ?? '') . ' ' . ($centre['chef_centre']['nom'] ?? '')) ?: '—' }}</p>
                             </div>
@@ -134,6 +136,11 @@
                             <div class="form-group">
                                 <label>Téléphone</label>
                                 <p>{{ $centre['chef_centre_telephone'] ?? '—' }}</p>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Provenance du chef de centre</label>
+                                <p>{{ $centre['chef_centre_provenance'] ?? '—' }}</p>
                             </div>
 
                         </div>

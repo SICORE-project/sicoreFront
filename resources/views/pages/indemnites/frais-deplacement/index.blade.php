@@ -180,15 +180,20 @@
                                         @endif
                                     </td>
                                     <td class="actions-cell">
-                                        @if (! empty($ligne['fiche_deplacement_id']))
-                                            <a class="table-action" href="{{ route('indemnites.frais-deplacement.show', $ligne['fiche_deplacement_id']) }}">
-                                                Voir la fiche
+                                        <div class="table-actions-inline">
+                                            @if (! empty($ligne['fiche_deplacement_id']))
+                                                <a class="table-action" href="{{ route('indemnites.frais-deplacement.show', $ligne['fiche_deplacement_id']) }}">
+                                                    Voir la fiche
+                                                </a>
+                                            @else
+                                                <a class="table-action" href="{{ route('indemnites.frais-deplacement.create', ['convocation_id' => $ligne['convocation_id'], 'beneficiaire_id' => $ligne['beneficiaire_id']]) }}">
+                                                    Créer la fiche
+                                                </a>
+                                            @endif
+                                            <a class="table-action" href="{{ route('indemnites.frais-deplacement.calcul-groupe', ['convocation_id' => $ligne['convocation_id']]) }}" title="Calculer pour tous les membres de cette convocation">
+                                                Calcul groupé
                                             </a>
-                                        @else
-                                            <a class="table-action" href="{{ route('indemnites.frais-deplacement.create', ['convocation_id' => $ligne['convocation_id'], 'beneficiaire_id' => $ligne['beneficiaire_id']]) }}">
-                                                Créer la fiche
-                                            </a>
-                                        @endif
+                                        </div>
                                     </td>
                                 </tr>
                             @empty
