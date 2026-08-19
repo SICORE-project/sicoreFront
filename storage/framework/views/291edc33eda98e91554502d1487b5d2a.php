@@ -1,0 +1,1 @@
+<?php /**PATH C:\projets\sicoreFront\resources\views\pages\indemnites\accuses-reception-politique-archivage.blade.php ENDPATH**/ ?>

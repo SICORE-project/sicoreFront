@@ -1,0 +1,1 @@
+<?php /**PATH C:\projets\sicoreFront\resources\views\pages\indemnites\simulation.blade.php ENDPATH**/ ?>

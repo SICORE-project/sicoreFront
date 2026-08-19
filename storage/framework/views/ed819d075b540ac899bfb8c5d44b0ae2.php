@@ -1,0 +1,1 @@
+<?php /**PATH C:\projets\sicoreFront\resources\views\pages\indemnites\baremes.blade.php ENDPATH**/ ?>

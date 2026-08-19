@@ -1,0 +1,1 @@
+<?php /**PATH C:\projets\sicoreFront\resources\views\pages\indemnites\servicefait\show.blade.php ENDPATH**/ ?>
