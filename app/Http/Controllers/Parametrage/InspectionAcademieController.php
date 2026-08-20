@@ -10,6 +10,30 @@ use Illuminate\View\View;
 
 class InspectionAcademieController extends Controller
 {
+    public function show(Request $request, string $ia, InspectionAcademieService $service): View|RedirectResponse
+    {
+        $academiesResult = $service->getAll(1, 100);
+        $iefsResult = $service->getIefs($ia);
+
+        if ($academiesResult['unauthorized'] || $iefsResult['unauthorized']) {
+            $request->session()->forget(['access_token', 'sicore_user']);
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            return redirect()->route('login')->with('warning', $iefsResult['error'] ?? $academiesResult['error']);
+        }
+
+        $academy = collect($academiesResult['items'])->first(
+            fn (array $item): bool => (string) data_get($item, 'id', data_get($item, 'uuid')) === $ia
+        ) ?? ['id' => $ia, 'code' => 'IA', 'libelle' => 'Inspection d’académie'];
+
+        return view('pages.parametres.ia-show', [
+            'academy' => $academy,
+            'iefs' => $iefsResult['items'],
+            'iefsError' => $iefsResult['error'],
+        ]);
+    }
+
     public function index(Request $request, InspectionAcademieService $service): View|RedirectResponse
     {
         $result = $service->getAll(max(1, $request->integer('page', 1)), 10);

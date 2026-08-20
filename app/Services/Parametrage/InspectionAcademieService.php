@@ -49,6 +49,44 @@ class InspectionAcademieService
         ];
     }
 
+    public function getIefs(string|int $academyId): array
+    {
+        try {
+            $response = $this->apiClient->get("ias/{$academyId}/iefs");
+        } catch (ConnectionException) {
+            return [
+                'items' => [],
+                'error' => 'Le service backend est momentanément inaccessible.',
+                'unauthorized' => false,
+            ];
+        }
+
+        if ($response->unauthorized()) {
+            return [
+                'items' => [],
+                'error' => 'Votre session backend a expiré. Veuillez vous reconnecter.',
+                'unauthorized' => true,
+            ];
+        }
+
+        if (! $response->successful()) {
+            return [
+                'items' => [],
+                'error' => $response->json('message', 'Impossible de charger les IEF rattachées.'),
+                'unauthorized' => false,
+            ];
+        }
+
+        $payload = $response->json();
+        $items = data_get($payload, 'data.data', data_get($payload, 'data', data_get($payload, 'iefs', [])));
+
+        return [
+            'items' => is_array($items) ? $items : [],
+            'error' => null,
+            'unauthorized' => false,
+        ];
+    }
+
     private function emptyResult(int $page, int $perPage, string $message): array
     {
         return [

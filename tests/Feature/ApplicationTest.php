@@ -539,6 +539,10 @@ class ApplicationTest extends TestCase
             ->assertSee('Inspection d’académie de Dakar')
             ->assertSee('Aminata Diop')
             ->assertSee('Actif')
+            ->assertSee('data-modal-open="ia-create-modal"', false)
+            ->assertSee('id="ia-create-modal"', false)
+            ->assertSee('id="iaCreateStatut" name="statut" required', false)
+            ->assertSee('Sélectionner un statut')
             ->assertSee('data-modal-open="ia-edit-modal"', false)
             ->assertSee('Enregistrer les modifications')
             ->assertSee('data-ia-toggle', false)
@@ -547,5 +551,78 @@ class ApplicationTest extends TestCase
 
         Http::assertSent(fn ($request): bool => $request->method() === 'GET'
             && str_contains($request->url(), '/api/parametrage/ia'));
+    }
+
+    public function test_ief_creation_form_is_displayed_in_a_frontend_modal(): void
+    {
+        $this->withSession([
+            'sicore_user' => ['name' => 'Gestionnaire', 'role' => 'Gestionnaire'],
+        ])->get('/parametrage/parametres/ief')
+            ->assertOk()
+            ->assertSee('Créer une IEF')
+            ->assertSee('data-modal-open="ief-create-modal"', false)
+            ->assertSee('id="ief-create-modal"', false)
+            ->assertSee('class="filter-panel"', false)
+            ->assertDontSee('id="ief-filter-modal"', false)
+            ->assertSee('id="iefFilterIa"', false)
+            ->assertSee('id="iefFilterStatus"', false)
+            ->assertSee('Réinitialiser')
+            ->assertSee('>Voir</button>', false)
+            ->assertSee('>Modifier</button>', false)
+            ->assertSee('>Supprimer</button>', false)
+            ->assertDontSee('class="icon-action"', false)
+            ->assertSee('data-modal-open="ief-edit-modal"', false)
+            ->assertSee('data-ief-edit', false)
+            ->assertSee('id="ief-edit-modal"', false)
+            ->assertSee('id="iefEditCode"', false)
+            ->assertSee('id="iefEditLibelle"', false)
+            ->assertSee('id="iefEditIa"', false)
+            ->assertSee('Enregistrer les modifications')
+            ->assertSee('data-ief-transfer', false)
+            ->assertSee('>Transférer</button>', false)
+            ->assertSee('id="ief-transfer-modal"', false)
+            ->assertSee('id="iefCurrentIa"', false)
+            ->assertSee('id="iefDestinationIa"', false)
+            ->assertSee('Nouvelle IA active')
+            ->assertSee('Confirmer le transfert')
+            ->assertSee('Seules les inspections d’académie actives sont proposées.')
+            ->assertSee('name="code"', false)
+            ->assertSee('name="libelle"', false)
+            ->assertSee('name="inspection_academie_id"', false)
+            ->assertSee('Données temporaires utilisées en attendant la connexion au backend.')
+            ->assertSee('Inspection d’académie de Dakar');
+    }
+
+    public function test_academy_page_displays_its_attached_iefs(): void
+    {
+        Http::fake([
+            '*/ias/12/iefs' => Http::response([
+                'data' => [
+                    ['code' => 'IEF-DKR-N', 'libelle' => 'IEF de Dakar Nord'],
+                    ['code' => 'IEF-DKR-S', 'libelle' => 'IEF de Dakar Sud'],
+                ],
+            ]),
+            '*/parametrage/ia*' => Http::response([
+                'data' => [[
+                    'id' => 12,
+                    'code' => 'IA-DKR',
+                    'libelle' => 'Inspection d’académie de Dakar',
+                ]],
+            ]),
+        ]);
+
+        $this->withSession([
+            'sicore_user' => ['name' => 'Gestionnaire', 'role' => 'Gestionnaire'],
+            'access_token' => 'valid-token',
+        ])->get('/parametrage/parametres/ia/12')
+            ->assertOk()
+            ->assertSee('IEF rattachées')
+            ->assertSee('IEF-DKR-N')
+            ->assertSee('IEF de Dakar Nord')
+            ->assertSee('IEF-DKR-S')
+            ->assertSee('IEF de Dakar Sud');
+
+        Http::assertSent(fn ($request): bool => $request->method() === 'GET'
+            && str_ends_with($request->url(), '/api/ias/12/iefs'));
     }
 }

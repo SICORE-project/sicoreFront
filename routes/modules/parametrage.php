@@ -44,6 +44,9 @@ Route::middleware('sicore.auth')
         Route::view('/parametres/ia/nouvelle', 'pages.parametres.ia-create')
             ->name('parametres.ia.create');
 
+        Route::get('/parametres/ia/{ia}', [InspectionAcademieController::class, 'show'])
+            ->name('parametres.ia.show');
+
         Route::get('/parametres/institutions-financieres', [InstitutionFinanciereController::class, 'index'])
             ->name('parametres.institutions-financieres');
         Route::post('/parametres/institutions-financieres', [InstitutionFinanciereController::class, 'store'])

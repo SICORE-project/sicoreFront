@@ -48,7 +48,7 @@
     <div class="actions-row">
       <p class="breadcrumb"><a href="{{ route('parametres.index') }}">Paramétrage</a> &gt; Inspections d’académie</p>
       <div class="actions-group">
-        <a class="btn-primary" href="{{ route('parametres.ia.create') }}">+ Nouvelle IA</a>
+        <button class="btn-primary" type="button" data-modal-open="ia-create-modal">+ Nouvelle IA</button>
         <a class="btn-secondary" href="{{ route('parametres.ia.index') }}">Actualiser</a>
       </div>
     </div>
@@ -90,6 +90,10 @@
                 <td>{{ data_get($ia, 'email', data_get($ia, 'contact.email', '—')) }}</td>
                 <td><span class="badge {{ $active ? 'badge-active' : 'badge-suspended' }}" data-ia-status>{{ $active ? 'Actif' : 'Inactif' }}</span></td>
                 <td class="actions-cell">
+                  @php($iaId = data_get($ia, 'id', data_get($ia, 'uuid')))
+                  @if ($iaId)
+                    <a class="table-action" href="{{ route('parametres.ia.show', ['ia' => $iaId]) }}">Consulter</a>
+                  @endif
                   <button class="table-action" type="button" data-modal-open="ia-edit-modal" data-ia-edit='@json($ia)'>Modifier</button>
                   <button class="table-action" type="button" data-ia-toggle>{{ $active ? 'Désactiver' : 'Activer' }}</button>
                 </td>
@@ -108,6 +112,44 @@
     </section>
   </section>
 </main>
+
+<x-module-indemnite type="modal" id="ia-create-modal" title="Créer une inspection d’académie">
+  <form class="teacher-form" id="iaCreateModalForm">
+    <div class="alert alert-success" id="iaCreateModalFeedback" role="status" hidden>La nouvelle IA est valide et prête à être transmise.</div>
+    <p class="form-required-note"><span class="required">*</span> Champs obligatoires</p>
+    <div class="form-grid form-grid--balanced">
+      <div class="form-group">
+        <label for="iaCreateCode">Code <span class="required">*</span></label>
+        <input class="form-control" id="iaCreateCode" name="code" type="text" maxlength="20" required autocomplete="off" placeholder="Ex. IA-DKR">
+      </div>
+      <div class="form-group">
+        <label for="iaCreateLibelle">Libellé <span class="required">*</span></label>
+        <input class="form-control" id="iaCreateLibelle" name="libelle" type="text" maxlength="150" required placeholder="Ex. Inspection d’académie de Dakar">
+      </div>
+      <div class="form-group">
+        <label for="iaCreateRegion">Région <span class="required">*</span></label>
+        <select class="form-control" id="iaCreateRegion" name="region" required>
+          <option value="">Sélectionner une région</option>
+          @foreach (['Dakar', 'Diourbel', 'Fatick', 'Kaffrine', 'Kaolack', 'Kédougou', 'Kolda', 'Louga', 'Matam', 'Saint-Louis', 'Sédhiou', 'Tambacounda', 'Thiès', 'Ziguinchor'] as $region)
+            <option value="{{ $region }}">{{ $region }}</option>
+          @endforeach
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="iaCreateStatut">Statut <span class="required">*</span></label>
+        <select class="form-control" id="iaCreateStatut" name="statut" required>
+          <option value="">Sélectionner un statut</option>
+          <option value="actif">Actif</option>
+          <option value="inactif">Inactif</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-actions">
+      <button class="btn-secondary" type="button" data-modal-close>Annuler</button>
+      <button class="btn-primary" type="submit">Créer l’IA</button>
+    </div>
+  </form>
+</x-module-indemnite>
 
 <x-module-indemnite type="modal" id="ia-edit-modal" title="Modifier une inspection d’académie">
   <form class="teacher-form" id="iaEditForm">
@@ -159,6 +201,13 @@
   </form>
 </x-module-indemnite>
 
+@push('styles')
+<style>
+  #ia-create-modal .modal-dialog,
+  #ia-edit-modal .modal-dialog { max-width: 920px; width: calc(100% - 32px); }
+</style>
+@endpush
+
 @push('scripts')
 <script>
   (function () {
@@ -186,6 +235,12 @@
         document.getElementById('iaEditStatut').value = ['1', 'true', 'actif', 'active', 'oui', 'yes'].indexOf(status) !== -1 ? 'actif' : 'inactif';
         document.getElementById('iaEditFeedback').hidden = true;
       });
+    });
+
+    document.getElementById('iaCreateModalForm').addEventListener('submit', function (event) {
+      event.preventDefault();
+      if (!this.reportValidity()) return;
+      document.getElementById('iaCreateModalFeedback').hidden = false;
     });
 
     document.querySelectorAll('[data-ia-toggle]').forEach(function (button) {

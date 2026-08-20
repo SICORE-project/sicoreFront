@@ -42,8 +42,9 @@
               </select>
             </div>
             <div class="form-group">
-              <label for="iaStatut">Statut <span class="form-optional">(à confirmer métier)</span></label>
-              <select class="form-control" id="iaStatut" name="statut">
+              <label for="iaStatut">Statut <span class="required">*</span></label>
+              <select class="form-control" id="iaStatut" name="statut" required>
+                <option value="">Sélectionner un statut</option>
                 <option value="actif">Actif</option>
                 <option value="inactif">Inactif</option>
               </select>
