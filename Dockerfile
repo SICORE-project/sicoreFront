@@ -1,86 +1,25 @@
-# --- Stage 1: Build Frontend Assets (Vite) ---
-FROM node:20-alpine AS frontend-builder
-
+# Image PHP-FPM + Nginx pour servir le frontend Laravel SICORE.
+# Le frontend ne compile pas d'assets avec Node: les CSS/JS sont deja dans public/assets.
+FROM composer:2 AS vendor
 WORKDIR /app
-
-COPY package*.json ./
-RUN npm ci
-
+COPY composer.json ./
+RUN composer install --no-dev --no-interaction --prefer-dist --no-progress --optimize-autoloader --no-scripts
 COPY . .
-RUN npm run build
+RUN composer dump-autoload --optimize
 
-
-# --- Stage 2: Main Application Runtime ---
 FROM php:8.2-fpm-alpine
-
 WORKDIR /var/www/html
 
+# Extensions PHP utiles a Laravel et au client API.
+RUN apk add --no-cache nginx supervisor bash icu-dev libzip-dev oniguruma-dev \
+    && docker-php-ext-install intl mbstring pdo pdo_mysql zip opcache
 
-# Install system dependencies
-RUN apk add --no-cache \
-    curl \
-    libpng-dev \
-    libjpeg-turbo-dev \
-    freetype-dev \
-    libxml2-dev \
-    libzip-dev \
-    zip \
-    unzip \
-    oniguruma-dev \
-    icu-dev \
-    linux-headers \
-    $PHPIZE_DEPS
+COPY --from=vendor /app /var/www/html
+COPY docker/nginx.conf /etc/nginx/http.d/default.conf
+COPY docker/supervisord.conf /etc/supervisord.conf
 
+# Laravel doit pouvoir ecrire dans storage et bootstrap/cache.
+RUN chown -R www-data:www-data storage bootstrap/cache
 
-# Configure and install PHP extensions
-RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install -j$(nproc) \
-        pdo_mysql \
-        mbstring \
-        exif \
-        pcntl \
-        bcmath \
-        gd \
-        zip \
-        intl \
-        opcache
-
-
-# Install Redis extension
-RUN pecl install redis \
-    && docker-php-ext-enable redis
-
-
-# Install Composer
-COPY --from=composer:2.8 /usr/bin/composer /usr/local/bin/composer
-
-
-# Copy application
-COPY . .
-
-
-# Copy Vite production assets
-COPY --from=frontend-builder /app/public/build ./public/build
-
-
-# Install Laravel dependencies
-ENV COMPOSER_ALLOW_SUPERUSER=1
-
-RUN composer install \
-    --no-interaction \
-    --optimize-autoloader \
-    --no-dev
-
-
-# Laravel permissions
-RUN chown -R www-data:www-data \
-        /var/www/html/storage \
-        /var/www/html/bootstrap/cache \
-    && chmod -R 775 \
-        /var/www/html/storage \
-        /var/www/html/bootstrap/cache
-
-
-EXPOSE 9000
-
-CMD ["php-fpm"]
+EXPOSE 8080
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisord.conf"]
