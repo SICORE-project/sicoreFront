@@ -1,0 +1,24 @@
+{
+  "name": "sicorefront",
+  "version": "1.0.0",
+  "description": "Frontend Laravel de **SICORE — Système Intégré des COrps Émergents**.",
+  "main": "index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SICORE-project/sicoreFront.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/SICORE-project/sicoreFront/issues"
+  },
+  "homepage": "https://github.com/SICORE-project/sicoreFront#readme"
+}
