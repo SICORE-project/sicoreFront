@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Parametrage\InstitutionFinanciereController;
+use App\Http\Controllers\Parametrage\InspectionAcademieController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -36,6 +37,12 @@ Route::middleware('sicore.auth')
 
         Route::view('/parametres/ief', 'pages.parametres.ief')
             ->name('parametres.ief');
+
+        Route::get('/parametres/ia', [InspectionAcademieController::class, 'index'])
+            ->name('parametres.ia.index');
+
+        Route::view('/parametres/ia/nouvelle', 'pages.parametres.ia-create')
+            ->name('parametres.ia.create');
 
         Route::get('/parametres/institutions-financieres', [InstitutionFinanciereController::class, 'index'])
             ->name('parametres.institutions-financieres');

@@ -514,4 +514,33 @@ class ApplicationTest extends TestCase
         ])->post('/parametrage/parametres/comptes-bancaires-enseignants', [])
             ->assertSessionHasErrors(['enseignant_id', 'institut_financier_id', 'numero_compte', 'rib', 'est_actif'], null, 'bankAccount');
     }
+
+    public function test_academy_inspections_are_loaded_from_the_api(): void
+    {
+        Http::fake([
+            '*/parametrage/ia*' => Http::response([
+                'data' => [[
+                    'code' => 'IA-DKR',
+                    'libelle' => 'Inspection d’académie de Dakar',
+                    'region' => ['nom' => 'Dakar'],
+                    'responsable' => ['nom' => 'Aminata Diop'],
+                    'telephone' => '33 800 00 00',
+                    'email' => 'ia.dakar@sicore.sn',
+                    'statut' => 'actif',
+                ]],
+            ]),
+        ]);
+
+        $this->withSession([
+            'sicore_user' => ['name' => 'Gestionnaire', 'role' => 'Gestionnaire'],
+            'access_token' => 'valid-token',
+        ])->get('/parametrage/parametres/ia')
+            ->assertOk()
+            ->assertSee('Inspection d’académie de Dakar')
+            ->assertSee('Aminata Diop')
+            ->assertSee('Actif');
+
+        Http::assertSent(fn ($request): bool => $request->method() === 'GET'
+            && str_contains($request->url(), '/api/parametrage/ia'));
+    }
 }

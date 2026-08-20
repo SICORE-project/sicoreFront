@@ -73,6 +73,7 @@ return [
         'active' => 'parametres.*',
         'links' => [
             ['label' => 'Vue générale', 'route' => 'parametres.index', 'icon' => 'fa-solid fa-sliders'],
+            ['label' => 'IA', 'route' => 'parametres.ia.index', 'icon' => 'fa-solid fa-building-columns'],
             ['label' => 'IEF', 'route' => 'parametres.ief', 'icon' => 'fa-solid fa-sitemap'],
             ['label' => 'Diplômes', 'route' => 'parametres.index', 'fragment' => 'diplomes', 'icon' => 'fa-solid fa-graduation-cap'],
             ['label' => 'Corps', 'route' => 'parametres.index', 'fragment' => 'corps', 'icon' => 'fa-solid fa-users-line'],
