@@ -99,6 +99,7 @@ jobs:
           host: ${{ secrets.VPS_IP }}
           username: ${{ secrets.VPS_USERNAME }}
           key: ${{ secrets.VPS_KEY }}
+          envs: PROD_ENV
           script: |
             cd /var/www/sicorefront
 
