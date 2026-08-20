@@ -71,8 +71,8 @@
                     </div>
 
                     <div class="form-group">
-                        <label>Lieu d'examen</label>
-                        <p>{{ $convocation->lieu_examen ?? '—' }}</p>
+                        <label>Lieu d'affectation</label>
+                        <p>{{ $convocation->lieu_affectation ?? '—' }}</p>
                     </div>
 
                    

@@ -1,23 +1,17 @@
 /*
- * Wizard générique (3 étapes) pour "Nouvelle fiche de déplacement" —
- * demande utilisatrice : "le formulaire doit être en 3 étapes (regarde
- * workflow de création de convocation)".
+ * Wizard générique pour le formulaire "Fiche de déplacement".
  *
- * Reprend le MÊME MÉCANISME générique que convocation-wizard.js (mêmes
+ * Reprend le même mécanisme générique que convocation-wizard.js (mêmes
  * attributs data-wizard-panel / data-step-indicator / data-wizard-next /
  * data-wizard-prev / data-wizard-submit / data-wizard-cancel, même logique
- * de validation "un champ required vide bloque le passage à l'étape
- * suivante") — mais SANS toute la partie spécifique aux convocations
- * (recherche de centres/jurys/membres, détection de doublons, etc.), qui
- * ne s'applique pas ici. Fichier séparé plutôt que réutiliser
- * convocation-wizard.js tel quel : ce dernier lie son écouteur "submit" à
- * des vérifications propres aux convocations (ex. "au moins un centre
- * d'examen"), qui auraient bloqué à tort la soumission de cette page.
+ * de validation) mais sans la partie spécifique aux convocations
+ * (recherche de centres/jurys/membres, détection de doublons, etc.).
+ * Fichier séparé de convocation-wizard.js car ce dernier lie son écouteur
+ * "submit" à des vérifications propres aux convocations.
  *
  * Scopé sur [data-frais-deplacement-wizard] (au lieu de
  * [data-convocation-wizard]) pour ne jamais entrer en collision avec
- * convocation-wizard.js si les deux scripts se retrouvaient un jour
- * chargés sur la même page.
+ * convocation-wizard.js.
  */
 (function () {
   "use strict";

@@ -186,15 +186,16 @@
                         </div>
 
                         <div class="form-group">
-                            <label for="lieu_examen">Lieu d'examen</label>
+                            <label for="lieu_affectation">Lieu d'affectation</label>
                             <input
-                                class="form-control @error('lieu_examen') is-invalid @enderror"
-                                id="lieu_examen"
-                                name="lieu_examen"
+                                class="form-control @error('lieu_affectation') is-invalid @enderror"
+                                id="lieu_affectation"
+                                name="lieu_affectation"
                                 type="text"
-                                value="{{ old('lieu_examen') }}"
+                                value="{{ old('lieu_affectation') }}"
+                                placeholder="Ex : Dakar"
                             >
-                            @error('lieu_examen')<p class="field-error">{{ $message }}</p>@enderror
+                            @error('lieu_affectation')<p class="field-error">{{ $message }}</p>@enderror
                         </div>
 
                         
