@@ -88,8 +88,8 @@ jobs:
           context: .
           push: true
           tags: |
-            ${{ secrets.DOCKER_USERNAME }}/sicoreFront:latest
-            ${{ secrets.DOCKER_USERNAME }}/sicoreFront:${{ github.sha }}
+            ${{ secrets.DOCKER_USERNAME }}/sicorefront:latest
+            ${{ secrets.DOCKER_USERNAME }}/sicorefront:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -100,7 +100,7 @@ jobs:
           username: ${{ secrets.VPS_USERNAME }}
           key: ${{ secrets.VPS_KEY }}
           script: |
-            cd /var/www/sicore-Front
+            cd /var/www/sicorefront
 
             docker compose -f docker-compose-frontend.yml pull
 
