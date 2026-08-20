@@ -1,4 +1,11 @@
+/*
+ * STYLES DE BASE DU FRONTEND SICORE
+ * Chargé sur toutes les pages par resources/views/layouts/base.blade.php.
+ * Ce fichier contient les variables du thème, les éléments HTML généraux et la
+ * page de connexion. Les pages connectées ajoutent ensuite assets/css/app.css.
+ */
 :root {
+  /* Variables réutilisables : modifier ici pour faire évoluer le thème global. */
   --primary: #166534;
   --primary-dark: #14532d;
   --primary-light: #438a58;
@@ -79,6 +86,9 @@ canvas {
   border: 0;
 }
 
+/* --------------------------------------------------------------------------
+ * Page de connexion : resources/views/pages/auth/login.blade.php
+ * ----------------------------------------------------------------------- */
 .login-wrapper {
   min-height: 100vh;
   background: linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%);
@@ -628,7 +638,7 @@ textarea.form-control {
 .server-flash-info { color: #1e40af; border-color: #bfdbfe; background: #eff6ff; }
 
 .login-errors,
-.demo-credentials {
+.bootstrap-credentials {
   display: flex;
   align-items: flex-start;
   gap: 9px;
@@ -644,7 +654,7 @@ textarea.form-control {
   background: #fef2f2;
 }
 
-.demo-credentials {
+.bootstrap-credentials {
   display: block;
   margin-top: 16px;
   color: #14532d;
