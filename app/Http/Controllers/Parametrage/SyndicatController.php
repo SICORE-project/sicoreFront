@@ -16,7 +16,7 @@ class SyndicatController extends Controller
     public function __construct(private readonly ApiClient $apiClient)
     {
     }
-
+// method to display a listing of the syndicats
     public function index(Request $request): View
     {
         $syndicats = collect();
@@ -76,7 +76,7 @@ class SyndicatController extends Controller
             'statut',
         ));
     }
-
+// method to show the form for creating a new syndicat
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
