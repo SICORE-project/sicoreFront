@@ -132,23 +132,15 @@
                                         </span>
                                     </td>
                                     <td class="actions-cell">
-                                        <div class="action-buttons">
-                                            <a href="{{ route('admin.roles.permissions', $role['id']) }}" class="action-btn"
-                                                title="Permissions">
-                                                <i class="fas fa-key"></i>
-                                            </a>
-                                            <a href="{{ route('admin.roles.edit', $role['id']) }}" class="action-btn"
-                                                title="Modifier">
-                                                <i class="fas fa-edit"></i>
-                                            </a>
+                                        <div class="table-actions-inline">
+                                            <a href="{{ route('admin.roles.show', $role['id']) }}" class="table-action">Voir</a>
+                                            <a href="{{ route('admin.roles.edit', $role['id']) }}" class="table-action">Modifier</a>
                                             <form action="{{ route('admin.roles.destroy', $role['id']) }}" method="POST"
                                                 style="display: inline;">
                                                 @csrf
                                                 @method('DELETE')
-                                                <button type="submit" class="action-btn delete"
-                                                    onclick="return confirm('Supprimer ce rôle ?')" title="Supprimer">
-                                                    <i class="fas fa-trash"></i>
-                                                </button>
+                                                <button type="submit" class="table-action delete"
+                                                    onclick="return confirm('Supprimer ce rôle ?')">Supprimer</button>
                                             </form>
                                         </div>
                                     </td>
@@ -172,10 +164,10 @@
                         @foreach ($roles['links'] as $link)
                             @if ($link['url'])
                                 <a href="{{ $link['url'] }}" class="page-btn {{ $link['active'] ? 'active' : '' }}">
-                                    {!! $link['label'] !!}
+                                    {{ $loop->first ? '←' : ($loop->last ? '→' : $link['label']) }}
                                 </a>
                             @else
-                                <span class="page-btn disabled">{!! $link['label'] !!}</span>
+                                <span class="page-btn disabled">{{ $loop->first ? '←' : ($loop->last ? '→' : $link['label']) }}</span>
                             @endif
                         @endforeach
                     @else

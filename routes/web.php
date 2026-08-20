@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\DashboardController;
 use Illuminate\Support\Facades\Route;
 
 
@@ -54,7 +55,6 @@ Route::middleware('sicore.auth')->group(function (): void {
    Route::view('/dashboard', 'pages.dashboard.index')->name('dashboard');
 
 });
-
 
 require __DIR__.'/modules/administration.php';
 require __DIR__.'/modules/parametrage.php';

@@ -2290,8 +2290,8 @@ return [
         ],
         'filters' => [
             'Profil',
-            'Statut',
             'Service',
+            'Statut',
         ],
         'actions' => [
             'Nouvel utilisateur',
