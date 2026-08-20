@@ -1,0 +1,99 @@
+********************************************
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ "deploy" ]
+  pull_request:
+    branches: [ "deploy" ]
+
+jobs:
+  # ==========================================
+  # 1. CONTINUOUS INTEGRATION (TESTING STAGE)
+  # ==========================================
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ALLOW_EMPTY_PASSWORD: yes
+          MYSQL_DATABASE: testing
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Setup PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: '8.2'
+        extensions: mbstring, xml, ctype, iconv, mysql, bcmath, gd
+        coverage: none
+
+    - name: Copy .env.testing
+      run: php -r "file_exists('.env.testing') || copy('.env.example', '.env.testing');"
+
+    - name: Install Composer Dependencies
+      run: composer install --no-ansi --no-interaction --no-scripts --no-progress --prefer-dist
+
+    - name: Generate Application Key
+      run: php artisan key:generate --env=testing
+
+
+#     - name: Execute Tests (Pest or PHPUnit)
+#       run: php artisan test
+#       env:
+#         DB_CONNECTION: mysql
+#         DB_HOST: 127.0.0.1
+#         DB_PORT: 3306
+#         DB_DATABASE: testing
+#         DB_USERNAME: root
+#         DB_PASSWORD: ""
+
+  # ==========================================
+  # 2. CONTINUOUS DEPLOYMENT (BUILD & DEPLOY)
+  # ==========================================
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_TOKEN }}
+
+    - name: Build and Push Production Docker Image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        push: true
+        tags: |
+          ${{ secrets.DOCKER_USERNAME }}/sicoreFront:latest
+          ${{ secrets.DOCKER_USERNAME }}/sicoreFront:${{ github.sha }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+    - name: Deploy to Server via SSH
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.VPS_IP }}
+        username: ${{ secrets.VPS_USERNAME }}
+        key: ${{ secrets.VPS_KEY }}
+        script: |
+          cd /var/www/sicore-Front
+          docker compose  -f docker-compose-frontend pull ${{ secrets.DOCKER_USERNAME }}/sicoreFront:latest
+          docker compose  -f docker-compose-frontend up -d
