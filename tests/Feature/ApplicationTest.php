@@ -538,7 +538,12 @@ class ApplicationTest extends TestCase
             ->assertOk()
             ->assertSee('Inspection d’académie de Dakar')
             ->assertSee('Aminata Diop')
-            ->assertSee('Actif');
+            ->assertSee('Actif')
+            ->assertSee('data-modal-open="ia-edit-modal"', false)
+            ->assertSee('Enregistrer les modifications')
+            ->assertSee('data-ia-toggle', false)
+            ->assertSee('Désactiver')
+            ->assertSee('Son historique sera conservé.');
 
         Http::assertSent(fn ($request): bool => $request->method() === 'GET'
             && str_contains($request->url(), '/api/parametrage/ia'));
