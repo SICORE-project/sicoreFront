@@ -41,7 +41,7 @@ class ModulePage extends Component
     public function __construct(
         public string $slug,
         array $data = [],
-        public ?string $error = null,
+        public array|string|null $error = null,
     ) {
         // Exemple : le slug paie-bulletins lit config('module-pages.paie-bulletins').
         $page = config("module-pages.{$slug}");

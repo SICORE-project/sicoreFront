@@ -25,11 +25,15 @@
   <section class="content-area">
     {{-- État de la communication avec le backend. --}}
     @if ($error)
+      @php
+        $errorTitle = is_array($error) ? ($error['title'] ?? 'Chargement des données impossible') : 'Chargement des données impossible';
+        $errorMessage = is_array($error) ? ($error['message'] ?? '') : $error;
+      @endphp
       <section class="connection-banner connection-banner-error" role="alert">
         <i class="fa-solid fa-plug-circle-xmark" aria-hidden="true"></i>
         <div>
-          <strong>Connexion au backend indisponible</strong>
-          <p>{{ $error }}</p>
+          <strong>{{ $errorTitle }}</strong>
+          <p>{{ $errorMessage }}</p>
         </div>
       </section>
     @elseif ($connected)

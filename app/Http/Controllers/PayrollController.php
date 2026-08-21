@@ -56,7 +56,7 @@ class PayrollController extends Controller
                 return $this->expired($request);
             }
             $moduleData = [];
-            $apiError = $exception->getMessage();
+            $apiError = $this->apiErrorDetails($request, $exception);
         }
 
         // Le préfixe "paie-" est retiré pour retrouver le nom du fichier Blade.
@@ -89,7 +89,7 @@ class PayrollController extends Controller
             return response()->json($result);
         } catch (SicoreApiException $exception) {
             return response()->json([
-                'message' => $exception->getMessage(),
+                'message' => $this->apiErrorMessage($request, $exception),
                 'errors' => $exception->errors,
             ], $exception->status);
         }
@@ -112,7 +112,11 @@ class PayrollController extends Controller
                 array_filter($filters)
             );
         } catch (SicoreApiException $exception) {
-            return back()->with('error', $exception->getMessage());
+            if ($exception->status === 401) {
+                return $this->expired($request);
+            }
+
+            return back()->with('error', $this->apiErrorMessage($request, $exception));
         }
 
         $disposition = $apiResponse->header('Content-Disposition')
@@ -139,7 +143,7 @@ class PayrollController extends Controller
             }
 
             return redirect()->route('paie.bulletins')
-                ->with('error', $exception->getMessage());
+                ->with('error', $this->apiErrorMessage($request, $exception));
         }
 
         return view('pages.paie.payslip', compact('data'));
@@ -151,6 +155,47 @@ class PayrollController extends Controller
         return (string) $request->session()->get('access_token');
     }
 
+    /**
+     * Transforme un statut API en explication directement exploitable par
+     * l'utilisateur, sans confondre un refus d'accès avec une panne réseau.
+     *
+     * @return array{title: string, message: string}
+     */
+    private function apiErrorDetails(Request $request, SicoreApiException $exception): array
+    {
+        $title = match ($exception->status) {
+            403 => 'Accès refusé pour votre rôle',
+            404 => 'Donnée demandée introuvable',
+            422 => 'Demande non valide',
+            429 => 'Trop de tentatives',
+            500, 502, 503, 504 => 'Service SICORE indisponible',
+            default => 'Chargement des données impossible',
+        };
+
+        return [
+            'title' => $title,
+            'message' => $this->apiErrorMessage($request, $exception),
+        ];
+    }
+
+    private function apiErrorMessage(Request $request, SicoreApiException $exception): string
+    {
+        if ($exception->status === 403) {
+            $role = trim((string) $request->session()->get('sicore_user.role'));
+            $roleContext = $role !== '' ? " avec le rôle « {$role} »" : '';
+
+            return "Votre compte est bien connecté{$roleContext}, mais il n'est pas autorisé à consulter ces données ou à effectuer cette opération de paie. Contactez un administrateur pour vérifier les droits associés à votre rôle.";
+        }
+
+        return match ($exception->status) {
+            401 => 'Votre session est absente, expirée ou révoquée. Reconnectez-vous pour continuer.',
+            404 => 'La donnée demandée n’existe pas ou n’est plus disponible.',
+            429 => 'Trop de tentatives ont été effectuées. Patientez quelques instants avant de réessayer.',
+            500, 502, 503, 504 => 'Le service SICORE ne répond pas actuellement. Vérifiez que le backend est démarré, puis réessayez.',
+            default => $exception->getMessage(),
+        };
+    }
+
     /** Nettoie une session expirée et renvoie l'utilisateur vers la connexion. */
     private function expired(Request $request): RedirectResponse
     {
@@ -158,6 +203,6 @@ class PayrollController extends Controller
         $request->session()->regenerateToken();
 
         return redirect()->route('login')
-            ->with('warning', 'Votre session API a expiré. Veuillez vous reconnecter.');
+            ->with('warning', 'Votre session est absente, expirée ou révoquée. Reconnectez-vous pour continuer.');
     }
 }
