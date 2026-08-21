@@ -625,4 +625,51 @@ class ApplicationTest extends TestCase
         Http::assertSent(fn ($request): bool => $request->method() === 'GET'
             && str_ends_with($request->url(), '/api/ias/12/iefs'));
     }
+
+    public function test_service_locations_are_loaded_with_their_ia_and_ief(): void
+    {
+        Http::fake([
+            '*/parametrage/lieux-service*' => Http::response([
+                'data' => [[
+                    'code' => 'LS-001',
+                    'libelle' => 'École élémentaire Liberté',
+                    'type' => 'École',
+                    'ia' => ['id' => 2, 'libelle' => 'IA de Dakar'],
+                    'ief' => ['libelle' => 'IEF Grand Dakar', 'inspection_academie_id' => 2],
+                    'adresse' => 'Dakar',
+                    'est_actif' => true,
+                ]],
+            ]),
+        ]);
+
+        $this->withSession([
+            'sicore_user' => ['name' => 'Gestionnaire', 'role' => 'Gestionnaire'],
+            'access_token' => 'valid-token',
+        ])->get('/parametrage/parametres/lieux-service')
+            ->assertOk()
+            ->assertSee('Lieux de service')
+            ->assertSee('École élémentaire Liberté')
+            ->assertSee('IA de Dakar')
+            ->assertSee('IEF Grand Dakar')
+            ->assertSee('Conforme');
+
+        Http::assertSent(fn ($request): bool => $request->method() === 'GET'
+            && str_contains($request->url(), '/api/parametrage/lieux-service')
+            && $request['page'] === 1
+            && $request['per_page'] === 10);
+    }
+
+    public function test_service_location_page_flags_an_ia_ief_mismatch(): void
+    {
+        Http::fake(['*/parametrage/lieux-service*' => Http::response(['data' => [[
+            'code' => 'LS-002', 'libelle' => 'Lycée Test', 'ia' => ['id' => 2, 'libelle' => 'IA Dakar'],
+            'ief' => ['libelle' => 'IEF Thiès', 'inspection_academie_id' => 5], 'statut' => 'actif',
+        ]]])]);
+
+        $this->withSession(['sicore_user' => ['name' => 'Gestionnaire']])
+            ->get('/parametrage/parametres/lieux-service')
+            ->assertOk()
+            ->assertSee('À vérifier')
+            ->assertSee('une incohérence entre l’IA et l’IEF');
+    }
 }

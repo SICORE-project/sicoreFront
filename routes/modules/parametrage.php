@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Parametrage\InstitutionFinanciereController;
 use App\Http\Controllers\Parametrage\InspectionAcademieController;
+use App\Http\Controllers\Parametrage\LieuServiceController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -46,6 +47,9 @@ Route::middleware('sicore.auth')
 
         Route::get('/parametres/ia/{ia}', [InspectionAcademieController::class, 'show'])
             ->name('parametres.ia.show');
+
+        Route::get('/parametres/lieux-service', [LieuServiceController::class, 'index'])
+            ->name('parametres.lieux-service.index');
 
         Route::get('/parametres/institutions-financieres', [InstitutionFinanciereController::class, 'index'])
             ->name('parametres.institutions-financieres');

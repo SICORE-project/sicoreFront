@@ -112,7 +112,7 @@
                 <td>LS</td>
                 <td>Lieu de service</td>
                 <td><span class="badge badge-active">Actif</span></td>
-                <td class="actions-cell"><button class="icon-action" title="Voir">&#128065;</button><button class="icon-action" title="Modifier">&#9998;</button><button class="icon-action" title="Supprimer">&#128465;</button></td>
+                <td class="actions-cell"><a class="icon-action" href="{{ route('parametres.lieux-service.index') }}" title="Voir" aria-label="Consulter les lieux de service"><i class="fa-solid fa-eye" aria-hidden="true"></i></a><button class="icon-action" title="Modifier">&#9998;</button><button class="icon-action" title="Supprimer">&#128465;</button></td>
               </tr>
             </tbody>
           </table>
