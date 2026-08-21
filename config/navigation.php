@@ -51,7 +51,8 @@ return [
             ['label' => 'Convocations', 'route' => 'indemnites.convocations', 'icon' => 'fa-solid fa-calendar-check'],
             ['label' => 'Pièces justificatives', 'route' => 'indemnites.pieces-justificatives', 'icon' => 'fa-solid fa-folder-open'],
             ['label' => 'Frais de déplacement', 'route' => 'indemnites.frais-deplacement', 'icon' => 'fa-solid fa-route'],
-            ['label' => 'Calcul des indemnités', 'route' => 'indemnites.calcul', 'icon' => 'fa-solid fa-calculator'],
+            ['label' => 'Indemnités de correction', 'route' => 'indemnites.calcul', 'icon' => 'fa-solid fa-calculator'],
+            ['label' => 'Indemnité de surveillance', 'route' => 'indemnites.calcul-surveillance', 'icon' => 'fa-solid fa-user-shield'],
 
             ['label' => 'États de paie', 'route' => 'indemnites.etats-paie', 'icon' => 'fa-solid fa-file-export'],
         ],

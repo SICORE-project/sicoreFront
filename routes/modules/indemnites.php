@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Indemnites\ConvocationsController;
 use App\Http\Controllers\Indemnites\FraisDeplacementController;
 use App\Http\Controllers\Indemnites\IndemniteCorrectionController;
+use App\Http\Controllers\Indemnites\IndemniteSurveillanceController;
 use App\Http\Controllers\Indemnites\PiecesJustificativesController;
 
 /*
@@ -145,6 +146,18 @@ Route::middleware('sicore.auth')
 
         Route::get('/calcul', [IndemniteCorrectionController::class, 'index'])
             ->name('calcul');
+
+        // "Indemnité de surveillance" = heures surveillées x tarif horaire,
+        // meme plan que "Calcul des indemnités" (indemnite de correction)
+        // juste au-dessus. /groupe avant /calcul-surveillance meme raison.
+        Route::get('/calcul-surveillance/groupe', [IndemniteSurveillanceController::class, 'calculGroupe'])
+            ->name('calcul-surveillance.groupe');
+
+        Route::post('/calcul-surveillance/groupe', [IndemniteSurveillanceController::class, 'storeGroupe'])
+            ->name('calcul-surveillance.groupe.store');
+
+        Route::get('/calcul-surveillance', [IndemniteSurveillanceController::class, 'index'])
+            ->name('calcul-surveillance');
 
         Route::get('/frais-deplacement', [FraisDeplacementController::class, 'index'])
             ->name('frais-deplacement');
