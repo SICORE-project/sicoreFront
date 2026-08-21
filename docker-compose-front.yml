@@ -7,7 +7,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: sicore_frontend
+    container_name: sicorefront
     restart: unless-stopped
     depends_on:
       - backend
