@@ -309,12 +309,16 @@
 
       if (isActive || isRelated) {
         var submenu = link.closest(".sidebar-submenu");
-        if (submenu) {
+        while (submenu) {
           var trigger = submenu.previousElementSibling;
-          if (trigger) {
+          if (trigger && trigger.matches("[data-submenu-toggle]")) {
             setSubmenuState(trigger, true);
             trigger.classList.add("active");
           }
+
+          submenu = submenu.parentElement
+            ? submenu.parentElement.closest(".sidebar-submenu")
+            : null;
         }
       }
     });

@@ -9,8 +9,11 @@ class PayrollConfigurationTest extends TestCase
 {
     public function test_menu_etats_de_presence_contient_exactement_les_neuf_entrees_attendues(): void
     {
-        $group = collect(config('navigation'))->firstWhere('label', 'États de présence');
+        $payrollGroup = collect(config('navigation'))->firstWhere('label', 'Gestion de la paie');
+        $group = collect($payrollGroup['links'] ?? [])->firstWhere('label', 'États de présence');
 
+        $this->assertNotNull($payrollGroup);
+        $this->assertSame('group', $payrollGroup['type']);
         $this->assertNotNull($group);
         $this->assertSame('group', $group['type']);
         $this->assertSame([
@@ -24,6 +27,9 @@ class PayrollConfigurationTest extends TestCase
             'Génération du montant des heures supplémentaires',
             'Génération individuelle de la paie',
         ], array_column($group['links'], 'label'));
+
+        $this->assertContains('Travaux périodiques', array_column($payrollGroup['links'], 'label'));
+        $this->assertContains('Délégation de crédit', array_column($payrollGroup['links'], 'label'));
     }
 
     public function test_formulaires_tabaski_utilisent_les_referentiels_et_le_montant_par_defaut(): void
@@ -72,7 +78,7 @@ class PayrollConfigurationTest extends TestCase
 
         $this->withSession([
             'sicore_user' => ['name' => 'Gestionnaire paie', 'role' => 'Gestionnaire'],
-            'sicore_token' => 'test-token',
+            'access_token' => 'test-token',
         ])->get('/paie/avance-tabaski')
             ->assertOk()
             ->assertSee('apply-tabaski-advance', false)
@@ -80,5 +86,10 @@ class PayrollConfigurationTest extends TestCase
             ->assertSee('VAC', false)
             ->assertSee('IA Dakar', false)
             ->assertSee('2025-2026', false);
+
+        Http::assertSent(fn ($request): bool =>
+            $request->url() === 'http://127.0.0.1:8000/api/payroll/pages/paie-avance-tabaski'
+            && $request->hasHeader('Authorization', 'Bearer test-token')
+        );
     }
 }

@@ -148,7 +148,7 @@ class PayrollController extends Controller
     /** Récupère le jeton API conservé dans la session Laravel du frontend. */
     private function token(Request $request): string
     {
-        return (string) $request->session()->get('sicore_token');
+        return (string) $request->session()->get('access_token');
     }
 
     /** Nettoie une session expirée et renvoie l'utilisateur vers la connexion. */

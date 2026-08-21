@@ -29,7 +29,7 @@ class SicoreApi implements SicoreApiClientInterface
 
         return $this->json(
             $this->guard(fn (): Response => $this->client()->post(
-                '/api/login',
+                '/login',
                 $credentials
             ))
         );
@@ -43,7 +43,7 @@ class SicoreApi implements SicoreApiClientInterface
     public function me(string $token): array
     {
         return $this->json($this->guard(
-            fn (): Response => $this->client($token)->get('/api/me')
+            fn (): Response => $this->client($token)->get('/me')
         ));
     }
 
@@ -51,7 +51,7 @@ class SicoreApi implements SicoreApiClientInterface
     public function logout(string $token): void
     {
         $response = $this->guard(
-            fn (): Response => $this->client($token)->post('/api/logout')
+            fn (): Response => $this->client($token)->post('/logout')
         );
         if (! $response->successful() && $response->status() !== 401) {
             $this->json($response);
@@ -66,7 +66,7 @@ class SicoreApi implements SicoreApiClientInterface
     public function payrollPage(string $token, string $slug, array $filters = []): array
     {
         $response = $this->guard(
-            fn (): Response => $this->client($token)->get('/api/payroll/pages/'.$slug, $filters)
+            fn (): Response => $this->client($token)->get('/payroll/pages/'.$slug, $filters)
         );
 
         return $this->json($response)['data'] ?? [];
@@ -87,7 +87,7 @@ class SicoreApi implements SicoreApiClientInterface
             $this->guard(
                 fn (): Response => $this->client($token)
                     ->withHeader('Idempotency-Key', $idempotencyKey)
-                    ->post('/api/payroll/actions/'.$action, $payload)
+                    ->post('/payroll/actions/'.$action, $payload)
             )
         );
     }
@@ -104,7 +104,7 @@ class SicoreApi implements SicoreApiClientInterface
         $response = $this->guard(
             fn (): Response => $this->client($token)
                 ->withHeaders(['Accept' => 'text/csv'])
-                ->get('/api/payroll/exports/'.$slug, $filters)
+                ->get('/payroll/exports/'.$slug, $filters)
         );
 
         if (! $response->successful()) {
@@ -122,7 +122,7 @@ class SicoreApi implements SicoreApiClientInterface
     public function payslip(string $token, int $payslipId): array
     {
         $response = $this->guard(
-            fn (): Response => $this->client($token)->get('/api/payroll/payslips/'.$payslipId)
+            fn (): Response => $this->client($token)->get('/payroll/payslips/'.$payslipId)
         );
 
         return $this->json($response)['data'] ?? [];

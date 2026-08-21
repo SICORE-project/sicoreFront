@@ -178,7 +178,7 @@
 
 .sidebar-submenu.open {
   gap: 2px;
-  max-height: 920px;
+  max-height: 1200px;
   margin: 4px 0 7px;
   opacity: 1;
 }
@@ -188,6 +188,17 @@
   padding: 8px 10px;
   color: rgba(255, 255, 255, 0.86);
   font-size: 12.6px;
+}
+
+.sidebar-subgroup-toggle {
+  min-height: 40px;
+  padding: 8px 10px;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 12.6px;
+}
+
+.sidebar-submenu-nested {
+  padding-left: 12px;
 }
 
 .sidebar-footer {

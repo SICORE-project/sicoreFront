@@ -65,22 +65,65 @@
           <div class="sidebar-submenu {{ $groupIsActive ? 'open' : '' }}">
             @foreach ($item['links'] as $link)
               @php
-                  // Construire le lien et ajouter éventuellement une ancre #...
-                  $linkIsActive = request()->routeIs($link['route'])
-                      && (! isset($link['fragment']) || request()->fullUrlIs('*#'.$link['fragment']));
-                  $href = route($link['route']).(isset($link['fragment']) ? '#'.$link['fragment'] : '');
+                  $linkIsGroup = ($link['type'] ?? 'link') === 'group';
+                  $linkPatterns = (array) ($link['active'] ?? $link['route'] ?? []);
+                  $linkIsActive = collect($linkPatterns)->contains(fn ($pattern) => request()->routeIs($pattern));
               @endphp
-              <a
-                class="{{ $linkIsActive ? 'active' : '' }}"
-                href="{{ $href }}"
-                data-page-link
-                title="{{ $link['label'] }}"
-                aria-label="{{ $link['label'] }}"
-                @if ($linkIsActive) aria-current="page" @endif
-              >
-                <span class="nav-icon submenu-icon"><i class="{{ $link['icon'] }}" aria-hidden="true"></i></span>
-                <span class="submenu-label">{{ $link['label'] }}</span>
-              </a>
+
+              @if ($linkIsGroup)
+                <button
+                  class="sidebar-link sidebar-subgroup-toggle {{ $linkIsActive ? 'active expanded' : '' }}"
+                  type="button"
+                  data-submenu-toggle
+                  title="{{ $link['label'] }}"
+                  aria-label="{{ $link['label'] }}"
+                  aria-expanded="{{ $linkIsActive ? 'true' : 'false' }}"
+                >
+                  <span class="nav-icon submenu-icon"><i class="{{ $link['icon'] }}" aria-hidden="true"></i></span>
+                  <span class="submenu-label">{{ $link['label'] }}</span>
+                  <span class="chevron"><i class="fa-solid fa-chevron-down" aria-hidden="true"></i></span>
+                </button>
+
+                <div class="sidebar-submenu sidebar-submenu-nested {{ $linkIsActive ? 'open' : '' }}">
+                  @foreach ($link['links'] as $nestedLink)
+                    @php
+                        $nestedLinkIsActive = request()->routeIs($nestedLink['route'])
+                            && (! isset($nestedLink['fragment']) || request()->fullUrlIs('*#'.$nestedLink['fragment']));
+                        $nestedHref = route($nestedLink['route'])
+                            .(isset($nestedLink['fragment']) ? '#'.$nestedLink['fragment'] : '');
+                    @endphp
+                    <a
+                      class="{{ $nestedLinkIsActive ? 'active' : '' }}"
+                      href="{{ $nestedHref }}"
+                      data-page-link
+                      title="{{ $nestedLink['label'] }}"
+                      aria-label="{{ $nestedLink['label'] }}"
+                      @if ($nestedLinkIsActive) aria-current="page" @endif
+                    >
+                      <span class="nav-icon submenu-icon"><i class="{{ $nestedLink['icon'] }}" aria-hidden="true"></i></span>
+                      <span class="submenu-label">{{ $nestedLink['label'] }}</span>
+                    </a>
+                  @endforeach
+                </div>
+              @else
+                @php
+                    // Construire le lien et ajouter éventuellement une ancre #...
+                    $href = route($link['route']).(isset($link['fragment']) ? '#'.$link['fragment'] : '');
+                    $linkIsActive = $linkIsActive
+                        && (! isset($link['fragment']) || request()->fullUrlIs('*#'.$link['fragment']));
+                @endphp
+                <a
+                  class="{{ $linkIsActive ? 'active' : '' }}"
+                  href="{{ $href }}"
+                  data-page-link
+                  title="{{ $link['label'] }}"
+                  aria-label="{{ $link['label'] }}"
+                  @if ($linkIsActive) aria-current="page" @endif
+                >
+                  <span class="nav-icon submenu-icon"><i class="{{ $link['icon'] }}" aria-hidden="true"></i></span>
+                  <span class="submenu-label">{{ $link['label'] }}</span>
+                </a>
+              @endif
             @endforeach
           </div>
         @endif
