@@ -73,12 +73,12 @@
           @error('perimetre')<div class="invalid-feedback">{{ $message }}</div>@enderror
         </div>
 
-        <div class="form-group" id="national-structure-group">
+        <div class="form-group" id="national-structure-group" @if(old('perimetre', 'national') !== 'national') hidden @endif>
           <label for="structure_organisationnelle_id">Structure nationale <span class="required">*</span></label>
           <select class="form-control @error('structure_organisationnelle_id') is-invalid @enderror" id="structure_organisationnelle_id" name="structure_organisationnelle_id">
             <option value="">Sélectionner DRH, DAGE ou DECPC</option>
             @foreach(($organisation['national'] ?? []) as $structure)
-              @if(is_array($structure) && data_get($structure, 'id') && in_array(strtoupper((string) data_get($structure, 'type', data_get($structure, 'code'))), ['DRH', 'DAGE', 'DECPC'], true))
+              @if(is_array($structure) && data_get($structure, 'id'))
                 <option value="{{ data_get($structure, 'id') }}" @selected((string) old('structure_organisationnelle_id') === (string) data_get($structure, 'id'))>{{ collect([data_get($structure, 'code'), data_get($structure, 'libelle', data_get($structure, 'nom'))])->filter()->join(' — ') }}</option>
               @endif
             @endforeach
@@ -132,6 +132,7 @@
     #create-user-modal .organisation-section { display:flex; flex-direction:column; gap:4px; margin-top:8px; padding-top:16px; border-top:1px solid var(--border); }
     #create-user-modal .organisation-section small { color:var(--text-muted); }
     #create-user-modal .form-group[hidden] { display:none !important; }
+    #create-user-modal .form-group[data-organisation-visibility="hidden"] { display:none !important; }
     .users-filter-panel { grid-template-columns: repeat(3, minmax(0, 1fr)) auto; align-items:end; }
     .users-filter-panel .actions-group { min-width:120px; }
     .users-filter-panel .actions-group .btn-secondary { width:100%; }
@@ -188,6 +189,7 @@
       function toggleOrganisation() {
         const regional = perimeter.value === 'regional';
         nationalGroup.hidden = regional;
+        nationalGroup.dataset.organisationVisibility = regional ? 'hidden' : 'visible';
         national.disabled = regional;
         national.required = !regional;
         iaGroup.hidden = !regional;
