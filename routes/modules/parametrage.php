@@ -1,5 +1,8 @@
 <?php
 
+use App\Http\Controllers\Parametrage\InstitutionFinanciereController;
+use App\Http\Controllers\Parametrage\InspectionAcademieController;
+use App\Http\Controllers\Parametrage\LieuServiceController;
 use App\Http\Controllers\Parametrage\DiplomesController;
 use App\Http\Controllers\Parametrage\SyndicatController;
 use Illuminate\Support\Facades\Route;
@@ -38,6 +41,28 @@ Route::middleware('sicore.auth')
         Route::view('/parametres/ief', 'pages.parametres.ief')
             ->name('parametres.ief');
 
+        Route::get('/parametres/ia', [InspectionAcademieController::class, 'index'])
+            ->name('parametres.ia.index');
+
+        Route::view('/parametres/ia/nouvelle', 'pages.parametres.ia-create')
+            ->name('parametres.ia.create');
+
+        Route::get('/parametres/ia/{ia}', [InspectionAcademieController::class, 'show'])
+            ->name('parametres.ia.show');
+
+        Route::get('/parametres/lieux-service', [LieuServiceController::class, 'index'])
+            ->name('parametres.lieux-service.index');
+
+        Route::get('/parametres/institutions-financieres', [InstitutionFinanciereController::class, 'index'])
+            ->name('parametres.institutions-financieres');
+        Route::post('/parametres/institutions-financieres', [InstitutionFinanciereController::class, 'store'])
+            ->name('parametres.institutions-financieres.store');
+        Route::put('/parametres/institutions-financieres/{institution}', [InstitutionFinanciereController::class, 'update'])
+            ->name('parametres.institutions-financieres.update');
+        Route::patch('/parametres/institutions-financieres/{institution}/statut', [InstitutionFinanciereController::class, 'updateStatus'])
+            ->name('parametres.institutions-financieres.status');
+        Route::post('/parametres/comptes-bancaires-enseignants', [InstitutionFinanciereController::class, 'storeTeacherBankAccount'])
+            ->name('parametres.comptes-bancaires-enseignants.store');
         Route::middleware('diplomes.manage')->group(function (): void {
             Route::get('/parametres/diplomes', [DiplomesController::class, 'index'])
                 ->name('parametres.diplomes.index');

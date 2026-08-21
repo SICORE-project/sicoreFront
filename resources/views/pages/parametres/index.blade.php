@@ -46,7 +46,7 @@
                 <td>IA</td>
                 <td>Inspection d&rsquo;Acad&eacute;mie</td>
                 <td><span class="badge badge-active">Actif</span></td>
-                <td class="actions-cell"><button class="icon-action" title="Voir">&#128065;</button><button class="icon-action" title="Modifier">&#9998;</button><button class="icon-action" title="Supprimer">&#128465;</button></td>
+                <td class="actions-cell"><a class="icon-action" href="{{ route('parametres.ia.index') }}" title="Voir" aria-label="Consulter les inspections d’académie"><i class="fa-solid fa-eye" aria-hidden="true"></i></a><a class="icon-action" href="{{ route('parametres.ia.create') }}" title="Ajouter" aria-label="Ajouter une inspection d’académie"><i class="fa-solid fa-plus" aria-hidden="true"></i></a><button class="icon-action" title="Modifier">&#9998;</button><button class="icon-action" title="Supprimer">&#128465;</button></td>
               </tr>
               <tr id="diplomes">
                 <td>DIP</td>
@@ -112,7 +112,7 @@
                 <td>LS</td>
                 <td>Lieu de service</td>
                 <td><span class="badge badge-active">Actif</span></td>
-                <td class="actions-cell"><button class="icon-action" title="Voir">&#128065;</button><button class="icon-action" title="Modifier">&#9998;</button><button class="icon-action" title="Supprimer">&#128465;</button></td>
+                <td class="actions-cell"><a class="icon-action" href="{{ route('parametres.lieux-service.index') }}" title="Voir" aria-label="Consulter les lieux de service"><i class="fa-solid fa-eye" aria-hidden="true"></i></a><button class="icon-action" title="Modifier">&#9998;</button><button class="icon-action" title="Supprimer">&#128465;</button></td>
               </tr>
             </tbody>
           </table>
@@ -149,4 +149,5 @@
 @push('scripts')
   <script src="{{ asset('assets/js/syndicat-form.js') }}" defer></script>
 @endpush
+
 

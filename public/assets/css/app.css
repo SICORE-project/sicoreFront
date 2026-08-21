@@ -628,6 +628,32 @@
   box-shadow: var(--shadow-card);
 }
 
+.table-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 22px;
+}
+
+.table-card-header h2 {
+  margin: 0 0 5px;
+}
+
+.table-card-subtitle {
+  margin: 0;
+  color: var(--text-muted);
+}
+
+.form-select {
+  min-height: 40px;
+  padding: 8px 34px 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: #334155;
+  background: #ffffff;
+}
+
 .table-responsive {
   width: 100%;
   overflow-x: auto;
@@ -664,6 +690,10 @@
 .table .actions-cell {
   text-align: right;
   white-space: nowrap;
+}
+.inline-form {
+  display: inline;
+  margin: 0;
 }
 
 .icon-action {
@@ -747,6 +777,12 @@
   color: #ffffff;
   border-color: var(--primary);
   background: var(--primary);
+}
+
+.page-btn.disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+  pointer-events: none;
 }
 
 .form-card {
