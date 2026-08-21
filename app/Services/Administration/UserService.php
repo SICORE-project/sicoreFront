@@ -160,9 +160,12 @@ class UserService
             return ['national' => [], 'regional' => []];
         }
 
+        $nationalOptions = $national->successful() ? $national->json('data', []) : [];
+        $regionalOptions = $regional->successful() ? $regional->json('data', []) : [];
+
         return [
-            'national' => $national->successful() ? $national->json('data', []) : [],
-            'regional' => $regional->successful() ? $regional->json('data', []) : [],
+            'national' => data_get($nationalOptions, 'data', $nationalOptions),
+            'regional' => data_get($regionalOptions, 'data', $regionalOptions),
         ];
     }
 

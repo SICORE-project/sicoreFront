@@ -98,6 +98,41 @@ class ApplicationTest extends TestCase
             ->assertSee('Gestionnaire');
     }
 
+    public function test_user_creation_form_displays_valid_national_structures(): void
+    {
+        Http::fake(function ($request) {
+            if (str_contains($request->url(), '/national-organisation-options')) {
+                return Http::response([
+                    'data' => [
+                        'data' => [
+                            ['id' => 1, 'code' => 'DRH', 'libelle' => 'Direction des ressources humaines'],
+                            ['id' => 2, 'code' => 'DAGE', 'libelle' => 'Direction de l administration generale'],
+                            ['id' => 3, 'code' => 'DECPC', 'libelle' => 'Direction de la certification'],
+                        ],
+                    ],
+                ]);
+            }
+
+            if (str_contains($request->url(), '/organisation-options')) {
+                return Http::response(['data' => []]);
+            }
+
+            if (str_contains($request->url(), '/admin/roles')) {
+                return Http::response(['data' => [['id' => 4, 'nom' => 'DRH', 'slug' => 'drh']]]);
+            }
+
+            return Http::response(['data' => ['data' => []]]);
+        });
+
+        $this->withSession([
+            'sicore_user' => ['name' => 'Admin', 'role' => 'Administrateur'],
+        ])->get('/utilisateurs')
+            ->assertOk()
+            ->assertSee('DRH — Direction des ressources humaines')
+            ->assertSee('DAGE — Direction de l administration generale')
+            ->assertSee('DECPC — Direction de la certification');
+    }
+
     public function test_user_status_is_sent_to_the_api_as_a_string(): void
     {
         Http::fake([
