@@ -23,8 +23,6 @@
   />
 
   <section class="content-area">
-<<<<<<< HEAD
-=======
     {{-- État de la communication avec le backend. --}}
     @if ($error)
       <section class="connection-banner connection-banner-error" role="alert">
@@ -45,63 +43,17 @@
     @endif
 
     {{-- Objectifs définis dans config/module-pages.php. --}}
->>>>>>> origin/module-paie
     @if (! empty($page['objectives']))
       <section class="objective-card {{ ! empty($page['sensitive']) ? 'sensitive-panel' : '' }}">
         <h2>Objectifs métier</h2>
         <ul class="objective-list">
-<<<<<<< HEAD
-          @foreach (($page['objectives'] ?? []) as $objective)
-=======
           @foreach ($page['objectives'] as $objective)
->>>>>>> origin/module-paie
             <li>{{ $objective }}</li>
           @endforeach
         </ul>
       </section>
     @endif
 
-<<<<<<< HEAD
-    @if (! empty($page['stats']))
-      <div class="stats-grid four">
-        @foreach (($page['stats'] ?? []) as $stat)
-          <article class="stat-card">
-            <div>
-              <p class="stat-label">{{ $stat['label'] }}</p>
-              <p class="stat-value">{{ $stat['value'] }}</p>
-              <p class="stat-note">{{ $stat['note'] }}</p>
-            </div>
-            <span class="stat-icon {{ $stat['color'] }}">
-              <i class="{{ str_contains((string) $stat['icon'], 'fa-') ? $stat['icon'] : ($statIconMap[$stat['icon']] ?? 'fa-solid fa-circle') }}" aria-hidden="true"></i>
-            </span>
-          </article>
-        @endforeach
-      </div>
-    @endif
-
-    <div class="actions-row">
-      <p class="breadcrumb">{{ $page['breadcrumb'] }}</p>
-      <div class="actions-group">
-        @foreach (($page['actions'] ?? []) as $index => $label)
-          @php
-            $actionText = is_array($label) ? ($label['label'] ?? '') : $label;
-            $actionUrl = is_array($label) ? ($label['url'] ?? null) : null;
-            $actionClass = $index === 0 ? 'btn-primary' : 'btn-secondary';
-            $isNewUserButton = ($slug ?? '') === 'utilisateurs' && trim((string) $actionText) === 'Nouvel utilisateur';
-          @endphp
-
-          @if ($isNewUserButton)
-            <button class="{{ $actionClass }}" type="button" data-modal-open="create-user-modal">{{ $actionText }}</button>
-          @elseif ($actionUrl)
-            <a class="{{ $actionClass }}" href="{{ $actionUrl }}">{{ $actionText }}</a>
-          @else
-            <button class="{{ $actionClass }}" type="button">{{ $actionText }}</button>
-          @endif
-        @endforeach
-
-        @if (! empty($page['closePeriod']))
-          <button class="btn-danger-soft" type="button" data-confirm="Êtes-vous sûr de vouloir fermer cette période de paie ? Cette action est sensible." data-success-message="Période de paie fermée.">
-=======
     {{-- Cartes statistiques : données API en Paie, configuration sinon. --}}
     <div class="stats-grid four">
       @foreach ($page['stats'] as $stat)
@@ -148,13 +100,26 @@
           @endforeach
         @else
           @foreach ($page['actions'] as $index => $label)
-            <button
-              class="{{ $index === 0 ? 'btn-primary' : 'btn-secondary' }}"
-              type="button"
-              @if (! empty($page['calculator']) && $label === 'Calculer') data-calculate-indemnity @endif
-            >
-              {{ $label }}
-            </button>
+            @php
+              $actionText = is_array($label) ? ($label['label'] ?? '') : $label;
+              $actionUrl = is_array($label) ? ($label['url'] ?? null) : null;
+              $actionClass = $index === 0 ? 'btn-primary' : 'btn-secondary';
+              $isNewUserButton = ($slug ?? '') === 'utilisateurs' && trim((string) $actionText) === 'Nouvel utilisateur';
+            @endphp
+
+            @if ($isNewUserButton)
+              <button class="{{ $actionClass }}" type="button" data-modal-open="create-user-modal">{{ $actionText }}</button>
+            @elseif ($actionUrl)
+              <a class="{{ $actionClass }}" href="{{ $actionUrl }}">{{ $actionText }}</a>
+            @else
+              <button
+                class="{{ $actionClass }}"
+                type="button"
+                @if (! empty($page['calculator']) && $actionText === 'Calculer') data-calculate-indemnity @endif
+              >
+                {{ $actionText }}
+              </button>
+            @endif
           @endforeach
         @endif
 
@@ -165,20 +130,12 @@
             data-confirm="Êtes-vous sûr de vouloir fermer cette période de paie ? Cette action est sensible."
             data-success-message="Période de paie fermée."
           >
->>>>>>> origin/module-paie
             Fermer la période
           </button>
         @endif
       </div>
     </div>
 
-<<<<<<< HEAD
-    @if (! empty($page['filters']))
-      <section class="filter-panel" aria-label="Filtres de la page">
-        @foreach (($page['filters'] ?? []) as $index => $filter)
-          @php
-            $filterId = ($slug ?? 'module') . '-filter-' . $index;
-=======
     {{-- Filtre de période transmis par GET au contrôleur. --}}
     @if ($connected)
       <form class="filter-panel" method="GET" aria-label="Filtres de la page">
@@ -273,7 +230,6 @@
         @foreach ($page['filters'] as $index => $filter)
           @php
             $filterId = $slug.'-filter-'.$index;
->>>>>>> origin/module-paie
           @endphp
           <div class="form-group">
             <label for="{{ $filterId }}">{{ $filter }}</label>
@@ -298,11 +254,7 @@
       </section>
     @endif
 
-<<<<<<< HEAD
-    @if (! empty($page['chart']))
-=======
     @if (! $connected && ! empty($page['chart']))
->>>>>>> origin/module-paie
       @php
         $heights = [58, 74, 48, 86, 66, 96];
       @endphp
@@ -314,11 +266,7 @@
           </div>
         </div>
         <div class="mini-chart">
-<<<<<<< HEAD
-          @foreach (($page['chart'] ?? []) as $index => $label)
-=======
           @foreach ($page['chart'] as $index => $label)
->>>>>>> origin/module-paie
             <div class="mini-bar">
               <span style="height: {{ $heights[$index % count($heights)] }}px"></span>
               {{ $label }}
@@ -332,15 +280,6 @@
       <section class="result-card" data-indemnity-result hidden></section>
     @endif
 
-<<<<<<< HEAD
-    <section class="table-card">
-      <div class="table-responsive">
-        <table class="table" id="moduleTable">
-          <thead>
-            <tr>
-              @foreach (($page['columns'] ?? []) as $column)
-                <th>{{ $column }}</th>
-=======
     {{-- Tableau générique construit avec columns et rows. --}}
     <section class="table-card">
       <div class="table-responsive">
@@ -349,64 +288,10 @@
             <tr>
               @foreach ($page['columns'] as $column)
                 <th @class(['actions-cell' => $loop->last])>{{ $column }}</th>
->>>>>>> origin/module-paie
               @endforeach
             </tr>
           </thead>
           <tbody>
-<<<<<<< HEAD
-            @foreach (($page['rows'] ?? []) as $row)
-              <tr>
-                @foreach (($row ?? []) as $cell)
-                  <td>{!! $cell !!}</td>
-                @endforeach
-              </tr>
-            @endforeach
-          </tbody>
-        </table>
-      </div>
-
-      <p class="empty-message">Aucune donnée trouvée.</p>
-
-      @php
-        $pagination = $page['pagination'] ?? ['current_page' => 1, 'last_page' => 1, 'total' => 0, 'per_page' => 10];
-        $currentPage = max(1, (int) ($pagination['current_page'] ?? 1));
-        $lastPage = max(1, (int) ($pagination['last_page'] ?? 1));
-        $previousPage = max(1, $currentPage - 1);
-        $nextPage = min($lastPage, $currentPage + 1);
-      @endphp
-
-      <div class="pagination" aria-label="Pagination">
-        @if ($currentPage > 1)
-          <a class="page-btn" href="{{ request()->fullUrlWithQuery(['page' => $previousPage]) }}" aria-label="Page précédente">←</a>
-        @else
-          <button class="page-btn" type="button" aria-label="Page précédente" disabled>←</button>
-        @endif
-
-        @php
-          $pages = range(1, $lastPage);
-        @endphp
-
-        @foreach ($pages as $pageNumber)
-          <a
-            class="page-btn {{ $pageNumber === $currentPage ? 'active' : '' }}"
-            href="{{ request()->fullUrlWithQuery(['page' => $pageNumber]) }}"
-            data-page-number
-          >
-            {{ $pageNumber }}
-          </a>
-        @endforeach
-
-        @if ($currentPage < $lastPage)
-          <a class="page-btn" href="{{ request()->fullUrlWithQuery(['page' => $nextPage]) }}" aria-label="Page suivante">→</a>
-        @else
-          <button class="page-btn" type="button" aria-label="Page suivante" disabled>→</button>
-        @endif
-      </div>
-    </section>
-  </section>
-</main>
-=======
             @forelse ($page['rows'] as $row)
               @php
                 $rowIndex = $loop->index;
@@ -546,4 +431,3 @@
     <script src="{{ asset('assets/js/payroll.js') }}" defer></script>
   @endpush
 @endif
->>>>>>> origin/module-paie

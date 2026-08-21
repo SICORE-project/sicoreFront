@@ -13,32 +13,17 @@
 | ne doit donc apparaître dans ces deux formulaires.
 */
 $collectiveTabaskiFields = [
+    ['name' => 'corps_id', 'label' => 'Corps d’enseignement', 'type' => 'teaching_corps', 'required' => true],
     [
-        'name' => 'type_engagement',
-        'label' => 'Corps d’enseignement',
-        'type' => 'select',
+        'name' => 'ia_ids',
+        'label' => 'Inspections académiques (IA)',
+        'type' => 'checkbox_group',
+        'source' => 'academic_inspections',
         'required' => true,
-        'options' => [
-            ['value' => 'contractuel', 'label' => 'PC — Professeurs contractuels'],
-            ['value' => 'vacataire', 'label' => 'Vacataire'],
-        ],
+        'full_width' => true,
+        'select_all' => true,
     ],
-    ['name' => 'ia_id', 'label' => 'Inspection académique (IA)', 'type' => 'academic_inspection', 'required' => true],
-    ['name' => 'ief_id', 'label' => 'Inspection de l’Éducation et de la Formation (IEF)', 'type' => 'education_inspection', 'required' => true],
-    [
-        'name' => 'academic_year',
-        'label' => 'Année académique',
-        'type' => 'academic_year',
-        'required' => true,
-    ],
-    [
-        'name' => 'payroll_period_id',
-        'label' => 'Mois d’application',
-        'type' => 'period',
-        'required' => true,
-        'open_only' => true,
-    ],
-    ['name' => 'amount', 'label' => 'Montant (FCFA)', 'type' => 'number', 'required' => true, 'min' => '1', 'step' => '1'],
+    ['name' => 'annee_academique_id', 'label' => 'Année académique', 'type' => 'academic_year', 'required' => true],
 ];
 
 return [
@@ -169,13 +154,29 @@ return [
     ],
     'apply-tabaski-advance' => [
         'title' => 'Appliquer une avance Tabaski',
-        'confirmation' => 'L’avance sera appliquée à tous les enseignants actifs correspondant au corps, à l’IA et à l’IEF sélectionnés. Elle figurera sur les bulletins du mois choisi.',
-        'fields' => $collectiveTabaskiFields,
+        'confirmation' => 'L’avance sera appliquée aux enseignants actifs du corps et des IA sélectionnés, sur un seul mois.',
+        'fields' => [
+            ...$collectiveTabaskiFields,
+            ['name' => 'month', 'label' => 'Mois d’application', 'type' => 'payroll_month', 'required' => true],
+            ['name' => 'amount', 'label' => 'Montant (FCFA)', 'type' => 'number', 'required' => true, 'min' => '1', 'step' => '1', 'default' => 100000],
+        ],
     ],
     'apply-tabaski-deduction' => [
         'title' => 'Appliquer une retenue Tabaski',
-        'confirmation' => 'La retenue sera appliquée à tous les enseignants actifs correspondant au corps, à l’IA et à l’IEF sélectionnés. Elle figurera sur les bulletins du mois choisi.',
-        'fields' => $collectiveTabaskiFields,
+        'confirmation' => 'La retenue sera appliquée aux enseignants actifs du corps et des IA sélectionnés sur exactement 10 mois. Le montant saisi reste inchangé pour chaque mois.',
+        'fields' => [
+            ...$collectiveTabaskiFields,
+            [
+                'name' => 'months',
+                'label' => 'Mois de retenue (exactement 10)',
+                'type' => 'checkbox_group',
+                'source' => 'payroll_months',
+                'required' => true,
+                'exact' => 10,
+                'full_width' => true,
+            ],
+            ['name' => 'amount', 'label' => 'Montant (FCFA)', 'type' => 'number', 'required' => true, 'min' => '1', 'step' => '1', 'default' => 100000],
+        ],
     ],
     'exempt-element' => [
         'title' => 'Accorder une exemption',

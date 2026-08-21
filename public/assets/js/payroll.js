@@ -71,14 +71,16 @@
       return page.data.education_inspections || [];
     }
     if (field.type === "academic_year") {
-      var years = [];
-      (page.data.periods || []).forEach(function (period) {
-        var academicYear = academicYearForPeriod(period);
-        if (academicYear && years.indexOf(academicYear) === -1) years.push(academicYear);
-      });
-      return years.sort().reverse().map(function (academicYear) {
-        return { value: academicYear, label: academicYear };
-      });
+      return page.data.academic_years || [];
+    }
+    if (field.type === "teaching_corps") {
+      return page.data.teaching_corps || [];
+    }
+    if (field.type === "payroll_month") {
+      return page.data.payroll_months || [];
+    }
+    if (field.type === "checkbox_group") {
+      return page.data[field.source] || field.options || [];
     }
     if (field.type === "teacher") {
       return page.data.teachers || [];
@@ -105,12 +107,37 @@
     if (field.type === "academic_inspection") return "Sélectionner une IA…";
     if (field.type === "education_inspection") return "Sélectionner une IEF…";
     if (field.type === "academic_year") return "Sélectionner une année académique…";
+    if (field.type === "teaching_corps") return "Sélectionner VAC ou PC…";
+    if (field.type === "payroll_month") return "Sélectionner un mois…";
     return "Sélectionner…";
+  }
+
+  function checkboxGroupMarkup(field, value) {
+    var selected = Array.isArray(value) ? value.map(String) : [];
+    var controls = field.select_all
+      ? '<div class="payroll-checkbox-actions">' +
+          '<button type="button" data-checkbox-action="all">Tout sélectionner</button>' +
+          '<button type="button" data-checkbox-action="none">Tout désélectionner</button>' +
+        '</div>'
+      : "";
+    var options = fieldOptions(field).map(function (option) {
+      var checked = selected.indexOf(String(option.value)) !== -1 ? " checked" : "";
+      return '<label class="payroll-checkbox-option">' +
+        '<input type="checkbox" name="' + escapeHtml(field.name) + '" value="' +
+          escapeHtml(option.value) + '"' + checked + '>' +
+        '<span>' + escapeHtml(option.label) + '</span>' +
+      '</label>';
+    }).join("");
+    var count = field.exact
+      ? '<small class="field-help" data-checkbox-count>0 / ' + escapeHtml(field.exact) + ' mois sélectionnés</small>'
+      : "";
+
+    return controls + '<div class="payroll-checkbox-grid" data-checkbox-options>' + options + '</div>' + count;
   }
 
   /** Construit le HTML d'un champ depuis config/payroll-forms.php. */
   function fieldMarkup(field, defaults) {
-    var value = defaults[field.name] == null ? "" : defaults[field.name];
+    var value = defaults[field.name] == null ? (field.default == null ? "" : field.default) : defaults[field.name];
     var required = field.required ? " required" : "";
     var attributes = [
       field.min != null ? ' min="' + escapeHtml(field.min) + '"' : "",
@@ -126,7 +153,9 @@
     }
 
     var input;
-    if (field.type === "matricule") {
+    if (field.type === "checkbox_group") {
+      input = checkboxGroupMarkup(field, value);
+    } else if (field.type === "matricule") {
       input = '<input class="form-control" type="text" name="' + escapeHtml(field.name) +
         '" value="' + escapeHtml(value) + '"' + required + attributes +
         ' list="payrollMatriculeSuggestions" autocomplete="off" autocapitalize="characters" spellcheck="false">' +
@@ -137,6 +166,8 @@
       field.type === "academic_inspection" ||
       field.type === "education_inspection" ||
       field.type === "academic_year" ||
+      field.type === "teaching_corps" ||
+      field.type === "payroll_month" ||
       field.type === "select"
     ) {
       input = '<select class="form-control" name="' + escapeHtml(field.name) + '"' + required + ">" +
@@ -179,8 +210,9 @@
     if (selectedPeriod && defaults.payroll_period_id == null) {
       defaults.payroll_period_id = selectedPeriod.id;
     }
-    if (selectedPeriod && defaults.academic_year == null && isCollectiveTabaskiAction()) {
-      defaults.academic_year = academicYearForPeriod(selectedPeriod);
+    if (isCollectiveTabaskiAction() && defaults.annee_academique_id == null) {
+      var academicYears = page.data.academic_years || [];
+      if (academicYears.length) defaults.annee_academique_id = academicYears[0].id;
     }
     if (selectedPeriod && defaults.expected_version == null && currentAction === "close-period") {
       defaults.expected_version = selectedPeriod.version;
@@ -253,6 +285,7 @@
     }
     initializeTeacherHierarchy(defaults);
     initializeCollectiveHierarchy(defaults);
+    initializeCheckboxGroups();
     initializePayrollProfileFields();
     var codeField = form.elements.code;
     if (currentAction === "create-period" && codeField) {
@@ -447,6 +480,38 @@
 
     iaField.addEventListener("change", function () {
       populateEducationInspections("");
+    });
+  }
+
+  function initializeCheckboxGroups() {
+    fieldsHost.querySelectorAll('.payroll-field').forEach(function (container) {
+      var checkboxes = Array.prototype.slice.call(container.querySelectorAll('input[type="checkbox"]'));
+      if (!checkboxes.length) return;
+
+      var definition = (page.forms[currentAction].fields || []).find(function (field) {
+        return field.name === checkboxes[0].name;
+      }) || {};
+      var count = container.querySelector('[data-checkbox-count]');
+
+      function sync() {
+        var selected = checkboxes.filter(function (checkbox) { return checkbox.checked; }).length;
+        if (count && definition.exact) {
+          count.textContent = selected + ' / ' + definition.exact + ' mois sélectionnés';
+        }
+        checkboxes.forEach(function (checkbox) {
+          checkbox.disabled = Boolean(definition.exact && selected >= definition.exact && !checkbox.checked);
+        });
+      }
+
+      container.querySelectorAll('[data-checkbox-action]').forEach(function (button) {
+        button.addEventListener('click', function () {
+          var select = button.getAttribute('data-checkbox-action') === 'all';
+          checkboxes.forEach(function (checkbox) { checkbox.checked = select; });
+          sync();
+        });
+      });
+      checkboxes.forEach(function (checkbox) { checkbox.addEventListener('change', sync); });
+      sync();
     });
   }
 
@@ -649,10 +714,42 @@
     var payload = {};
     new FormData(form).forEach(function (value, key) {
       if (value !== "") {
-        payload[key] = value;
+        if (Object.prototype.hasOwnProperty.call(payload, key)) {
+          payload[key] = Array.isArray(payload[key]) ? payload[key] : [payload[key]];
+          payload[key].push(value);
+        } else {
+          payload[key] = value;
+        }
       }
     });
+    ['ia_ids', 'months'].forEach(function (key) {
+      if (payload[key] != null && !Array.isArray(payload[key])) payload[key] = [payload[key]];
+    });
     return payload;
+  }
+
+  function validateTabaskiForm() {
+    if (!isCollectiveTabaskiAction()) return true;
+
+    var iaCount = form.querySelectorAll('input[name="ia_ids"]:checked').length;
+    if (iaCount < 1) {
+      status.textContent = 'Sélectionnez au moins une Inspection académique (IA).';
+      return false;
+    }
+    if (currentAction === 'apply-tabaski-deduction') {
+      var monthCount = form.querySelectorAll('input[name="months"]:checked').length;
+      if (monthCount !== 10) {
+        status.textContent = 'La retenue Tabaski doit porter sur exactement 10 mois distincts.';
+        return false;
+      }
+    }
+    var amount = form.elements.amount ? Number(form.elements.amount.value) : 0;
+    if (!Number.isFinite(amount) || amount <= 0) {
+      status.textContent = 'Le montant doit être strictement supérieur à zéro.';
+      return false;
+    }
+
+    return true;
   }
 
   /** Produit une clé unique empêchant le double traitement d'une commande. */
@@ -678,7 +775,7 @@
   /** Envoie l'action par fetch, affiche les erreurs ou recharge la page réussie. */
   function submit(event) {
     event.preventDefault();
-    if (!currentAction || !form.reportValidity()) return;
+    if (!currentAction || !form.reportValidity() || !validateTabaskiForm()) return;
 
     var csrf = document.querySelector('meta[name="csrf-token"]');
     var url = page.actionUrl.replace("__ACTION__", encodeURIComponent(currentAction));

@@ -1654,6 +1654,62 @@ body.sidebar-collapsed .logout-btn {
   color: var(--red);
 }
 
+.payroll-checkbox-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.payroll-checkbox-actions button {
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--primary);
+  background: #fff;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.payroll-checkbox-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  max-height: 210px;
+  padding: 10px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.payroll-checkbox-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 7px 8px;
+  border-radius: 7px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.payroll-checkbox-option input {
+  flex: 0 0 auto;
+  accent-color: var(--primary);
+}
+
+.payroll-checkbox-option input:disabled + span {
+  color: #94a3b8;
+}
+
+@media (max-width: 640px) {
+  .payroll-checkbox-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 .payroll-field input[name="matricule"] {
   letter-spacing: 0.035em;
   text-transform: uppercase;
