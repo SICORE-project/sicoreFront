@@ -44,7 +44,7 @@
       window.setTimeout(function () {
         toast.remove();
       }, 180);
-    }, 4200);
+    }, 4820);
   }
 
   function showSuccessToast(message) {
@@ -53,4 +53,15 @@
 
   window.showToast = showToast;
   window.showSuccessToast = showSuccessToast;
+
+  document.addEventListener("DOMContentLoaded", function () {
+    document.querySelectorAll(".server-flash-success").forEach(function (flash) {
+      window.setTimeout(function () {
+        flash.classList.add("is-leaving");
+        window.setTimeout(function () {
+          flash.remove();
+        }, 180);
+      }, 4820);
+    });
+  });
 })();
