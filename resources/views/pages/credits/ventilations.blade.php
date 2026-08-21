@@ -277,6 +277,14 @@ function loadDelegations() {
       allDelegations.forEach(function (d) {
         select.innerHTML += '<option value="' + d.id + '">' + d.reference + ' — ' + d.objet + '</option>';
       });
+
+      // Ouverture depuis le bouton "Ventilations" de l'ecran Delegation de credit
+      var demandee = new URLSearchParams(window.location.search).get('delegation');
+      if (demandee && select.querySelector('option[value="' + demandee + '"]')) {
+        select.value = demandee;
+        majInfosDelegation();
+        return loadVentilations();
+      }
     })
     .catch(function (e) { erreurReseau('délégations', e); });
 }

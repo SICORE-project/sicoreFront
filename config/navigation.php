@@ -41,6 +41,7 @@ return [
             ['label' => 'Ventilations', 'route' => 'credits.ventilations', 'icon' => 'fa-solid fa-layer-group'],
             ['label' => 'Édition des délégations', 'route' => 'credits.edition-delegations', 'icon' => 'fa-solid fa-file-signature'],
             ['label' => 'Édition des engagements', 'route' => 'credits.edition-engagements', 'icon' => 'fa-solid fa-clipboard-check'],
+            ['label' => 'Mes projections', 'route' => 'credits.projections', 'icon' => 'fa-solid fa-chart-line'],
             ['label' => 'État des crédits', 'route' => 'credits.etat-credits', 'icon' => 'fa-solid fa-chart-pie'],
         ],
     ],

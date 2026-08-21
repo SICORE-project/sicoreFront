@@ -90,6 +90,9 @@ Route::middleware('sicore.auth')
         Route::view('/edition-engagements', 'pages.credits.edition-engagements')
             ->name('edition-engagements');
 
+        Route::view('/projections', 'pages.credits.projections')
+            ->name('projections');
+
         Route::view('/etat-credits', 'pages.credits.etat-credits')
             ->name('etat-credits');
 

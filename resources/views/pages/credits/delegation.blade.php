@@ -134,22 +134,26 @@
           <input type="text" class="form-control" id="annee_academique" name="annee_academique" placeholder="2025-2026" required>
         </div>
         <div class="form-group">
-          <label for="reference">Référence *</label>
-          <input type="text" class="form-control" id="reference" name="reference" placeholder="DC-2026-001" required>
+          <label for="reference">Référence lettre *</label>
+          <input type="text" class="form-control" id="reference" name="reference" placeholder="15/10/2025" required>
         </div>
         <div class="form-group" style="grid-column:span 2;">
           <label for="objet">Objet *</label>
-          <input type="text" class="form-control" id="objet" name="objet" placeholder="Délégation pour paie enseignants" required>
+          <input type="text" class="form-control" id="objet" name="objet" placeholder="SALAIRE PC" required>
         </div>
         <div class="form-group">
-          <label for="structure_id">Structure *</label>
-          <select class="form-control" id="structure_id" name="structure_id" required>
-            <option value="">-- Choisir --</option>
+          <label for="periode_paie">Période</label>
+          <input type="text" class="form-control" id="periode_paie" name="periode_paie" placeholder="octobre">
+        </div>
+        <div class="form-group">
+          <label for="structure_id">Structure</label>
+          <select class="form-control" id="structure_id" name="structure_id">
+            <option value="">-- Aucune --</option>
           </select>
         </div>
         <div class="form-group">
-          <label for="service_id">Service *</label>
-          <select class="form-control" id="service_id" name="service_id" required>
+          <label for="service_id">Service</label>
+          <select class="form-control" id="service_id" name="service_id">
             <option value="">-- Choisir une structure d'abord --</option>
           </select>
         </div>
@@ -616,6 +620,8 @@ function renderTable(data) {
     var structNom = d.structure ? d.structure.nom : '-';
     var servNom = d.service ? d.service.nom : '-';
     var actions = '<button class="table-action" type="button" onclick="voirDetail(' + d.id + ')">Voir</button>';
+    // Equivalent du bouton "Ventilations" de FINPRONET (frmDelegation.aspx)
+    actions += '<button class="table-action primary" type="button" onclick="ouvrirVentilations(' + d.id + ')">Ventilations</button>';
     actions += '<button class="table-action" type="button" onclick="ouvrirMontant(' + d.id + ')">Montant</button>';
     actions += '<button class="table-action" type="button" onclick="ouvrirEngager(' + d.id + ')">Engager</button>';
     actions += '<button class="table-action" type="button" onclick="ouvrirHistorique(' + d.id + ')">Suivi</button>';
@@ -831,12 +837,16 @@ function setupEvents() {
     var montantInitial = document.getElementById('montant_initial').value;
     var dateFin = document.getElementById('date_fin').value;
 
+    var structureId = document.getElementById('structure_id').value;
+    var serviceId = document.getElementById('service_id').value;
+
     var formData = {
       annee_academique: document.getElementById('annee_academique').value,
+      periode_paie: document.getElementById('periode_paie').value || null,
       reference: document.getElementById('reference').value,
       objet: document.getElementById('objet').value,
-      structure_id: parseInt(document.getElementById('structure_id').value),
-      service_id: parseInt(document.getElementById('service_id').value),
+      structure_id: structureId ? parseInt(structureId) : null,
+      service_id: serviceId ? parseInt(serviceId) : null,
       montant_initial: montantInitial ? parseFloat(montantInitial) : null,
       montant_disponible: parseFloat(document.getElementById('montant_disponible').value),
       date_delegation: document.getElementById('date_delegation').value,
@@ -912,6 +922,12 @@ function exporterCSV() {
   lien.click();
   document.body.removeChild(lien);
   URL.revokeObjectURL(url);
+}
+
+// Ouvre l'ecran Ventilations sur la delegation choisie,
+// comme le bouton "Ventilations" de frmDelegation.aspx.
+function ouvrirVentilations(id) {
+  window.location.href = '{{ route('credits.ventilations') }}?delegation=' + id;
 }
 
 function voirDetail(id) {
