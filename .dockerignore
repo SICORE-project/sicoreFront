@@ -1,0 +1,32 @@
+# --- Git & Documentation ---
+.git
+.github
+.gitignore
+README.md
+
+# --- Laravel Dependancies (Will be installed inside Docker) ---
+vendor/
+node_modules/
+
+# --- Environment & Secrets ---
+.env
+.env.*
+!.env.example
+
+# --- Laravel Caches & Logs ---
+bootstrap/cache/*
+storage/framework/cache/data/*
+storage/framework/sessions/*
+storage/framework/testing/*
+storage/framework/views/*
+storage/logs/*
+
+# --- Docker Local Configurations ---
+docker-compose.override.yml
+.docker/
+
+# --- IDEs & OS Files ---
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db

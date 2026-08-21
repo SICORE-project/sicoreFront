@@ -1,0 +1,161 @@
+```yaml
+name: Frontend - CI/CD Laravel 12
+
+on:
+  push:
+    branches:
+      - develop
+
+  pull_request:
+    branches:
+      - develop
+
+permissions:
+  contents: read
+
+env:
+  PHP_VERSION: "8.2"
+  DOCKER_IMAGE: ghcr.io/${{ github.repository }}-front
+
+jobs:
+
+  # ==========================================================
+  # 1. CI - Tests et vérifications
+  # ==========================================================
+  test:
+    name: Tests Laravel
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          extensions: mbstring, bcmath, pdo_mysql
+          coverage: none
+
+      - name: Vérifier PHP
+        run: php -v
+
+      - name: Installer Composer
+        run: composer install --no-interaction --prefer-dist --optimize-autoloader
+
+      - name: Préparer .env
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+
+      - name: Vérifier la configuration Laravel
+        run: php artisan config:clear
+
+      - name: Lancer les tests
+        run: php artisan test
+
+
+  # ==========================================================
+  # 2. BUILD Docker
+  # ==========================================================
+  docker:
+    name: Build Docker
+    runs-on: ubuntu-latest
+
+    needs: test
+
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Connexion à GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.DOCKER_IMAGE }}
+          tags: |
+            type=raw,value=latest
+            type=sha
+
+      - name: Build et Push Docker
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+
+  # ==========================================================
+  # 3. DEPLOYMENT
+  # ==========================================================
+  deploy:
+    name: Déploiement Frontend
+    runs-on: ubuntu-latest
+
+    needs: docker
+
+    if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
+
+    steps:
+
+      - name: Déploiement sur le VPS
+        uses: appleboy/ssh-action@v1.2.2
+
+        with:
+          host: ${{ secrets.VPS_IP }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT }}
+
+          script: |
+
+            echo "======================================"
+            echo "Déploiement Frontend Laravel"
+            echo "======================================"
+
+            cd /var/www/html
+
+            echo "Connexion à GHCR..."
+
+            echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io \
+              -u "${{ secrets.GHCR_USERNAME }}" \
+              --password-stdin
+
+            echo "Téléchargement de la nouvelle image..."
+
+            docker pull ${{ env.DOCKER_IMAGE }}:latest
+
+            echo "Arrêt de l'ancien conteneur..."
+
+            docker compose -f docker-compose.front.yml down
+
+            echo "Démarrage du frontend..."
+
+            docker compose -f docker-compose.front.yml up -d
+
+            echo "Nettoyage des anciennes images..."
+
+            docker image prune -f
+
+            echo "État des conteneurs..."
+
+            docker compose -f docker-compose.front.yml ps
+
+            echo "======================================"
+            echo "Déploiement terminé"
+            echo "======================================"
+```
