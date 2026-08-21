@@ -38,6 +38,7 @@ return [
             ['label' => 'Paie non générée', 'route' => 'paie.non-generee', 'icon' => 'fa-solid fa-triangle-exclamation'],
             ['label' => 'Sommes perçues', 'route' => 'paie.sommes-percues', 'icon' => 'fa-solid fa-wallet'],
             ['label' => 'Délégation de crédit', 'route' => 'credits.delegation', 'icon' => 'fa-solid fa-scale-balanced'],
+            ['label' => 'Ventilations', 'route' => 'credits.ventilations', 'icon' => 'fa-solid fa-layer-group'],
             ['label' => 'Édition des délégations', 'route' => 'credits.edition-delegations', 'icon' => 'fa-solid fa-file-signature'],
             ['label' => 'Édition des engagements', 'route' => 'credits.edition-engagements', 'icon' => 'fa-solid fa-clipboard-check'],
             ['label' => 'État des crédits', 'route' => 'credits.etat-credits', 'icon' => 'fa-solid fa-chart-pie'],

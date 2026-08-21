@@ -81,6 +81,9 @@ Route::middleware('sicore.auth')
         Route::view('/delegation', 'pages.credits.delegation')
             ->name('delegation');
 
+        Route::view('/ventilations', 'pages.credits.ventilations')
+            ->name('ventilations');
+
         Route::view('/edition-delegations', 'pages.credits.edition-delegations')
             ->name('edition-delegations');
 
