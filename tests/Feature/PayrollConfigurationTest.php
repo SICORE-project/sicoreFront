@@ -46,7 +46,7 @@ class PayrollConfigurationTest extends TestCase
 
         $this->assertSame('payroll_months', $deduction['months']['source']);
         $this->assertSame(10, $deduction['months']['exact']);
-        $this->assertSame(100000, $deduction['amount']['default']);
+        $this->assertSame(10000, $deduction['amount']['default']);
     }
 
     public function test_page_avance_tabaski_transmet_les_referentiels_du_backend_au_formulaire(): void

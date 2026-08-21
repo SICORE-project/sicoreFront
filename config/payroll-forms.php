@@ -175,7 +175,7 @@ return [
                 'exact' => 10,
                 'full_width' => true,
             ],
-            ['name' => 'amount', 'label' => 'Montant (FCFA)', 'type' => 'number', 'required' => true, 'min' => '1', 'step' => '1', 'default' => 100000],
+            ['name' => 'amount', 'label' => 'Montant mensuel (FCFA)', 'type' => 'number', 'required' => true, 'min' => '1', 'step' => '1', 'default' => 10000],
         ],
     ],
     'exempt-element' => [
