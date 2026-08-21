@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Indemnites\ConvocationsController;
 use App\Http\Controllers\Indemnites\FraisDeplacementController;
+use App\Http\Controllers\Indemnites\IndemniteCorrectionController;
 use App\Http\Controllers\Indemnites\PiecesJustificativesController;
 
 /*
@@ -131,7 +132,18 @@ Route::middleware('sicore.auth')
         Route::view('/accuses-reception', 'pages.indemnites.accuses-reception')
             ->name('accuses-reception');
 
-        Route::view('/calcul', 'pages.indemnites.calcul')
+        // "Calcul des indemnités" = indemnités de correction (copies
+        // corrigées x taux par copie) — demande utilisatrice : integrer la
+        // maquette dans cette vue plutôt que de créer un module séparé.
+        // /groupe doit rester avant /calcul (segment fixe, pas de wildcard,
+        // aucun risque de conflit ici, mais coherence avec le reste du fichier).
+        Route::get('/calcul/groupe', [IndemniteCorrectionController::class, 'calculGroupe'])
+            ->name('calcul.groupe');
+
+        Route::post('/calcul/groupe', [IndemniteCorrectionController::class, 'storeGroupe'])
+            ->name('calcul.groupe.store');
+
+        Route::get('/calcul', [IndemniteCorrectionController::class, 'index'])
             ->name('calcul');
 
         Route::get('/frais-deplacement', [FraisDeplacementController::class, 'index'])

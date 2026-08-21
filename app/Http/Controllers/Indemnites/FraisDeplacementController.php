@@ -8,6 +8,7 @@ use App\Services\Api\Indemnites\FraisDeplacementService;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -85,7 +86,7 @@ class FraisDeplacementController extends Controller
                 ]
             );
 
-            $lignes = $this->construireLignes($items);
+            $lignes = $this->construireLignes($items, $filtres['centre'] ?? null);
             $stats = $this->calculerStats($lignes);
         }
 
@@ -111,8 +112,16 @@ class FraisDeplacementController extends Controller
      * Aplatit les convocations de la page en une ligne par bénéficiaire au
      * dossier complet — un appel back par convocation (beneficiairesEligibles),
      * meme limitation "page courante" deja acceptee sur Pieces justificatives.
+     *
+     * $filtreCentre : beneficiairesEligibles() renvoie TOUS les centres
+     * d'une convocation (nécessaire pour "Calcul groupé", qui liste tout le
+     * monde) — sans reappliquer ici le filtre "centre" choisi dans la page,
+     * une convocation ayant ne serait-ce qu'UN centre correspondant faisait
+     * apparaître les membres de ses AUTRES centres aussi (même bug déjà
+     * corrigé sur Pièces justificatives, voir
+     * PiecesJustificativesController::construireMembres()).
      */
-    private function construireLignes(array $items): array
+    private function construireLignes(array $items, ?string $filtreCentre = null): array
     {
         $lignes = [];
 
@@ -127,10 +136,18 @@ class FraisDeplacementController extends Controller
             $complets = $eligiblesResultat['success'] ? ($eligiblesResultat['data']['complets'] ?? []) : [];
 
             foreach ($complets as $beneficiaire) {
+                if ($filtreCentre && ! str_contains(
+                    Str::lower($beneficiaire['centre'] ?? ''),
+                    Str::lower($filtreCentre)
+                )) {
+                    continue;
+                }
+
                 $lignes[] = [
                     'convocation_id' => $convocationId,
                     'objet' => $item['objet'] ?? null,
                     'session' => $item['session'] ?? null,
+                    'centre' => $beneficiaire['centre'] ?? null,
                     'beneficiaire_id' => $beneficiaire['id'] ?? null,
                     'nom' => $beneficiaire['nom'] ?? null,
                     'prenom' => $beneficiaire['prenom'] ?? null,
@@ -264,8 +281,34 @@ class FraisDeplacementController extends Controller
         return view('pages.indemnites.frais-deplacement.calcul-groupe', [
             'convocation' => $convocationResultat['data'],
             'convocationId' => $convocationId,
-            'membres' => $complets,
+            'membres' => $this->membresAvecFicheRemplie($complets),
         ]);
+    }
+
+    /**
+     * Demande utilisatrice : "les membres dont on n'a pas encore rempli
+     * leur fiche ne doivent pas s'afficher dans le tableau" — une fiche
+     * déjà créée reste toujours affichée (données réelles, figées à la
+     * création) ; sinon on n'affiche que les fonctionnaires dont l'indice
+     * est déjà connu sur leur fiche (sans ça, le groupe/montant affiché
+     * était un défaut trompeur basé sur indice 0). Les contractuels/
+     * vacataires n'ont eux jamais de montant mensuel pré-rempli (toujours
+     * saisi au moment de la mission) : ils ne réapparaîtront donc qu'une
+     * fois leur fiche créée via "Nouvelle fiche".
+     */
+    private function membresAvecFicheRemplie(array $membres): array
+    {
+        return array_values(array_filter($membres, function (array $membre): bool {
+            if (! empty($membre['fiche_deplacement_id'])) {
+                return true;
+            }
+
+            if (($membre['categorie_personnel'] ?? null) === 'fonctionnaire') {
+                return ! empty($membre['indice']);
+            }
+
+            return false;
+        }));
     }
 
     /**

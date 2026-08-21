@@ -38,8 +38,8 @@
             </div>
             <div class="convoc-summary-fields">
                 <div class="convoc-summary-field">
-                    <span class="label">Lieu d'examen</span>
-                    <span class="value">{{ $convocation['lieu_examen'] ?? '—' }}</span>
+                    <span class="label">Lieu d'affectation</span>
+                    <span class="value">{{ $convocation['lieu_affectation'] ?? '—' }}</span>
                 </div>
                 <div class="convoc-summary-field">
                     <span class="label">Période d'examen</span>
@@ -105,7 +105,7 @@
         <form method="POST" action="{{ route('indemnites.frais-deplacement.calcul-groupe.store') }}" data-calcul-groupe-form>
             @csrf
             <input type="hidden" name="convocation_id" value="{{ $convocationId }}">
-            <input type="hidden" name="lieu_examen" id="lieuExamenInput" value="{{ $convocation['lieu_examen'] ?? '' }}">
+            <input type="hidden" name="lieu_examen" id="lieuExamenInput" value="{{ $convocation['lieu_affectation'] ?? '' }}">
             <input type="hidden" name="date_debut" value="{{ $convocation['date_debut'] ?? '' }}">
             <input type="hidden" name="date_fin" value="{{ $convocation['date_fin'] ?? '' }}">
 
@@ -127,7 +127,7 @@
                         </thead>
                         <tbody>
                             @forelse ($membres as $membre)
-                                <tr data-membre-row data-categorie="{{ $membre['categorie_personnel'] ?? '' }}">
+                                <tr data-membre-row data-categorie="{{ $membre['categorie_personnel'] ?? '' }}" data-fiche-montant="{{ ! empty($membre['fiche_deplacement_id']) ? ($membre['fiche_montant'] ?? 0) : '' }}">
                                     <td class="checkbox-cell">
                                         @if (empty($membre['fiche_deplacement_id']))
                                             <input type="checkbox" name="beneficiaire_id[]" value="{{ $membre['id'] }}" checked data-membre-checkbox>
@@ -272,7 +272,7 @@
 
             @if (! empty($membres))
                 <div class="total-bar">
-                    <span class="total-label">Total estimé pour les fiches sélectionnées</span>
+                    <span class="total-label">Total estimé </span>
                     <span class="total-figure" id="totalGeneral">— F</span>
                 </div>
 
@@ -294,25 +294,27 @@
 
     .convoc-summary-card {
         display: flex;
-        flex-wrap: wrap;
-        gap: 22px;
-        align-items: flex-end;
-        justify-content: space-between;
-        padding: 18px 22px;
+        flex-direction: column;
+        gap: 26px;
+        padding: 30px 28px;
     }
 
-    .convoc-summary-meta h2 { margin: 0 0 4px; font-size: 18px; }
+    .convoc-summary-meta h2 { margin: 0 0 8px; font-size: 19px; }
+
+    .convoc-summary-meta .section-description { margin: 0; }
 
     .convoc-summary-fields {
         display: flex;
-        gap: 26px;
+        gap: 32px;
         flex-wrap: wrap;
+        padding-top: 20px;
+        border-top: 1px solid var(--border-soft);
     }
 
     .convoc-summary-field {
         display: flex;
         flex-direction: column;
-        gap: 4px;
+        gap: 6px;
         min-width: 150px;
     }
 
@@ -609,7 +611,15 @@
         var groupesUtilises = {};
 
         document.querySelectorAll("[data-membre-row]").forEach(function (row) {
-            if (!row.querySelector("[data-field='valeur']")) return;
+            if (!row.querySelector("[data-field='valeur']")) {
+                // Fiche deja creee : montant fige, pas de recalcul, mais
+                // compte quand meme dans le total affiche (sinon "Total
+                // estime" ignorait les fiches deja creees de la convocation).
+                var ficheMontant = row.getAttribute("data-fiche-montant");
+                if (ficheMontant) total += parseFloat(ficheMontant) || 0;
+
+                return;
+            }
 
             var resultat = recalculerLigne(row);
             groupesUtilises[resultat.groupe] = true;

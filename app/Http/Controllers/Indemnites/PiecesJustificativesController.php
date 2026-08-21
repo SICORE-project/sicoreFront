@@ -194,14 +194,19 @@ class PiecesJustificativesController extends Controller
                     'session' => $item['session'] ?? null,
                 ];
 
-                $jury = $centre['centre'] ?? null;
+                // "Jury" = le champ dédié du tableau Centres d'examen (ex:
+                // "Jury 1"), le MÊME pour tout le monde sur ce centre — pas
+                // le nom du centre, ni le rôle de la personne (bug corrigé :
+                // ces deux anciens repères faisaient passer "CFP Ziguinchor"
+                // ou "Chef de centre" pour la valeur de "Jury").
+                $jury = $centre['jury'] ?? null;
 
                 if (! empty($centre['chef_centre'])) {
                     $membres[] = $this->construireMembre(
                         $centreCommun,
                         array_merge($centre['chef_centre'], ['provenance_override' => $centre['chef_centre_provenance'] ?? null]),
                         'Chef de centre',
-                        'Chef de centre'
+                        $jury
                     );
                 }
 
@@ -210,7 +215,7 @@ class PiecesJustificativesController extends Controller
                         $centreCommun,
                         array_merge($centre['president_jury'], ['provenance_override' => $centre['president_jury_provenance'] ?? null]),
                         'Président du jury',
-                        'Président du jury'
+                        $jury
                     );
                 }
 

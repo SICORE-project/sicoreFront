@@ -286,7 +286,7 @@
                                 class="form-control @error('lieu_destination') is-invalid @enderror"
                                 id="lieu_destination"
                                 name="lieu_destination"
-                                value="{{ old('lieu_destination', $convocation['lieu_examen'] ?? '') }}"
+                                value="{{ old('lieu_destination', $convocation['lieu_affectation'] ?? '') }}"
                                 required
                             >
                         </div>
@@ -1066,7 +1066,7 @@
         document.querySelectorAll("table[data-avance-total-target]").forEach(function (table) {
             brancherTableauAvance(table, document.getElementById(table.getAttribute("data-avance-total-target")));
         });
-    })();
+     })();
 </script>
 @endpush
 

@@ -301,6 +301,16 @@
                         </div>
 
                         <div class="form-group">
+                            <label>Catégorie de personnel du président du jury</label>
+                            <select class="form-control" data-field="president_jury_categorie_personnel">
+                                <option value="">Sélectionner</option>
+                                <option value="fonctionnaire">Fonctionnaire</option>
+                                <option value="contractuel">Contractuelle</option>
+                                <option value="vacataire">Vacataire</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
                             <label>Chef de centre</label>
                             <div class="enseignant-search" data-chef-search>
                                 <input class="form-control" type="text" placeholder="Rechercher le chef de centre..." autocomplete="off" data-chef-search-input>
@@ -318,6 +328,16 @@
                             <label>Provenance du chef de centre</label>
                             <input class="form-control" type="text" placeholder="Ex : Dakar" data-field="chef_centre_provenance">
                             <p class="section-description" style="margin: 6px 0 0;">Lieu où il exerce habituellement — sert au calcul des frais de déplacement.</p>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Catégorie de personnel du chef de centre</label>
+                            <select class="form-control" data-field="chef_centre_categorie_personnel">
+                                <option value="">Sélectionner</option>
+                                <option value="fonctionnaire">Fonctionnaire</option>
+                                <option value="contractuel">Contractuelle</option>
+                                <option value="vacataire">Vacataire</option>
+                            </select>
                         </div>
 
                     </div>

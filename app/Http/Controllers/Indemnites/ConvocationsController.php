@@ -260,7 +260,7 @@ class ConvocationsController extends Controller
                 'session' => $item['session'] ?? null,
                 'date_debut' => $item['date_debut'] ?? null,
                 'date_fin' => $item['date_fin'] ?? null,
-                'lieu_examen' => $item['lieu_examen'] ?? null,
+                'lieu_affectation' => $item['lieu_affectation'] ?? null,
                 'statut' => $item['statut'] ?? null,
             ];
 
@@ -331,7 +331,6 @@ class ConvocationsController extends Controller
             'date_debut' => ['required', 'date'],
             'date_fin' => ['required', 'date', 'after_or_equal:date_debut'],
             'heure_debut' => ['required', 'date_format:H:i'],
-            'lieu_examen' => ['nullable', 'string', 'max:255'],
             'lieu_affectation' => ['nullable', 'string', 'max:255'],
             'ordre_de_mission' => ['nullable', 'boolean'],
             'statut' => ['nullable', 'in:brouillon,emise,envoyee,cloturee'],
@@ -353,9 +352,11 @@ class ConvocationsController extends Controller
             'centres.*.chef_centre_id' => ['nullable', 'integer'],
             'centres.*.chef_centre_telephone' => ['nullable', 'string', 'max:30'],
             'centres.*.chef_centre_provenance' => ['nullable', 'string', 'max:255'],
+            'centres.*.chef_centre_categorie_personnel' => ['nullable', 'in:fonctionnaire,contractuel,vacataire'],
             'centres.*.president_jury_id' => ['nullable', 'integer'],
             'centres.*.president_jury_telephone' => ['nullable', 'string', 'max:30'],
             'centres.*.president_jury_provenance' => ['nullable', 'string', 'max:255'],
+            'centres.*.president_jury_categorie_personnel' => ['nullable', 'in:fonctionnaire,contractuel,vacataire'],
 
             // Membres du jury (etape 2 du wizard) : un enseignant, sa
             // fonction propre a cette convocation, et le centre/metier
@@ -769,7 +770,6 @@ class ConvocationsController extends Controller
             'date_debut' => ['sometimes', 'date'],
             'date_fin' => ['sometimes', 'date', 'after_or_equal:date_debut'],
             'heure_debut' => ['sometimes', 'date_format:H:i'],
-            'lieu_examen' => ['nullable', 'string', 'max:255'],
             'lieu_affectation' => ['nullable', 'string', 'max:255'],
             'ordre_de_mission' => ['nullable', 'boolean'],
             'statut' => ['nullable', 'in:brouillon,emise,envoyee,cloturee'],
@@ -784,9 +784,11 @@ class ConvocationsController extends Controller
             'centres.*.chef_centre_id' => ['nullable', 'integer'],
             'centres.*.chef_centre_telephone' => ['nullable', 'string', 'max:30'],
             'centres.*.chef_centre_provenance' => ['nullable', 'string', 'max:255'],
+            'centres.*.chef_centre_categorie_personnel' => ['nullable', 'in:fonctionnaire,contractuel,vacataire'],
             'centres.*.president_jury_id' => ['nullable', 'integer'],
             'centres.*.president_jury_telephone' => ['nullable', 'string', 'max:30'],
             'centres.*.president_jury_provenance' => ['nullable', 'string', 'max:255'],
+            'centres.*.president_jury_categorie_personnel' => ['nullable', 'in:fonctionnaire,contractuel,vacataire'],
 
             'beneficiaires' => ['nullable', 'array'],
             // "distinct" : "UN BENEFICIAIRE NE PEUT PAS ETRE CONVOQUE PLUS

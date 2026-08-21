@@ -129,6 +129,11 @@
                             </div>
 
                             <div class="form-group">
+                                <label>Catégorie de personnel du président du jury</label>
+                                <p>{{ $statutsPersonnel[$centre['president_jury_categorie_personnel'] ?? null] ?? '—' }}</p>
+                            </div>
+
+                            <div class="form-group">
                                 <label>Chef de centre</label>
                                 <p>{{ trim(($centre['chef_centre']['prenom'] ?? '') . ' ' . ($centre['chef_centre']['nom'] ?? '')) ?: '—' }}</p>
                             </div>
@@ -141,6 +146,11 @@
                             <div class="form-group">
                                 <label>Provenance du chef de centre</label>
                                 <p>{{ $centre['chef_centre_provenance'] ?? '—' }}</p>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Catégorie de personnel du chef de centre</label>
+                                <p>{{ $statutsPersonnel[$centre['chef_centre_categorie_personnel'] ?? null] ?? '—' }}</p>
                             </div>
 
                         </div>

@@ -726,13 +726,7 @@
             if (enseignant) {
               trouves++;
 
-              var nomComplet = (
-                (enseignant.prenom || "") +
-                " " +
-                (enseignant.nom || "")
-              ).trim();
-
-              if (searchInput) searchInput.value = nomComplet;
+              if (searchInput) searchInput.value = enseignant.prenom || "";
               if (idInput) idInput.value = enseignant.id || "";
               if (nomInput) nomInput.value = enseignant.nom || "";
 
@@ -936,7 +930,11 @@
               return;
             }
 
-            input.value = li.textContent;
+            // La ligne "membre" a un champ Nom separe : la case de
+            // recherche ne doit garder que le prenom. Les cases de
+            // recherche du chef de centre / president du jury n'ont pas
+            // de champ Nom dedie et affichent donc le nom complet.
+            input.value = memberRow ? prenom : li.textContent;
 
             hiddenInput.value = enseignant.id || "";
 
@@ -1163,6 +1161,10 @@
         '[data-field="chef_centre_provenance"]',
       );
 
+      var chefCategorieInput = centre.querySelector(
+        '[data-field="chef_centre_categorie_personnel"]',
+      );
+
       var presidentInput = centre.querySelector(
         '[data-field="president_jury_id"]',
       );
@@ -1173,6 +1175,10 @@
 
       var presidentProvenanceInput = centre.querySelector(
         '[data-field="president_jury_provenance"]',
+      );
+
+      var presidentCategorieInput = centre.querySelector(
+        '[data-field="president_jury_categorie_personnel"]',
       );
 
       var metierGroups = Array.prototype.slice.call(
@@ -1214,6 +1220,11 @@
       );
 
       addHidden(
+        "centres[" + centresIndex + "][chef_centre_categorie_personnel]",
+        chefCategorieInput ? chefCategorieInput.value : "",
+      );
+
+      addHidden(
         "centres[" + centresIndex + "][president_jury_id]",
         presidentInput ? presidentInput.value : "",
       );
@@ -1226,6 +1237,11 @@
       addHidden(
         "centres[" + centresIndex + "][president_jury_provenance]",
         presidentProvenanceInput ? presidentProvenanceInput.value : "",
+      );
+
+      addHidden(
+        "centres[" + centresIndex + "][president_jury_categorie_personnel]",
+        presidentCategorieInput ? presidentCategorieInput.value : "",
       );
 
       // N'avance que pour les groupes avec un NOM de métier renseigné — le
@@ -1433,6 +1449,11 @@
       );
       setFieldValue(
         centreCard,
+        '[data-field="chef_centre_categorie_personnel"]',
+        centreData.chef_centre_categorie_personnel,
+      );
+      setFieldValue(
+        centreCard,
         '[data-field="president_jury_id"]',
         centreData.president_jury_id,
       );
@@ -1445,6 +1466,11 @@
         centreCard,
         '[data-field="president_jury_provenance"]',
         centreData.president_jury_provenance,
+      );
+      setFieldValue(
+        centreCard,
+        '[data-field="president_jury_categorie_personnel"]',
+        centreData.president_jury_categorie_personnel,
       );
 
       // Le champ visible (texte) du widget de recherche n'est pas
@@ -1552,13 +1578,7 @@
             "[data-member-telephone]",
           );
 
-          var nomComplet = (
-            (membre.prenom || "") +
-            " " +
-            (membre.nom || "")
-          ).trim();
-
-          if (searchInput) searchInput.value = nomComplet;
+          if (searchInput) searchInput.value = membre.prenom || "";
           if (idInput) idInput.value = membre.enseignant_id || "";
           if (nomInput) nomInput.value = membre.nom || "";
           if (fonctionInput) fonctionInput.value = membre.fonction || "";
