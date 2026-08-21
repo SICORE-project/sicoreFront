@@ -79,7 +79,7 @@ return [
             ['label' => 'Catégories', 'route' => 'parametres.index', 'fragment' => 'categories', 'icon' => 'fa-solid fa-layer-group'],
             ['label' => 'Institutions financières', 'route' => 'parametres.index', 'fragment' => 'institutions-financieres', 'icon' => 'fa-solid fa-building-columns'],
             ['label' => 'Disciplines', 'route' => 'parametres.index', 'fragment' => 'discipline', 'icon' => 'fa-solid fa-book-open'],
-            ['label' => 'Syndicats', 'route' => 'parametres.index', 'fragment' => 'syndicats', 'icon' => 'fa-solid fa-handshake'],
+            ['label' => 'Syndicats', 'route' => 'parametres.syndicats.index', 'icon' => 'fa-solid fa-handshake'],
             ['label' => 'Année académique', 'route' => 'parametres.index', 'fragment' => 'annee-academique', 'icon' => 'fa-solid fa-calendar-days'],
             ['label' => 'Période de paie', 'route' => 'parametres.index', 'fragment' => 'periode-paie', 'icon' => 'fa-solid fa-calendar-week'],
             ['label' => 'Rubriques de paie', 'route' => 'parametres.index', 'fragment' => 'rubrique-paie', 'icon' => 'fa-solid fa-list-ul'],

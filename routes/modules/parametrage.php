@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Parametrage\DiplomesController;
+use App\Http\Controllers\Parametrage\SyndicatController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -50,5 +51,24 @@ Route::middleware('sicore.auth')
             Route::delete('/parametres/diplomes/{diplome}', [DiplomesController::class, 'destroy'])
                 ->name('parametres.diplomes.destroy');
         });
+        Route::post('/parametres/syndicats', [SyndicatController::class, 'store'])
+            ->name('parametres.syndicats.store');
+
+        Route::get('/parametres/syndicats', [SyndicatController::class, 'index'])
+            ->name('parametres.syndicats.index');
+
+        Route::get('/parametres/syndicats/verifier-unicite', [SyndicatController::class, 'checkUniqueness'])
+            ->name('parametres.syndicats.check-uniqueness');
+
+        Route::get('/parametres/syndicats/options-association', [SyndicatController::class, 'associationOptions'])
+            ->name('parametres.syndicats.association-options');
+
+        Route::put('/parametres/syndicats/{id}', [SyndicatController::class, 'update'])
+            ->whereNumber('id')
+            ->name('parametres.syndicats.update');
+
+        Route::delete('/parametres/syndicats/{id}', [SyndicatController::class, 'destroy'])
+            ->whereNumber('id')
+            ->name('parametres.syndicats.destroy');
 
     });
