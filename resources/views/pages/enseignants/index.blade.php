@@ -88,7 +88,7 @@
                 <td>Dakar</td>
                 <td>Professeur</td>
                 <td><span class="badge badge-active">Actif</span></td>
-                <td class="actions-cell"><button class="icon-action" title="Voir">&#128065;</button><button class="icon-action" title="Modifier">&#9998;</button><button class="icon-action" title="Supprimer">&#128465;</button></td>
+                <td class="actions-cell"><a class="icon-action" href="{{ route('enseignants.show', 1) }}" title="Voir">&#128065;</a><button class="icon-action" title="Modifier">&#9998;</button><button class="icon-action" title="Supprimer">&#128465;</button></td>
               </tr>
               <tr>
                 <td>ENS002</td>
@@ -138,4 +138,3 @@
 @push('scripts')
 <script src="{{ asset('assets/js/charts.js') }}" defer></script>
 @endpush
-

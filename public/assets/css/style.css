@@ -579,7 +579,8 @@ textarea.form-control {
   border-left: 4px solid var(--blue);
 }
 
-.toast.is-leaving {
+.toast.is-leaving,
+.server-flash.is-leaving {
   opacity: 0;
   transform: translateY(8px);
   transition: opacity 0.18s ease, transform 0.18s ease;
