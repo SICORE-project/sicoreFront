@@ -66,6 +66,63 @@ class DisciplineService
         ];
     }
 
+    public function update(string|int $id, array $data): array
+    {
+        try {
+            $response = $this->apiClient->put("parametrage/disciplines/{$id}", $data);
+        } catch (ConnectionException) {
+            return ['success' => false, 'message' => 'Le service backend est momentanément inaccessible.', 'errors' => [], 'data' => null, 'audit' => null];
+        }
+
+        return [
+            'success' => $response->successful(),
+            'unauthorized' => $response->unauthorized(),
+            'message' => $response->json('message', $response->successful() ? 'Discipline modifiée.' : 'Impossible de modifier la discipline.'),
+            'errors' => (array) $response->json('errors', []),
+            'data' => $response->json('data'),
+            'audit' => $response->json('audit'),
+        ];
+    }
+
+    public function updateStatus(string|int $id, string $status): array
+    {
+        try {
+            $response = $this->apiClient->patch("parametrage/disciplines/{$id}/statut", ['statut' => $status]);
+        } catch (ConnectionException) {
+            return ['success' => false, 'message' => 'Le service backend est momentanément inaccessible.', 'data' => null, 'audit' => null];
+        }
+
+        return [
+            'success' => $response->successful(),
+            'message' => $response->json('message', $response->successful() ? 'Statut de la discipline mis à jour.' : 'Impossible de modifier le statut de la discipline.'),
+            'data' => $response->json('data'),
+            'audit' => $response->json('audit'),
+        ];
+    }
+
+    public function getActiveForSelection(): array
+    {
+        try {
+            $response = $this->apiClient->get('parametrage/disciplines', [
+                'statut' => 'actif',
+                'sort' => 'libelle',
+                'direction' => 'asc',
+                'per_page' => 100,
+            ]);
+        } catch (ConnectionException) {
+            return [];
+        }
+
+        if (! $response->successful()) {
+            return [];
+        }
+
+        $payload = $response->json();
+        $items = data_get($payload, 'data.data', data_get($payload, 'data', data_get($payload, 'disciplines', [])));
+
+        return is_array($items) ? $items : [];
+    }
+
     private function empty(int $page, string $message): array
     {
         return ['items' => [], 'error' => $message, 'unauthorized' => false,

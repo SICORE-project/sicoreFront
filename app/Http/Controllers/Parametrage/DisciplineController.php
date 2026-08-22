@@ -31,6 +31,8 @@ class DisciplineController extends Controller
         return view('pages.parametres.disciplines', $result + [
             'filters' => $filters,
             'canCreate' => app(EnsureSicorePermission::class)->allows($request, 'parametrage.disciplines.creer'),
+            'canUpdate' => app(EnsureSicorePermission::class)->allows($request, 'parametrage.disciplines.modifier'),
+            'canChangeStatus' => app(EnsureSicorePermission::class)->allows($request, 'parametrage.disciplines.changer-statut'),
         ]);
     }
 
@@ -51,5 +53,37 @@ class DisciplineController extends Controller
         return back()->withInput()
             ->with('discipline_create_form_open', true)
             ->withErrors($result['errors'] ?: ['api' => $result['message']]);
+    }
+
+    public function update(Request $request, string $discipline, DisciplineService $service): RedirectResponse
+    {
+        $data = $request->validateWithBag('updateDiscipline', [
+            'code' => ['required', 'string', 'max:30', 'regex:/^[A-Z0-9]+(?:[-_][A-Z0-9]+)*$/'],
+            'libelle' => ['required', 'string', 'max:150'],
+            'description' => ['nullable', 'string', 'max:500'],
+            'statut' => ['required', 'in:actif,inactif'],
+        ]);
+        $result = $service->update($discipline, $data);
+        if ($result['success']) {
+            return redirect()->route('parametres.disciplines.index')->with('success', $result['message']);
+        }
+
+        return back()->withInput()
+            ->with('discipline_update_form_open', true)
+            ->with('discipline_update_id', $discipline)
+            ->withErrors($result['errors'] ?: ['api' => $result['message']], 'updateDiscipline');
+    }
+
+    public function updateStatus(Request $request, string $discipline, DisciplineService $service): RedirectResponse
+    {
+        $data = $request->validate([
+            'statut' => ['required', 'in:actif,inactif'],
+        ]);
+        $result = $service->updateStatus($discipline, $data['statut']);
+        if ($result['success']) {
+            return redirect()->route('parametres.disciplines.index')->with('success', $result['message']);
+        }
+
+        return back()->with('error', $result['message']);
     }
 }

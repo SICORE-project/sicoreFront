@@ -334,6 +334,7 @@ class ApplicationTest extends TestCase
             ->assertSee('id="importInstitutionsFile"', false)
             ->assertSee('Toutes catégories');
     }
+
     public function test_expired_backend_token_forces_a_new_login(): void
     {
         Http::fake([
@@ -353,6 +354,7 @@ class ApplicationTest extends TestCase
         $this->assertNull(session('access_token'));
         $this->assertNull(session('sicore_user'));
     }
+
     public function test_financial_institution_can_be_created(): void
     {
         Http::fake([
@@ -393,6 +395,7 @@ class ApplicationTest extends TestCase
         ])->post('/parametrage/parametres/institutions-financieres', [])
             ->assertSessionHasErrors(['code', 'nom', 'sigle', 'type_institution', 'statut']);
     }
+
     public function test_financial_institution_can_be_updated_without_changing_status(): void
     {
         Http::fake([
@@ -423,6 +426,7 @@ class ApplicationTest extends TestCase
             && $request['nom'] === 'Banque Mise à Jour'
             && ! isset($request['statut']));
     }
+
     public function test_financial_institution_can_be_deactivated_without_deletion(): void
     {
         Http::fake([
@@ -452,6 +456,7 @@ class ApplicationTest extends TestCase
             'est_actif' => 'invalide',
         ])->assertSessionHasErrors('est_actif');
     }
+
     public function test_status_api_error_does_not_open_the_edit_form(): void
     {
         Http::fake([
@@ -476,6 +481,7 @@ class ApplicationTest extends TestCase
             ->assertSee('id="institution-form-modal"', false)
             ->assertSee('data-modal  hidden', false);
     }
+
     public function test_bank_account_can_be_associated_to_a_teacher(): void
     {
         Http::fake([
@@ -631,6 +637,7 @@ class ApplicationTest extends TestCase
         Http::fake([
             '*/parametrage/lieux-service*' => Http::response([
                 'data' => [[
+                    'id' => 9,
                     'code' => 'LS-001',
                     'libelle' => 'École élémentaire Liberté',
                     'type' => 'École',
@@ -651,7 +658,13 @@ class ApplicationTest extends TestCase
             ->assertSee('École élémentaire Liberté')
             ->assertSee('IA de Dakar')
             ->assertSee('IEF Grand Dakar')
-            ->assertSee('Conforme');
+            ->assertSee('Conforme')
+            ->assertSee('data-lieu-edit', false)
+            ->assertSee('data-lieu-status', false)
+            ->assertSee('Désactiver')
+            ->assertSee('data-lieu-affectation', false)
+            ->assertSee('Affecter')
+            ->assertSee('Modifier un lieu de service');
 
         Http::assertSent(fn ($request): bool => $request->method() === 'GET'
             && str_contains($request->url(), '/api/parametrage/lieux-service')
@@ -671,5 +684,231 @@ class ApplicationTest extends TestCase
             ->assertOk()
             ->assertSee('À vérifier')
             ->assertSee('une incohérence entre l’IA et l’IEF');
+    }
+
+    public function test_service_location_can_be_created(): void
+    {
+        Http::fake([
+            '*/parametrage/lieux-service' => Http::response([
+                'message' => 'Lieu de service créé avec succès.',
+                'data' => ['id' => 21],
+            ], 201),
+        ]);
+
+        $this->withSession([
+            'sicore_user' => ['name' => 'Gestionnaire'],
+            'access_token' => 'valid-token',
+        ])->post('/parametrage/parametres/lieux-service', [
+            'code' => 'LS-021',
+            'libelle' => 'École Liberté',
+            'ia_id' => 2,
+            'ief_id' => 7,
+        ])->assertRedirect(route('parametres.lieux-service.index'))
+            ->assertSessionHas('success', 'Lieu de service créé avec succès.');
+
+        Http::assertSent(fn ($request): bool => $request->method() === 'POST'
+            && str_ends_with($request->url(), '/api/parametrage/lieux-service')
+            && $request['code'] === 'LS-021'
+            && $request['libelle'] === 'École Liberté'
+            && $request['ia_id'] === 2
+            && $request['ief_id'] === 7);
+    }
+
+    public function test_service_location_required_fields_are_validated(): void
+    {
+        $this->withSession(['sicore_user' => ['name' => 'Gestionnaire']])
+            ->post('/parametrage/parametres/lieux-service', [])
+            ->assertSessionHasErrors(['code', 'libelle', 'ia_id', 'ief_id']);
+    }
+
+    public function test_service_location_can_be_updated(): void
+    {
+        Http::fake([
+            '*/parametrage/lieux-service/9' => Http::response([
+                'message' => 'Lieu de service modifié avec succès.',
+            ]),
+        ]);
+
+        $this->withSession([
+            'sicore_user' => ['name' => 'Gestionnaire'],
+            'access_token' => 'valid-token',
+        ])->put('/parametrage/parametres/lieux-service/9', [
+            'code' => 'LS-009',
+            'libelle' => 'Lycée de Dakar',
+            'ia_id' => 2,
+            'ief_id' => 7,
+        ])->assertRedirect(route('parametres.lieux-service.index'))
+            ->assertSessionHas('success', 'Lieu de service modifié avec succès.');
+
+        Http::assertSent(fn ($request): bool => $request->method() === 'PUT'
+            && str_ends_with($request->url(), '/api/parametrage/lieux-service/9')
+            && $request['code'] === 'LS-009'
+            && $request['libelle'] === 'Lycée de Dakar'
+            && $request['ia_id'] === 2
+            && $request['ief_id'] === 7);
+    }
+
+    public function test_service_location_update_preserves_backend_uniqueness_errors(): void
+    {
+        Http::fake([
+            '*/parametrage/lieux-service/9' => Http::response([
+                'message' => 'Les données sont invalides.',
+                'errors' => ['code' => ['Ce code est déjà utilisé.']],
+            ], 422),
+        ]);
+
+        $this->withSession(['sicore_user' => ['name' => 'Gestionnaire']])
+            ->put('/parametrage/parametres/lieux-service/9', [
+                'code' => 'LS-001', 'libelle' => 'Lycée', 'ia_id' => 2, 'ief_id' => 7,
+            ])->assertRedirect()
+            ->assertSessionHasErrors(['code' => 'Ce code est déjà utilisé.'], null, 'updateLieu')
+            ->assertSessionHas('lieu_edit_form_open', true)
+            ->assertSessionHas('lieu_edit_id', '9');
+    }
+
+    public function test_service_location_update_required_fields_are_validated(): void
+    {
+        $this->withSession(['sicore_user' => ['name' => 'Gestionnaire']])
+            ->put('/parametrage/parametres/lieux-service/9', [])
+            ->assertSessionHasErrors(['code', 'libelle', 'ia_id', 'ief_id'], null, 'updateLieu')
+            ->assertSessionHas('lieu_edit_form_open', true);
+    }
+
+    public function test_service_location_can_be_deactivated_without_deletion(): void
+    {
+        Http::fake([
+            '*/parametrage/lieux-service/9/statut' => Http::response([
+                'message' => 'Lieu de service désactivé.',
+            ]),
+        ]);
+
+        $this->withSession([
+            'sicore_user' => ['name' => 'Gestionnaire'],
+            'access_token' => 'valid-token',
+        ])->patch('/parametrage/parametres/lieux-service/9/statut', ['actif' => '0'])
+            ->assertRedirect(route('parametres.lieux-service.index'))
+            ->assertSessionHas('success', 'Lieu de service désactivé.');
+
+        Http::assertSent(fn ($request): bool => $request->method() === 'PATCH'
+            && str_ends_with($request->url(), '/api/parametrage/lieux-service/9/statut')
+            && $request['actif'] === false);
+    }
+
+    public function test_service_location_can_be_activated(): void
+    {
+        Http::fake([
+            '*/parametrage/lieux-service/9/statut' => Http::response([], 200),
+        ]);
+
+        $this->withSession(['sicore_user' => ['name' => 'Gestionnaire']])
+            ->patch('/parametrage/parametres/lieux-service/9/statut', ['actif' => '1'])
+            ->assertRedirect(route('parametres.lieux-service.index'))
+            ->assertSessionHas('success', 'Lieu de service activé.');
+
+        Http::assertSent(fn ($request): bool => $request['actif'] === true);
+    }
+
+    public function test_service_location_status_only_accepts_a_boolean(): void
+    {
+        Http::fake();
+
+        $this->withSession(['sicore_user' => ['name' => 'Gestionnaire']])
+            ->patch('/parametrage/parametres/lieux-service/9/statut', ['actif' => 'inconnu'])
+            ->assertSessionHasErrors(['actif'], null, 'statusLieu');
+
+        Http::assertNothingSent();
+    }
+
+    public function test_teacher_can_be_assigned_to_an_active_service_location(): void
+    {
+        Http::fake([
+            '*/enseignants/8/affectations' => Http::response([
+                'message' => 'Enseignant affecté au lieu de service avec succès.',
+                'data' => ['id' => 31, 'actif' => true],
+            ], 201),
+        ]);
+
+        $this->withSession([
+            'sicore_user' => ['id' => 4, 'name' => 'Gestionnaire'],
+            'access_token' => 'valid-token',
+        ])->post('/parametrage/parametres/lieux-service/9/affectations', [
+            'enseignant_id' => 8,
+            'date_debut' => '2026-08-22',
+        ])->assertRedirect(route('parametres.lieux-service.index'))
+            ->assertSessionHas('success', 'Enseignant affecté au lieu de service avec succès.');
+
+        Http::assertSent(fn ($request): bool => $request->method() === 'POST'
+            && str_ends_with($request->url(), '/api/enseignants/8/affectations')
+            && $request['lieu_service_id'] === '9'
+            && $request['date_debut'] === '2026-08-22'
+            && $request['actif'] === true
+            && ! isset($request['date_fin'])
+            && ! isset($request['created_by']));
+    }
+
+    public function test_service_location_assignment_required_fields_are_validated(): void
+    {
+        Http::fake();
+
+        $this->withSession(['sicore_user' => ['name' => 'Gestionnaire']])
+            ->post('/parametrage/parametres/lieux-service/9/affectations', [])
+            ->assertSessionHasErrors(['enseignant_id', 'date_debut'], null, 'affectationLieu')
+            ->assertSessionHas('affectation_form_open', true)
+            ->assertSessionHas('affectation_lieu_id', '9');
+
+        Http::assertNothingSent();
+    }
+
+    public function test_assignment_backend_errors_are_displayed_in_the_assignment_form(): void
+    {
+        Http::fake([
+            '*/enseignants/8/affectations' => Http::response([
+                'message' => 'Affectation impossible.',
+                'errors' => ['lieu_service_id' => ['Ce lieu de service est inactif.']],
+            ], 422),
+        ]);
+
+        $this->withSession(['sicore_user' => ['name' => 'Gestionnaire']])
+            ->post('/parametrage/parametres/lieux-service/9/affectations', [
+                'enseignant_id' => 8, 'date_debut' => '2026-08-22',
+            ])->assertSessionHasErrors(['lieu_service_id' => 'Ce lieu de service est inactif.'], null, 'affectationLieu')
+            ->assertSessionHas('affectation_form_open', true);
+    }
+
+    public function test_service_locations_can_be_filtered_and_sorted_through_the_api(): void
+    {
+        Http::fake([
+            '*/parametrage/lieux-service*' => Http::response(['data' => ['data' => [[
+                'id' => 4, 'code' => 'LS-DKR', 'libelle' => 'École Dakar', 'ia_id' => 1,
+                'ia' => ['id' => 1, 'libelle' => 'IA Dakar'],
+                'ief' => ['id' => 2, 'libelle' => 'IEF Dakar', 'ia_id' => 1], 'est_actif' => true,
+            ]], 'current_page' => 1, 'last_page' => 1, 'total' => 1]], 200),
+            '*/parametrage/ia*' => Http::response(['data' => [['id' => 1, 'code' => 'IA-DKR', 'libelle' => 'IA Dakar']]]),
+            '*/ias/1/iefs' => Http::response(['data' => [['id' => 2, 'code' => 'IEF-DKR', 'libelle' => 'IEF Dakar', 'ia_id' => 1]]]),
+            '*/enseignants*' => Http::response(['data' => []]),
+        ]);
+
+        $this->withSession(['sicore_user' => ['name' => 'Gestionnaire'], 'access_token' => 'token'])
+            ->get('/parametrage/parametres/lieux-service?search=Dakar&ia_id=1&ief_id=2&statut=actif&sort=code&direction=desc')
+            ->assertOk()->assertSee('École Dakar')->assertSee('Réinitialiser')
+            ->assertSee('id="lieuxLoading"', false)->assertSee('data-lieu-detail', false)
+            ->assertSee('Fiche du lieu de service');
+
+        Http::assertSent(fn ($request): bool => str_contains($request->url(), '/api/parametrage/lieux-service')
+            && $request['search'] === 'Dakar' && $request['ia_id'] === '1' && $request['ief_id'] === '2'
+            && $request['statut'] === 'actif' && $request['sort'] === 'code' && $request['direction'] === 'desc');
+    }
+
+    public function test_central_service_location_coherence_is_not_applicable(): void
+    {
+        Http::fake([
+            '*/parametrage/lieux-service*' => Http::response(['data' => [[
+                'id' => 1, 'code' => 'DAGE', 'libelle' => 'DAGE', 'est_actif' => true,
+            ]]]),
+        ]);
+
+        $this->withSession(['sicore_user' => ['name' => 'Gestionnaire']])
+            ->get('/parametrage/parametres/lieux-service')
+            ->assertOk()->assertSee('Non applicable')->assertDontSee('À vérifier');
     }
 }
