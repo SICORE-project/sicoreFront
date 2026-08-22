@@ -2,9 +2,7 @@
 
 @section('title', 'SICORE - Utilisateurs')
 @section('content')
-  @if ($usersError)
-    <div class="alert alert-danger" role="alert">{{ $usersError }}</div>
-  @endif
+  
   <x-module-page slug="utilisateurs" />
 
   <x-module-indemnite
@@ -155,7 +153,7 @@
       const feedback = document.getElementById('password-confirmation-feedback');
       const email = document.getElementById('email');
       const emailError = document.getElementById('email-error');
-      const hierarchy = @json($organisation['regional'] ?? []);
+      const hierarchy = json($organisation['regional'] ?? []);
       const role = document.getElementById('role_id');
       const perimeter = document.getElementById('perimetre');
       const nationalGroup = document.getElementById('national-structure-group');
@@ -164,8 +162,8 @@
       const ia = document.getElementById('ia_id');
       const iefGroup = document.getElementById('ief-group');
       const ief = document.getElementById('ief_id');
-      const oldIa = @json((string) old('ia_id', ''));
-      const oldIef = @json((string) old('ief_id', ''));
+      const oldIa = json((string) ,old('ia_id', ''));
+      const oldIef = json((string) ,old('ief_id', ''));
       let emailTimer;
       let emailRequest;
       let emailIsChecking = false;

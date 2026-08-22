@@ -18,7 +18,7 @@ class DashboardController extends Controller
     {
         $metrics = [];
         try {
-            $response = $this->api->get('dashboard');
+            $response = $this->api->get('pages.dashboard.index');
             if ($response->successful()) $metrics = $response->json('data', []);
         } catch (ConnectionException) {
             // Le tableau reste disponible avec des valeurs neutres.
