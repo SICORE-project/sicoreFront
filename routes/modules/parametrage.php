@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Parametrage\InstitutionFinanciereController;
+use App\Http\Controllers\Parametrage\DisciplineController;
 use App\Http\Controllers\Parametrage\InspectionAcademieController;
 use App\Http\Controllers\Parametrage\LieuServiceController;
 use App\Http\Controllers\Parametrage\DiplomesController;
@@ -40,6 +41,14 @@ Route::middleware('sicore.auth')
 
         Route::view('/parametres/ief', 'pages.parametres.ief')
             ->name('parametres.ief');
+
+        Route::middleware('sicore.permission:parametrage.disciplines.consulter')->group(function (): void {
+            Route::get('/parametres/disciplines', [DisciplineController::class, 'index'])
+                ->name('parametres.disciplines.index');
+        });
+        Route::post('/parametres/disciplines', [DisciplineController::class, 'store'])
+            ->middleware('sicore.permission:parametrage.disciplines.creer')
+            ->name('parametres.disciplines.store');
 
         Route::get('/parametres/ia', [InspectionAcademieController::class, 'index'])
             ->name('parametres.ia.index');
