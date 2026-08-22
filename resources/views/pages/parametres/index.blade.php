@@ -76,7 +76,7 @@
                 <td>DIS</td>
                 <td>Discipline</td>
                 <td><span class="badge badge-active">Actif</span></td>
-                <td class="actions-cell"><button class="icon-action" title="Voir">&#128065;</button><button class="icon-action" title="Modifier">&#9998;</button><button class="icon-action" title="Supprimer">&#128465;</button></td>
+                <td class="actions-cell"><a class="icon-action" href="{{ route('parametres.disciplines.index') }}" title="Voir" aria-label="Consulter les disciplines">&#128065;</a></td>
               </tr>
               <tr id="syndicats">
                 <td>SYN</td>

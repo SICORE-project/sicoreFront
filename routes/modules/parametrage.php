@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\Parametrage\InstitutionFinanciereController;
+use App\Http\Controllers\Parametrage\DisciplineController;
+use App\Http\Controllers\Parametrage\EnseignantDisciplineController;
 use App\Http\Controllers\Parametrage\InspectionAcademieController;
 use App\Http\Controllers\Parametrage\LieuServiceController;
 use App\Http\Controllers\Parametrage\DiplomesController;
@@ -29,6 +31,12 @@ Route::middleware('sicore.auth')
         Route::view('/enseignants/nouveau', 'pages.enseignants.create')
             ->name('enseignants.create');
 
+        Route::get('/enseignants/{enseignant}', [EnseignantDisciplineController::class, 'show'])
+            ->name('enseignants.show');
+        Route::post('/enseignants/{enseignant}/disciplines', [EnseignantDisciplineController::class, 'store'])
+            ->middleware('sicore.permission:enseignants.disciplines.associer')
+            ->name('enseignants.disciplines.store');
+
         /*
         |--------------------------------------------------------------------------
         | Paramètres
@@ -41,6 +49,20 @@ Route::middleware('sicore.auth')
         Route::view('/parametres/ief', 'pages.parametres.ief')
             ->name('parametres.ief');
 
+        Route::middleware('sicore.permission:parametrage.disciplines.consulter')->group(function (): void {
+            Route::get('/parametres/disciplines', [DisciplineController::class, 'index'])
+                ->name('parametres.disciplines.index');
+        });
+        Route::post('/parametres/disciplines', [DisciplineController::class, 'store'])
+            ->middleware('sicore.permission:parametrage.disciplines.creer')
+            ->name('parametres.disciplines.store');
+        Route::put('/parametres/disciplines/{discipline}', [DisciplineController::class, 'update'])
+            ->middleware('sicore.permission:parametrage.disciplines.modifier')
+            ->name('parametres.disciplines.update');
+        Route::patch('/parametres/disciplines/{discipline}/statut', [DisciplineController::class, 'updateStatus'])
+            ->middleware('sicore.permission:parametrage.disciplines.changer-statut')
+            ->name('parametres.disciplines.status');
+
         Route::get('/parametres/ia', [InspectionAcademieController::class, 'index'])
             ->name('parametres.ia.index');
 
@@ -52,6 +74,14 @@ Route::middleware('sicore.auth')
 
         Route::get('/parametres/lieux-service', [LieuServiceController::class, 'index'])
             ->name('parametres.lieux-service.index');
+        Route::post('/parametres/lieux-service', [LieuServiceController::class, 'store'])
+            ->name('parametres.lieux-service.store');
+        Route::put('/parametres/lieux-service/{lieu}', [LieuServiceController::class, 'update'])
+            ->name('parametres.lieux-service.update');
+        Route::patch('/parametres/lieux-service/{lieu}/statut', [LieuServiceController::class, 'updateStatus'])
+            ->name('parametres.lieux-service.status');
+        Route::post('/parametres/lieux-service/{lieu}/affectations', [LieuServiceController::class, 'storeAssignment'])
+            ->name('parametres.lieux-service.affectations.store');
 
         Route::get('/parametres/institutions-financieres', [InstitutionFinanciereController::class, 'index'])
             ->name('parametres.institutions-financieres');
