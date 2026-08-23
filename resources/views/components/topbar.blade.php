@@ -20,6 +20,11 @@
       @endif
     </div>
   </div>
+  
+  {{-- Cloche de notification --}}
+  @if(session()->has('sicore_user'))
+    <x-notification-bell />
+  @endif
 
   @if ($searchId)
     <div class="search-wrap">
