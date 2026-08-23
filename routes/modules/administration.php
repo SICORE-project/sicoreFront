@@ -3,7 +3,9 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\PermissionController;
 use App\Http\Controllers\Admin\RoleController;
+use App\Http\Controllers\Admin\TypeRoleController;
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Admin\StructureOrganisationnelleController;
 use App\Http\Controllers\DashboardController;
 
 /*
@@ -36,6 +38,9 @@ Route::middleware('sicore.auth')
         Route::get('/utilisateurs/verifier-email', [UserController::class, 'checkEmail'])
             ->name('utilisateurs.check-email');
 
+        Route::get('/utilisateurs/ias', [UserController::class, 'iaOptions'])
+            ->name('utilisateurs.ia-options');
+
         Route::get('/utilisateurs/profils-roles', [RoleController::class, 'index'])
             ->name('utilisateurs.profils-roles');
 
@@ -45,6 +50,14 @@ Route::middleware('sicore.auth')
         Route::get('/utilisateurs/{id}', [UserController::class, 'show'])->name('utilisateurs.show');
         Route::get('/utilisateurs/{id}/modifier', [UserController::class, 'edit'])->name('utilisateurs.edit');
         Route::put('/utilisateurs/{id}', [UserController::class, 'update'])->name('utilisateurs.update');
+        Route::delete('/utilisateurs/{id}', [UserController::class, 'destroy'])->name('utilisateurs.destroy');
+        Route::post('/utilisateurs/{id}/toggle-status', [UserController::class, 'toggleStatus'])->name('utilisateurs.toggle-status');
+        Route::prefix('utilisateurs/structures')->name('utilisateurs.structures.')->group(function (): void {
+            Route::get('/', [StructureOrganisationnelleController::class, 'index'])->name('index');
+            Route::post('/', [StructureOrganisationnelleController::class, 'store'])->name('store');
+            Route::put('/{id}', [StructureOrganisationnelleController::class, 'update'])->name('update');
+            Route::delete('/{id}', [StructureOrganisationnelleController::class, 'destroy'])->name('destroy');
+        });
         Route::prefix('roles')->name('admin.roles.')->group(function (): void {
             Route::get('/', [RoleController::class, 'index'])->name('index');
             Route::get('/create', [RoleController::class, 'create'])->name('create');
@@ -55,6 +68,15 @@ Route::middleware('sicore.auth')
             Route::delete('/{id}', [RoleController::class, 'destroy'])->name('destroy');
             Route::get('/{id}/permissions', [RoleController::class, 'permissions'])->name('permissions');
             Route::put('/{id}/sync-permissions', [RoleController::class, 'syncPermissions'])->name('syncPermissions');
+        });
+
+        Route::prefix('type-roles')->name('admin.type-roles.')->group(function (): void {
+            Route::get('/', [TypeRoleController::class, 'index'])->name('index');
+            Route::get('/create', [TypeRoleController::class, 'create'])->name('create');
+            Route::post('/', [TypeRoleController::class, 'store'])->name('store');
+            Route::get('/{id}/edit', [TypeRoleController::class, 'edit'])->name('edit');
+            Route::put('/{id}', [TypeRoleController::class, 'update'])->name('update');
+            Route::delete('/{id}', [TypeRoleController::class, 'destroy'])->name('destroy');
         });
 
         Route::prefix('permissions')->name('admin.permissions.')->group(function (): void {

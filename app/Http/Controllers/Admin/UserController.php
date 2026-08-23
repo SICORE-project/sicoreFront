@@ -51,7 +51,7 @@ class UserController extends Controller
                 $isActive
                     ? '<span class="badge badge-active">Actif</span>'
                     : '<span class="badge badge-suspended">Suspendu</span>',
-                '<div class="table-actions-inline"><button class="table-action " type="button">Voir</button><button class="table-action " type="button">Modifier</button></div>',
+                $this->actions($user, $isActive),
             ];
         }, $users);
 
@@ -63,8 +63,10 @@ class UserController extends Controller
         ]);
 
         $roles = $this->userService->getRoles();
+        $organisation = $this->userService->getOrganisationOptions();
+        $structures = array_merge($organisation['national'] ?? [], $organisation['regional'] ?? []);
 
-        return view('pages.administration.utilisateurs', compact('roles'));
+        return view('pages.administration.utilisateurs', compact('roles', 'organisation', 'structures'));
     }
 
     public function create()
@@ -86,6 +88,7 @@ class UserController extends Controller
             'password' => ['required', 'string', 'min:8', 'confirmed'],
             'role_id' => ['required', 'integer'],
             'statut' => ['required', 'in:actif,inactif'],
+            'structure_organisationnelle_id' => ['nullable', 'integer'],
         ]);
 
         $response = $this->userService->createUser(
@@ -128,18 +131,70 @@ class UserController extends Controller
         );
     }
 
+    public function iaOptions()
+    {
+        return response()->json($this->userService->ias());
+    }
+
     public function edit($id)
     {
-        // Logic to show the form for editing an existing user
+        return redirect()->route('utilisateurs.index');
     }
 
     public function update(Request $request, $id)
     {
-        // Logic to update an existing user in the database
+        $data = $request->validate([
+            'nom' => ['required', 'string', 'max:100'],
+            'prenom' => ['required', 'string', 'max:100'],
+            'email' => ['required', 'email', 'max:255'],
+            'role_id' => ['required', 'integer'],
+            'statut' => ['required', 'in:actif,inactif'],
+            'structure_organisationnelle_id' => ['nullable', 'integer'],
+            'password' => ['nullable', 'string', 'min:8', 'confirmed'],
+        ]);
+
+        if (blank($data['password'] ?? null)) {
+            unset($data['password']);
+        }
+
+        $response = $this->userService->updateUser($id, $data);
+
+        if (! $response['success']) {
+            return back()->withInput()->withErrors($response['errors'] ?? [])->with('error', $response['message'] ?? 'Mise à jour impossible.');
+        }
+
+        return redirect()->route('utilisateurs.index')->with('success', $response['message'] ?? 'Utilisateur mis à jour avec succès.');
     }
 
     public function destroy($id)
     {
-        // Logic to delete a user from the database
+        $response = $this->userService->deleteUser($id);
+
+        return redirect()->route('utilisateurs.index')->with(
+            $response['success'] ? 'success' : 'error',
+            $response['message'] ?? ($response['success'] ? 'Utilisateur supprimé.' : 'Suppression impossible.')
+        );
+    }
+
+    public function toggleStatus($id)
+    {
+        $response = $this->userService->toggleUserStatus($id);
+
+        return redirect()->route('utilisateurs.index')->with(
+            $response['success'] ? 'success' : 'error',
+            $response['message'] ?? 'Mise à jour du statut impossible.'
+        );
+    }
+
+    private function actions(array $user, bool $isActive): string
+    {
+        $json = e(json_encode($user, JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT | JSON_HEX_TAG));
+        $name = e((string) data_get($user, 'nom_complet', $user['email'] ?? ''));
+
+        return '<div class="table-actions-inline">'
+            . '<button class="table-action" type="button" data-user-action="view" data-user="' . $json . '">Voir</button>'
+            . '<button class="table-action" type="button" data-user-action="edit" data-user="' . $json . '">Modifier</button>'
+            . '<button class="table-action delete" type="button" data-user-action="delete" data-user-id="' . (int) $user['id'] . '" data-user-name="' . $name . '">Supprimer</button>'
+            . '</div>';
     }
 }

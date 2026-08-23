@@ -108,6 +108,74 @@ class UserService
         return ['success' => $response->successful(), 'message' => $response->json('message'), 'errors' => $response->json('errors', [])];
     }
 
+    public function deleteUser(int|string $userId): array
+    {
+        try {
+            $response = $this->apiClient->delete("admin/users/{$userId}");
+        } catch (ConnectionException) {
+            return ['success' => false, 'message' => 'Le service backend est inaccessible.'];
+        }
+
+        return ['success' => $response->successful(), 'message' => $response->json('message')];
+    }
+
+    public function toggleUserStatus(int|string $userId): array
+    {
+        try {
+            $response = $this->apiClient->post("admin/users/{$userId}/toggle-status");
+        } catch (ConnectionException) {
+            return ['success' => false, 'message' => 'Le service backend est inaccessible.'];
+        }
+
+        return ['success' => $response->successful(), 'message' => $response->json('message')];
+    }
+
+    public function structures(): array
+    {
+        try {
+            $response = $this->apiClient->get('admin/structures-organisationnelles/manage');
+        } catch (ConnectionException) {
+            return ['success' => false, 'data' => [], 'message' => 'Le service backend est inaccessible.'];
+        }
+
+        return ['success' => $response->successful(), 'data' => $response->json('data', []), 'message' => $response->json('message')];
+    }
+
+    public function ias(): array
+    {
+        try {
+            $response = $this->apiClient->get('admin/structures-organisationnelles/ias');
+        } catch (ConnectionException) {
+            return [];
+        }
+
+        return $response->successful() ? $response->json('data', []) : [];
+    }
+
+    public function saveStructure(array $data, int|string|null $id = null): array
+    {
+        try {
+            $response = $id === null
+                ? $this->apiClient->post('admin/structures-organisationnelles', $data)
+                : $this->apiClient->put("admin/structures-organisationnelles/{$id}", $data);
+        } catch (ConnectionException) {
+            return ['success' => false, 'message' => 'Le service backend est inaccessible.', 'errors' => []];
+        }
+
+        return ['success' => $response->successful(), 'message' => $response->json('message'), 'errors' => $response->json('errors', [])];
+    }
+
+    public function deleteStructure(int|string $id): array
+    {
+        try {
+            $response = $this->apiClient->delete("admin/structures-organisationnelles/{$id}");
+        } catch (ConnectionException) {
+            return ['success' => false, 'message' => 'Le service backend est inaccessible.'];
+        }
+
+        return ['success' => $response->successful(), 'message' => $response->json('message')];
+    }
+
     private function organisationType(array $user): ?string
     {
         $access = data_get($user, 'acces_organisationnel', []);
@@ -154,18 +222,20 @@ class UserService
     public function getOrganisationOptions(): array
     {
         try {
-            $regional = $this->apiClient->get('admin/users/organisation-options');
-            $national = $this->apiClient->get('admin/users/national-organisation-options');
+            $response = $this->apiClient->get('admin/structures-organisationnelles');
         } catch (ConnectionException) {
             return ['national' => [], 'regional' => []];
         }
 
-        $nationalOptions = $national->successful() ? $national->json('data', []) : [];
-        $regionalOptions = $regional->successful() ? $regional->json('data', []) : [];
+        if (! $response->successful()) {
+            return ['national' => [], 'regional' => []];
+        }
+
+        $structures = $response->json('data', []);
 
         return [
-            'national' => data_get($nationalOptions, 'data', $nationalOptions),
-            'regional' => data_get($regionalOptions, 'data', $regionalOptions),
+            'national' => collect($structures)->where('perimetre', 'national')->values()->all(),
+            'regional' => collect($structures)->where('perimetre', 'regional')->values()->all(),
         ];
     }
 

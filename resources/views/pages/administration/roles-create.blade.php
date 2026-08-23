@@ -26,16 +26,16 @@
                     @error('description') <p style="color:#dc2626; font-size:12px; margin-top:4px;">{{ $message }}</p> @enderror
                 </div>
 
-                <div class="filter-panel" aria-label="Niveau et statut" style="margin-bottom: 20px;">
+                <div class="filter-panel" aria-label="Type et statut" style="margin-bottom: 20px;">
                     <div class="form-group">
-                        <label for="niveau">Niveau *</label>
-                        <select id="niveau" name="niveau" class="form-control" required>
-                            <option value="systeme">Système</option>
-                            <option value="admin_metier">Admin Métier</option>
-                            <option value="gestionnaire">Gestionnaire</option>
-                            <option value="consultation">Consultation</option>
+                        <label for="type_role_id">Type de rôle *</label>
+                        <select id="type_role_id" name="type_role_id" class="form-control" required>
+                            <option value="">Sélectionnez un type</option>
+                            @foreach ($typeRoles as $typeRole)
+                                <option value="{{ $typeRole['id'] }}" @selected(old('type_role_id') == $typeRole['id'])>{{ $typeRole['libelle'] }}</option>
+                            @endforeach
                         </select>
-                        @error('niveau') <p style="color:#dc2626; font-size:12px; margin-top:4px;">{{ $message }}</p> @enderror
+                        @error('type_role_id') <p style="color:#dc2626; font-size:12px; margin-top:4px;">{{ $message }}</p> @enderror
                     </div>
                     <div class="form-group">
                         <label for="est_actif">Statut *</label>
