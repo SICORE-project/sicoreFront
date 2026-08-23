@@ -23,6 +23,7 @@
   var status = modal ? modal.querySelector("[data-payroll-status]") : null;
   var submitButton = modal ? modal.querySelector("[data-payroll-submit]") : null;
   var currentAction = null;
+  var modalDefaults = {};
 
   /** Affiche une notification commune ou une alerte de secours. */
   function notify(type, message) {
@@ -264,6 +265,7 @@
     }
 
     var defaults = defaultsFor(parseDefaults(trigger));
+    modalDefaults = Object.assign({}, defaults);
     title.textContent = definition.title || "Opération de paie";
     confirmation.textContent = definition.confirmation || "";
     confirmation.hidden = !definition.confirmation;
@@ -278,7 +280,13 @@
 
     var periodField = form.elements.payroll_period_id;
     if (periodField) {
-      periodField.addEventListener("change", syncPeriodVersion);
+      periodField.addEventListener("change", function () {
+        if (currentAction === "close-period") {
+          syncPeriodVersion();
+          return;
+        }
+        syncEditableRecord();
+      });
       if (isCollectiveTabaskiAction()) {
         periodField.addEventListener("change", syncApplicationAcademicYear);
       }
@@ -291,6 +299,10 @@
     if (currentAction === "create-period" && codeField) {
       codeField.addEventListener("change", syncPeriodDates);
     }
+    if (currentAction === "add-element" && codeField) {
+      codeField.addEventListener("change", syncEditableRecord);
+    }
+    syncEditableRecord();
 
     var firstField = fieldsHost.querySelector("input:not([type='hidden']), select, textarea");
     if (firstField) {
@@ -369,6 +381,7 @@
         });
       }
 
+      syncEditableRecord();
       syncPayrollProfileFields();
 
       submitButton.disabled = !teacher;
@@ -665,7 +678,65 @@
     modal.hidden = true;
     document.body.classList.remove("payroll-modal-open");
     currentAction = null;
+    modalDefaults = {};
     form.reset();
+  }
+
+  /**
+   * Recharge la version et les valeurs d'une saisie existante. Une nouvelle
+   * saisie conserve une version vide ; une modification envoie exactement la
+   * version fournie par le backend, ce qui évite les faux conflits tout en
+   * gardant la protection contre une vraie modification concurrente.
+   */
+  function syncEditableRecord() {
+    if (!form || ["save-attendance", "add-element"].indexOf(currentAction) === -1) return;
+
+    var periodField = form.elements.payroll_period_id;
+    var teacherField = form.elements.enseignant_id;
+    var versionField = form.elements.expected_version;
+    if (!periodField || !teacherField || !versionField) return;
+
+    var code = form.elements.code
+      ? String(form.elements.code.value || "").trim().toLocaleUpperCase("fr-FR")
+      : "";
+    var record = (page.data.input_records || []).find(function (item) {
+      if (item.action !== currentAction ||
+          String(item.payroll_period_id) !== String(periodField.value) ||
+          String(item.enseignant_id) !== String(teacherField.value)) {
+        return false;
+      }
+
+      return currentAction !== "add-element" ||
+        String(item.code || "").trim().toLocaleUpperCase("fr-FR") === code;
+    }) || null;
+
+    var hadLoadedRecord = versionField.value !== "";
+    versionField.value = record ? record.expected_version : "";
+
+    if (record) {
+      var editableFields = currentAction === "save-attendance"
+        ? ["absence_days", "delay_minutes", "deduction_amount", "notes"]
+        : ["label", "category", "amount"];
+      editableFields.forEach(function (name) {
+        var control = form.elements[name];
+        if (control) control.value = record[name] == null ? "" : record[name];
+      });
+      status.textContent = "Saisie existante chargée avec sa version courante.";
+      return;
+    }
+
+    if (hadLoadedRecord) {
+      var resetFields = currentAction === "save-attendance"
+        ? ["absence_days", "delay_minutes", "deduction_amount", "notes"]
+        : ["label", "category", "amount"];
+      resetFields.forEach(function (name) {
+        var control = form.elements[name];
+        if (control) {
+          control.value = modalDefaults[name] == null ? "" : modalDefaults[name];
+        }
+      });
+      status.textContent = "Nouvelle saisie : aucune version antérieure n’est requise.";
+    }
   }
 
   function syncPeriodVersion() {
