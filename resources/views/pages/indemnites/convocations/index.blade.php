@@ -220,7 +220,21 @@
 
         </form>
 
-    
+        {{--
+            Demande utilisatrice : rien ne s'affiche tant qu'aucun filtre
+            n'est actif (voir $filtreActif dans ConvocationsController::
+            index()) — le tableau, les stats de la page, tout reste vide
+            jusqu'a ce qu'on filtre par date/objet/metier/centre.
+        --}}
+        @if (! $filtreActif)
+
+            <section class="table-card">
+                <p class="empty-message show">
+                    Choisissez une date, un objet, un métier ou un centre ci-dessus pour afficher les convocations.
+                </p>
+            </section>
+
+        @else
 
         <section class="table-card">
 
@@ -362,6 +376,8 @@
             </div>
 
         </section>
+
+        @endif
 
     </section>
 

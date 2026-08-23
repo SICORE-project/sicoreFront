@@ -136,16 +136,47 @@
                     <div class="form-grid">
 
                         <div class="form-group full">
-                            <label>Délivré à M. (1)</label>
-                            <p>
-                                {{ trim(($beneficiaire['prenom'] ?? '') . ' ' . ($beneficiaire['nom'] ?? '')) ?: '—' }}
-                                &middot; Matricule {{ $beneficiaire['matricule'] ?? '—' }}
-                            </p>
+                            <label for="delivre_a_affiche">Délivré à M. (1)</label>
+                            {{--
+                                Demande utilisatrice : même traitement que
+                                "Type de bénéficiaire" — nom/prénom/matricule
+                                déjà connus depuis la fiche de l'agent,
+                                affichés en champ désactivé + fond coloré.
+                                Rien à soumettre : ce champ n'a jamais eu de
+                                name (identité déjà transmise via le hidden
+                                beneficiaire_id en haut du formulaire).
+                            --}}
+                            <input
+                                type="text"
+                                class="form-control field-prefilled"
+                                id="delivre_a_affiche"
+                                value="{{ trim(($beneficiaire['prenom'] ?? '') . ' ' . ($beneficiaire['nom'] ?? '')) ?: '—' }} · Matricule {{ $beneficiaire['matricule'] ?? '—' }}"
+                                disabled
+                            >
+                            <small class="form-hint">Déjà connu depuis la fiche de l'agent — non modifiable ici.</small>
                         </div>
 
                         <div class="form-group">
-                            <label>Type de bénéficiaire</label>
-                            <p>{{ ucfirst($beneficiaire['categorie_personnel'] ?? '—') }}</p>
+                            <label for="statut_agent_affiche">Type de bénéficiaire</label>
+                            {{--
+                                Demande du chef de groupe : mettre en évidence
+                                les champs déjà récupérés (ici depuis la fiche
+                                de l'enseignant) en les affichant comme un
+                                vrai champ de formulaire, désactivé, avec un
+                                fond de couleur distinct — plutôt qu'un simple
+                                texte qui ne ressemble pas au reste du
+                                formulaire. Rien à soumettre pour ce champ :
+                                le back re-dérive toujours statut_agent depuis
+                                l'enseignant (voir FraisDeplacementController::store()).
+                            --}}
+                            <input
+                                type="text"
+                                class="form-control field-prefilled"
+                                id="statut_agent_affiche"
+                                value="{{ ucfirst($beneficiaire['categorie_personnel'] ?? '—') }}"
+                                disabled
+                            >
+                            <small class="form-hint">Déjà connu depuis la fiche de l'agent — non modifiable ici.</small>
                         </div>
 
                         {{--
@@ -160,8 +191,15 @@
                         @if (($beneficiaire['categorie_personnel'] ?? null) === 'vacataire')
 
                             <div class="form-group">
-                                <label>Montant</label>
-                                <p><strong>150 000 FCFA</strong> (montant fixe vacataire)</p>
+                                <label for="montant_vacataire_affiche">Montant</label>
+                                <input
+                                    type="text"
+                                    class="form-control field-prefilled"
+                                    id="montant_vacataire_affiche"
+                                    value="150 000 FCFA (montant fixe vacataire)"
+                                    disabled
+                                >
+                                <small class="form-hint">Montant fixe, déjà déterminé — non modifiable ici.</small>
                             </div>
 
                         @elseif (($beneficiaire['categorie_personnel'] ?? null) === 'fonctionnaire')
@@ -172,8 +210,25 @@
                                     @if (empty($beneficiaire['indice']))<span class="required">*</span>@endif
                                 </label>
                                 @if (! empty($beneficiaire['indice']))
-                                    <p>{{ $beneficiaire['indice'] }}</p>
+                                    {{--
+                                        Demande du chef de groupe : même
+                                        traitement que "Type de bénéficiaire"
+                                        ci-dessus — champ désactivé + fond
+                                        coloré (.field-prefilled) plutôt qu'un
+                                        simple texte. La valeur réelle est
+                                        toujours transmise via le champ hidden
+                                        juste en dessous (un input disabled
+                                        n'est jamais envoyé par le navigateur).
+                                    --}}
+                                    <input
+                                        type="text"
+                                        class="form-control field-prefilled"
+                                        id="indice_agent_affiche"
+                                        value="{{ $beneficiaire['indice'] }}"
+                                        disabled
+                                    >
                                     <input type="hidden" name="indice_agent" value="{{ $beneficiaire['indice'] }}">
+                                    <small class="form-hint">Déjà connu depuis la fiche de l'agent — non modifiable ici.</small>
                                 @else
                                     <input
                                         type="number"
@@ -201,7 +256,7 @@
                                     id="montant_saisi"
                                     name="montant_saisi"
                                     value="{{ old('montant_saisi') }}"
-                                    placeholder="Montant en FCFA"
+                                    placeholder="Ex : 150000"
                                     required
                                 >
                             </div>
@@ -244,6 +299,21 @@
 
                     <div class="form-grid">
 
+                        {{--
+                            Demande utilisatrice : "lieu_depart" et
+                            "date_depart" (comme "date_retour" plus bas) sont
+                            pré-remplis depuis la convocation
+                            (lieu_affectation = où l'agent travaille
+                            habituellement / date_debut / date_fin = période
+                            d'examen). "date_depart"/"date_retour" sont
+                            désactivés + fond coloré (.field-prefilled),
+                            avec un hidden portant la valeur réelle (un input
+                            disabled n'est jamais envoyé par le navigateur).
+                            "lieu_depart" et "lieu_destination" (plus bas)
+                            restent volontairement MODIFIABLES — demande
+                            utilisatrice explicite de garder ces deux-là
+                            corrigibles, contrairement aux dates.
+                        --}}
                         <div class="form-group">
                             <label for="lieu_depart" class="required-label">Partant de <span class="required">*</span></label>
                             <input
@@ -251,21 +321,23 @@
                                 class="form-control @error('lieu_depart') is-invalid @enderror"
                                 id="lieu_depart"
                                 name="lieu_depart"
-                                value="{{ old('lieu_depart', 'Dakar') }}"
+                                value="{{ old('lieu_depart', $convocation['lieu_affectation'] ?? 'Dakar') }}"
+                                placeholder="Ex : Dakar"
                                 required
                             >
                         </div>
 
                         <div class="form-group">
-                            <label for="date_depart" class="required-label">le <span class="required">*</span></label>
+                            <label for="date_depart_affiche" class="required-label">le <span class="required">*</span></label>
                             <input
-                                type="date"
-                                class="form-control @error('date_depart') is-invalid @enderror"
-                                id="date_depart"
-                                name="date_depart"
-                                value="{{ old('date_depart') }}"
-                                required
+                                type="text"
+                                class="form-control field-prefilled"
+                                id="date_depart_affiche"
+                                value="{{ ! empty($convocation['date_debut']) ? \Illuminate\Support\Carbon::parse($convocation['date_debut'])->format('d/m/Y') : '—' }}"
+                                disabled
                             >
+                            <input type="hidden" name="date_depart" value="{{ old('date_depart', ! empty($convocation['date_debut']) ? \Illuminate\Support\Carbon::parse($convocation['date_debut'])->format('Y-m-d') : '') }}">
+                            <small class="form-hint">Déjà connue depuis la convocation (début de la période d'examen) — non modifiable ici.</small>
                         </div>
 
                         <div class="form-group">
@@ -286,7 +358,8 @@
                                 class="form-control @error('lieu_destination') is-invalid @enderror"
                                 id="lieu_destination"
                                 name="lieu_destination"
-                                value="{{ old('lieu_destination', $convocation['lieu_affectation'] ?? '') }}"
+                                value="{{ old('lieu_destination', $convocation['lieu_examen'] ?? '') }}"
+                                placeholder="Ex : Kaolack"
                                 required
                             >
                         </div>
@@ -359,15 +432,16 @@
                         </div>
 
                         <div class="form-group">
-                            <label for="date_retour" class="required-label">Date de retour <span class="required">*</span></label>
+                            <label for="date_retour_affiche" class="required-label">Date de retour <span class="required">*</span></label>
                             <input
-                                type="date"
-                                class="form-control @error('date_retour') is-invalid @enderror"
-                                id="date_retour"
-                                name="date_retour"
-                                value="{{ old('date_retour') }}"
-                                required
+                                type="text"
+                                class="form-control field-prefilled"
+                                id="date_retour_affiche"
+                                value="{{ ! empty($convocation['date_fin']) ? \Illuminate\Support\Carbon::parse($convocation['date_fin'])->format('d/m/Y') : '—' }}"
+                                disabled
                             >
+                            <input type="hidden" name="date_retour" value="{{ old('date_retour', ! empty($convocation['date_fin']) ? \Illuminate\Support\Carbon::parse($convocation['date_fin'])->format('Y-m-d') : '') }}">
+                            <small class="form-hint">Déjà connue depuis la convocation (fin de la période d'examen) — non modifiable ici.</small>
                         </div>
 
                         <div class="form-group">
@@ -991,6 +1065,18 @@
         font-weight: 800;
     }
 
+    /* Champs déjà récupérés automatiquement (valeur connue depuis la fiche
+       de l'enseignant : statut, indice...) — demande du chef de groupe :
+       fond de couleur distinct + curseur "not-allowed" pour que ce soit
+       immédiatement visible que le champ est désactivé, pas juste vide. */
+    .field-prefilled,
+    .field-prefilled:disabled {
+        background-color: #eef2f7;
+        color: #334155;
+        cursor: not-allowed;
+        opacity: 1;
+    }
+
     .avance-table th,
     .avance-table td {
         text-align: left;
@@ -1066,7 +1152,7 @@
         document.querySelectorAll("table[data-avance-total-target]").forEach(function (table) {
             brancherTableauAvance(table, document.getElementById(table.getAttribute("data-avance-total-target")));
         });
-     })();
+    })();
 </script>
 @endpush
 

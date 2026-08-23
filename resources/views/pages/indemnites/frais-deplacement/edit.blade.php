@@ -134,17 +134,36 @@
 
                     <div class="form-grid">
 
+                        {{--
+                            Demande utilisatrice : même traitement que
+                            create.blade.php — champs récupérés (identité,
+                            statut) affichés en désactivé + fond coloré
+                            (.field-prefilled) plutôt qu'un simple texte.
+                            Rien à soumettre pour ces deux champs (pas de
+                            name) : ils n'en avaient pas avant non plus.
+                        --}}
                         <div class="form-group full">
-                            <label>Délivré à M. (1)</label>
-                            <p>
-                                {{ trim(($fiche['beneficiaire']['prenom'] ?? '') . ' ' . ($fiche['beneficiaire']['nom'] ?? '')) ?: '—' }}
-                                &middot; Matricule {{ $fiche['beneficiaire']['matricule'] ?? '—' }}
-                            </p>
+                            <label for="delivre_a_affiche">Délivré à M. (1)</label>
+                            <input
+                                type="text"
+                                class="form-control field-prefilled"
+                                id="delivre_a_affiche"
+                                value="{{ trim(($fiche['beneficiaire']['prenom'] ?? '') . ' ' . ($fiche['beneficiaire']['nom'] ?? '')) ?: '—' }} · Matricule {{ $fiche['beneficiaire']['matricule'] ?? '—' }}"
+                                disabled
+                            >
+                            <small class="form-hint">Déjà connu depuis la fiche de l'agent — non modifiable ici.</small>
                         </div>
 
                         <div class="form-group">
-                            <label>Type de bénéficiaire</label>
-                            <p>{{ ucfirst($fiche['statut_agent'] ?? '—') }}</p>
+                            <label for="statut_agent_affiche">Type de bénéficiaire</label>
+                            <input
+                                type="text"
+                                class="form-control field-prefilled"
+                                id="statut_agent_affiche"
+                                value="{{ ucfirst($fiche['statut_agent'] ?? '—') }}"
+                                disabled
+                            >
+                            <small class="form-hint">Déjà connu depuis la fiche de l'agent — non modifiable ici.</small>
                         </div>
 
                         {{--
@@ -157,8 +176,15 @@
                         @if (($fiche['statut_agent'] ?? null) === 'vacataire')
 
                             <div class="form-group">
-                                <label>Montant</label>
-                                <p><strong>150 000 FCFA</strong> (montant fixe vacataire)</p>
+                                <label for="montant_vacataire_affiche">Montant</label>
+                                <input
+                                    type="text"
+                                    class="form-control field-prefilled"
+                                    id="montant_vacataire_affiche"
+                                    value="150 000 FCFA (montant fixe vacataire)"
+                                    disabled
+                                >
+                                <small class="form-hint">Montant fixe, déjà déterminé — non modifiable ici.</small>
                             </div>
 
                         @elseif (($fiche['statut_agent'] ?? null) === 'fonctionnaire')
@@ -244,16 +270,25 @@
                             >
                         </div>
 
+                        {{--
+                            Demande utilisatrice : date_depart/date_retour
+                            désactivés (comme create.blade.php), avec un
+                            hidden portant la valeur réelle — un input
+                            disabled n'est jamais envoyé par le navigateur.
+                            lieu_depart/lieu_destination (ci-dessus/plus bas)
+                            restent volontairement modifiables.
+                        --}}
                         <div class="form-group">
-                            <label for="date_depart" class="required-label">le <span class="required">*</span></label>
+                            <label for="date_depart_affiche" class="required-label">le <span class="required">*</span></label>
                             <input
-                                type="date"
-                                class="form-control @error('date_depart') is-invalid @enderror"
-                                id="date_depart"
-                                name="date_depart"
-                                value="{{ old('date_depart', ! empty($fiche['date_depart']) ? \Illuminate\Support\Carbon::parse($fiche['date_depart'])->format('Y-m-d') : '') }}"
-                                required
+                                type="text"
+                                class="form-control field-prefilled"
+                                id="date_depart_affiche"
+                                value="{{ ! empty($fiche['date_depart']) ? \Illuminate\Support\Carbon::parse($fiche['date_depart'])->format('d/m/Y') : '—' }}"
+                                disabled
                             >
+                            <input type="hidden" name="date_depart" value="{{ old('date_depart', ! empty($fiche['date_depart']) ? \Illuminate\Support\Carbon::parse($fiche['date_depart'])->format('Y-m-d') : '') }}">
+                            <small class="form-hint">Déjà enregistrée sur la fiche — non modifiable ici.</small>
                         </div>
 
                         <div class="form-group">
@@ -347,15 +382,16 @@
                         </div>
 
                         <div class="form-group">
-                            <label for="date_retour" class="required-label">Date de retour <span class="required">*</span></label>
+                            <label for="date_retour_affiche" class="required-label">Date de retour <span class="required">*</span></label>
                             <input
-                                type="date"
-                                class="form-control @error('date_retour') is-invalid @enderror"
-                                id="date_retour"
-                                name="date_retour"
-                                value="{{ old('date_retour', ! empty($fiche['date_retour']) ? \Illuminate\Support\Carbon::parse($fiche['date_retour'])->format('Y-m-d') : '') }}"
-                                required
+                                type="text"
+                                class="form-control field-prefilled"
+                                id="date_retour_affiche"
+                                value="{{ ! empty($fiche['date_retour']) ? \Illuminate\Support\Carbon::parse($fiche['date_retour'])->format('d/m/Y') : '—' }}"
+                                disabled
                             >
+                            <input type="hidden" name="date_retour" value="{{ old('date_retour', ! empty($fiche['date_retour']) ? \Illuminate\Support\Carbon::parse($fiche['date_retour'])->format('Y-m-d') : '') }}">
+                            <small class="form-hint">Déjà enregistrée sur la fiche — non modifiable ici.</small>
                         </div>
 
                         <div class="form-group">

@@ -18,71 +18,91 @@ class ConvocationsController extends Controller
     ) {}
 
     // Liste des convocations, avec filtres optionnels (date, objet, metier, centre)
+    //
+    // Demande utilisatrice : rien ne s'affiche tant qu'aucun filtre n'est
+    // actif — on n'appelle l'API que si date/objet/metier/centre est
+    // renseigne, sinon $items reste vide et index.blade.php affiche le
+    // message "Choisissez un filtre..." (voir $filtreActif ci-dessous).
     public function index(Request $request): View
     {
-         $filtres = array_filter([
-        'date' => $request->query('date'),
-        'objet' => $request->query('objet'),
-        'metier' => $request->query('metier'),
-        'centre' => $request->query('centre'),
-        'per_page' => 10,
-        'page' => $request->query('page', 1),
-    ]);
+        $filtres = array_filter([
+            'date' => $request->query('date'),
+            'objet' => $request->query('objet'),
+            'metier' => $request->query('metier'),
+            'centre' => $request->query('centre'),
+        ]);
 
-        $resultat = $this->convocations->liste($filtres);
+        $filtreActif = count($filtres) > 0;
 
-        $meta = $resultat['success'] ? ($resultat['data'] ?? []) : [];
-        $items = $meta['data'] ?? [];
+        $items = [];
 
-        if (! $resultat['success']) {
-            session()->flash('error', $resultat['message'] ?? "Impossible de charger les convocations.");
-        }
+        $convocations = new LengthAwarePaginator([], 0, 10, 1, [
+            'path' => $request->url(),
+            'query' => $request->query(),
+        ]);
 
-        // La vue (index.blade.php) attend un vrai paginator Laravel
-        // (->total(), ->onFirstPage(), ->url(), ...). L'API renvoie une
-        // pagination "a la Laravel" (data/current_page/per_page/total), on
-        // la reconstruit ici cote frontend.
-        $convocationsPage = array_map([$this, 'formatConvocationForView'], $items);
-
-        $convocations = new LengthAwarePaginator(
-            $convocationsPage,
-            $meta['total'] ?? count($convocationsPage),
-            $meta['per_page'] ?? 10,
-            $meta['current_page'] ?? (int) $request->query('page', 1),
-            [
-                'path' => $request->url(),
-                'query' => $request->query(),
-            ]
-        );
-
-        // Statistiques rapides pour les cartes en haut de page. L'API ne
-        // fournit pas d'agregat dedie : "total" reprend le total reel de la
-        // pagination, le reste est calcule sur la page courante uniquement.
         // NB: les cles doivent correspondre a index.blade.php
         // ($stats['envoyees'], $stats['brouillons'], $stats['cloturees']).
         $stats = [
-            'total' => $convocations->total(),
+            'total' => 0,
             'brouillons' => 0,
             'emises' => 0,
             'envoyees' => 0,
             'cloturees' => 0,
         ];
 
-        $statutVersCleStat = [
-            'brouillon' => 'brouillons',
-            'emise' => 'emises',
-            'envoyee' => 'envoyees',
-            'cloturee' => 'cloturees',
-        ];
+        if ($filtreActif) {
+            $resultat = $this->convocations->liste(array_merge($filtres, [
+                'per_page' => 10,
+                'page' => $request->query('page', 1),
+            ]));
 
-        foreach ($items as $convocation) {
-            $statut = $convocation['statut'] ?? null;
-            if ($statut && isset($statutVersCleStat[$statut])) {
-                $stats[$statutVersCleStat[$statut]]++;
+            $meta = $resultat['success'] ? ($resultat['data'] ?? []) : [];
+            $items = $meta['data'] ?? [];
+
+            if (! $resultat['success']) {
+                session()->flash('error', $resultat['message'] ?? "Impossible de charger les convocations.");
+            }
+
+            // La vue (index.blade.php) attend un vrai paginator Laravel
+            // (->total(), ->onFirstPage(), ->url(), ...). L'API renvoie une
+            // pagination "a la Laravel" (data/current_page/per_page/total), on
+            // la reconstruit ici cote frontend.
+            $convocationsPage = array_map([$this, 'formatConvocationForView'], $items);
+
+            $convocations = new LengthAwarePaginator(
+                $convocationsPage,
+                $meta['total'] ?? count($convocationsPage),
+                $meta['per_page'] ?? 10,
+                $meta['current_page'] ?? (int) $request->query('page', 1),
+                [
+                    'path' => $request->url(),
+                    'query' => $request->query(),
+                ]
+            );
+
+            // Statistiques rapides pour les cartes en haut de page. L'API ne
+            // fournit pas d'agregat dedie : "total" reprend le total reel de la
+            // pagination, le reste est calcule sur la page courante uniquement.
+            $stats['total'] = $convocations->total();
+
+            $statutVersCleStat = [
+                'brouillon' => 'brouillons',
+                'emise' => 'emises',
+                'envoyee' => 'envoyees',
+                'cloturee' => 'cloturees',
+            ];
+
+            foreach ($items as $convocation) {
+                $statut = $convocation['statut'] ?? null;
+                if ($statut && isset($statutVersCleStat[$statut])) {
+                    $stats[$statutVersCleStat[$statut]]++;
+                }
             }
         }
 
         return view('pages.indemnites.convocations.index', [
+            'filtreActif' => $filtreActif,
             'convocations' => $convocations,
             // Une ligne par (convocation x centre) : chaque centre porte
             // son propre metier (deux centres de meme nom mais de metier
