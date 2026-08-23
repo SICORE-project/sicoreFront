@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Indemnites\ConvocationsController;
+use App\Http\Controllers\Indemnites\EtatPaieIndemnitesController;
 use App\Http\Controllers\Indemnites\FraisDeplacementController;
 use App\Http\Controllers\Indemnites\IndemniteCorrectionController;
 use App\Http\Controllers\Indemnites\IndemniteSurveillanceController;
@@ -216,8 +217,35 @@ Route::middleware('sicore.auth')
         Route::delete('/frais-deplacement/{id}/justificatifs/{justificatifId}', [FraisDeplacementController::class, 'supprimerJustificatif'])
             ->name('frais-deplacement.justificatifs.destroy');
 
-        Route::view('/etats-paie', 'pages.indemnites.etats-paie')
+        // AJAX : centres des convocations correspondant a l'objet/session
+        // choisis sur le formulaire — doit rester avant /etats-paie
+        // ci-dessous par coherence avec le reste du fichier (segment fixe
+        // avant route racine), meme si aucun risque reel de conflit ici.
+        Route::get('/etats-paie/centres', [EtatPaieIndemnitesController::class, 'centresPourObjetSession'])
+            ->name('etats-paie.centres');
+
+        // AJAX : membres associes au type d'indemnite choisi.
+        Route::get('/etats-paie/membres', [EtatPaieIndemnitesController::class, 'membresPourFiltre'])
+            ->name('etats-paie.membres');
+
+        // AJAX : coordonnees bancaires d'un membre (pre-remplissage de la
+        // modale "Ajouter etat de paie").
+        Route::get('/etats-paie/membres/{id}/rib', [EtatPaieIndemnitesController::class, 'ribMembre'])
+            ->name('etats-paie.membres.rib');
+
+        // AJAX : etats de paie deja crees pour le filtre courant ("Voir etat").
+        Route::get('/etats-paie/existants', [EtatPaieIndemnitesController::class, 'etatsExistants'])
+            ->name('etats-paie.existants');
+
+        // Genere/telecharge la fiche PDF officielle a partir du filtre courant.
+        Route::get('/etats-paie/fiche-pdf', [EtatPaieIndemnitesController::class, 'genererFichePdf'])
+            ->name('etats-paie.fiche-pdf');
+
+        Route::get('/etats-paie', [EtatPaieIndemnitesController::class, 'index'])
             ->name('etats-paie');
+
+        Route::post('/etats-paie', [EtatPaieIndemnitesController::class, 'storeEtatPaie'])
+            ->name('etats-paie.store');
 
     });
 
