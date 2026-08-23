@@ -10,7 +10,7 @@
     type="modal"
     id="create-user-modal"
     title="Créer un utilisateur"
-    :open="$errors->any() || session()->has('error')"
+    :open="($errors->any() || session()->has('error')) && ! session()->has('edit_user_id')"
   >
     <p class="breadcrumb">Ajouter un nouveau compte et lui attribuer un rôle.</p>
 
@@ -127,14 +127,22 @@
     <dl class="user-details">
       <div><dt>Nom complet</dt><dd id="view-user-name">—</dd></div>
       <div><dt>Adresse e-mail</dt><dd id="view-user-email">—</dd></div>
+      <div><dt>Téléphone</dt><dd id="view-user-phone">—</dd></div>
+      <div><dt>Genre</dt><dd id="view-user-gender">—</dd></div>
+      <div><dt>Date de naissance</dt><dd id="view-user-birth-date">—</dd></div>
+      <div><dt>Lieu de naissance</dt><dd id="view-user-birth-place">—</dd></div>
+      <div><dt>Adresse</dt><dd id="view-user-address">—</dd></div>
+      <div><dt>Fonction</dt><dd id="view-user-function">—</dd></div>
       <div><dt>Rôle</dt><dd id="view-user-role">—</dd></div>
       <div><dt>Structure</dt><dd id="view-user-structure">—</dd></div>
       <div><dt>Statut</dt><dd id="view-user-status">—</dd></div>
+      <div><dt>Créé le</dt><dd id="view-user-created-at">—</dd></div>
+      <div><dt>Modifié le</dt><dd id="view-user-updated-at">—</dd></div>
     </dl>
     <div class="form-actions"><button class="btn-secondary" type="button" data-modal-close>Fermer</button></div>
   </x-module-indemnite>
 
-  <x-module-indemnite type="modal" id="edit-user-modal" title="Modifier un utilisateur">
+  <x-module-indemnite type="modal" id="edit-user-modal" title="Modifier un utilisateur" :open="session()->has('edit_user_id')">
     <form class="teacher-form" id="edit-user-form" method="POST" action="">
       @csrf
       @method('PUT')
@@ -485,9 +493,17 @@
           if (action === 'view') {
             document.getElementById('view-user-name').textContent = user.nom_complet || `${user.prenom || ''} ${user.nom || ''}`.trim() || '—';
             document.getElementById('view-user-email').textContent = user.email || '—';
+            document.getElementById('view-user-phone').textContent = user.telephone || '—';
+            document.getElementById('view-user-gender').textContent = user.genre || '—';
+            document.getElementById('view-user-birth-date').textContent = user.date_naiss || '—';
+            document.getElementById('view-user-birth-place').textContent = user.lieu_naissance || '—';
+            document.getElementById('view-user-address').textContent = user.adresse || '—';
+            document.getElementById('view-user-function').textContent = user.fonction || '—';
             document.getElementById('view-user-role').textContent = user.role?.nom || '—';
-            document.getElementById('view-user-structure').textContent = user.structure_organisationnelle?.libelle || 'Aucune structure';
+            document.getElementById('view-user-structure').textContent = [user.structure_organisationnelle?.code, user.structure_organisationnelle?.libelle].filter(Boolean).join(' — ') || 'Aucune structure';
             document.getElementById('view-user-status').textContent = user.statut === 'actif' ? 'Actif' : 'Inactif';
+            document.getElementById('view-user-created-at').textContent = user.created_at || '—';
+            document.getElementById('view-user-updated-at').textContent = user.updated_at || '—';
             openModal(viewModal);
             return;
           }
@@ -519,6 +535,27 @@
           toggleForm.submit();
         }
       });
+
+      const failedEditUserId = @json(session('edit_user_id'));
+      const failedEditValues = @json(old());
+      if (failedEditUserId) {
+        const editButton = Array.from(document.querySelectorAll('[data-user-action="edit"]')).find(button => {
+          try {
+            return String(JSON.parse(button.dataset.user).id) === String(failedEditUserId);
+          } catch {
+            return false;
+          }
+        });
+
+        editButton?.click();
+
+        ['nom', 'prenom', 'email', 'role_id', 'structure_organisationnelle_id'].forEach(field => {
+          const value = failedEditValues?.[field];
+          if (value !== undefined && value !== null && value !== '') {
+            document.getElementById(`edit-user-${field === 'structure_organisationnelle_id' ? 'structure' : field}`).value = value;
+          }
+        });
+      }
     });
   </script>
 @endpush

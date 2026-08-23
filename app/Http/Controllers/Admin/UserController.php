@@ -31,7 +31,6 @@ class UserController extends Controller
             $nom = (string) data_get($user, 'nom', '');
             $fullName = trim($prenom . ' ' . $nom);
             $role = data_get($user, 'role.nom', data_get($user, 'role', '—'));
-            $service = data_get($user, 'service.nom', data_get($user, 'service', '—'));
             $status = data_get($user, 'statut', data_get($user, 'status', false));
             $isActive = $status === 'actif' || filter_var($status, FILTER_VALIDATE_BOOLEAN);
 
@@ -39,15 +38,10 @@ class UserController extends Controller
                 $role = $role['nom'];
             }
 
-            if (is_array($service) && array_key_exists('nom', $service)) {
-                $service = $service['nom'];
-            }
-
             return [
                 $fullName !== '' ? $fullName : (string) data_get($user, 'email', '—'),
                 data_get($user, 'email', '—'),
                 is_string($role) ? $role : '—',
-                is_string($service) ? $service : '—',
                 $isActive
                     ? '<span class="badge badge-active">Actif</span>'
                     : '<span class="badge badge-suspended">Suspendu</span>',
@@ -160,7 +154,11 @@ class UserController extends Controller
         $response = $this->userService->updateUser($id, $data);
 
         if (! $response['success']) {
-            return back()->withInput()->withErrors($response['errors'] ?? [])->with('error', $response['message'] ?? 'Mise à jour impossible.');
+            return back()
+                ->withInput()
+                ->withErrors($response['errors'] ?? [])
+                ->with('error', $response['message'] ?? 'Mise à jour impossible.')
+                ->with('edit_user_id', $id);
         }
 
         return redirect()->route('utilisateurs.index')->with('success', $response['message'] ?? 'Utilisateur mis à jour avec succès.');
