@@ -7,6 +7,15 @@ use Tests\TestCase;
 
 class PayrollAuthorizationFeedbackTest extends TestCase
 {
+    public function test_la_page_de_connexion_ne_contient_aucun_marqueur_de_conflit_git(): void
+    {
+        $this->get('/')
+            ->assertOk()
+            ->assertDontSee('<<<<<<< HEAD')
+            ->assertDontSee('=======')
+            ->assertDontSee('>>>>>>> origin/module-paie');
+    }
+
     public function test_un_refus_de_consultation_explique_clairement_le_role_concerne(): void
     {
         Http::fake([
