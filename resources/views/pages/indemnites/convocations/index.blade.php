@@ -329,11 +329,19 @@
                 </table>
             </div>
 
-            {{-- Toujours rendu (pas de condition Blade) : la visibilite
+            {{-- "show" necessaire : .empty-message est display:none par
+                 defaut dans app.css, et n'est normalement bascule que par
+                 le JS de recherche cote client (filterTable() dans
+                 app.js) — jamais au chargement initial de la page.
+                 Toujours rendu (pas de condition Blade) : la visibilite
                  bascule via la classe "show", pour que data-ajax-region
                  puisse retrouver cet element meme quand il n'y a aucune
                  ligne (une condition qui retire l'element du DOM le
-                 rendrait impossible a cibler pour le remplacement AJAX). --}}
+                 rendrait impossible a cibler pour le remplacement AJAX).
+                 Demande utilisatrice : les convocations s'affichent par
+                 defaut (aucun filtre requis) — ce message n'apparait donc
+                 que s'il n'y a vraiment aucune convocation en base, jamais
+                 juste parce qu'aucun filtre n'est choisi. --}}
             <p class="empty-message {{ empty($centresLignes) ? 'show' : '' }}" data-ajax-region="empty-message">Aucune donnée trouvée.</p>
 
             <div class="convocation-pagination" aria-label="Pagination" data-ajax-region="pagination">
@@ -364,8 +372,6 @@
             </div>
 
         </section>
-
-        @endif
 
     </section>
 
