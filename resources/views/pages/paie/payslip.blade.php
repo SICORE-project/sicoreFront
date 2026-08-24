@@ -149,9 +149,6 @@
                   <span class="payslip-line-code">{{ $line['code'] }}</span>
                   <span class="payslip-line-label">
                     <strong>{{ $line['label'] }}</strong>
-                    @if (! empty($line['is_augmentation']))
-                      <small>Augmentation salariale tracée</small>
-                    @endif
                   </span>
                 </td>
                 <td class="payslip-money-column {{ $isEarning ? 'is-gain' : '' }}">
