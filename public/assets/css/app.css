@@ -2366,7 +2366,7 @@ body.sidebar-collapsed .logout-btn {
   text-align: right;
 }
 
-@media (max-width: 1100px) {
+@media screen and (max-width: 1100px) {
   .payroll-live-filter-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
@@ -2406,7 +2406,7 @@ body.sidebar-collapsed .logout-btn {
   }
 }
 
-@media (max-width: 760px) {
+@media screen and (max-width: 760px) {
   .pagination {
     align-items: stretch;
     flex-direction: column;
@@ -2503,7 +2503,7 @@ body.sidebar-collapsed .logout-btn {
   }
 }
 
-@media (max-width: 480px) {
+@media screen and (max-width: 480px) {
   .pagination-controls {
     gap: 3px;
   }
@@ -2592,7 +2592,55 @@ body.sidebar-collapsed .logout-btn {
   }
 
   .payslip-official-header {
-    padding: 16px 18px;
+    grid-template-columns: minmax(145px, 0.9fr) minmax(230px, 1.2fr) minmax(150px, 0.85fr);
+    gap: 10px;
+    padding: 13px 14px;
+  }
+
+  .payslip-republic {
+    gap: 8px;
+  }
+
+  .payslip-republic img {
+    width: 40px;
+  }
+
+  .payslip-republic p {
+    font-size: 10px;
+  }
+
+  .payslip-republic span {
+    font-size: 7px;
+  }
+
+  .payslip-document-title {
+    text-align: center;
+  }
+
+  .payslip-document-title h2 {
+    margin-top: 3px;
+    font-size: 19px;
+  }
+
+  .payslip-document-title p {
+    font-size: 8px;
+  }
+
+  .payslip-document-meta {
+    grid-column: auto;
+    grid-template-columns: 1fr;
+    justify-items: end;
+    gap: 2px;
+    padding: 8px 10px;
+    text-align: right;
+  }
+
+  .payslip-document-meta strong {
+    font-size: 13px;
+  }
+
+  .payslip-document-meta small {
+    font-size: 7px;
   }
 
   .payslip-agent-card {
@@ -2602,7 +2650,19 @@ body.sidebar-collapsed .logout-btn {
   }
 
   .payslip-agent-main {
+    align-items: center;
+    flex-direction: row;
     padding: 10px 12px;
+  }
+
+  .payslip-agent-main h3 {
+    margin-top: 4px;
+    font-size: 16px;
+  }
+
+  .payslip-agent-profile {
+    padding: 5px 8px;
+    font-size: 7px;
   }
 
   .payslip-administrative-grid {
@@ -2614,8 +2674,31 @@ body.sidebar-collapsed .logout-btn {
     padding: 8px 8px 0 0;
   }
 
+  .payslip-administrative-grid dt {
+    font-size: 7px;
+  }
+
+  .payslip-administrative-grid dd {
+    overflow: visible;
+    font-size: 9px;
+    line-height: 1.25;
+    text-overflow: clip;
+  }
+
   .payslip-reference-strip {
-    padding: 10px 18px;
+    grid-template-columns: 1.05fr 0.8fr 1.15fr auto;
+    gap: 8px;
+    padding: 8px 14px;
+  }
+
+  .payslip-reference-strip strong {
+    font-size: 8px;
+  }
+
+  .payslip-payment-state {
+    justify-self: end;
+    padding: 5px 7px;
+    font-size: 7px;
   }
 
   .payslip-lines-wrap {
@@ -2664,7 +2747,14 @@ body.sidebar-collapsed .logout-btn {
   }
 
   .payslip-official-footer {
+    align-items: center;
+    flex-direction: row;
     padding: 12px 18px;
+  }
+
+  .payslip-edition-date {
+    justify-items: end;
+    text-align: right;
   }
 
   .payslip-official-header,

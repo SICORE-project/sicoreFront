@@ -84,5 +84,11 @@ class PayrollPayslipPresentationTest extends TestCase
         $this->assertStringContainsString('counter(pages)', $css);
         $this->assertStringContainsString('display: table-header-group', $css);
         $this->assertStringContainsString('page-break-inside: avoid', $css);
+        $this->assertStringContainsString('@media screen and (max-width: 760px)', $css);
+        $this->assertStringContainsString(
+            'grid-template-columns: minmax(145px, 0.9fr) minmax(230px, 1.2fr) minmax(150px, 0.85fr)',
+            $css
+        );
+        $this->assertStringContainsString('grid-template-columns: 1.05fr 0.8fr 1.15fr auto', $css);
     }
 }
