@@ -516,6 +516,11 @@
       trigger.addEventListener("click", function (event) {
         event.preventDefault();
         confirmAction(trigger.getAttribute("data-confirm"), function () {
+          if (trigger.hasAttribute("data-confirm-submit") && trigger.form) {
+            trigger.disabled = true;
+            trigger.form.submit();
+            return;
+          }
           notify("success", trigger.getAttribute("data-success-message") || "Action confirm\u00e9e.");
         });
       });
