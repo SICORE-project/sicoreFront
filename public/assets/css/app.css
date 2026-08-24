@@ -1941,14 +1941,23 @@ body.sidebar-collapsed .logout-btn {
 
 .payslip-agent-card {
   display: grid;
-  grid-template-columns: minmax(240px, 0.85fr) minmax(0, 2fr);
-  gap: 26px;
-  padding: 24px 30px;
+  grid-template-columns: 1fr;
+  gap: 0;
+  margin: 22px 30px 0;
+  overflow: hidden;
+  border: 1px solid #d8e5de;
+  border-radius: 16px;
+  background: #ffffff;
 }
 
 .payslip-agent-main {
-  padding-right: 24px;
-  border-right: 1px solid #e0e8e3;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 17px 20px;
+  border-bottom: 1px solid #dce8e1;
+  background: linear-gradient(110deg, #f1f9f5, #fbfdfc);
 }
 
 .payslip-section-kicker {
@@ -1960,11 +1969,29 @@ body.sidebar-collapsed .logout-btn {
 }
 
 .payslip-agent-main h3 {
-  margin: 7px 0 13px;
+  margin: 7px 0 0;
   color: #152e25;
   font-size: 21px;
   font-weight: 950;
   line-height: 1.2;
+}
+
+.payslip-agent-profile {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 10px;
+  color: #245b45;
+  border: 1px solid #cfe3d8;
+  border-radius: 999px;
+  background: #ffffff;
+  font-size: 9px;
+  font-weight: 850;
+  white-space: nowrap;
+}
+
+.payslip-agent-profile i {
+  color: #14815a;
 }
 
 .payslip-agent-tags {
@@ -1993,13 +2020,15 @@ body.sidebar-collapsed .logout-btn {
 
 .payslip-administrative-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 16px 20px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0;
   margin: 0;
+  padding: 4px 20px 18px;
 }
 
 .payslip-administrative-grid div {
   min-width: 0;
+  padding: 14px 16px 0 0;
 }
 
 .payslip-administrative-grid dt {
@@ -2019,6 +2048,14 @@ body.sidebar-collapsed .logout-btn {
   font-weight: 850;
   line-height: 1.35;
   text-overflow: ellipsis;
+}
+
+.payslip-administrative-grid dd small {
+  display: block;
+  margin-top: 3px;
+  color: #74877e;
+  font-size: 9px;
+  font-weight: 750;
 }
 
 .payslip-reference-strip {
@@ -2357,10 +2394,11 @@ body.sidebar-collapsed .logout-btn {
   }
 
   .payslip-agent-main {
-    padding-right: 0;
-    padding-bottom: 18px;
-    border-right: 0;
-    border-bottom: 1px solid #e0e8e3;
+    padding: 16px 18px;
+  }
+
+  .payslip-administrative-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .payslip-summary {
@@ -2418,9 +2456,17 @@ body.sidebar-collapsed .logout-btn {
     grid-template-columns: 1fr;
   }
 
-  .payslip-agent-card,
+  .payslip-agent-card {
+    margin-inline: 20px;
+  }
+
   .payslip-lines-wrap {
     padding-inline: 20px;
+  }
+
+  .payslip-agent-main {
+    align-items: flex-start;
+    flex-direction: column;
   }
 
   .payslip-administrative-grid {
@@ -2503,7 +2549,20 @@ body.sidebar-collapsed .logout-btn {
 @media print {
   @page {
     size: A4;
-    margin: 12mm;
+    margin: 10mm 10mm 16mm;
+
+    @bottom-center {
+      content: "Page " counter(page) " sur " counter(pages);
+      color: #526d61;
+      font-size: 8pt;
+      font-weight: 700;
+    }
+  }
+
+  html,
+  body {
+    height: auto !important;
+    overflow: visible !important;
   }
 
   .payslip-page {
@@ -2524,6 +2583,7 @@ body.sidebar-collapsed .logout-btn {
 
   .payslip-document {
     max-width: none;
+    overflow: visible;
     border: 0;
     border-radius: 0;
     box-shadow: none;
@@ -2536,7 +2596,22 @@ body.sidebar-collapsed .logout-btn {
   }
 
   .payslip-agent-card {
-    padding: 14px 18px;
+    margin: 10px 18px 0;
+    padding: 0;
+    border-radius: 10px;
+  }
+
+  .payslip-agent-main {
+    padding: 10px 12px;
+  }
+
+  .payslip-administrative-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    padding: 2px 12px 10px;
+  }
+
+  .payslip-administrative-grid div {
+    padding: 8px 8px 0 0;
   }
 
   .payslip-reference-strip {
@@ -2548,11 +2623,34 @@ body.sidebar-collapsed .logout-btn {
     overflow: visible;
   }
 
+  .payslip-lines {
+    border-collapse: collapse;
+    border-radius: 0;
+    font-size: 9px;
+  }
+
+  .payslip-lines thead {
+    display: table-header-group;
+  }
+
+  .payslip-lines td:first-child {
+    display: table-cell !important;
+  }
+
+  .payslip-line-code {
+    margin-right: 6px;
+  }
+
+  .payslip-line-label {
+    display: inline;
+  }
+
   .payslip-lines tbody td {
     padding-block: 7px;
   }
 
   .payslip-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     padding: 10px 18px 14px;
   }
 
@@ -2576,5 +2674,6 @@ body.sidebar-collapsed .logout-btn {
   .payslip-summary,
   .payslip-official-footer {
     break-inside: avoid;
+    page-break-inside: avoid;
   }
 }

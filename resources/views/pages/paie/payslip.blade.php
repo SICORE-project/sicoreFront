@@ -8,21 +8,22 @@
   Styles écran/impression : classes payslip-* dans style.css et responsive.css.
   Contrairement aux listes, cette page possède son propre HTML de bulletin.
 --}}
-@section('title', 'SICORE - Bulletin '.$data['reference'])
+@section('title', 'SICORE - Bulletin '.$data['reference'].' - '.data_get($data, 'period.month_label', data_get($data, 'period.label')))
 
 @php
   // Préparer uniquement des libellés d'affichage ; aucun calcul financier ici.
   $category = data_get($data, 'profile.category');
   $categoryLabel = $category ? ((int) $category === 1 ? '1re catégorie' : $category.'e catégorie') : 'Non applicable';
-  $validity = mb_strtoupper(data_get($data, 'period.label', data_get($data, 'period.code', '')), 'UTF-8');
+  $monthLabel = data_get($data, 'period.month_label', data_get($data, 'period.label', data_get($data, 'period.code', 'Mois non renseigné')));
+  $monthUpper = mb_strtoupper($monthLabel, 'UTF-8');
 @endphp
 
 @section('content')
 <main class="main-content payslip-page">
   {{-- Actions d'écran non imprimées : retour à la liste et impression. --}}
   <x-topbar
-    title="Bulletin de salaire"
-    :subtitle="'Gestion de la paie > '.$data['reference']"
+    :title="'Bulletin de salaire — '.$monthLabel"
+    :subtitle="'Gestion de la paie > Bulletins > '.$monthLabel.' > '.$data['reference']"
     icon="fa-solid fa-file-invoice-dollar"
   >
     <div class="actions-group payslip-screen-actions">
@@ -39,7 +40,7 @@
 
   <section class="content-area payslip-canvas">
     {{-- Document A4 complet envoyé à l'impression par window.print(). --}}
-    <article class="payslip-document" aria-label="Bulletin de solde {{ $data['reference'] }}">
+    <article class="payslip-document" aria-label="Bulletin de salaire {{ $data['reference'] }} du mois de {{ $monthLabel }}">
       <div class="payslip-color-rule" aria-hidden="true">
         <span></span><span></span><span></span>
       </div>
@@ -56,29 +57,44 @@
 
         <section class="payslip-document-title">
           <span>Direction des Ressources Humaines</span>
-          <h2>Bulletin de solde</h2>
-          <p>Bureau de la solde</p>
+          <h2>Bulletin de salaire</h2>
+          <p>Paie du mois de {{ $monthLabel }}</p>
         </section>
 
         <section class="payslip-document-meta">
           <span>Matricule</span>
           <strong>{{ $data['teacher']['matricule'] ?: 'Non renseigné' }}</strong>
-          <small>Validité : {{ $validity }}</small>
+          <small>Mois de paie : {{ $monthUpper }}</small>
         </section>
       </header>
 
       {{-- Identité et situation administrative du bénéficiaire. --}}
       <section class="payslip-agent-card">
-        <div class="payslip-agent-main">
-          <span class="payslip-section-kicker">Agent bénéficiaire</span>
-          <h3>{{ $data['teacher']['name'] ?: 'Identité non renseignée' }}</h3>
-          <div class="payslip-agent-tags">
-            <span><i class="fa-solid fa-briefcase" aria-hidden="true"></i> {{ data_get($data, 'profile.engagement_label', 'Profil historique') }}</span>
-            <span><i class="fa-solid fa-building-columns" aria-hidden="true"></i> {{ $data['teacher']['bank'] ?: 'Banque non renseignée' }}</span>
+        <header class="payslip-agent-main">
+          <div>
+            <span class="payslip-section-kicker">Agent bénéficiaire</span>
+            <h3>{{ $data['teacher']['name'] ?: 'Identité non renseignée' }}</h3>
           </div>
-        </div>
+          <span class="payslip-agent-profile">
+            <i class="fa-solid fa-user-tie" aria-hidden="true"></i>
+            Dossier administratif et bancaire
+          </span>
+        </header>
 
         <dl class="payslip-administrative-grid">
+          <div>
+            <dt>Type d’engagement</dt>
+            <dd>{{ data_get($data, 'profile.engagement_label', 'Profil historique') }}</dd>
+          </div>
+          <div>
+            <dt>Banque / compte</dt>
+            <dd>
+              {{ $data['teacher']['bank'] ?: 'Banque non renseignée' }}
+              @if ($data['teacher']['account_last_four'])
+                <small>Compte •••• {{ $data['teacher']['account_last_four'] }}</small>
+              @endif
+            </dd>
+          </div>
           <div>
             <dt>Inspection académique (IA)</dt>
             <dd>{{ $data['teacher']['academic_inspection'] ?: 'Non renseignée' }}</dd>
@@ -113,8 +129,8 @@
           <strong>{{ $data['reference'] }}</strong>
         </div>
         <div>
-          <span>Compte bancaire</span>
-          <strong>{{ $data['teacher']['account_last_four'] ? '•••• '.$data['teacher']['account_last_four'] : 'Non renseigné' }}</strong>
+          <span>Mois concerné</span>
+          <strong>{{ $monthUpper }}</strong>
         </div>
         <div>
           <span>Référence paiement</span>
@@ -207,7 +223,7 @@
         </div>
         <div class="payslip-edition-date">
           <span>Document généré électroniquement</span>
-          <strong>Édité le {{ $data['edited_on'] }}</strong>
+          <strong>Bulletin de {{ $monthLabel }} · Édité le {{ $data['edited_on'] }}</strong>
         </div>
       </footer>
     </article>
