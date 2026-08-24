@@ -6,6 +6,7 @@ use App\Http\Controllers\Indemnites\EtatPaieIndemnitesController;
 use App\Http\Controllers\Indemnites\FraisDeplacementController;
 use App\Http\Controllers\Indemnites\IndemniteCorrectionController;
 use App\Http\Controllers\Indemnites\IndemniteSurveillanceController;
+use App\Http\Controllers\Indemnites\NotificationController;
 use App\Http\Controllers\Indemnites\PiecesJustificativesController;
 
 /*
@@ -28,6 +29,12 @@ Route::middleware('sicore.auth')
         // /convocations pour ne pas dependre de son groupe de routes.
         Route::get('/filtres-options', [ConvocationsController::class, 'filtresOptionsJson'])
             ->name('filtres-options');
+    Route::get('/notifications/', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount'])->name('notifications.unread-count');
+    Route::get('/notifications/{id}', [NotificationController::class, 'show'])->name('notifications.show');
+    Route::patch('/notifications/{id}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
+    Route::patch('/notifications/read-all', [NotificationController::class, 'markAllAsRead'])->name('notifications.read-all');
+    
 
         Route::get('/convocations', [ConvocationsController::class, 'index'])
             ->name('convocations');
