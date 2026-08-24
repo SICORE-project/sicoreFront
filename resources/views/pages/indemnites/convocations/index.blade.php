@@ -18,7 +18,7 @@
     <section class="content-area">
 
 
-        <div class="stats-grid four">
+        <div class="stats-grid four" data-ajax-region="stats">
 
             <article class="stat-card">
                 <div>
@@ -155,7 +155,8 @@
             method="GET"
             action="{{ route('indemnites.convocations') }}"
             aria-label="Filtres de la page"
-            data-auto-submit
+            data-filtres-coherents="{{ route('indemnites.filtres-options') }}"
+            data-filtres-instantanes
         >
 
             <div class="form-group">
@@ -211,16 +212,14 @@
                     Filtrer
                 </button>
 
-                @if (request()->hasAny(['date', 'objet', 'metier', 'centre']))
-                    <a class="btn-secondary" href="{{ route('indemnites.convocations') }}">
-                        Réinitialiser
-                    </a>
-                @endif
+                <a class="btn-secondary" href="{{ route('indemnites.convocations') }}" data-ajax-lien>
+                    Réinitialiser
+                </a>
             </div>
 
         </form>
 
-    
+
 
         <section class="table-card">
 
@@ -241,7 +240,12 @@
                         </tr>
                     </thead>
 
-                    <tbody>
+                    {{-- data-ajax-region="lignes" : seul le <tbody> est
+                         remplace au changement de filtre/page
+                         (indemnites-ajax-resultats.js) — le <thead> (case
+                         "tout selectionner") reste statique pour ne pas
+                         perdre son ecouteur JS. --}}
+                    <tbody data-ajax-region="lignes">
                         @forelse ($centresLignes as $ligne)
                             <tr>
                                 <td class="checkbox-cell">
@@ -326,21 +330,19 @@
                 </table>
             </div>
 
-            @if (empty($centresLignes))
-                {{-- "show" necessaire : .empty-message est display:none par
-                     defaut dans app.css, et n'est normalement bascule que
-                     par le JS de recherche cote client (filterTable() dans
-                     app.js) — jamais au chargement initial de la page. --}}
-                <p class="empty-message show">Aucune donnée trouvée.</p>
-            @endif
+            {{-- Toujours rendu (pas de condition Blade) : la visibilite
+                 bascule via la classe "show", pour que data-ajax-region
+                 puisse retrouver cet element meme quand il n'y a aucune
+                 ligne (une condition qui retire l'element du DOM le
+                 rendrait impossible a cibler pour le remplacement AJAX). --}}
+            <p class="empty-message {{ empty($centresLignes) ? 'show' : '' }}" data-ajax-region="empty-message">Aucune donnée trouvée.</p>
 
-         
-            <div class="convocation-pagination" aria-label="Pagination">
+            <div class="convocation-pagination" aria-label="Pagination" data-ajax-region="pagination">
 
                 @if ($convocations->onFirstPage())
                     <span class="page-btn" aria-disabled="true">←</span>
                 @else
-                    <a class="page-btn" href="{{ $convocations->previousPageUrl() }}" aria-label="Page précédente">←</a>
+                    <a class="page-btn" href="{{ $convocations->previousPageUrl() }}" aria-label="Page précédente" data-ajax-lien>←</a>
                 @endif
 
                 @for ($page = 1; $page <= $convocations->lastPage(); $page++)
@@ -348,13 +350,14 @@
                         class="page-btn {{ $page === $convocations->currentPage() ? 'active' : '' }}"
                         href="{{ $convocations->url($page) }}"
                         data-page-number
+                        data-ajax-lien
                     >
                         {{ $page }}
                     </a>
                 @endfor
 
                 @if ($convocations->hasMorePages())
-                    <a class="page-btn" href="{{ $convocations->nextPageUrl() }}" aria-label="Page suivante">→</a>
+                    <a class="page-btn" href="{{ $convocations->nextPageUrl() }}" aria-label="Page suivante" data-ajax-lien>→</a>
                 @else
                     <span class="page-btn" aria-disabled="true">→</span>
                 @endif
@@ -550,18 +553,11 @@
                 }
             });
         });
-
-        var formulaireFiltres = document.querySelector("[data-auto-submit]");
-
-        if (formulaireFiltres) {
-            formulaireFiltres.querySelectorAll("select, input").forEach(function (champ) {
-                champ.addEventListener("change", function () {
-                    formulaireFiltres.submit();
-                });
-            });
-        }
     })();
 </script>
+
+<script src="{{ asset('assets/js/indemnites-filtres-coherents.js') }}" defer></script>
+<script src="{{ asset('assets/js/indemnites-ajax-resultats.js') }}" defer></script>
 
 
 <script>
@@ -706,6 +702,14 @@
         }
 
         updateState();
+
+        // Le tbody (data-ajax-region="lignes") est remplace sans recharger
+        // la page a chaque filtre/page (indemnites-ajax-resultats.js) : les
+        // nouvelles lignes arrivent avec des cases toutes decochees, il
+        // faut donc reevaluer l'etat de "tout selectionner"/"Supprimer la
+        // selection" (la delegation sur "change" ci-dessus gere deja les
+        // cases elles-memes, sans re-binding necessaire).
+        document.addEventListener("sicore:ajax-regions-mises-a-jour", updateState);
     })();
 </script>
 @endpush

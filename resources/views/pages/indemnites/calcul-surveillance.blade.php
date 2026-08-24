@@ -14,7 +14,7 @@
 
     <section class="content-area">
 
-        <div class="stats-grid four">
+        <div class="stats-grid four" data-ajax-region="stats">
 
             <article class="stat-card">
                 <div>
@@ -68,11 +68,13 @@
             method="GET"
             action="{{ route('indemnites.calcul-surveillance') }}"
             aria-label="Filtres de la page"
+            data-filtres-coherents="{{ route('indemnites.filtres-options') }}"
+            data-filtres-instantanes
         >
 
             <div class="form-group">
                 <label for="surveillance-filter-session">Session</label>
-                <select class="form-control" id="surveillance-filter-session" name="session" data-filter-auto-submit>
+                <select class="form-control" id="surveillance-filter-session" name="session">
                     <option value="">Sélectionner</option>
                     @foreach ($optionsFiltres['sessions'] ?? [] as $valeur)
                         <option value="{{ $valeur }}" @selected(request('session') === $valeur)>{{ $valeur }}</option>
@@ -82,7 +84,7 @@
 
             <div class="form-group">
                 <label for="surveillance-filter-objet">Objet</label>
-                <select class="form-control" id="surveillance-filter-objet" name="objet" data-filter-auto-submit>
+                <select class="form-control" id="surveillance-filter-objet" name="objet">
                     <option value="">Sélectionner</option>
                     @foreach ($optionsFiltres['objets'] ?? [] as $valeur)
                         <option value="{{ $valeur }}" @selected(request('objet') === $valeur)>{{ $valeur }}</option>
@@ -92,7 +94,7 @@
 
             <div class="form-group">
                 <label for="surveillance-filter-centre">Centre</label>
-                <select class="form-control" id="surveillance-filter-centre" name="centre" data-filter-auto-submit>
+                <select class="form-control" id="surveillance-filter-centre" name="centre">
                     <option value="">Sélectionner</option>
                     @foreach ($optionsFiltres['centres'] ?? [] as $valeur)
                         <option value="{{ $valeur }}" @selected(request('centre') === $valeur)>{{ $valeur }}</option>
@@ -101,14 +103,20 @@
             </div>
 
             <div class="actions-group">
-                @if ($filtreActif)
-                    <a class="btn-secondary" href="{{ route('indemnites.calcul-surveillance') }}">
-                        Réinitialiser
-                    </a>
-                @endif
+                <button class="btn-secondary" type="submit">
+                    Filtrer
+                </button>
+
+                <a class="btn-secondary" href="{{ route('indemnites.calcul-surveillance') }}" data-ajax-lien>
+                    Réinitialiser
+                </a>
             </div>
 
         </form>
+
+        {{-- data-ajax-region="corps" : bascule sans recharger la page
+             (indemnites-ajax-resultats.js). --}}
+        <div data-ajax-region="corps">
 
         @if (! $filtreActif)
 
@@ -178,7 +186,7 @@
                     @if ($convocations->onFirstPage())
                         <span class="page-btn" aria-disabled="true">←</span>
                     @else
-                        <a class="page-btn" href="{{ $convocations->previousPageUrl() }}" aria-label="Page précédente">←</a>
+                        <a class="page-btn" href="{{ $convocations->previousPageUrl() }}" aria-label="Page précédente" data-ajax-lien>←</a>
                     @endif
 
                     @for ($page = 1; $page <= $convocations->lastPage(); $page++)
@@ -186,13 +194,14 @@
                             class="page-btn {{ $page === $convocations->currentPage() ? 'active' : '' }}"
                             href="{{ $convocations->url($page) }}"
                             data-page-number
+                            data-ajax-lien
                         >
                             {{ $page }}
                         </a>
                     @endfor
 
                     @if ($convocations->hasMorePages())
-                        <a class="page-btn" href="{{ $convocations->nextPageUrl() }}" aria-label="Page suivante">→</a>
+                        <a class="page-btn" href="{{ $convocations->nextPageUrl() }}" aria-label="Page suivante" data-ajax-lien>→</a>
                     @else
                         <span class="page-btn" aria-disabled="true">→</span>
                     @endif
@@ -202,6 +211,8 @@
             </section>
 
         @endif
+
+        </div>
 
     </section>
 
@@ -220,18 +231,13 @@
 </style>
 @endpush
 
+{{-- Les selects Session/Objet/Centre se mettent a jour entre eux en AJAX
+     (indemnites-filtres-coherents.js), et le tableau de resultats se
+     rafraichit lui aussi sans jamais recharger la page
+     (indemnites-ajax-resultats.js). --}}
 @push('scripts')
-<script>
-    (function () {
-        "use strict";
-
-        document.querySelectorAll("[data-filter-auto-submit]").forEach(function (champ) {
-            champ.addEventListener("change", function () {
-                champ.form.submit();
-            });
-        });
-    })();
-</script>
+<script src="{{ asset('assets/js/indemnites-filtres-coherents.js') }}" defer></script>
+<script src="{{ asset('assets/js/indemnites-ajax-resultats.js') }}" defer></script>
 @endpush
 
 @endsection

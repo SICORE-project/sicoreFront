@@ -28,7 +28,7 @@ class IndemniteSurveillanceController extends Controller
 
         $filtreActif = count($filtres) > 0;
 
-        $optionsFiltres = $this->optionsFiltresPourVue();
+        $optionsFiltres = $this->optionsFiltresPourVue($filtres);
 
         $lignes = [];
         $stats = [
@@ -80,9 +80,9 @@ class IndemniteSurveillanceController extends Controller
         ]);
     }
 
-    private function optionsFiltresPourVue(): array
+    private function optionsFiltresPourVue(array $filtres = []): array
     {
-        $resultat = $this->convocations->optionsFiltres();
+        $resultat = $this->convocations->optionsFiltres($filtres);
 
         $vide = ['objets' => [], 'sessions' => [], 'centres' => []];
 

@@ -19,6 +19,16 @@ Route::middleware('sicore.auth')
     ->name('indemnites.')
     ->group(function (): void {
 
+        // AJAX partagee par les panneaux de filtres Session/Objet/Metier/
+        // Centre de Convocations, Frais de deplacement, Calcul,
+        // Calcul-surveillance et Pieces justificatives (demande
+        // utilisatrice : "quand je selectionne un objet le select suivant
+        // doit etre relatif", instantane sans recharger la page, meme
+        // principe que indemnites.etats-paie.centres) — doit rester avant
+        // /convocations pour ne pas dependre de son groupe de routes.
+        Route::get('/filtres-options', [ConvocationsController::class, 'filtresOptionsJson'])
+            ->name('filtres-options');
+
         Route::get('/convocations', [ConvocationsController::class, 'index'])
             ->name('convocations');
 
@@ -119,6 +129,13 @@ Route::middleware('sicore.auth')
         // coherence avec les autres blocs de ce fichier (fixe avant {id}).
         Route::post('/pieces-justificatives/deposer', [PiecesJustificativesController::class, 'deposer'])
             ->name('pieces-justificatives.deposer');
+
+        // Bouton "Modifier" du tableau — meme formulaire complet que
+        // "Ajouter une pièce" (demande utilisatrice), mais les 5 fichiers
+        // sont optionnels : seuls ceux fournis remplacent la piece
+        // existante.
+        Route::post('/pieces-justificatives/modifier', [PiecesJustificativesController::class, 'modifier'])
+            ->name('pieces-justificatives.modifier');
 
         Route::get('/pieces-justificatives/{id}/telecharger', [PiecesJustificativesController::class, 'telecharger'])
             ->name('pieces-justificatives.telecharger');

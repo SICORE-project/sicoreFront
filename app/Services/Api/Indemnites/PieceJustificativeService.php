@@ -45,6 +45,46 @@ class PieceJustificativeService
      */
     public function deposerLot(array $donnees, array $fichiers): array
     {
+        return $this->wrap($this->api->postMultipart(
+            'pieces-justificatives/deposer-lot',
+            $donnees,
+            $this->fichiersMultipart($fichiers)
+        ));
+    }
+
+    /**
+     * Modification du dossier d'UN membre (modale "Modifier", meme
+     * formulaire complet que deposerLot() — demande utilisatrice) : les
+     * types absents de $fichiers restent inchanges cote back (voir
+     * PieceJustificativesController::modifierLot()), pas besoin de
+     * reteleverser les 5 a chaque fois.
+     */
+    public function modifierLot(array $donnees, array $fichiers): array
+    {
+        return $this->wrap($this->api->postMultipart(
+            'pieces-justificatives/modifier-lot',
+            $donnees,
+            $this->fichiersMultipart($fichiers)
+        ));
+    }
+
+    /**
+     * Réponse brute (pas de wrap() : corps binaire, pas du JSON) — relayée
+     * telle quelle par le contrôleur, même principe que
+     * ConvocationService::telechargerPdf().
+     */
+    public function telecharger(int|string $id)
+    {
+        return $this->api->get("pieces-justificatives/{$id}/download");
+    }
+
+    /**
+     * $fichiers est indexé par type ('service_fait', 'ordre_mission', ...) ;
+     * les entrées absentes/vides (aucun fichier choisi pour ce type) sont
+     * simplement ignorées ici — utilisé par deposerLot()/modifierLot().
+     */
+    private function fichiersMultipart(array $fichiers): array
+    {
         $fichiersMultipart = [];
 
         foreach ($fichiers as $type => $fichier) {
@@ -59,16 +99,6 @@ class PieceJustificativeService
             ];
         }
 
-        return $this->wrap($this->api->postMultipart('pieces-justificatives/deposer-lot', $donnees, $fichiersMultipart));
-    }
-
-    /**
-     * Réponse brute (pas de wrap() : corps binaire, pas du JSON) — relayée
-     * telle quelle par le contrôleur, même principe que
-     * ConvocationService::telechargerPdf().
-     */
-    public function telecharger(int|string $id)
-    {
-        return $this->api->get("pieces-justificatives/{$id}/download");
+        return $fichiersMultipart;
     }
 }

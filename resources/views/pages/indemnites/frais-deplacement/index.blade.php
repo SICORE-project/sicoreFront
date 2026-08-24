@@ -24,7 +24,7 @@
              fournit pas d'agregat dedie.
         ============================================================ --}}
 
-        <div class="stats-grid four">
+        <div class="stats-grid four" data-ajax-region="stats">
 
             <article class="stat-card">
                 <div>
@@ -85,11 +85,13 @@
             method="GET"
             action="{{ route('indemnites.frais-deplacement') }}"
             aria-label="Filtres de la page"
+            data-filtres-coherents="{{ route('indemnites.filtres-options') }}"
+            data-filtres-instantanes
         >
 
             <div class="form-group">
                 <label for="frais-filter-session">Session</label>
-                <select class="form-control" id="frais-filter-session" name="session" data-filter-auto-submit>
+                <select class="form-control" id="frais-filter-session" name="session">
                     <option value="">Sélectionner</option>
                     @foreach ($optionsFiltres['sessions'] ?? [] as $valeur)
                         <option value="{{ $valeur }}" @selected(request('session') === $valeur)>{{ $valeur }}</option>
@@ -99,7 +101,7 @@
 
             <div class="form-group">
                 <label for="frais-filter-objet">Objet</label>
-                <select class="form-control" id="frais-filter-objet" name="objet" data-filter-auto-submit>
+                <select class="form-control" id="frais-filter-objet" name="objet">
                     <option value="">Sélectionner</option>
                     @foreach ($optionsFiltres['objets'] ?? [] as $valeur)
                         <option value="{{ $valeur }}" @selected(request('objet') === $valeur)>{{ $valeur }}</option>
@@ -109,7 +111,7 @@
 
             <div class="form-group">
                 <label for="frais-filter-centre">Centre</label>
-                <select class="form-control" id="frais-filter-centre" name="centre" data-filter-auto-submit>
+                <select class="form-control" id="frais-filter-centre" name="centre">
                     <option value="">Sélectionner</option>
                     @foreach ($optionsFiltres['centres'] ?? [] as $valeur)
                         <option value="{{ $valeur }}" @selected(request('centre') === $valeur)>{{ $valeur }}</option>
@@ -118,11 +120,13 @@
             </div>
 
             <div class="actions-group">
-                @if ($filtreActif)
-                    <a class="btn-secondary" href="{{ route('indemnites.frais-deplacement') }}">
-                        Réinitialiser
-                    </a>
-                @endif
+                <button class="btn-secondary" type="submit">
+                    Filtrer
+                </button>
+
+                <a class="btn-secondary" href="{{ route('indemnites.frais-deplacement') }}" data-ajax-lien>
+                    Réinitialiser
+                </a>
             </div>
 
         </form>
@@ -133,7 +137,13 @@
              choisi — meme comportement que Pieces justificatives. Une fois
              un filtre choisi : une ligne par bénéficiaire au dossier
              complet des convocations correspondantes.
+
+             data-ajax-region="corps" : bascule sans recharger la page
+             (indemnites-ajax-resultats.js) — demande utilisatrice : "je ne
+             veux pas que les filtres rechargent la page".
         ============================================================ --}}
+
+        <div data-ajax-region="corps">
 
         @if (! $filtreActif)
 
@@ -212,7 +222,7 @@
                     @if ($convocations->onFirstPage())
                         <span class="page-btn" aria-disabled="true">←</span>
                     @else
-                        <a class="page-btn" href="{{ $convocations->previousPageUrl() }}" aria-label="Page précédente">←</a>
+                        <a class="page-btn" href="{{ $convocations->previousPageUrl() }}" aria-label="Page précédente" data-ajax-lien>←</a>
                     @endif
 
                     @for ($page = 1; $page <= $convocations->lastPage(); $page++)
@@ -220,13 +230,14 @@
                             class="page-btn {{ $page === $convocations->currentPage() ? 'active' : '' }}"
                             href="{{ $convocations->url($page) }}"
                             data-page-number
+                            data-ajax-lien
                         >
                             {{ $page }}
                         </a>
                     @endfor
 
                     @if ($convocations->hasMorePages())
-                        <a class="page-btn" href="{{ $convocations->nextPageUrl() }}" aria-label="Page suivante">→</a>
+                        <a class="page-btn" href="{{ $convocations->nextPageUrl() }}" aria-label="Page suivante" data-ajax-lien>→</a>
                     @else
                         <span class="page-btn" aria-disabled="true">→</span>
                     @endif
@@ -237,23 +248,17 @@
 
         @endif
 
+        </div>
+
     </section>
 
 </main>
 
 {{-- ================================================================
-     SCRIPT — soumet le formulaire de filtres des qu'une valeur est
-     choisie dans un des menus deroulants (session/objet/centre) : pas
-     besoin de cliquer sur un bouton "Filtrer" separe.
-
-     NB : ce bloc existait deja sur pieces-justificatives.blade.php mais
-     avait ete oublie ici lors de la reorganisation de cette page sur le
-     meme modele — consequence concrete : l'attribut data-filter-auto-submit
-     etait present sur les <select> mais sans aucun JS pour l'exploiter,
-     donc choisir une session/objet/centre ne soumettait jamais le
-     formulaire (l'URL restait sans parametre de filtre, la page
-     n'affichait donc jamais les benefeciaires eligibles malgre un choix
-     visible dans le menu deroulant).
+     SCRIPT — les selects Session/Objet/Centre se mettent a jour entre eux
+     en AJAX (indemnites-filtres-coherents.js), et le tableau de resultats
+     se rafraichit lui aussi sans jamais recharger la page
+     (indemnites-ajax-resultats.js, voir @push('scripts') plus bas).
 ================================================================ --}}
 
 {{-- ================================================================
@@ -282,17 +287,8 @@
 @endpush
 
 @push('scripts')
-<script>
-    (function () {
-        "use strict";
-
-        document.querySelectorAll("[data-filter-auto-submit]").forEach(function (champ) {
-            champ.addEventListener("change", function () {
-                champ.form.submit();
-            });
-        });
-    })();
-</script>
+<script src="{{ asset('assets/js/indemnites-filtres-coherents.js') }}" defer></script>
+<script src="{{ asset('assets/js/indemnites-ajax-resultats.js') }}" defer></script>
 @endpush
 
 @endsection

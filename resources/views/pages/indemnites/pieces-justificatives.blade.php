@@ -29,7 +29,7 @@
              d'agregat dedie).
         ============================================================ --}}
 
-        <div class="stats-grid four">
+        <div class="stats-grid four" data-ajax-region="stats">
 
             <article class="stat-card">
                 <div>
@@ -91,11 +91,13 @@
             method="GET"
             action="{{ route('indemnites.pieces-justificatives') }}"
             aria-label="Filtres de la page"
+            data-filtres-coherents="{{ route('indemnites.filtres-options') }}"
+            data-filtres-instantanes
         >
 
             <div class="form-group">
                 <label for="piece-filter-session">Session</label>
-                <select class="form-control" id="piece-filter-session" name="session" data-filter-auto-submit>
+                <select class="form-control" id="piece-filter-session" name="session">
                     <option value="">Sélectionner</option>
                     @foreach ($optionsFiltres['sessions'] ?? [] as $valeur)
                         <option value="{{ $valeur }}" @selected(request('session') === $valeur)>{{ $valeur }}</option>
@@ -105,7 +107,7 @@
 
             <div class="form-group">
                 <label for="piece-filter-objet">Objet</label>
-                <select class="form-control" id="piece-filter-objet" name="objet" data-filter-auto-submit>
+                <select class="form-control" id="piece-filter-objet" name="objet">
                     <option value="">Sélectionner</option>
                     @foreach ($optionsFiltres['objets'] ?? [] as $valeur)
                         <option value="{{ $valeur }}" @selected(request('objet') === $valeur)>{{ $valeur }}</option>
@@ -115,7 +117,7 @@
 
             <div class="form-group">
                 <label for="piece-filter-centre">Centre</label>
-                <select class="form-control" id="piece-filter-centre" name="centre" data-filter-auto-submit>
+                <select class="form-control" id="piece-filter-centre" name="centre">
                     <option value="">Sélectionner</option>
                     @foreach ($optionsFiltres['centres'] ?? [] as $valeur)
                         <option value="{{ $valeur }}" @selected(request('centre') === $valeur)>{{ $valeur }}</option>
@@ -124,11 +126,13 @@
             </div>
 
             <div class="actions-group">
-                @if ($filtreActif)
-                    <a class="btn-secondary" href="{{ route('indemnites.pieces-justificatives') }}">
-                        Réinitialiser
-                    </a>
-                @endif
+                <button class="btn-secondary" type="submit">
+                    Filtrer
+                </button>
+
+                <a class="btn-secondary" href="{{ route('indemnites.pieces-justificatives') }}" data-ajax-lien>
+                    Réinitialiser
+                </a>
             </div>
 
         </form>
@@ -139,7 +143,14 @@
              choisi. Une fois un filtre choisi : une ligne par membre du
              jury rattache au centre/a l'objet/a la session selectionnes —
              voir PiecesJustificativesController::construireMembres().
+
+             data-ajax-region="corps" : bascule sans recharger la page
+             entre ce message et le tableau (indemnites-ajax-resultats.js),
+             demande utilisatrice : "je ne veux pas que les filtres
+             rechargent la page".
         ============================================================ --}}
+
+        <div data-ajax-region="corps">
 
         @if (! $filtreActif)
 
@@ -198,6 +209,7 @@
                                                 class="table-action"
                                                 type="button"
                                                 data-modal-open="modal-piece-justificative"
+                                                data-piece-mode="ajouter"
                                                 data-piece-convocation-id="{{ $membre['convocation_id'] }}"
                                                 data-piece-enseignant-id="{{ $membre['enseignant_id'] }}"
                                                 data-piece-centre-id="{{ $membre['centre_id'] }}"
@@ -209,12 +221,25 @@
                                                 class="table-action"
                                                 type="button"
                                                 data-modal-open="modal-voir-dossier"
+                                                data-piece-mode="voir"
                                                 data-dossier-label="{{ trim(($membre['prenom'] ?? '').' '.($membre['nom'] ?? '')) }} — {{ $membre['centre'] ?? '—' }}"
                                                 data-dossier-json="{{ json_encode($membre['dossier'] ?? []) }}"
                                             >
                                                 Voir le dossier
                                             </button>
-                                          
+                                            <button
+                                                class="table-action"
+                                                type="button"
+                                                data-modal-open="modal-piece-justificative"
+                                                data-piece-mode="modifier"
+                                                data-piece-convocation-id="{{ $membre['convocation_id'] }}"
+                                                data-piece-enseignant-id="{{ $membre['enseignant_id'] }}"
+                                                data-piece-centre-id="{{ $membre['centre_id'] }}"
+                                                data-piece-label="{{ trim(($membre['prenom'] ?? '').' '.($membre['nom'] ?? '')) }} — {{ $membre['centre'] ?? '—' }}"
+                                                data-dossier-json="{{ json_encode($membre['dossier'] ?? []) }}"
+                                            >
+                                                Modifier
+                                            </button>
                                         </div>
                                     </td>
                                 </tr>
@@ -241,7 +266,7 @@
                     @if ($convocations->onFirstPage())
                         <span class="page-btn" aria-disabled="true">←</span>
                     @else
-                        <a class="page-btn" href="{{ $convocations->previousPageUrl() }}" aria-label="Page précédente">←</a>
+                        <a class="page-btn" href="{{ $convocations->previousPageUrl() }}" aria-label="Page précédente" data-ajax-lien>←</a>
                     @endif
 
                     @for ($page = 1; $page <= $convocations->lastPage(); $page++)
@@ -249,13 +274,14 @@
                             class="page-btn {{ $page === $convocations->currentPage() ? 'active' : '' }}"
                             href="{{ $convocations->url($page) }}"
                             data-page-number
+                            data-ajax-lien
                         >
                             {{ $page }}
                         </a>
                     @endfor
 
                     @if ($convocations->hasMorePages())
-                        <a class="page-btn" href="{{ $convocations->nextPageUrl() }}" aria-label="Page suivante">→</a>
+                        <a class="page-btn" href="{{ $convocations->nextPageUrl() }}" aria-label="Page suivante" data-ajax-lien>→</a>
                     @else
                         <span class="page-btn" aria-disabled="true">→</span>
                     @endif
@@ -266,23 +292,38 @@
 
         @endif
 
+        </div>
+
         {{-- ============================================================
-             MODALE "Ajouter une pièce justificative"
-             Partagee par tous les boutons "Ajouter une pièce" du tableau
-             (une par membre) : le JS ci-dessous remplit ses champs caches
-             (convocation_id/enseignant_id/centre_id) et son libelle a
-             partir des attributs data-piece-* du bouton cliqué. Le
-             "Dossier de convocation" (5e type) n'a pas de champ fichier :
-             il est toujours rattache automatiquement cote back, a partir
-             du PDF deja genere pour la convocation — voir
+             MODALE "Ajouter une pièce justificative" / "Modifier"
+             Partagee par les boutons "Ajouter une pièce" ET "Modifier" du
+             tableau (demande utilisatrice : "en cliquant sur modifier il
+             doit afficher le formulaire complet en récupérant le fichier
+             qui y était" — même formulaire, pas une vue separee) : le JS
+             ci-dessous bascule entre les deux modes (data-piece-mode du
+             bouton cliqué) — titre, action du formulaire, texte du bouton,
+             et surtout : en mode "modifier", les 5 champs fichier ne sont
+             plus obligatoires et affichent le nom du fichier deja depose
+             (data-dossier-json du bouton) a la place du placeholder, pour
+             qu'on puisse ne remplacer qu'UNE piece sans re-televerser les
+             autres. Le "Dossier de convocation" (6e type) n'a jamais de
+             champ fichier : il est toujours rattache automatiquement cote
+             back, a partir du PDF deja genere pour la convocation — voir
              PieceJustificativesController::attacherDossierConvocation().
         ============================================================ --}}
 
-        <div class="modal-backdrop" id="modal-piece-justificative" data-modal hidden>
+        <div
+            class="modal-backdrop"
+            id="modal-piece-justificative"
+            data-modal
+            hidden
+            data-piece-url-ajouter="{{ route('indemnites.pieces-justificatives.deposer') }}"
+            data-piece-url-modifier="{{ route('indemnites.pieces-justificatives.modifier') }}"
+        >
             <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="modal-piece-justificative-title">
 
                 <div class="modal-header">
-                    <h2 id="modal-piece-justificative-title">Ajouter une pièce justificative</h2>
+                    <h2 id="modal-piece-justificative-title" data-piece-modal-title>Ajouter une pièce justificative</h2>
                     <button class="modal-close" type="button" data-modal-close aria-label="Fermer">&times;</button>
                 </div>
 
@@ -405,7 +446,7 @@
                     <div class="actions-group">
                         <button class="btn-primary" type="submit" data-piece-submit>
                             <i class="fa-solid fa-floppy-disk" aria-hidden="true"></i>
-                            Déposer
+                            <span data-piece-submit-label>Déposer</span>
                         </button>
                     </div>
                 </form>
@@ -415,9 +456,11 @@
 
         {{-- ============================================================
              MODALE "Voir le dossier"
-             Consultation seule (statut + date + telechargement) — pas de
-             validation/rejet ici pour l'instant. Partagee par tous les
-             boutons "Voir le dossier" : le JS lit le JSON encode dans
+             Consultation seule (statut + date + telechargement) — la
+             modification se fait via le bouton "Modifier" du tableau, qui
+             ouvre le formulaire complet #modal-piece-justificative (voir
+             plus haut), pas cette modale. Partagee par tous les boutons
+             "Voir le dossier" : le JS lit le JSON encode dans
              data-dossier-json du bouton clique et construit les 6 lignes
              (les 5 manuelles + le dossier de convocation auto-rattache,
              une par type attendu meme si non deposee) a la volee.
@@ -735,23 +778,16 @@
 @endpush
 
 {{-- ================================================================
-     SCRIPT — soumet le formulaire de filtres des qu'une valeur est
-     choisie dans un des menus deroulants (session/objet/centre) : pas
-     besoin de cliquer sur un bouton "Filtrer" separe.
+     SCRIPT — les selects Session/Objet/Centre se mettent a jour entre eux
+     en AJAX (indemnites-filtres-coherents.js), et le tableau de resultats
+     (data-ajax-region="corps"/"stats") se rafraichit lui aussi sans jamais
+     recharger la page (indemnites-ajax-resultats.js) — demande
+     utilisatrice : "je ne veux pas que les filtres rechargent la page".
 ================================================================ --}}
 
 @push('scripts')
-<script>
-    (function () {
-        "use strict";
-
-        document.querySelectorAll("[data-filter-auto-submit]").forEach(function (champ) {
-            champ.addEventListener("change", function () {
-                champ.form.submit();
-            });
-        });
-    })();
-</script>
+<script src="{{ asset('assets/js/indemnites-filtres-coherents.js') }}" defer></script>
+<script src="{{ asset('assets/js/indemnites-ajax-resultats.js') }}" defer></script>
 
 {{-- ================================================================
      SCRIPT — modale "Ajouter une pièce justificative" : ouverture/
@@ -858,7 +894,12 @@
             var prets = 1; // le dossier de convocation compte toujours
 
             formulairePiece.querySelectorAll("[data-piece-fichier]").forEach(function (champ) {
-                var estPret = champ.files && champ.files.length > 0;
+                var zone = champ.closest("[data-dropzone]");
+                // En mode "modifier", une piece deja deposee (fichier
+                // existant, non touchee) compte aussi comme prete — pas
+                // besoin de la reteleverser pour valider le formulaire.
+                var estPret = (champ.files && champ.files.length > 0)
+                    || (zone && zone.dataset.existant === "true");
                 var item = recapPiece.querySelector(
                     '[data-piece-recap-item="' + champ.getAttribute("data-piece-fichier") + '"]'
                 );
@@ -897,7 +938,16 @@
             zone.classList.toggle("has-file", !!fichier);
 
             if (texte) {
-                texte.textContent = fichier ? fichier.name : "Cliquez pour joindre un fichier";
+                if (fichier) {
+                    texte.textContent = fichier.name;
+                } else if (zone.dataset.existant === "true" && zone.dataset.nomExistant) {
+                    // Mode "modifier" : le fichier deja depose, tant qu'on
+                    // n'en choisit pas un nouveau (demande utilisatrice :
+                    // "recuperant le fichier qui y etait").
+                    texte.textContent = "Fichier actuel : " + zone.dataset.nomExistant;
+                } else {
+                    texte.textContent = "Cliquez pour joindre un fichier";
+                }
             }
         }
 
@@ -1001,54 +1051,132 @@
             });
         }
 
-        document.querySelectorAll("[data-modal-open]").forEach(function (bouton) {
-            var modal = document.getElementById(bouton.getAttribute("data-modal-open"));
+        // Extrait en fonction nommee (au lieu d'un forEach direct) : les
+        // boutons "Ajouter une pièce"/"Voir le dossier" vivent DANS le
+        // tableau (data-ajax-region="corps"), qui est remplace sans
+        // recharger la page a chaque filtre (indemnites-ajax-resultats.js)
+        // — sans re-attacher ces clics sur les NOUVEAUX boutons apres
+        // chaque remplacement, ils resteraient morts.
+        // Bascule le formulaire partage entre les modes "ajouter" et
+        // "modifier" (demande utilisatrice : "en cliquant sur modifier il
+        // doit afficher le formulaire complet en recuperant le fichier qui
+        // y etait") : titre, action, texte du bouton, obligation des 5
+        // champs fichier, et pre-remplissage de chaque dropzone avec le
+        // fichier deja depose (si mode "modifier").
+        function preparerFormulairePiece(modal, bouton, mode) {
+            var titre = modal.querySelector("[data-piece-modal-title]");
+            var libelleSubmit = modal.querySelector("[data-piece-submit-label]");
+            var enModification = mode === "modifier";
 
-            if (!modal) {
-                return;
+            if (titre) {
+                titre.textContent = enModification ? "Modifier le dossier" : "Ajouter une pièce justificative";
             }
 
-            bouton.addEventListener("click", function () {
-                if (bouton.hasAttribute("data-dossier-json")) {
-                    remplirDossier(modal, bouton);
-                    ouvrirModal(modal);
+            if (libelleSubmit) {
+                libelleSubmit.textContent = enModification ? "Enregistrer les modifications" : "Déposer";
+            }
 
+            if (formulairePiece) {
+                formulairePiece.action = modal.getAttribute(
+                    enModification ? "data-piece-url-modifier" : "data-piece-url-ajouter"
+                ) || formulairePiece.action;
+            }
+
+            // Dossier courant (id/nom_original par type) — uniquement en
+            // mode "modifier", pour pre-remplir chaque dropzone.
+            var dossierParType = {};
+
+            if (enModification) {
+                try {
+                    (JSON.parse(bouton.getAttribute("data-dossier-json") || "[]")).forEach(function (piece) {
+                        if (piece.type) {
+                            dossierParType[piece.type] = piece;
+                        }
+                    });
+                } catch (erreur) {
+                    dossierParType = {};
+                }
+            }
+
+            if (formulairePiece) {
+                formulairePiece.querySelectorAll("[data-piece-fichier]").forEach(function (champ) {
+                    var zone = champ.closest("[data-dropzone]");
+                    var piece = dossierParType[champ.getAttribute("data-piece-fichier")];
+
+                    champ.required = ! enModification;
+
+                    if (zone) {
+                        if (piece && piece.nom_original) {
+                            zone.dataset.existant = "true";
+                            zone.dataset.nomExistant = piece.nom_original;
+                        } else {
+                            delete zone.dataset.existant;
+                            delete zone.dataset.nomExistant;
+                        }
+                    }
+
+                    mettreAJourDropzone(champ);
+                });
+            }
+        }
+
+        function attacherOuvertureModales() {
+            document.querySelectorAll("[data-modal-open]").forEach(function (bouton) {
+                var modal = document.getElementById(bouton.getAttribute("data-modal-open"));
+
+                if (!modal) {
                     return;
                 }
 
-                // Pre-remplit les champs caches (convocation/enseignant/
-                // centre) et le libelle du membre a partir des attributs
-                // data-piece-* du bouton clique — un seul formulaire/modale
-                // partage par toutes les lignes du tableau.
-                var champsParAttribut = {
-                    "convocation_id": "pieceConvocationId",
-                    "enseignant_id": "pieceEnseignantId",
-                    "centre_id": "pieceCentreId",
-                };
+                bouton.addEventListener("click", function () {
+                    var mode = bouton.getAttribute("data-piece-mode");
 
-                modal.querySelectorAll("[data-piece-field]").forEach(function (champ) {
-                    var cle = champsParAttribut[champ.getAttribute("data-piece-field")];
-                    champ.value = (cle && bouton.dataset[cle]) || "";
-                });
+                    if (mode === "voir") {
+                        remplirDossier(modal, bouton);
+                        ouvrirModal(modal);
 
-                var libelle = modal.querySelector("[data-piece-membre-label]");
-                if (libelle) {
-                    libelle.textContent = bouton.getAttribute("data-piece-label") || "";
-                }
+                        return;
+                    }
 
-                // Repart de zero a chaque ouverture : sinon un fichier
-                // choisi (ou une erreur de taille affichee) pour un membre
-                // resterait present si on ouvre la modale pour un AUTRE
-                // membre juste apres.
-                if (formulairePiece) {
-                    formulairePiece.reset();
-                    formulairePiece.querySelectorAll("[data-piece-fichier]").forEach(effacerErreurChamp);
+                    // Pre-remplit les champs caches (convocation/enseignant/
+                    // centre) et le libelle du membre a partir des attributs
+                    // data-piece-* du bouton clique — un seul formulaire/modale
+                    // partage par "Ajouter une pièce" ET "Modifier".
+                    var champsParAttribut = {
+                        "convocation_id": "pieceConvocationId",
+                        "enseignant_id": "pieceEnseignantId",
+                        "centre_id": "pieceCentreId",
+                    };
+
+                    modal.querySelectorAll("[data-piece-field]").forEach(function (champ) {
+                        var cle = champsParAttribut[champ.getAttribute("data-piece-field")];
+                        champ.value = (cle && bouton.dataset[cle]) || "";
+                    });
+
+                    var libelle = modal.querySelector("[data-piece-membre-label]");
+                    if (libelle) {
+                        libelle.textContent = bouton.getAttribute("data-piece-label") || "";
+                    }
+
+                    // Repart de zero a chaque ouverture : sinon un fichier
+                    // choisi (ou une erreur de taille affichee) pour un membre
+                    // resterait present si on ouvre la modale pour un AUTRE
+                    // membre juste apres.
+                    if (formulairePiece) {
+                        formulairePiece.reset();
+                        formulairePiece.querySelectorAll("[data-piece-fichier]").forEach(effacerErreurChamp);
+                    }
+
+                    preparerFormulairePiece(modal, bouton, mode);
                     mettreAJourRecap();
-                }
 
-                ouvrirModal(modal);
+                    ouvrirModal(modal);
+                });
             });
-        });
+        }
+
+        attacherOuvertureModales();
+        document.addEventListener("sicore:ajax-regions-mises-a-jour", attacherOuvertureModales);
 
         document.querySelectorAll("[data-modal]").forEach(function (modal) {
             modal.addEventListener("click", function (event) {

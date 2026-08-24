@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Indemnites;
 
 use App\Http\Controllers\Controller;
 use App\Services\Api\Indemnites\ConvocationService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -89,24 +90,60 @@ class ConvocationsController extends Controller
             // different sont deux lignes distinctes en base), donc "Voir"/
             // "Modifier" doivent pointer vers CE centre precis plutot que
             // vers toute la convocation (cf. construireLignesCentres()).
-            'centresLignes' => $this->construireLignesCentres($items),
+            'centresLignes' => $this->construireLignesCentres($items, $filtres['metier'] ?? null, $filtres['centre'] ?? null),
             'stats' => $stats,
             'importAvertissements' => session('import_avertissements', []),
             // Selectionne dans le formulaire d'import (modal) : le type
             // n'est plus un champ du document Word, voir import() ci-dessous.
             'typesConvocation' => $this->typesConvocationPourImport(),
             // Menus deroulants des filtres (Date/Objet/Metier/Centre) :
-            // valeurs distinctes de TOUTE la base, independantes de la page/
-            // du filtre courant — pas seulement celles de $items (page de
-            // 10) — sinon un filtre applique retirerait ses propres options
-            // du menu. Voir ConvocationsController::optionsFiltres() cote back.
-            'filtreOptions' => $this->optionsFiltresPourVue(),
+            // scopes aux valeurs coherentes avec les AUTRES filtres deja
+            // choisis dans l'URL (arrivee directe sur un lien filtre) —
+            // jamais au sien propre, sinon la valeur choisie disparaitrait
+            // de son propre menu. La mise a jour "en direct" au changement
+            // d'un select (sans recharger la page) est geree en AJAX par
+            // filtresOptionsJson() ci-dessous, cf. ConvocationsController::
+            // optionsFiltres() cote back.
+            'filtreOptions' => $this->optionsFiltresPourVue($filtres),
         ]);
     }
 
-    private function optionsFiltresPourVue(): array
+    /**
+     * AJAX — options scopees (Objet/Session/Metier/Centre/Date) pour les
+     * panneaux de filtres du module Indemnites (Convocations, Frais de
+     * deplacement, Calcul, Calcul-surveillance, Pieces justificatives) :
+     * demande utilisatrice : "quand je selectionne un element du select, le
+     * select suivant doit afficher les infos relatif a l'objet selectionne,
+     * instantanement sans recharger la page" — meme principe que
+     * EtatPaieIndemnitesController::centresPourObjetSession(), mais
+     * generique aux 4 champs a la fois (partages par les 5 pages
+     * ci-dessus).
+     */
+    public function filtresOptionsJson(Request $request): JsonResponse
     {
-        $resultat = $this->convocations->optionsFiltres();
+        $filtres = array_filter([
+            'date' => $request->query('date'),
+            'objet' => $request->query('objet'),
+            'metier' => $request->query('metier'),
+            'centre' => $request->query('centre'),
+            'session' => $request->query('session'),
+        ]);
+
+        $resultat = $this->convocations->optionsFiltres($filtres);
+
+        if (! $resultat['success']) {
+            return response()->json([
+                'success' => false,
+                'message' => $resultat['message'] ?? 'Impossible de charger les options de filtres.',
+            ], $resultat['status'] ?? 500);
+        }
+
+        return response()->json(['success' => true, 'data' => $resultat['data'] ?? []]);
+    }
+
+    private function optionsFiltresPourVue(array $filtres = []): array
+    {
+        $resultat = $this->convocations->optionsFiltres($filtres);
 
         $vide = ['objets' => [], 'centres' => [], 'metiers' => [], 'dates' => [], 'statuts' => []];
 
@@ -124,18 +161,34 @@ class ConvocationsController extends Controller
      * Aplati les convocations en lignes "une par centre" pour le tableau de
      * la liste : Objet / Centre / Date debut / Date fin / Action. Une
      * convocation sans centre produit quand meme une ligne (centre "—"),
-     * pour rester visible tant qu'aucun centre n'a ete ajoute.
+     * pour rester visible tant qu'aucun centre n'a ete ajoute (sauf si un
+     * filtre Metier/Centre est actif : une convocation sans centre ne peut
+     * alors jamais y correspondre).
+     *
+     * $filtreMetier/$filtreCentre : le WHERE HAS() cote back (voir
+     * ConvocationsController::index() cote back) ne garde que les
+     * convocations ayant AU MOINS un centre correspondant, mais renvoie
+     * TOUS les centres de ces convocations — sans reappliquer le filtre ici
+     * ligne par ligne, une convocation a 2 centres (ex: "Couture" ET
+     * "Habillement") affichait AUSSI la ligne du centre non filtre des que
+     * l'AUTRE centre de la meme convocation correspondait (demande
+     * utilisatrice : "en selectionnant le metier pour la meme convocation
+     * il ne filtre pas").
      *
      * NB : cette methode avait disparu du fichier (le "call to undefined
      * method" qui cassait la page liste) alors qu'elle est toujours
      * appelee depuis index() ci-dessus — restauree ici.
      */
-    private function construireLignesCentres(array $items): array
+    private function construireLignesCentres(array $items, ?string $filtreMetier = null, ?string $filtreCentre = null): array
     {
         $lignes = [];
 
         foreach ($items as $item) {
             $centres = $item['centres'] ?? [];
+
+            if (empty($centres) && ($filtreMetier || $filtreCentre)) {
+                continue;
+            }
 
             $ligneCommune = [
                 // "ne pas exposer mes donnees" : les liens/checkbox de la
@@ -161,6 +214,10 @@ class ConvocationsController extends Controller
             }
 
             foreach ($centres as $centre) {
+                if (! $this->centreCorrespondFiltres($centre, $filtreMetier, $filtreCentre)) {
+                    continue;
+                }
+
                 $lignes[] = array_merge($ligneCommune, [
                     'centre_id' => $centre['slug'] ?? $centre['id'] ?? null,
                     'centre' => $centre['centre'] ?? null,
@@ -168,13 +225,44 @@ class ConvocationsController extends Controller
                     // la convocation elle-meme (voir
                     // ConvocationCentreController::destroy() cote back) : le
                     // bouton "Supprimer" de la liste doit le dire a l'avance
-                    // plutot que de le decouvrir apres coup.
+                    // plutot que de le decouvrir apres coup. Se base sur le
+                    // nombre REEL de centres de la convocation, pas sur le
+                    // nombre de lignes affichees apres filtre.
                     'dernier_centre' => count($centres) === 1,
                 ]);
             }
         }
 
         return $lignes;
+    }
+
+    /**
+     * Un centre correspond au filtre Metier si son metier "legacy"
+     * (colonne convocation_centres.metier) OU un de ses metiers dedies
+     * (relation centres.metiers, desormais eager-chargee cote back —
+     * ConvocationsController::index() cote back) contient le filtre —
+     * meme logique OR que le WHERE HAS() cote back, pour rester coherent
+     * avec les convocations qu'il laisse passer.
+     */
+    private function centreCorrespondFiltres(array $centre, ?string $filtreMetier, ?string $filtreCentre): bool
+    {
+        if ($filtreCentre && ! str_contains(mb_strtolower($centre['centre'] ?? ''), mb_strtolower($filtreCentre))) {
+            return false;
+        }
+
+        if ($filtreMetier) {
+            $metierLegacy = $centre['metier'] ?? null;
+            $metiersDedies = collect($centre['metiers'] ?? [])->pluck('metier')->filter();
+
+            $correspond = ($metierLegacy && str_contains(mb_strtolower($metierLegacy), mb_strtolower($filtreMetier)))
+                || $metiersDedies->contains(fn ($metier) => str_contains(mb_strtolower($metier), mb_strtolower($filtreMetier)));
+
+            if (! $correspond) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**
