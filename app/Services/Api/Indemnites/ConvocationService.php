@@ -44,9 +44,9 @@ class ConvocationService
      * menus deroulants des filtres de la liste (voir
      * ConvocationsController::index() cote back, methode optionsFiltres()).
      */
-    public function optionsFiltres(): array
+    public function optionsFiltres(array $filtres = []): array
     {
-        return $this->wrap($this->api->get('convocations/filtres-options'));
+        return $this->wrap($this->api->get('convocations/filtres-options', array_filter($filtres)));
     }
 
     public function trouver(int|string $id): array

@@ -63,6 +63,7 @@
 
         <div class="form-card-header">
             <div>
+                <p class="breadcrumb"><a href="{{ route('indemnites.frais-deplacement', ['objet' => $convocation['objet'] ?? null]) }}">&larr; Retour à la liste</a></p>
                 <h2>Feuille de déplacement</h2>
                 <p class="breadcrumb">
                     {{ $convocation['objet'] ?? '—' }}

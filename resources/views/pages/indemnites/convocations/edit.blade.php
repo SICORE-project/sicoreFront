@@ -18,10 +18,11 @@
 
         <div class="form-card-header">
             <div>
+                <p class="breadcrumb"><a href="{{ route('indemnites.convocations') }}">&larr; Retour à la liste</a></p>
                 <h2>Modifier la convocation</h2>
                 <p class="breadcrumb">Mise à jour de la convocation et de ses centres d'examen</p>
             </div>
-           
+
             <x-module-indemnite type="statut-convocation" :statut="$convocation->statut ?? 'brouillon'" />
         </div>
 

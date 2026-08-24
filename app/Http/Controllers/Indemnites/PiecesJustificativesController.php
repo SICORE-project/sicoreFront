@@ -67,15 +67,6 @@ class PiecesJustificativesController extends Controller
 
     public function index(Request $request): View
     {
-        $resultatFiltres = $this->convocations->optionsFiltres();
-        $optionsFiltres = $resultatFiltres['success'] ? ($resultatFiltres['data'] ?? []) : [];
-
-        $objet = $request->query('objet');
-        $session = $request->query('session');
-        $centre = $request->query('centre');
-
-        $filtreActif = filled($objet) || filled($session) || filled($centre);
-
         $filtres = array_filter([
             'session' => $request->query('session'),
             'objet' => $request->query('objet'),
@@ -84,7 +75,7 @@ class PiecesJustificativesController extends Controller
 
         $filtreActif = count($filtres) > 0;
 
-        $optionsFiltres = $this->optionsFiltresPourVue();
+        $optionsFiltres = $this->optionsFiltresPourVue($filtres);
 
         $membres = [];
         $stats = [
@@ -141,9 +132,9 @@ class PiecesJustificativesController extends Controller
         ]);
     }
 
-    private function optionsFiltresPourVue(): array
+    private function optionsFiltresPourVue(array $filtres = []): array
     {
-        $resultat = $this->convocations->optionsFiltres();
+        $resultat = $this->convocations->optionsFiltres($filtres);
 
         $vide = ['objets' => [], 'sessions' => [], 'centres' => []];
 
@@ -355,10 +346,15 @@ class PiecesJustificativesController extends Controller
             $piece = $parType[$type] ?? null;
 
             $dossier[] = [
+                'type' => $type,
                 'label' => $label,
                 'statut' => $piece['statut'] ?? null,
                 'date_depot' => $piece['date_depot'] ?? null,
                 'id' => $piece['id'] ?? null,
+                // Pour pre-remplir la modale "Modifier" avec le fichier
+                // deja en place (demande utilisatrice) — affiche a la place
+                // du placeholder "Cliquez pour joindre un fichier".
+                'nom_original' => $piece['nom_original'] ?? null,
             ];
         }
 
@@ -441,6 +437,54 @@ class PiecesJustificativesController extends Controller
         return redirect()
             ->back()
             ->with('success', 'Pièces justificatives déposées avec succès.');
+    }
+
+    /**
+     * Modification du dossier d'UN membre — bouton "Modifier" du tableau,
+     * meme formulaire complet que deposer() ci-dessus (demande
+     * utilisatrice : "en cliquant sur modifier il doit afficher le
+     * formulaire complet en recuperant le fichier qui y etait"), mais les 5
+     * fichiers sont optionnels : seuls ceux fournis remplacent la piece
+     * existante, les autres restent tels quels.
+     */
+    public function modifier(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'convocation_id' => ['required', 'integer'],
+            'enseignant_id' => ['required', 'integer'],
+            'centre_id' => ['nullable', 'integer'],
+            'service_fait' => ['sometimes', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:100'],
+            'ordre_mission' => ['sometimes', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:100'],
+            'rapport_mission' => ['sometimes', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:100'],
+            'bulletin_salaire' => ['sometimes', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:100'],
+            'accuse_reception' => ['sometimes', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:100'],
+        ]);
+
+        $donnees = array_filter([
+            'convocation_id' => $data['convocation_id'],
+            'enseignant_id' => $data['enseignant_id'],
+            'centre_id' => $data['centre_id'] ?? null,
+        ]);
+
+        $fichiers = [
+            'service_fait' => $request->file('service_fait'),
+            'ordre_mission' => $request->file('ordre_mission'),
+            'rapport_mission' => $request->file('rapport_mission'),
+            'bulletin_salaire' => $request->file('bulletin_salaire'),
+            'accuse_reception' => $request->file('accuse_reception'),
+        ];
+
+        $resultat = $this->pieces->modifierLot($donnees, $fichiers);
+
+        if (! $resultat['success']) {
+            return redirect()
+                ->back()
+                ->with('error', $resultat['message'] ?? 'Échec de la modification du dossier.');
+        }
+
+        return redirect()
+            ->back()
+            ->with('success', 'Dossier modifié avec succès.');
     }
 
     public function telecharger(string $id): StreamedResponse
