@@ -21,7 +21,7 @@ class RoleStructureMatrix
 
     public function structureType(array $organisation): ?string
     {
-        if (! empty($organisation['structure_organisationnelle_id'])) {
+        if (! empty($organisation['lieu_service_id'])) {
             return 'national';
         }
 

@@ -133,7 +133,7 @@ class UserService
     public function structures(): array
     {
         try {
-            $response = $this->apiClient->get('admin/structures-organisationnelles/manage');
+            $response = $this->apiClient->get('lieux-service/manage');
         } catch (ConnectionException) {
             return ['success' => false, 'data' => [], 'message' => 'Le service backend est inaccessible.'];
         }
@@ -144,7 +144,7 @@ class UserService
     public function ias(): array
     {
         try {
-            $response = $this->apiClient->get('admin/structures-organisationnelles/ias');
+            $response = $this->apiClient->get('lieux-service/ias');
         } catch (ConnectionException) {
             return [];
         }
@@ -156,8 +156,8 @@ class UserService
     {
         try {
             $response = $id === null
-                ? $this->apiClient->post('admin/structures-organisationnelles', $data)
-                : $this->apiClient->put("admin/structures-organisationnelles/{$id}", $data);
+                ? $this->apiClient->post('lieux-service', $data)
+                : $this->apiClient->put("lieux-service/{$id}", $data);
         } catch (ConnectionException) {
             return ['success' => false, 'message' => 'Le service backend est inaccessible.', 'errors' => []];
         }
@@ -168,7 +168,7 @@ class UserService
     public function deleteStructure(int|string $id): array
     {
         try {
-            $response = $this->apiClient->delete("admin/structures-organisationnelles/{$id}");
+            $response = $this->apiClient->delete("lieux-service/{$id}");
         } catch (ConnectionException) {
             return ['success' => false, 'message' => 'Le service backend est inaccessible.'];
         }
@@ -183,7 +183,7 @@ class UserService
         if (in_array($type, ['national', 'ia', 'ief'], true)) return $type;
         if (data_get($access, 'ief') || data_get($access, 'ief_id')) return 'ief';
         if (data_get($access, 'ia') || data_get($access, 'ia_id')) return 'ia';
-        if (data_get($access, 'structure') || data_get($access, 'structure_organisationnelle_id')) return 'national';
+        if (data_get($access, 'structure') || data_get($access, 'lieu_service_id')) return 'national';
         return null;
     }
     public function createUser(array $data): array
@@ -222,7 +222,7 @@ class UserService
     public function getOrganisationOptions(): array
     {
         try {
-            $response = $this->apiClient->get('admin/structures-organisationnelles');
+            $response = $this->apiClient->get('lieux-service');
         } catch (ConnectionException) {
             return ['national' => [], 'regional' => []];
         }

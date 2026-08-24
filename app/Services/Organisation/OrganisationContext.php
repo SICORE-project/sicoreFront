@@ -15,11 +15,11 @@ class OrganisationContext
         $access = $this->access();
         $iefId = data_get($access, 'ief_id', data_get($access, 'ief.id'));
         $iaId = data_get($access, 'ia_id', data_get($access, 'ia.id'));
-        $structureId = data_get($access, 'structure_organisationnelle_id', data_get($access, 'structure.id'));
+        $structureId = data_get($access, 'lieu_service_id', data_get($access, 'structure.id'));
 
         if ($iefId) return ['ief_id' => $iefId];
         if ($iaId) return ['ia_id' => $iaId];
-        if ($structureId) return ['structure_organisationnelle_id' => $structureId];
+        if ($structureId) return ['lieu_service_id' => $structureId];
         return [];
     }
 

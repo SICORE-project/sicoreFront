@@ -56,7 +56,7 @@ class RoleStructureMatrixTest extends TestCase
 
     public function test_most_specific_structure_type_is_detected(): void
     {
-        $this->assertSame('national', $this->matrix->structureType(['structure_organisationnelle_id' => 1]));
+        $this->assertSame('national', $this->matrix->structureType(['lieu_service_id' => 1]));
         $this->assertSame('ia', $this->matrix->structureType(['ia_id' => 2]));
         $this->assertSame('ief', $this->matrix->structureType(['ia_id' => 2, 'ief_id' => 3]));
     }

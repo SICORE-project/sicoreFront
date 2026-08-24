@@ -8,7 +8,7 @@
     ?? data_get($access, 'ief')
     ?? data_get($access, 'ia')
     ?? data_get($access, 'structure')
-    ?? data_get($user, 'structure_organisationnelle');
+    ?? data_get($user, 'lieu_service');
   $structureLabel = is_array($structure)
     ? collect([data_get($structure, 'code', data_get($structure, 'type')), data_get($structure, 'libelle', data_get($structure, 'nom'))])->filter()->unique()->join(' — ')
     : ($structure ?: '—');

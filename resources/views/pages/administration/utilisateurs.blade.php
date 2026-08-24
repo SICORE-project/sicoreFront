@@ -72,20 +72,20 @@
         </div>
 
         <div class="form-group" id="national-structure-group" @if(old('perimetre', 'national') !== 'national') hidden @endif>
-          <label for="structure_organisationnelle_id">Structure organisationnelle <span class="required">*</span></label>
-          <select class="form-control @error('structure_organisationnelle_id') is-invalid @enderror" id="structure_organisationnelle_id" name="structure_organisationnelle_id">
+          <label for="lieu_service_id">Lieu de service <span class="required">*</span></label>
+          <select class="form-control @error('lieu_service_id') is-invalid @enderror" id="lieu_service_id" name="lieu_service_id">
             <option value="">Sélectionner une direction</option>
             @foreach(($organisation['national'] ?? []) as $structure)
               @if(is_array($structure) && data_get($structure, 'id'))
-                <option value="{{ data_get($structure, 'id') }}" @selected((string) old('structure_organisationnelle_id') === (string) data_get($structure, 'id'))>{{ collect([data_get($structure, 'code'), data_get($structure, 'libelle', data_get($structure, 'nom'))])->filter()->join(' — ') }}</option>
+                <option value="{{ data_get($structure, 'id') }}" @selected((string) old('lieu_service_id') === (string) data_get($structure, 'id'))>{{ collect([data_get($structure, 'code'), data_get($structure, 'libelle', data_get($structure, 'nom'))])->filter()->join(' — ') }}</option>
               @endif
             @endforeach
           </select>
-          @error('structure_organisationnelle_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
+          @error('lieu_service_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
         </div>
 
         <div class="form-group" id="ia-group" hidden>
-          <label for="ia_id">Structure organisationnelle (IA) <span class="required">*</span></label>
+          <label for="ia_id">Lieu de service (IA) <span class="required">*</span></label>
           <select class="form-control @error('ia_id') is-invalid @enderror" id="ia_id" name="ia_id">
             <option value="">Sélectionner une IA</option>
           </select>
@@ -162,17 +162,21 @@
           <label for="edit-user-role">Rôle <span class="required">*</span></label>
           <select class="form-control" id="edit-user-role" name="role_id" required>
             @foreach ($roles as $role)
-              <option value="{{ $role['id'] }}">{{ $role['nom'] }}</option>
+              <option value="{{ $role['id'] }}" data-role-slug="{{ $role['slug'] ?? '' }}">{{ $role['nom'] }}</option>
             @endforeach
           </select>
         </div>
         <div class="form-group">
-          <label for="edit-user-structure">Structure organisationnelle</label>
-          <select class="form-control" id="edit-user-structure" name="structure_organisationnelle_id">
-            <option value="">Aucune structure</option>
-            @foreach ($structures as $structure)
-              <option value="{{ $structure['id'] }}">{{ $structure['code'] }} — {{ $structure['libelle'] }}</option>
-            @endforeach
+          <label for="edit-user-perimetre">Périmètre <span class="required">*</span></label>
+          <select class="form-control" id="edit-user-perimetre" disabled>
+            <option value="national">National</option>
+            <option value="regional">Régional</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="edit-user-structure" id="edit-user-structure-label">Lieu de service (Direction) <span class="required">*</span></label>
+          <select class="form-control" id="edit-user-structure" name="lieu_service_id" required>
+            <option value="">Sélectionner une direction</option>
           </select>
         </div>
         <input id="edit-user-status" name="statut" type="hidden" value="actif">
@@ -235,7 +239,7 @@
       const role = document.getElementById('role_id');
       const perimeter = document.getElementById('perimetre');
       const nationalGroup = document.getElementById('national-structure-group');
-      const national = document.getElementById('structure_organisationnelle_id');
+      const national = document.getElementById('lieu_service_id');
       const iaGroup = document.getElementById('ia-group');
       const ia = document.getElementById('ia_id');
       const iefGroup = document.getElementById('ief-group');
@@ -262,9 +266,9 @@
 
       function syncRegionalStructure() {
         const useIef = Boolean(ief.value);
-        ia.name = useIef ? 'ia_id' : 'structure_organisationnelle_id';
+        ia.name = useIef ? 'ia_id' : 'lieu_service_id';
         ia.disabled = !perimeter.value || perimeter.value !== 'regional' || useIef;
-        ief.name = useIef ? 'structure_organisationnelle_id' : 'ief_id';
+        ief.name = useIef ? 'lieu_service_id' : 'ief_id';
       }
 
       async function loadIaOptions() {
@@ -276,8 +280,8 @@
             const selectedValue = ia.value;
             ia.replaceChildren(new Option('Sélectionner une IA', ''));
             items.forEach(item => {
-              if (item.structure_organisationnelle_id) {
-                ia.add(new Option(optionLabel(item), item.structure_organisationnelle_id));
+              if (item.lieu_service_id) {
+                ia.add(new Option(optionLabel(item), item.lieu_service_id));
               }
             });
             ia.value = selectedValue || oldIa;
@@ -307,7 +311,7 @@
           national.name = 'national_structure_id';
           fillIefs(ief.value);
         } else {
-          national.name = 'structure_organisationnelle_id';
+          national.name = 'lieu_service_id';
           ia.value = '';
           fillIefs();
           ia.name = 'ia_id';
@@ -446,6 +450,11 @@
       const viewModal = document.getElementById('view-user-modal');
       const editModal = document.getElementById('edit-user-modal');
       const editForm = document.getElementById('edit-user-form');
+      const editRole = document.getElementById('edit-user-role');
+      const editPerimeter = document.getElementById('edit-user-perimetre');
+      const editStructure = document.getElementById('edit-user-structure');
+      const editStructureLabel = document.getElementById('edit-user-structure-label');
+      const editStructures = @json($structures);
       const usersBaseUrl = @json(route('utilisateurs.index'));
       const deleteForm = document.getElementById('delete-user-form');
       const toggleForm = document.getElementById('toggle-user-status-form');
@@ -454,6 +463,31 @@
       function openModal(modal) {
         modal.hidden = false;
       }
+
+      function configureEditOrganisation(selectedValue = '') {
+        const selectedRole = editRole.options[editRole.selectedIndex];
+        const isGestionnaireIa = selectedRole?.dataset.roleSlug === 'gestionnaire_ia';
+        const expectedType = isGestionnaireIa ? 'IA' : null;
+
+        editPerimeter.value = isGestionnaireIa ? 'regional' : 'national';
+        editStructureLabel.innerHTML = isGestionnaireIa
+          ? 'Lieu de service (IA) <span class="required">*</span>'
+          : 'Lieu de service (Direction) <span class="required">*</span>';
+        editStructure.replaceChildren(new Option(
+          isGestionnaireIa ? 'Sélectionner une IA' : 'Sélectionner une direction',
+          ''
+        ));
+
+        editStructures
+          .filter(item => isGestionnaireIa
+            ? String(item.type).toUpperCase() === expectedType
+            : String(item.perimetre).toLowerCase() === 'national')
+          .forEach(item => editStructure.add(new Option(optionLabel(item), item.id)));
+
+        editStructure.value = String(selectedValue ?? '');
+      }
+
+      editRole.addEventListener('change', () => configureEditOrganisation());
 
       document.querySelectorAll('[data-user-action]').forEach(function (button) {
         button.addEventListener('click', function () {
@@ -490,7 +524,7 @@
             document.getElementById('view-user-address').textContent = user.adresse || '—';
             document.getElementById('view-user-function').textContent = user.fonction || '—';
             document.getElementById('view-user-role').textContent = user.role?.nom || '—';
-            document.getElementById('view-user-structure').textContent = [user.structure_organisationnelle?.code, user.structure_organisationnelle?.libelle].filter(Boolean).join(' — ') || 'Aucune structure';
+            document.getElementById('view-user-structure').textContent = [user.lieu_service?.code, user.lieu_service?.libelle].filter(Boolean).join(' — ') || 'Aucune structure';
             document.getElementById('view-user-status').textContent = user.statut === 'actif' ? 'Actif' : 'Inactif';
             document.getElementById('view-user-created-at').textContent = user.created_at || '—';
             document.getElementById('view-user-updated-at').textContent = user.updated_at || '—';
@@ -503,8 +537,8 @@
             document.getElementById('edit-user-nom').value = user.nom || '';
             document.getElementById('edit-user-prenom').value = user.prenom || '';
             document.getElementById('edit-user-email').value = user.email || '';
-            document.getElementById('edit-user-role').value = user.role?.id || '';
-            document.getElementById('edit-user-structure').value = user.structure_organisationnelle?.id || '';
+            editRole.value = user.role?.id || '';
+            configureEditOrganisation(user.lieu_service?.id || '');
             document.getElementById('edit-user-status').value = user.statut || 'actif';
             editStatusButton.dataset.userId = user.id;
             editStatusButton.dataset.userName = user.nom_complet || user.email || 'cet utilisateur';
@@ -537,12 +571,13 @@
 
         editButton?.click();
 
-        ['nom', 'prenom', 'email', 'role_id', 'structure_organisationnelle_id'].forEach(field => {
+        ['nom', 'prenom', 'email', 'role_id'].forEach(field => {
           const value = failedEditValues?.[field];
           if (value !== undefined && value !== null && value !== '') {
-            document.getElementById(`edit-user-${field === 'structure_organisationnelle_id' ? 'structure' : field}`).value = value;
+            document.getElementById(`edit-user-${field === 'lieu_service_id' ? 'structure' : field}`).value = value;
           }
         });
+        configureEditOrganisation(failedEditValues?.lieu_service_id || '');
       }
     });
   </script>

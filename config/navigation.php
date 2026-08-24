@@ -83,8 +83,7 @@ return [
             ['label' => 'Année académique', 'route' => 'parametres.index', 'fragment' => 'annee-academique', 'icon' => 'fa-solid fa-calendar-days'],
             ['label' => 'Période de paie', 'route' => 'parametres.index', 'fragment' => 'periode-paie', 'icon' => 'fa-solid fa-calendar-week'],
             ['label' => 'Rubriques de paie', 'route' => 'parametres.index', 'fragment' => 'rubrique-paie', 'icon' => 'fa-solid fa-list-ul'],
-            ['label' => 'Lieux de service', 'route' => 'parametres.index', 'fragment' => 'lieu-service', 'icon' => 'fa-solid fa-location-dot'],
-            ['label' => 'Structures organisationnelles', 'route' => 'parametres.structures-organisationnelles.index', 'icon' => 'fa-solid fa-sitemap'],
+            ['label' => 'Lieux de service', 'route' => 'parametres.lieux-service.index', 'icon' => 'fa-solid fa-sitemap'],
         ],
     ],
     [

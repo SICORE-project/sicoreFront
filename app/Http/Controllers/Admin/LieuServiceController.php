@@ -6,13 +6,13 @@ use App\Http\Controllers\Controller;
 use App\Services\Administration\UserService;
 use Illuminate\Http\Request;
 
-class StructureOrganisationnelleController extends Controller
+class LieuServiceController extends Controller
 {
     public function __construct(private UserService $users) {}
 
     public function index()
     {
-        return view('pages.administration.structures.index', [
+        return view('pages.administration.lieux-service.index', [
             'structures' => $this->users->structures()['data'],
             'ias' => $this->users->ias(),
         ]);
@@ -31,7 +31,7 @@ class StructureOrganisationnelleController extends Controller
     public function destroy(int $id)
     {
         $response = $this->users->deleteStructure($id);
-        return redirect()->route('parametres.structures-organisationnelles.index')->with($response['success'] ? 'success' : 'error', $response['message'] ?? 'Suppression impossible.');
+        return redirect()->route('parametres.lieux-service.index')->with($response['success'] ? 'success' : 'error', $response['message'] ?? 'Suppression impossible.');
     }
 
     private function save(Request $request, ?int $id = null)
@@ -47,6 +47,6 @@ class StructureOrganisationnelleController extends Controller
         ]);
         $response = $this->users->saveStructure($data, $id);
 
-        return redirect()->route('parametres.structures-organisationnelles.index')->with($response['success'] ? 'success' : 'error', $response['message'] ?? 'Enregistrement impossible.');
+        return redirect()->route('parametres.lieux-service.index')->with($response['success'] ? 'success' : 'error', $response['message'] ?? 'Enregistrement impossible.');
     }
 }

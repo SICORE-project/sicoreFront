@@ -1,22 +1,22 @@
 @extends('layouts.app')
 
-@section('title', 'SICORE - Structures organisationnelles')
+@section('title', 'SICORE - Lieux de service')
 
 @section('content')
 <main class="main-content">
-    <x-topbar title="Structures organisationnelles" subtitle="Gestion utilisateur > Structures organisationnelles" icon="fa-solid fa-sitemap" />
+    <x-topbar title="Lieux de service" subtitle="Paramétrage > Lieux de service" icon="fa-solid fa-location-dot" />
     <section class="content-area">
-        <section class="objective-card"><h2>Gestion des structures</h2><p>Créez les structures nationales, IA et IEF utilisées pour le rattachement des utilisateurs.</p></section>
+        <section class="objective-card"><h2>Gestion des lieux de service</h2><p>Créez les lieux de service nationaux, les IA et les IEF utilisés pour le rattachement des utilisateurs.</p></section>
         @if(session('success')) <div class="alert alert-success">{{ session('success') }}</div> @endif
         @if(session('error')) <div class="alert alert-danger">{{ session('error') }}</div> @endif
-        <div class="actions-row"><a href="{{ route('utilisateurs.index') }}" class="btn-secondary">Utilisateurs</a><button class="btn-primary" type="button" data-structure-create><i class="fa-solid fa-plus"></i> Ajouter une structure</button></div>
+        <div class="actions-row"><a href="{{ route('utilisateurs.index') }}" class="btn-secondary">Utilisateurs</a><button class="btn-primary" type="button" data-structure-create><i class="fa-solid fa-plus"></i> Ajouter un lieu de service</button></div>
         <section class="table-card"><div class="table-responsive"><table class="table"><thead><tr><th>Code</th><th>Libellé</th><th>Type</th><th>Périmètre</th><th>Statut</th><th>Actions</th></tr></thead><tbody>
         @forelse($structures as $structure)
-            <tr><td>{{ $structure['code'] }}</td><td>{{ $structure['libelle'] }}</td><td>{{ $structure['type'] }}</td><td>{{ ucfirst($structure['perimetre']) }}</td><td><span class="badge {{ ($structure['est_actif'] ?? true) ? 'badge-active' : 'badge-suspended' }}">{{ ($structure['est_actif'] ?? true) ? 'Actif' : 'Inactif' }}</span></td><td><div class="table-actions-inline"><button type="button" class="table-action" data-structure-edit data-structure='@json($structure)'>Modifier</button><form method="POST" action="{{ route('parametres.structures-organisationnelles.destroy', $structure['id']) }}" style="display:inline">@csrf @method('DELETE')<button class="table-action delete" onclick="return confirm('Supprimer cette structure ? Cette action est impossible si elle est liée à un utilisateur.')">Supprimer</button></form></div></td></tr>
-        @empty <tr><td colspan="6" class="text-center">Aucune structure organisationnelle.</td></tr>@endforelse
+            <tr><td>{{ $structure['code'] }}</td><td>{{ $structure['libelle'] }}</td><td>{{ $structure['type'] }}</td><td>{{ ucfirst($structure['perimetre']) }}</td><td><span class="badge {{ ($structure['est_actif'] ?? true) ? 'badge-active' : 'badge-suspended' }}">{{ ($structure['est_actif'] ?? true) ? 'Actif' : 'Inactif' }}</span></td><td><div class="table-actions-inline"><button type="button" class="table-action" data-structure-edit data-structure='@json($structure)'>Modifier</button><form method="POST" action="{{ route('parametres.lieux-service.destroy', $structure['id']) }}" style="display:inline">@csrf @method('DELETE')<button class="table-action delete" onclick="return confirm('Supprimer ce lieu de service ? Cette action est impossible s’il est lié à un utilisateur.')">Supprimer</button></form></div></td></tr>
+        @empty <tr><td colspan="6" class="text-center">Aucun lieu de service.</td></tr>@endforelse
         </tbody></table></div></section>
     </section>
-    <x-module-indemnite type="modal" id="structure-modal" title="Structure organisationnelle" :open="$errors->any()">
+    <x-module-indemnite type="modal" id="structure-modal" title="Lieu de service" :open="$errors->any()">
         <form id="structure-form" method="POST">@csrf <input id="structure-method" name="_method" type="hidden">
             <div class="form-grid form-grid--balanced">
                 <div class="form-group"><label for="structure-code">Code *</label><input id="structure-code" class="form-control" name="code" maxlength="20" required></div>
@@ -37,7 +37,7 @@
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', () => {
- const structures=@json($structures), ias=@json($ias), modal=document.getElementById('structure-modal'), form=document.getElementById('structure-form'), base=@json(route('parametres.structures-organisationnelles.index'));
+ const structures=@json($structures), ias=@json($ias), modal=document.getElementById('structure-modal'), form=document.getElementById('structure-form'), base=@json(route('parametres.lieux-service.index'));
  const type=document.getElementById('structure-type'), perimetre=document.getElementById('structure-perimetre'), iaGroup=document.getElementById('structure-ia-group'), iefGroup=document.getElementById('structure-ief-group'), ia=document.getElementById('structure-ia-id'), ief=document.getElementById('structure-ief-id'), nationalTypes=['DRH','DAGE','DECPC'];
  const label=item=>[item.code,item.libelle].filter(Boolean).join(' — ');
  function fillIa(selected=''){ia.replaceChildren(new Option('Sélectionner une IA',''));ias.forEach(item=>ia.add(new Option(label(item),item.id)));ia.value=selected}

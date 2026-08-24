@@ -46,7 +46,7 @@ Route::middleware('sicore.auth')
         Route::get('/utilisateurs/permissions', [PermissionController::class, 'index'])
             ->name('utilisateurs.permissions');
 
-        Route::get('/utilisateurs/structures', fn () => redirect()->route('parametres.structures-organisationnelles.index'));
+        Route::get('/utilisateurs/structures', fn () => redirect()->route('parametres.lieux-service.index'));
         Route::get('/utilisateurs/{id}', [UserController::class, 'show'])->whereNumber('id')->name('utilisateurs.show');
         Route::get('/utilisateurs/{id}/modifier', [UserController::class, 'edit'])->whereNumber('id')->name('utilisateurs.edit');
         Route::put('/utilisateurs/{id}', [UserController::class, 'update'])->whereNumber('id')->name('utilisateurs.update');

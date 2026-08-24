@@ -31,6 +31,6 @@ class OrganisationScopeTest extends TestCase
     {
         Http::fake(['*/dashboard*' => Http::response(['data' => []])]);
         $this->withSession(['sicore_user' => ['id' => 1], 'access_token' => 'token'])->get('/dashboard')->assertOk();
-        Http::assertSent(fn ($request): bool => ! isset($request['ia_id']) && ! isset($request['ief_id']) && ! isset($request['structure_organisationnelle_id']));
+        Http::assertSent(fn ($request): bool => ! isset($request['ia_id']) && ! isset($request['ief_id']) && ! isset($request['lieu_service_id']));
     }
 }

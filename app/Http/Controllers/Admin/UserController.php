@@ -82,7 +82,7 @@ class UserController extends Controller
             'password' => ['required', 'string', 'min:8', 'confirmed'],
             'role_id' => ['required', 'integer'],
             'statut' => ['required', 'in:actif,inactif'],
-            'structure_organisationnelle_id' => ['nullable', 'integer'],
+            'lieu_service_id' => ['nullable', 'integer'],
         ]);
 
         $response = $this->userService->createUser(
@@ -143,7 +143,7 @@ class UserController extends Controller
             'email' => ['required', 'email', 'max:255'],
             'role_id' => ['required', 'integer'],
             'statut' => ['required', 'in:actif,inactif'],
-            'structure_organisationnelle_id' => ['nullable', 'integer'],
+            'lieu_service_id' => ['nullable', 'integer'],
             'password' => ['nullable', 'string', 'min:8', 'confirmed'],
         ]);
 
