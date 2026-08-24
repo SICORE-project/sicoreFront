@@ -18,12 +18,6 @@
                     @error('nom') <p style="color:#dc2626; font-size:12px; margin-top:4px;">{{ $message }}</p> @enderror
                 </div>
 
-                <div class="form-group" style="margin-bottom: 20px;">
-                    <label for="slug">Slug *</label>
-                    <input type="text" id="slug" name="slug" required class="form-control">
-                    @error('slug') <p style="color:#dc2626; font-size:12px; margin-top:4px;">{{ $message }}</p> @enderror
-                </div>
-
                 <div class="filter-panel" aria-label="Groupe et module" style="margin-bottom: 20px;">
                     <div class="form-group">
                         <label for="groupe">Groupe *</label>

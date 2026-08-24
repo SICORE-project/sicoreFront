@@ -31,9 +31,9 @@
                 </article>
                 <article class="stat-card">
                     <div>
-                        <p class="stat-label">Niveaux distincts</p>
-                        <p class="stat-value">{{ isset($roles['data']) ? collect($roles['data'])->pluck('niveau')->filter()->unique()->count() : 0 }}</p>
-                        <p class="stat-note">Hiérarchie d'accès</p>
+                        <p class="stat-label">Types distincts</p>
+                        <p class="stat-value">{{ isset($roles['data']) ? collect($roles['data'])->pluck('type_role.id')->filter()->unique()->count() : 0 }}</p>
+                        <p class="stat-note">Classification des rôles</p>
                     </div>
                     <span class="stat-icon green">
                         <i class="fa-solid fa-th-large"></i>
@@ -52,7 +52,7 @@
                 <article class="stat-card">
                     <div>
                         <p class="stat-label">Sensibles</p>
-                        <p class="stat-value">{{ isset($roles['data']) ? collect($roles['data'])->where('niveau', 'systeme')->count() : 0 }}</p>
+                        <p class="stat-value">{{ isset($roles['data']) ? collect($roles['data'])->where('type_role.code', 'systeme')->count() : 0 }}</p>
                         <p class="stat-note">Accès renforcés</p>
                     </div>
                     <span class="stat-icon red">
@@ -65,9 +65,10 @@
             <div class="actions-row">
                 <p class="breadcrumb">Gestion Utilisateur > Profils / Rôles</p>
                 <div class="actions-group">
-                    <a href="{{ route('admin.roles.create') }}" class="btn-primary">
+                    <a href="{{ route('admin.type-roles.index') }}" class="btn-secondary">Types de rôle</a>
+                    <button type="button" class="btn-primary" data-role-modal="create">
                         <i class="fas fa-plus"></i> Nouveau profil
-                    </a>
+                    </button>
                     <button class="btn-secondary" type="button">Exporter</button>
                 </div>
             </div>
@@ -75,11 +76,11 @@
             <!-- Filtres -->
             <section class="filter-panel" aria-label="Filtres">
                 <div class="form-group">
-                    <label for="filter-niveau">Niveau</label>
-                    <select class="form-control" id="filter-niveau">
+                    <label for="filter-type-role">Type de rôle</label>
+                    <select class="form-control" id="filter-type-role">
                         <option value="">Tous</option>
-                        @foreach (collect($roles['data'] ?? [])->pluck('niveau')->filter()->unique() as $niveau)
-                            <option value="{{ $niveau }}">{{ ucfirst($niveau) }}</option>
+                        @foreach (collect($roles['data'] ?? [])->pluck('type_role')->filter()->unique('id') as $typeRole)
+                            <option value="{{ $typeRole['id'] }}">{{ $typeRole['libelle'] }}</option>
                         @endforeach
                     </select>
                 </div>
@@ -105,24 +106,19 @@
                             <tr>
                                 <th>Profil</th>
                                 <th>Description</th>
-                                <th>Niveau d'accès</th>
+                                <th>Type de rôle</th>
                                 <th>Statut</th>
                                 <th class="actions-cell">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             @forelse(($roles['data'] ?? []) as $role)
-                                <tr data-niveau="{{ $role['niveau'] ?? '' }}" data-statut="{{ ($role['est_actif'] ?? false) ? '1' : '0' }}">
+                                <tr data-type-role="{{ data_get($role, 'type_role.id', '') }}" data-statut="{{ ($role['est_actif'] ?? false) ? '1' : '0' }}">
                                     <td><strong>{{ $role['nom'] ?? '-' }}</strong></td>
                                     <td>{{ $role['description'] ?? '-' }}</td>
                                     <td>
-                                        <span
-                                            class="badge 
-                                    @if ($role['niveau'] == 'systeme') badge-danger
-                                    @elseif($role['niveau'] == 'admin_metier') badge-purple
-                                    @elseif($role['niveau'] == 'gestionnaire') badge-info
-                                    @else badge-secondary @endif">
-                                            {{ ucfirst($role['niveau'] ?? '') }}
+                                        <span class="badge badge-secondary">
+                                            {{ data_get($role, 'type_role.libelle', '-') }}
                                         </span>
                                     </td>
                                     <td>
@@ -132,23 +128,14 @@
                                         </span>
                                     </td>
                                     <td class="actions-cell">
-                                        <div class="action-buttons">
-                                            <a href="{{ route('admin.roles.permissions', $role['id']) }}" class="action-btn"
-                                                title="Permissions">
-                                                <i class="fas fa-key"></i>
-                                            </a>
-                                            <a href="{{ route('admin.roles.edit', $role['id']) }}" class="action-btn"
-                                                title="Modifier">
-                                                <i class="fas fa-edit"></i>
-                                            </a>
+                                        <div class="table-actions-inline">
+                                            <button type="button" class="table-action" data-role-modal="edit" data-role='@json($role)'>Modifier</button>
                                             <form action="{{ route('admin.roles.destroy', $role['id']) }}" method="POST"
                                                 style="display: inline;">
                                                 @csrf
                                                 @method('DELETE')
-                                                <button type="submit" class="action-btn delete"
-                                                    onclick="return confirm('Supprimer ce rôle ?')" title="Supprimer">
-                                                    <i class="fas fa-trash"></i>
-                                                </button>
+                                                <button type="submit" class="table-action delete"
+                                                    onclick="return confirm('Supprimer ce rôle ?')">Supprimer</button>
                                             </form>
                                         </div>
                                     </td>
@@ -172,10 +159,10 @@
                         @foreach ($roles['links'] as $link)
                             @if ($link['url'])
                                 <a href="{{ $link['url'] }}" class="page-btn {{ $link['active'] ? 'active' : '' }}">
-                                    {!! $link['label'] !!}
+                                    {{ $loop->first ? '←' : ($loop->last ? '→' : $link['label']) }}
                                 </a>
                             @else
-                                <span class="page-btn disabled">{!! $link['label'] !!}</span>
+                                <span class="page-btn disabled">{{ $loop->first ? '←' : ($loop->last ? '→' : $link['label']) }}</span>
                             @endif
                         @endforeach
                     @else
@@ -187,27 +174,82 @@
                 </div>
             </section>
         </section>
+
+        <div id="role-modal" class="role-modal" hidden aria-hidden="true">
+            <div class="role-modal__backdrop" data-role-modal-close></div>
+            <section class="role-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="role-modal-title">
+                <div class="role-modal__header">
+                    <h2 id="role-modal-title">Ajouter un rôle</h2>
+                    <button type="button" class="role-modal__close" aria-label="Fermer" data-role-modal-close>&times;</button>
+                </div>
+                <form id="role-form" method="POST" action="{{ route('admin.roles.store') }}">
+                    @csrf
+                    <input type="hidden" name="_method" id="role-form-method" value="">
+                    <div class="form-group">
+                        <label for="role-nom">Nom *</label>
+                        <input id="role-nom" name="nom" class="form-control" required maxlength="50">
+                    </div>
+                    <div class="form-group">
+                        <label for="role-description">Description</label>
+                        <textarea id="role-description" name="description" class="form-control" rows="3" maxlength="255"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="role-type">Type de rôle *</label>
+                        <select id="role-type" name="type_role_id" class="form-control" required>
+                            <option value="">Sélectionnez un type</option>
+                            @foreach($typeRoles as $typeRole)
+                                <option value="{{ $typeRole['id'] }}">{{ $typeRole['libelle'] }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="role-status">Statut *</label>
+                        <select id="role-status" name="est_actif" class="form-control" required>
+                            <option value="1">Actif</option>
+                            <option value="0">Inactif</option>
+                        </select>
+                    </div>
+                    <div class="actions-group" style="justify-content:flex-end; margin-top:24px;">
+                        <button type="button" class="btn-secondary" data-role-modal-close>Annuler</button>
+                        <button type="submit" class="btn-primary" id="role-form-submit">Ajouter le rôle</button>
+                    </div>
+                </form>
+            </section>
+        </div>
     </main>
+
+    @push('styles')
+    <style>
+        .role-modal[hidden] { display: none; }
+        .role-modal { position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; padding: 1rem; }
+        .role-modal__backdrop { position: absolute; inset: 0; background: rgba(17, 24, 39, .55); }
+        .role-modal__dialog { position: relative; width: min(100%, 560px); max-height: calc(100vh - 2rem); overflow: auto; background: #fff; border-radius: 12px; padding: 1.5rem; box-shadow: 0 24px 50px rgba(0, 0, 0, .2); }
+        .role-modal__header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; }
+        .role-modal__header h2 { margin: 0; font-size: 1.25rem; }
+        .role-modal__close { border: 0; background: none; font-size: 2rem; line-height: 1; cursor: pointer; }
+        .role-modal .form-group { margin-bottom: 1rem; }
+    </style>
+    @endpush
 
     @push('scripts')
     <script>
         (function () {
             const btnFiltrer = document.getElementById('btn-filtrer');
             const btnReset = document.getElementById('btn-reset-filtres');
-            const selectNiveau = document.getElementById('filter-niveau');
+            const selectTypeRole = document.getElementById('filter-type-role');
             const selectStatut = document.getElementById('filter-statut');
-            const rows = document.querySelectorAll('#moduleTable tbody tr[data-niveau]');
+            const rows = document.querySelectorAll('#moduleTable tbody tr[data-type-role]');
             const emptyMessage = document.getElementById('empty-message-filtre');
 
             function applyFilters() {
-                const niveau = selectNiveau.value;
+                const typeRole = selectTypeRole.value;
                 const statut = selectStatut.value;
                 let visibleCount = 0;
 
                 rows.forEach(function (row) {
-                    const matchNiveau = !niveau || row.dataset.niveau === niveau;
+                    const matchTypeRole = !typeRole || row.dataset.typeRole === typeRole;
                     const matchStatut = !statut || row.dataset.statut === statut;
-                    const visible = matchNiveau && matchStatut;
+                    const visible = matchTypeRole && matchStatut;
 
                     row.style.display = visible ? '' : 'none';
                     if (visible) visibleCount++;
@@ -222,11 +264,57 @@
 
             if (btnReset) {
                 btnReset.addEventListener('click', function () {
-                    selectNiveau.value = '';
+                    selectTypeRole.value = '';
                     selectStatut.value = '';
                     applyFilters();
                 });
             }
+
+            const modal = document.getElementById('role-modal');
+            const roleForm = document.getElementById('role-form');
+            const methodField = document.getElementById('role-form-method');
+            const nomField = document.getElementById('role-nom');
+            const descriptionField = document.getElementById('role-description');
+            const typeField = document.getElementById('role-type');
+            const statusField = document.getElementById('role-status');
+            const title = document.getElementById('role-modal-title');
+            const submit = document.getElementById('role-form-submit');
+            const storeUrl = @json(route('admin.roles.store'));
+            const updateBaseUrl = @json(route('admin.roles.index'));
+
+            function openRoleModal(role) {
+                const editing = Boolean(role);
+                title.textContent = editing ? 'Modifier le rôle' : 'Ajouter un rôle';
+                submit.textContent = editing ? 'Enregistrer les modifications' : 'Ajouter le rôle';
+                roleForm.action = editing ? `${updateBaseUrl}/${role.id}` : storeUrl;
+                methodField.value = editing ? 'PUT' : '';
+                nomField.value = role?.nom ?? '';
+                descriptionField.value = role?.description ?? '';
+                typeField.value = role?.type_role_id ?? '';
+                statusField.value = role ? (role.est_actif ? '1' : '0') : '1';
+                modal.hidden = false;
+                modal.setAttribute('aria-hidden', 'false');
+                nomField.focus();
+            }
+
+            function closeRoleModal() {
+                modal.hidden = true;
+                modal.setAttribute('aria-hidden', 'true');
+                roleForm.reset();
+            }
+
+            document.querySelectorAll('[data-role-modal="create"]').forEach((button) => {
+                button.addEventListener('click', () => openRoleModal(null));
+            });
+            document.querySelectorAll('[data-role-modal="edit"]').forEach((button) => {
+                button.addEventListener('click', () => openRoleModal(JSON.parse(button.dataset.role)));
+            });
+            document.querySelectorAll('[data-role-modal-close]').forEach((button) => {
+                button.addEventListener('click', closeRoleModal);
+            });
+            document.addEventListener('keydown', (event) => {
+                if (event.key === 'Escape' && !modal.hidden) closeRoleModal();
+            });
         })();
     </script>
     @endpush

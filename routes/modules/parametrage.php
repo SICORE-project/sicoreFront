@@ -8,6 +8,7 @@ use App\Http\Controllers\Parametrage\LieuServiceController;
 use App\Http\Controllers\Parametrage\DiplomesController;
 use App\Http\Controllers\Parametrage\SyndicatController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Admin\LieuServiceController;
 
 /*
 |--------------------------------------------------------------------------
@@ -49,6 +50,12 @@ Route::middleware('sicore.auth')
         Route::view('/parametres/ief', 'pages.parametres.ief')
             ->name('parametres.ief');
 
+        Route::prefix('lieux-service')->name('parametres.lieux-service.')->group(function (): void {
+            Route::get('/', [LieuServiceController::class, 'index'])->name('index');
+            Route::post('/', [LieuServiceController::class, 'store'])->name('store');
+            Route::put('/{id}', [LieuServiceController::class, 'update'])->whereNumber('id')->name('update');
+            Route::delete('/{id}', [LieuServiceController::class, 'destroy'])->whereNumber('id')->name('destroy');
+        });
         Route::middleware('sicore.permission:parametrage.disciplines.consulter')->group(function (): void {
             Route::get('/parametres/disciplines', [DisciplineController::class, 'index'])
                 ->name('parametres.disciplines.index');
@@ -72,16 +79,16 @@ Route::middleware('sicore.auth')
         Route::get('/parametres/ia/{ia}', [InspectionAcademieController::class, 'show'])
             ->name('parametres.ia.show');
 
-        Route::get('/parametres/lieux-service', [LieuServiceController::class, 'index'])
-            ->name('parametres.lieux-service.index');
-        Route::post('/parametres/lieux-service', [LieuServiceController::class, 'store'])
-            ->name('parametres.lieux-service.store');
-        Route::put('/parametres/lieux-service/{lieu}', [LieuServiceController::class, 'update'])
-            ->name('parametres.lieux-service.update');
-        Route::patch('/parametres/lieux-service/{lieu}/statut', [LieuServiceController::class, 'updateStatus'])
-            ->name('parametres.lieux-service.status');
-        Route::post('/parametres/lieux-service/{lieu}/affectations', [LieuServiceController::class, 'storeAssignment'])
-            ->name('parametres.lieux-service.affectations.store');
+//         Route::get('/parametres/lieux-service', [LieuServiceController::class, 'index'])
+//             ->name('parametres.lieux-service.index');
+//         Route::post('/parametres/lieux-service', [LieuServiceController::class, 'store'])
+//             ->name('parametres.lieux-service.store');
+//         Route::put('/parametres/lieux-service/{lieu}', [LieuServiceController::class, 'update'])
+//             ->name('parametres.lieux-service.update');
+//         Route::patch('/parametres/lieux-service/{lieu}/statut', [LieuServiceController::class, 'updateStatus'])
+//             ->name('parametres.lieux-service.status');
+//         Route::post('/parametres/lieux-service/{lieu}/affectations', [LieuServiceController::class, 'storeAssignment'])
+//             ->name('parametres.lieux-service.affectations.store');
 
         Route::get('/parametres/institutions-financieres', [InstitutionFinanciereController::class, 'index'])
             ->name('parametres.institutions-financieres');
