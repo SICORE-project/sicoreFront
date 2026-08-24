@@ -5,7 +5,6 @@ use App\Http\Controllers\Admin\PermissionController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\TypeRoleController;
 use App\Http\Controllers\Admin\UserController;
-use App\Http\Controllers\Admin\StructureOrganisationnelleController;
 use App\Http\Controllers\DashboardController;
 
 /*
@@ -47,17 +46,12 @@ Route::middleware('sicore.auth')
         Route::get('/utilisateurs/permissions', [PermissionController::class, 'index'])
             ->name('utilisateurs.permissions');
 
-        Route::get('/utilisateurs/{id}', [UserController::class, 'show'])->name('utilisateurs.show');
-        Route::get('/utilisateurs/{id}/modifier', [UserController::class, 'edit'])->name('utilisateurs.edit');
-        Route::put('/utilisateurs/{id}', [UserController::class, 'update'])->name('utilisateurs.update');
-        Route::delete('/utilisateurs/{id}', [UserController::class, 'destroy'])->name('utilisateurs.destroy');
-        Route::post('/utilisateurs/{id}/toggle-status', [UserController::class, 'toggleStatus'])->name('utilisateurs.toggle-status');
-        Route::prefix('utilisateurs/structures')->name('utilisateurs.structures.')->group(function (): void {
-            Route::get('/', [StructureOrganisationnelleController::class, 'index'])->name('index');
-            Route::post('/', [StructureOrganisationnelleController::class, 'store'])->name('store');
-            Route::put('/{id}', [StructureOrganisationnelleController::class, 'update'])->name('update');
-            Route::delete('/{id}', [StructureOrganisationnelleController::class, 'destroy'])->name('destroy');
-        });
+        Route::get('/utilisateurs/structures', fn () => redirect()->route('parametres.structures-organisationnelles.index'));
+        Route::get('/utilisateurs/{id}', [UserController::class, 'show'])->whereNumber('id')->name('utilisateurs.show');
+        Route::get('/utilisateurs/{id}/modifier', [UserController::class, 'edit'])->whereNumber('id')->name('utilisateurs.edit');
+        Route::put('/utilisateurs/{id}', [UserController::class, 'update'])->whereNumber('id')->name('utilisateurs.update');
+        Route::delete('/utilisateurs/{id}', [UserController::class, 'destroy'])->whereNumber('id')->name('utilisateurs.destroy');
+        Route::post('/utilisateurs/{id}/toggle-status', [UserController::class, 'toggleStatus'])->whereNumber('id')->name('utilisateurs.toggle-status');
         Route::prefix('roles')->name('admin.roles.')->group(function (): void {
             Route::get('/', [RoleController::class, 'index'])->name('index');
             Route::get('/create', [RoleController::class, 'create'])->name('create');

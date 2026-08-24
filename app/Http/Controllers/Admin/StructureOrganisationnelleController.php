@@ -31,7 +31,7 @@ class StructureOrganisationnelleController extends Controller
     public function destroy(int $id)
     {
         $response = $this->users->deleteStructure($id);
-        return redirect()->route('utilisateurs.structures.index')->with($response['success'] ? 'success' : 'error', $response['message'] ?? 'Suppression impossible.');
+        return redirect()->route('parametres.structures-organisationnelles.index')->with($response['success'] ? 'success' : 'error', $response['message'] ?? 'Suppression impossible.');
     }
 
     private function save(Request $request, ?int $id = null)
@@ -47,6 +47,6 @@ class StructureOrganisationnelleController extends Controller
         ]);
         $response = $this->users->saveStructure($data, $id);
 
-        return redirect()->route('utilisateurs.structures.index')->with($response['success'] ? 'success' : 'error', $response['message'] ?? 'Enregistrement impossible.');
+        return redirect()->route('parametres.structures-organisationnelles.index')->with($response['success'] ? 'success' : 'error', $response['message'] ?? 'Enregistrement impossible.');
     }
 }

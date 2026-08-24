@@ -12,7 +12,7 @@
         <div class="actions-row"><a href="{{ route('utilisateurs.index') }}" class="btn-secondary">Utilisateurs</a><button class="btn-primary" type="button" data-structure-create><i class="fa-solid fa-plus"></i> Ajouter une structure</button></div>
         <section class="table-card"><div class="table-responsive"><table class="table"><thead><tr><th>Code</th><th>Libellé</th><th>Type</th><th>Périmètre</th><th>Statut</th><th>Actions</th></tr></thead><tbody>
         @forelse($structures as $structure)
-            <tr><td>{{ $structure['code'] }}</td><td>{{ $structure['libelle'] }}</td><td>{{ $structure['type'] }}</td><td>{{ ucfirst($structure['perimetre']) }}</td><td><span class="badge {{ ($structure['est_actif'] ?? true) ? 'badge-active' : 'badge-suspended' }}">{{ ($structure['est_actif'] ?? true) ? 'Actif' : 'Inactif' }}</span></td><td><div class="table-actions-inline"><button type="button" class="table-action" data-structure-edit data-structure='@json($structure)'>Modifier</button><form method="POST" action="{{ route('utilisateurs.structures.destroy', $structure['id']) }}" style="display:inline">@csrf @method('DELETE')<button class="table-action delete" onclick="return confirm('Supprimer cette structure ? Cette action est impossible si elle est liée à un utilisateur.')">Supprimer</button></form></div></td></tr>
+            <tr><td>{{ $structure['code'] }}</td><td>{{ $structure['libelle'] }}</td><td>{{ $structure['type'] }}</td><td>{{ ucfirst($structure['perimetre']) }}</td><td><span class="badge {{ ($structure['est_actif'] ?? true) ? 'badge-active' : 'badge-suspended' }}">{{ ($structure['est_actif'] ?? true) ? 'Actif' : 'Inactif' }}</span></td><td><div class="table-actions-inline"><button type="button" class="table-action" data-structure-edit data-structure='@json($structure)'>Modifier</button><form method="POST" action="{{ route('parametres.structures-organisationnelles.destroy', $structure['id']) }}" style="display:inline">@csrf @method('DELETE')<button class="table-action delete" onclick="return confirm('Supprimer cette structure ? Cette action est impossible si elle est liée à un utilisateur.')">Supprimer</button></form></div></td></tr>
         @empty <tr><td colspan="6" class="text-center">Aucune structure organisationnelle.</td></tr>@endforelse
         </tbody></table></div></section>
     </section>
@@ -37,7 +37,7 @@
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', () => {
- const structures=@json($structures), ias=@json($ias), modal=document.getElementById('structure-modal'), form=document.getElementById('structure-form'), base=@json(route('utilisateurs.structures.index'));
+ const structures=@json($structures), ias=@json($ias), modal=document.getElementById('structure-modal'), form=document.getElementById('structure-form'), base=@json(route('parametres.structures-organisationnelles.index'));
  const type=document.getElementById('structure-type'), perimetre=document.getElementById('structure-perimetre'), iaGroup=document.getElementById('structure-ia-group'), iefGroup=document.getElementById('structure-ief-group'), ia=document.getElementById('structure-ia-id'), ief=document.getElementById('structure-ief-id'), nationalTypes=['DRH','DAGE','DECPC'];
  const label=item=>[item.code,item.libelle].filter(Boolean).join(' — ');
  function fillIa(selected=''){ia.replaceChildren(new Option('Sélectionner une IA',''));ias.forEach(item=>ia.add(new Option(label(item),item.id)));ia.value=selected}

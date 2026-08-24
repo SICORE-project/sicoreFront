@@ -4,7 +4,6 @@
 @section('content')
   
   <x-module-page slug="utilisateurs" />
-  <div class="actions-row" style="justify-content:flex-end"><a class="btn-secondary" href="{{ route('utilisateurs.structures.index') }}">Gérer les structures</a></div>
 
   <x-module-indemnite
     type="modal"
@@ -177,15 +176,6 @@
           </select>
         </div>
         <input id="edit-user-status" name="statut" type="hidden" value="actif">
-        <div class="form-group">
-          <label for="edit-user-password">Nouveau mot de passe</label>
-          <input class="form-control" id="edit-user-password" name="password" type="password" minlength="8" autocomplete="new-password">
-          <small>Laissez vide pour conserver le mot de passe actuel.</small>
-        </div>
-        <div class="form-group">
-          <label for="edit-user-password-confirmation">Confirmation du mot de passe</label>
-          <input class="form-control" id="edit-user-password-confirmation" name="password_confirmation" type="password" minlength="8" autocomplete="new-password">
-        </div>
       </div>
       <div class="form-actions">
         <button class="btn-secondary" type="button" id="edit-user-toggle-status"></button>
@@ -516,8 +506,6 @@
             document.getElementById('edit-user-role').value = user.role?.id || '';
             document.getElementById('edit-user-structure').value = user.structure_organisationnelle?.id || '';
             document.getElementById('edit-user-status').value = user.statut || 'actif';
-            document.getElementById('edit-user-password').value = '';
-            document.getElementById('edit-user-password-confirmation').value = '';
             editStatusButton.dataset.userId = user.id;
             editStatusButton.dataset.userName = user.nom_complet || user.email || 'cet utilisateur';
             editStatusButton.dataset.currentStatus = user.statut || 'actif';
