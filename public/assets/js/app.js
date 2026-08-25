@@ -464,7 +464,7 @@
       '<p data-confirm-message>Confirmer cette action ?</p>',
       '<div class="confirm-actions">',
       '<button class="btn-secondary" type="button" data-confirm-cancel>Annuler</button>',
-      '<button class="btn-primary" type="button" data-confirm-accept>Confirmer</button>',
+      '<button class="btn-danger-soft" type="button" data-confirm-accept>Confirmer la suppression</button>',
       "</div>",
       "</div>"
     ].join("");
@@ -482,6 +482,13 @@
       modal.hidden = true;
       cancelButton.removeEventListener("click", close);
       acceptButton.removeEventListener("click", accept);
+      document.removeEventListener("keydown", onKeydown);
+    }
+
+    function onKeydown(event) {
+      if (event.key === "Escape") {
+        close();
+      }
     }
 
     function accept() {
@@ -495,6 +502,7 @@
     modal.hidden = false;
     cancelButton.addEventListener("click", close);
     acceptButton.addEventListener("click", accept);
+    document.addEventListener("keydown", onKeydown);
     cancelButton.focus();
   }
 
@@ -736,4 +744,3 @@
     notify: notify
   };
 })();
-

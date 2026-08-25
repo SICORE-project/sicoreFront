@@ -95,6 +95,11 @@
                     <input type="hidden" name="est_actif" value="{{ $active ? '0' : '1' }}">
                     <button class="icon-action" type="submit" title="{{ $active ? 'Désactiver' : 'Activer' }}"><i class="fa-solid {{ $active ? 'fa-toggle-on' : 'fa-toggle-off' }}"></i></button>
                   </form>
+                  <form class="inline-form" method="POST" action="{{ route('parametres.institutions-financieres.destroy', ['institution' => $institutionId]) }}" onsubmit="return confirm('Supprimer définitivement cette institution financière ?');">
+                    @csrf
+                    @method('DELETE')
+                    <button class="icon-action delete" type="submit" title="Supprimer" aria-label="Supprimer {{ data_get($institution, 'libelle') }}"><i class="fa-solid fa-trash-can"></i></button>
+                  </form>
                 </td>
               </tr>
             @endforeach

@@ -140,6 +140,8 @@ Route::middleware('sicore.auth')
             ->name('parametres.institutions-financieres.update');
         Route::patch('/parametres/institutions-financieres/{institution}/statut', [InstitutionFinanciereController::class, 'updateStatus'])
             ->name('parametres.institutions-financieres.status');
+        Route::delete('/parametres/institutions-financieres/{institution}', [InstitutionFinanciereController::class, 'destroy'])
+            ->whereNumber('institution')->name('parametres.institutions-financieres.destroy');
         Route::post('/parametres/comptes-bancaires-enseignants', [InstitutionFinanciereController::class, 'storeTeacherBankAccount'])
             ->name('parametres.comptes-bancaires-enseignants.store');
         Route::middleware('diplomes.manage')->group(function (): void {

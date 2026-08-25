@@ -120,6 +120,23 @@ class InstitutionFinanciereService
             'errors' => $response->json('errors', []),
         ];
     }
+    public function delete(string|int $id): array
+    {
+        try {
+            $response = $this->apiClient->delete("parametrage/institutions-financieres/{$id}");
+        } catch (ConnectionException) {
+            return ['success' => false, 'message' => 'Le service backend est momentanément inaccessible.', 'errors' => []];
+        }
+
+        return [
+            'success' => $response->successful(),
+            'unauthorized' => $response->unauthorized(),
+            'message' => $response->json('message', $response->successful()
+                ? 'Institution financière supprimée avec succès.'
+                : 'Impossible de supprimer l’institution financière.'),
+            'errors' => (array) $response->json('errors', []),
+        ];
+    }
     private function emptyResult(int $page, int $perPage, string $message): array
     {
         return [

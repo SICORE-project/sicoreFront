@@ -16,7 +16,6 @@ class RubriquePaieController extends Controller
             'search' => ['nullable', 'string', 'max:100'],
             'type' => ['nullable', 'in:gain,retenue'],
             'periodicite' => ['nullable', 'in:mensuelle,ponctuelle,annuelle'],
-            'est_actif' => ['nullable', 'boolean'],
             'page' => ['nullable', 'integer', 'min:1'],
         ]);
 
@@ -79,14 +78,6 @@ class RubriquePaieController extends Controller
             'libelle' => ['required', 'string', 'max:100'],
             'type' => ['required', 'in:gain,retenue'],
             'periodicite' => ['required', 'in:mensuelle,ponctuelle,annuelle'],
-            'est_cotisable' => ['required', 'boolean'],
-            'est_imposable' => ['required', 'boolean'],
-            'est_afficher_bulletin' => ['required', 'boolean'],
-            'taux_defaut' => ['nullable', 'numeric', 'min:0', 'max:100', 'decimal:0,2'],
-            'montant_defaut' => ['nullable', 'numeric', 'min:0', 'max:9999999999999.99', 'decimal:0,2'],
-            'formule_calcul' => ['nullable', 'string', 'max:255'],
-            'description' => ['nullable', 'string', 'max:1000'],
-            'est_actif' => ['required', 'boolean'],
         ];
     }
 }
