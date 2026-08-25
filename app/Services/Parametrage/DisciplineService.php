@@ -16,8 +16,8 @@ class DisciplineService
             $response = $this->apiClient->get('parametrage/disciplines', array_filter([
                 'search' => $filters['search'] ?? null,
                 'statut' => $filters['statut'] ?? null,
-                'sort' => $filters['sort'] ?? 'code',
-                'direction' => $filters['direction'] ?? 'asc',
+                'sort' => $filters['sort'] ?? 'created_at',
+                'direction' => $filters['direction'] ?? 'desc',
                 'page' => $page,
                 'per_page' => 10,
             ], fn ($value) => $value !== null && $value !== ''));
@@ -97,6 +97,20 @@ class DisciplineService
             'message' => $response->json('message', $response->successful() ? 'Statut de la discipline mis à jour.' : 'Impossible de modifier le statut de la discipline.'),
             'data' => $response->json('data'),
             'audit' => $response->json('audit'),
+        ];
+    }
+
+    public function delete(string|int $id): array
+    {
+        try {
+            $response = $this->apiClient->delete("parametrage/disciplines/{$id}");
+        } catch (ConnectionException) {
+            return ['success' => false, 'message' => 'Le service backend est momentanément inaccessible.'];
+        }
+
+        return [
+            'success' => $response->successful(),
+            'message' => $response->json('message', $response->successful() ? 'Discipline supprimée.' : 'Impossible de supprimer la discipline.'),
         ];
     }
 

@@ -26,7 +26,7 @@ class EnsureSicorePermission
             ->filter()
             ->all();
 
-        if (in_array($role, ['administrateur', 'admin', 'super-admin'], true) || in_array($permission, $permissions, true)) {
+        if (in_array($role, ['administrateur', 'admin', 'super-admin', 'super_admin'], true) || in_array($permission, $permissions, true)) {
             return true;
         }
 

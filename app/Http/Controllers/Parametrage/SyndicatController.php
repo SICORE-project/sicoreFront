@@ -3,20 +3,20 @@
 namespace App\Http\Controllers\Parametrage;
 
 use App\Http\Controllers\Controller;
+use App\Http\Middleware\EnsureSicorePermission;
 use App\Services\Api\ApiClient;
 use Illuminate\Http\Client\ConnectionException;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\View\View;
 
 class SyndicatController extends Controller
 {
-    public function __construct(private readonly ApiClient $apiClient)
-    {
-    }
-// method to display a listing of the syndicats
+    public function __construct(private readonly ApiClient $apiClient) {}
+
+    // method to display a listing of the syndicats
     public function index(Request $request): View
     {
         $syndicats = collect();
@@ -68,15 +68,20 @@ class SyndicatController extends Controller
             ['path' => $request->url(), 'query' => $request->query()],
         );
 
+        $canManage = app(EnsureSicorePermission::class)
+            ->allows($request, 'parametrage.syndicats.manage');
+
         return view('pages.parametres.syndicats.index', compact(
             'syndicats',
             'apiError',
             'stats',
             'search',
             'statut',
+            'canManage',
         ));
     }
-// method to show the form for creating a new syndicat
+
+    // method to show the form for creating a new syndicat
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
@@ -195,12 +200,14 @@ class SyndicatController extends Controller
     public function update(Request $request, int $id): RedirectResponse
     {
         $validated = $request->validate([
+            'code' => ['required', 'string', 'max:20'],
             'libelle' => ['required', 'string', 'max:100'],
             'montant_check_off' => ['nullable', 'numeric', 'min:0', 'decimal:0,2', 'max:9999999999.99'],
             'montant_oeuvre_sociale' => ['nullable', 'numeric', 'min:0', 'decimal:0,2', 'max:9999999999.99'],
             'est_actif' => ['required', 'boolean'],
         ]);
 
+        $validated['code'] = mb_strtoupper(trim($validated['code']));
         $validated['libelle'] = trim($validated['libelle']);
         $validated['est_actif'] = (bool) $validated['est_actif'];
 
@@ -230,7 +237,7 @@ class SyndicatController extends Controller
 
         if ($response->successful()) {
             return redirect()->route('parametres.syndicats.index')
-                ->with('success', 'Syndicat supprimé avec succès.');
+                ->with('success', $response->json('message') ?? 'Syndicat supprimé avec succès.');
         }
 
         return back()->with(
@@ -238,5 +245,4 @@ class SyndicatController extends Controller
             $response->json('message') ?? 'Erreur lors de la suppression du syndicat.',
         );
     }
-
 }

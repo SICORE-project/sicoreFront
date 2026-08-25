@@ -9,10 +9,6 @@
       <span class="title-icon" aria-hidden="true"><i class="fa-solid fa-building-columns"></i></span>
       <div><h1>Institutions financières</h1><p>Banques et établissements financiers enregistrés dans SICORE</p></div>
     </div>
-    <div class="search-wrap">
-      <label class="sr-only" for="institutionSearch">Rechercher une institution financière</label>
-      <input class="search-input" id="institutionSearch" type="search" placeholder="Code, nom, sigle, type..." data-table-filter="#institutionsTable">
-    </div>
   </header>
 
   <section class="content-area">
@@ -48,18 +44,16 @@
       <div class="actions-group">
         <button class="btn-primary" type="button" id="newInstitution" data-modal-open="institution-form-modal">+ Nouvelle institution</button>
         <button class="btn-secondary" type="button" data-modal-open="teacher-bank-account-modal">Associer à un enseignant</button>
-        <input class="sr-only" id="importInstitutionsFile" type="file" accept=".csv,.xlsx,.xls">
-        <label class="btn-secondary" for="importInstitutionsFile">Importer</label>
-        <label class="sr-only" for="institutionStatusFilter">Filtrer par statut</label>
-        <select class="form-select" id="institutionStatusFilter">
-          <option value="">Tous les statuts</option>
-          <option value="actif">Actifs</option>
-          <option value="inactif">Inactifs</option>
-        </select>
-        <a class="btn-secondary" href="{{ route('parametres.institutions-financieres') }}">Actualiser</a>
-        <button class="btn-secondary" id="exportInstitutions" type="button">Exporter</button>
+        <button class="btn-secondary" id="exportInstitutions" type="button"><i class="fa-solid fa-file-export"></i> Exporter</button>
       </div>
     </div>
+
+    <form class="filter-panel institution-filters" id="institutionFilterForm" method="GET" action="{{ route('parametres.institutions-financieres') }}">
+      <div class="form-group"><label for="institutionSearch">Rechercher</label><input class="form-control" id="institutionSearch" name="search" type="search" value="{{ request('search') }}" placeholder="Code, libellé ou sigle"></div>
+      <div class="form-group"><label for="institutionTypeFilter">Type</label><input class="form-control" id="institutionTypeFilter" name="type_institution" value="{{ request('type_institution') }}" placeholder="Banque, microfinance..."></div>
+      <div class="form-group"><label for="institutionStatusFilter">Statut</label><select class="form-control" id="institutionStatusFilter" name="est_actif"><option value="">Tous les statuts</option><option value="1" @selected(request('est_actif') === '1')>Actives</option><option value="0" @selected(request('est_actif') === '0')>Inactives</option></select></div>
+      <div class="actions-group"><a class="btn-secondary" href="{{ route('parametres.institutions-financieres') }}">Réinitialiser</a></div>
+    </form>
 
     @if ($error)
       <div class="alert alert-error" role="alert">{{ $error }}</div>
@@ -75,8 +69,8 @@
       <div class="table-responsive">
         <table class="table" id="institutionsTable">
           <thead><tr>
-            <th scope="col">Code</th><th scope="col">Nom ou libellé</th><th scope="col">Sigle</th>
-            <th scope="col">Type d’institution</th><th scope="col">Téléphone</th><th scope="col">E-mail</th>
+            <th scope="col">Nom ou libellé</th>
+            <th scope="col">Téléphone</th>
             <th scope="col">Adresse</th><th scope="col">Statut</th><th scope="col" class="actions-cell">Actions</th>
           </tr></thead>
           <tbody>
@@ -88,22 +82,18 @@
                 $institutionId = data_get($institution, 'id', data_get($institution, 'uuid', data_get($institution, 'code')));
               @endphp
               <tr data-institution-status="{{ $active ? 'actif' : 'inactif' }}">
-                <td>{{ data_get($institution, 'code', '—') }}</td>
                 <td>{{ data_get($institution, 'nom', data_get($institution, 'libelle', '—')) }}</td>
-                <td>{{ data_get($institution, 'sigle', '—') }}</td>
-                <td>{{ data_get($institution, 'type.nom', data_get($institution, 'type_institution', data_get($institution, 'type', '—'))) }}</td>
                 <td>{{ data_get($institution, 'telephone', '—') }}</td>
-                <td>{{ data_get($institution, 'email', '—') }}</td>
                 <td>{{ data_get($institution, 'adresse', '—') }}</td>
                 <td><span class="badge {{ $active ? 'badge-active' : 'badge-suspended' }}">{{ $active ? 'Actif' : 'Inactif' }}</span></td>
                 <td class="actions-cell">
-                  <button class="table-action" type="button" title="Voir" data-modal-open="view-institution-modal" data-institution-view='@json($institution)'>Voir</button>
-                  <button class="table-action" type="button" title="Modifier" data-modal-open="institution-form-modal" data-update-url="{{ route('parametres.institutions-financieres.update', ['institution' => $institutionId]) }}" data-institution-edit='@json($institution)'>Modifier</button>
+                  <button class="icon-action" type="button" title="Consulter" data-modal-open="view-institution-modal" data-institution-view='@json($institution)'><i class="fa-solid fa-eye"></i></button>
+                  <button class="icon-action" type="button" title="Modifier" data-modal-open="institution-form-modal" data-update-url="{{ route('parametres.institutions-financieres.update', ['institution' => $institutionId]) }}" data-institution-edit='@json($institution)'><i class="fa-solid fa-pen-to-square"></i></button>
                   <form class="inline-form" method="POST" action="{{ route('parametres.institutions-financieres.status', ['institution' => $institutionId]) }}" onsubmit="return confirm('{{ $active ? 'Désactiver cette institution ? Elle ne sera plus proposée dans les nouveaux dossiers.' : 'Activer cette institution ? Elle pourra être sélectionnée dans les nouveaux dossiers.' }}');">
                     @csrf
                     @method('PATCH')
                     <input type="hidden" name="est_actif" value="{{ $active ? '0' : '1' }}">
-                    <button class="table-action" type="submit">{{ $active ? 'Désactiver' : 'Activer' }}</button>
+                    <button class="icon-action" type="submit" title="{{ $active ? 'Désactiver' : 'Activer' }}"><i class="fa-solid {{ $active ? 'fa-toggle-on' : 'fa-toggle-off' }}"></i></button>
                   </form>
                 </td>
               </tr>
@@ -118,7 +108,7 @@
            href="{{ $pagination['current_page'] > 1 ? route('parametres.institutions-financieres', ['page' => $pagination['current_page'] - 1]) : '#' }}"
            aria-label="Page précédente" @if ($pagination['current_page'] <= 1) aria-disabled="true" tabindex="-1" @endif>&larr;</a>
         @for ($page = 1; $page <= $pagination['last_page']; $page++)
-          <a class="page-btn {{ $page === $pagination['current_page'] ? 'active' : '' }}" href="{{ route('parametres.institutions-financieres', ['page' => $page]) }}" @if ($page === $pagination['current_page']) aria-current="page" @endif>{{ $page }}</a>
+          <a class="page-btn {{ $page === $pagination['current_page'] ? 'active' : '' }}" href="{{ route('parametres.institutions-financieres', array_merge(request()->except('page'), ['page' => $page])) }}" @if ($page === $pagination['current_page']) aria-current="page" @endif>{{ $page }}</a>
         @endfor
         <a class="page-btn {{ $pagination['current_page'] >= $pagination['last_page'] ? 'disabled' : '' }}"
            href="{{ $pagination['current_page'] < $pagination['last_page'] ? route('parametres.institutions-financieres', ['page' => $pagination['current_page'] + 1]) : '#' }}"
@@ -129,15 +119,18 @@
 </main>
 
 <x-module-indemnite type="modal" id="view-institution-modal" title="Détails de l’institution financière">
+  <div class="institution-detail-hero">
+    <span class="institution-detail-logo"><i class="fa-solid fa-building-columns"></i></span>
+    <div><span class="institution-detail-kicker">Fiche institution</span><h3 data-view-field="nom">—</h3></div>
+  </div>
   <div class="form-grid form-grid--balanced institution-details">
-    <div class="form-group"><label>Code</label><p data-view-field="code">—</p></div>
-    <div class="form-group"><label>Sigle</label><p data-view-field="sigle">—</p></div>
-    <div class="form-group full"><label>Nom ou libellé</label><p data-view-field="nom">—</p></div>
-    <div class="form-group"><label>Type d’institution</label><p data-view-field="type">—</p></div>
-    <div class="form-group"><label>Statut</label><p data-view-field="statut">—</p></div>
-    <div class="form-group"><label>Téléphone</label><p data-view-field="telephone">—</p></div>
-    <div class="form-group"><label>E-mail</label><p data-view-field="email">—</p></div>
-    <div class="form-group full"><label>Adresse</label><p data-view-field="adresse">—</p></div>
+    <div class="institution-detail-item"><span class="detail-icon"><i class="fa-solid fa-barcode"></i></span><div><label>Code</label><p data-view-field="code">—</p></div></div>
+    <div class="institution-detail-item"><span class="detail-icon"><i class="fa-solid fa-signature"></i></span><div><label>Sigle</label><p data-view-field="sigle">—</p></div></div>
+    <div class="institution-detail-item"><span class="detail-icon"><i class="fa-solid fa-landmark"></i></span><div><label>Type d’institution</label><p data-view-field="type">—</p></div></div>
+    <div class="institution-detail-item"><span class="detail-icon"><i class="fa-solid fa-circle-check"></i></span><div><label>Statut</label><p data-view-field="statut">—</p></div></div>
+    <div class="institution-detail-item"><span class="detail-icon"><i class="fa-solid fa-phone"></i></span><div><label>Téléphone</label><p data-view-field="telephone">—</p></div></div>
+    <div class="institution-detail-item"><span class="detail-icon"><i class="fa-solid fa-envelope"></i></span><div><label>E-mail</label><p data-view-field="email">—</p></div></div>
+    <div class="institution-detail-item full"><span class="detail-icon"><i class="fa-solid fa-location-dot"></i></span><div><label>Adresse</label><p data-view-field="adresse">—</p></div></div>
   </div>
   <div class="form-actions"><button class="btn-secondary" type="button" data-modal-close>Fermer</button></div>
 </x-module-indemnite>
@@ -149,7 +142,6 @@
     @if ($errors->any())
       <div class="alert alert-error" role="alert"><strong>Veuillez corriger les champs obligatoires.</strong><ul>@foreach ($errors->all() as $message)<li>{{ $message }}</li>@endforeach</ul></div>
     @endif
-    <p class="form-required-note"><span class="required" aria-hidden="true">*</span> Champs obligatoires</p>
     <div class="form-grid form-grid--balanced">
       <div class="form-group"><label for="institutionCode">Code <span class="required" aria-hidden="true">*</span></label><input class="form-control" id="institutionCode" name="code" value="{{ old('code') }}" maxlength="30" required aria-required="true"></div>
       <div class="form-group"><label for="institutionSigle">Sigle <span class="required" aria-hidden="true">*</span></label><input class="form-control" id="institutionSigle" name="sigle" value="{{ old('sigle') }}" maxlength="30" required aria-required="true"></div>
@@ -158,7 +150,6 @@
       <div class="form-group"><label for="institutionTelephone">Téléphone <span class="form-optional">(facultatif)</span></label><input class="form-control" id="institutionTelephone" name="telephone" type="tel" value="{{ old('telephone') }}" maxlength="30"></div>
       <div class="form-group"><label for="institutionEmail">E-mail <span class="form-optional">(facultatif)</span></label><input class="form-control" id="institutionEmail" name="email" type="email" value="{{ old('email') }}" maxlength="255"></div>
       <div class="form-group" id="institutionStatusField"><label for="institutionStatut">Statut <span class="required" aria-hidden="true">*</span></label><select class="form-control" id="institutionStatut" name="statut" required aria-required="true"><option value="actif" @selected(old('statut', 'actif') === 'actif')>Actif</option><option value="inactif" @selected(old('statut') === 'inactif')>Inactif</option></select></div>
-      <aside class="objective-card full" id="institutionStatusCard" hidden><h3>Statut de l’institution</h3><p>Statut actuel : <strong id="institutionCurrentStatus">—</strong></p><small>Le changement de statut est géré séparément et ne sera pas envoyé lors de cette modification.</small></aside>
       <div class="form-group full"><label for="institutionAdresse">Adresse <span class="form-optional">(facultatif)</span></label><textarea class="form-control" id="institutionAdresse" name="adresse" rows="2" maxlength="500">{{ old('adresse') }}</textarea></div>
     </div>
     <div class="form-actions">
@@ -173,7 +164,6 @@
     @csrf    @if ($errors->bankAccount->any())
       <div class="alert alert-error" role="alert"><strong>Veuillez corriger le formulaire.</strong><ul>@foreach ($errors->bankAccount->all() as $message)<li>{{ $message }}</li>@endforeach</ul></div>
     @endif
-    <p class="form-required-note"><span class="required" aria-hidden="true">*</span> Champs obligatoires</p>
     <div class="form-grid form-grid--balanced">
       <div class="form-group full">
         <label for="bankTeacher">Enseignant <span class="required">*</span></label>
@@ -209,13 +199,45 @@
   </form>
 </x-module-indemnite>
 @endsection
+@push('styles')
+<style>
+  .institution-filters { align-items: end; padding: 20px; border: 1px solid #e2e8f0; border-radius: 16px; background: linear-gradient(135deg, #fff, #f8fafc); box-shadow: 0 8px 24px rgba(15, 23, 42, .05); }
+  .institution-filters .form-group:first-child { flex: 1 1 420px; }
+  .institution-filters .form-group { min-width: 210px; }
+  #institution-form-modal .modal-dialog,
+  #view-institution-modal .modal-dialog,
+  #teacher-bank-account-modal .modal-dialog { width: calc(100% - 32px); max-width: 960px; }
+  .institution-detail-hero { display: flex; align-items: center; gap: 16px; margin-bottom: 22px; padding: 20px; border-radius: 16px; background: linear-gradient(135deg, #3f8f68, #66ad82); color: #fff; }
+  .institution-detail-logo { display: grid; width: 58px; height: 58px; place-items: center; flex: 0 0 58px; border-radius: 16px; background: rgba(255,255,255,.16); font-size: 25px; }
+  .institution-detail-kicker { display: block; margin-bottom: 3px; color: #d1fae5; font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+  .institution-detail-hero h3 { margin: 0; color: #fff; font-size: 21px; }
+  .institution-details { gap: 14px; }
+  .institution-detail-item { display: flex; align-items: flex-start; gap: 12px; min-width: 0; padding: 15px; border: 1px solid #e2e8f0; border-radius: 14px; background: #fff; box-shadow: 0 5px 16px rgba(15,23,42,.04); }
+  .institution-detail-item.full { grid-column: 1 / -1; }
+  .institution-detail-item .detail-icon { display: grid; width: 38px; height: 38px; place-items: center; flex: 0 0 38px; border-radius: 10px; background: #ecfdf5; color: #047857; }
+  .institution-detail-item label { display: block; margin-bottom: 3px; color: #64748b; font-size: 12px; font-weight: 700; text-transform: uppercase; }
+  .institution-detail-item p { min-height: auto; margin: 0; padding: 0; border: 0; background: transparent; color: #0f172a; font-weight: 600; overflow-wrap: anywhere; }
+  #institutionsTable .actions-cell { white-space: nowrap; }
+</style>
+@endpush
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function () {
   const table = document.getElementById('institutionsTable');
   const statusFilter = document.getElementById('institutionStatusFilter');
   const exportButton = document.getElementById('exportInstitutions');
+  const filterForm = document.getElementById('institutionFilterForm');
+  const searchInput = document.getElementById('institutionSearch');
+  const typeInput = document.getElementById('institutionTypeFilter');
   if (!table || !statusFilter || !exportButton) return;
+
+  let filterTimer;
+  [searchInput, typeInput].forEach(function (input) {
+    input.addEventListener('input', function () {
+      window.clearTimeout(filterTimer);
+      filterTimer = window.setTimeout(function () { filterForm.requestSubmit(); }, 400);
+    });
+  });
 
   const valueOf = (institution, ...keys) => {
     for (const key of keys) {
@@ -253,8 +275,6 @@ document.addEventListener('DOMContentLoaded', function () {
   const methodOverride = document.getElementById('institutionMethod');
   const statusField = document.getElementById('institutionStatusField');
   const statusSelect = document.getElementById('institutionStatut');
-  const statusCard = document.getElementById('institutionStatusCard');
-  const currentStatus = document.getElementById('institutionCurrentStatus');
   const newButton = document.getElementById('newInstitution');
   const setField = (id, value) => { document.getElementById(id).value = value === '—' ? '' : value; };
   newButton.addEventListener('click', function () {
@@ -264,7 +284,6 @@ document.addEventListener('DOMContentLoaded', function () {
     statusSelect.disabled = false;
     statusSelect.required = true;
     statusField.hidden = false;
-    statusCard.hidden = true;
     form.reset();
     document.getElementById('institution-form-modal-title').textContent = 'Nouvelle institution financière';
   });
@@ -273,12 +292,10 @@ document.addEventListener('DOMContentLoaded', function () {
       form.dataset.mode = 'edit';
       form.action = button.dataset.updateUrl;
       methodOverride.disabled = false;
-      statusSelect.disabled = true;
-      statusSelect.required = false;
-      statusField.hidden = true;
-      statusCard.hidden = false;
+      statusSelect.disabled = false;
+      statusSelect.required = true;
+      statusField.hidden = false;
       const institution = JSON.parse(button.dataset.institutionEdit);
-      currentStatus.textContent = isActive(institution) ? 'Actif' : 'Inactif';
       document.getElementById('institution-form-modal-title').textContent = 'Modifier l’institution financière';
       setField('institutionCode', valueOf(institution, 'code'));
       setField('institutionSigle', valueOf(institution, 'sigle'));
@@ -294,14 +311,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
   statusFilter.addEventListener('change', function () {
-    let visible = 0;
-    table.querySelectorAll('tbody tr').forEach(function (row) {
-      const matches = !statusFilter.value || row.dataset.institutionStatus === statusFilter.value;
-      row.classList.toggle('is-hidden', !matches);
-      if (matches) visible++;
-    });
-    const empty = table.closest('.table-card').querySelector('.empty-message');
-    if (empty) empty.classList.toggle('show', visible === 0);
+    filterForm.requestSubmit();
   });
 
   exportButton.addEventListener('click', function () {

@@ -76,7 +76,7 @@
                 <td>DIS</td>
                 <td>Discipline</td>
                 <td><span class="badge badge-active">Actif</span></td>
-                <td class="actions-cell"><a class="icon-action" href="{{ route('parametres.disciplines.index') }}" title="Voir" aria-label="Consulter les disciplines">&#128065;</a></td>
+                <td class="actions-cell"></td>
               </tr>
               <tr id="syndicats">
                 <td>SYN</td>
@@ -88,7 +88,7 @@
                 <td>AA</td>
                 <td>Ann&eacute;e acad&eacute;mique</td>
                 <td><span class="badge badge-pending">En attente</span></td>
-                <td class="actions-cell"><button class="icon-action" title="Voir">&#128065;</button><button class="icon-action" title="Modifier">&#9998;</button><button class="icon-action" title="Supprimer">&#128465;</button></td>
+                <td class="actions-cell"><a class="icon-action" href="{{ route('parametres.annees-academiques.index') }}" title="Consulter" aria-label="Consulter les années académiques"><i class="fa-solid fa-eye" aria-hidden="true"></i></a></td>
               </tr>
               <tr id="periode-paie">
                 <td>PP</td>
@@ -100,7 +100,7 @@
                 <td>RP</td>
                 <td>Rubrique de paie</td>
                 <td><span class="badge badge-active">Actif</span></td>
-                <td class="actions-cell"><button class="icon-action" title="Voir">&#128065;</button><button class="icon-action" title="Modifier">&#9998;</button><button class="icon-action" title="Supprimer">&#128465;</button></td>
+                <td class="actions-cell"><a class="icon-action" href="{{ route('parametres.rubriques-paie.index') }}" title="Consulter" aria-label="Consulter les rubriques de paie"><i class="fa-solid fa-eye" aria-hidden="true"></i></a></td>
               </tr>
               <tr id="rubriques-corps">
                 <td>RC</td>
@@ -149,5 +149,3 @@
 @push('scripts')
   <script src="{{ asset('assets/js/syndicat-form.js') }}" defer></script>
 @endpush
-
-

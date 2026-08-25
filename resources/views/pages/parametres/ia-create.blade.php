@@ -19,7 +19,8 @@
       <div class="alert alert-success" id="iaFormFeedback" role="status" hidden>Le formulaire est valide et prêt à être transmis.</div>
       <p class="form-required-note"><span class="required" aria-hidden="true">*</span> Champs obligatoires</p>
 
-      <form class="teacher-form" id="iaCreateForm">
+      <form class="teacher-form" id="iaCreateForm" method="POST" action="{{ route('parametres.ia.store') }}">
+        @csrf
         <div class="form-section">
           <h3>Identification</h3>
           <div class="form-grid form-grid--balanced">
@@ -34,19 +35,11 @@
             </div>
             <div class="form-group">
               <label for="iaRegion">Région <span class="required">*</span></label>
-              <select class="form-control" id="iaRegion" name="region" required>
+              <select class="form-control" id="iaRegion" name="region_id" required>
                 <option value="">Sélectionner une région</option>
-                @foreach (['Dakar', 'Diourbel', 'Fatick', 'Kaffrine', 'Kaolack', 'Kédougou', 'Kolda', 'Louga', 'Matam', 'Saint-Louis', 'Sédhiou', 'Tambacounda', 'Thiès', 'Ziguinchor'] as $region)
-                  <option value="{{ $region }}">{{ $region }}</option>
+                @foreach ($regions as $region)
+                  <option value="{{ data_get($region, 'id') }}">{{ data_get($region, 'nom') }}</option>
                 @endforeach
-              </select>
-            </div>
-            <div class="form-group">
-              <label for="iaStatut">Statut <span class="required">*</span></label>
-              <select class="form-control" id="iaStatut" name="statut" required>
-                <option value="">Sélectionner un statut</option>
-                <option value="actif">Actif</option>
-                <option value="inactif">Inactif</option>
               </select>
             </div>
           </div>
@@ -60,13 +53,4 @@
   </section>
 </main>
 
-@push('scripts')
-<script>
-  document.getElementById('iaCreateForm').addEventListener('submit', function (event) {
-    event.preventDefault();
-    if (!this.reportValidity()) return;
-    document.getElementById('iaFormFeedback').hidden = false;
-  });
-</script>
-@endpush
 @endsection

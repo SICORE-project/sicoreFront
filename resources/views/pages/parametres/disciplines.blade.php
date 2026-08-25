@@ -15,13 +15,15 @@
       @endif
     </div>
 
+    @if (session('success'))<div class="alert alert-success" role="status">{{ session('success') }}</div>@endif
+    @if (session('error'))<div class="alert alert-error" role="alert">{{ session('error') }}</div>@endif
     @if ($error)<div class="alert alert-error" role="alert">{{ $error }}</div>@endif
     @if ($errors->has('api'))<div class="alert alert-error" role="alert">{{ $errors->first('api') }}</div>@endif
 
     <form class="filter-panel" method="GET" action="{{ route('parametres.disciplines.index') }}" data-discipline-filter>
-      <div class="form-group"><label for="disciplineSearch">Rechercher</label><input class="form-control" id="disciplineSearch" name="search" value="{{ $filters['search'] ?? '' }}" placeholder="Code ou libellé"></div>
+      <div class="form-group"><label for="disciplineSearch">Rechercher</label><input class="form-control" id="disciplineSearch" name="search" type="search" value="{{ $filters['search'] ?? '' }}" placeholder="Code ou libellé" autocomplete="off"></div>
       <div class="form-group"><label for="disciplineStatus">Statut</label><select class="form-control" id="disciplineStatus" name="statut"><option value="">Tous les statuts</option><option value="actif" @selected(($filters['statut'] ?? '') === 'actif')>Actif</option><option value="inactif" @selected(($filters['statut'] ?? '') === 'inactif')>Inactif</option></select></div>
-      <button class="btn-primary" type="submit">Filtrer</button>
+      <div class="actions-group"><a class="btn-secondary" href="{{ route('parametres.disciplines.index') }}">Réinitialiser</a></div>
       <span class="loading-indicator" role="status" hidden data-loading>Chargement…</span>
     </form>
 
@@ -34,16 +36,35 @@
           @endphp
           <th><a href="{{ route('parametres.disciplines.index', array_merge(request()->except(['sort', 'direction', 'page']), ['sort' => $field, 'direction' => $nextDirection])) }}">{{ $label }} <span aria-hidden="true">↕</span></a></th>
         @endforeach
-        @if ($canUpdate || $canChangeStatus)<th class="actions-cell">Actions</th>@endif
+        @if ($canUpdate || $canDelete)<th class="actions-cell">Actions</th>@endif
       </tr></thead><tbody>
         @forelse ($items as $discipline)
           @php
             $status = data_get($discipline, 'statut', data_get($discipline, 'est_actif', data_get($discipline, 'actif', false)));
             $active = in_array(is_string($status) ? mb_strtolower($status) : $status, [true, 1, '1', 'actif', 'active'], true);
           @endphp
-          <tr><td><strong>{{ data_get($discipline, 'code', '—') }}</strong></td><td>{{ data_get($discipline, 'libelle', data_get($discipline, 'nom', '—')) }}</td><td>{{ data_get($discipline, 'description', '—') ?: '—' }}</td><td><span class="badge {{ $active ? 'badge-active' : 'badge-suspended' }}">{{ $active ? 'Actif' : 'Inactif' }}</span></td>@if ($canUpdate || $canChangeStatus)<td class="actions-cell">@if ($canUpdate)<button class="table-action" type="button" data-modal-open="discipline-update-modal" data-discipline-edit="{{ json_encode($discipline, JSON_UNESCAPED_UNICODE) }}">Modifier</button>@endif @if ($canChangeStatus && data_get($discipline, 'id', data_get($discipline, 'uuid')))<form method="POST" action="{{ route('parametres.disciplines.status', ['discipline' => data_get($discipline, 'id', data_get($discipline, 'uuid'))]) }}" class="inline-form" data-status-form data-confirm="{{ $active ? 'Désactiver cette discipline ? Elle restera consultable et ses anciennes associations seront conservées.' : 'Réactiver cette discipline ? Elle sera de nouveau disponible dans les listes de sélection.' }}">@csrf @method('PATCH')<input type="hidden" name="statut" value="{{ $active ? 'inactif' : 'actif' }}"><button class="table-action" type="submit" data-status-submit>{{ $active ? 'Désactiver' : 'Activer' }}</button></form>@endif</td>@endif</tr>
+          @php($disciplineId = data_get($discipline, 'id', data_get($discipline, 'uuid')))
+          <tr>
+            <td><strong>{{ data_get($discipline, 'code', '—') }}</strong></td>
+            <td>{{ data_get($discipline, 'libelle', data_get($discipline, 'nom', '—')) }}</td>
+            <td>{{ data_get($discipline, 'description', '—') ?: '—' }}</td>
+            <td><span class="badge {{ $active ? 'badge-active' : 'badge-suspended' }}">{{ $active ? 'Actif' : 'Inactif' }}</span></td>
+            @if ($canUpdate || $canDelete)
+              <td class="actions-cell">
+                @if ($canUpdate)
+                  <button class="icon-action" type="button" data-modal-open="discipline-update-modal" data-discipline-edit='@json($discipline)' title="Modifier" aria-label="Modifier {{ data_get($discipline, 'libelle') }}"><i class="fa-solid fa-pen-to-square" aria-hidden="true"></i></button>
+                @endif
+                @if ($canDelete && $disciplineId)
+                  <form method="POST" action="{{ route('parametres.disciplines.destroy', ['discipline' => $disciplineId]) }}" class="inline-form" data-delete-form data-confirm-message="Supprimer définitivement la discipline « {{ data_get($discipline, 'libelle') }} » ?">
+                    @csrf @method('DELETE')
+                    <button class="icon-action delete" type="submit" data-delete-submit title="Supprimer" aria-label="Supprimer {{ data_get($discipline, 'libelle') }}"><i class="fa-solid fa-trash-can" aria-hidden="true"></i></button>
+                  </form>
+                @endif
+              </td>
+            @endif
+          </tr>
         @empty
-          <tr><td colspan="{{ ($canUpdate || $canChangeStatus) ? 5 : 4 }}" class="empty-message show">Aucune discipline trouvée.</td></tr>
+          <tr><td colspan="{{ ($canUpdate || $canDelete) ? 5 : 4 }}" class="empty-message show">Aucune discipline trouvée.</td></tr>
         @endforelse
       </tbody></table></div>
       @if ($pagination['last_page'] > 1)<nav class="pagination" aria-label="Pagination">
@@ -57,14 +78,41 @@
 
 @if ($canCreate)
 <x-module-indemnite type="modal" id="discipline-create-modal" title="Ajouter une discipline">
-  <form class="teacher-form" id="disciplineCreateForm" method="POST" action="{{ route('parametres.disciplines.store') }}">@csrf
-    <p class="form-required-note"><span class="required">*</span> Champs obligatoires</p>
+  <form class="teacher-form" id="disciplineCreateForm" method="POST" action="{{ route('parametres.disciplines.store') }}">
+    @csrf
     <div class="form-grid form-grid--balanced">
-      <div class="form-group"><label for="disciplineCode">Code <span class="required">*</span></label><input class="form-control" id="disciplineCode" name="code" value="{{ old('code') }}" required maxlength="30" pattern="[A-Z0-9]+(?:[-_][A-Z0-9]+)*" title="Utilisez uniquement des lettres majuscules, chiffres, tirets ou underscores.">@error('code')<span class="field-error">{{ $message }}</span>@enderror</div>
-      <div class="form-group"><label for="disciplineLibelle">Libellé *</label><input class="form-control" id="disciplineLibelle" name="libelle" value="{{ old('libelle') }}" required maxlength="150">@error('libelle')<span class="field-error">{{ $message }}</span>@enderror</div>
-      <div class="form-group"><label for="disciplineDescription">Description</label><textarea class="form-control" id="disciplineDescription" name="description" maxlength="500">{{ old('description') }}</textarea>@error('description')<span class="field-error">{{ $message }}</span>@enderror</div>
-      <div class="form-group"><label for="disciplineCreateStatus">Statut *</label><select class="form-control" id="disciplineCreateStatus" name="statut" required><option value="actif" @selected(old('statut', 'actif') === 'actif')>Actif</option><option value="inactif" @selected(old('statut') === 'inactif')>Inactif</option></select>@error('statut')<span class="field-error">{{ $message }}</span>@enderror</div>
-    </div><div class="form-actions"><button class="btn-secondary" type="button" data-modal-close>Annuler</button><button class="btn-primary" type="submit" data-discipline-submit><span data-submit-label>Ajouter</span></button></div>
+      <div class="form-group">
+        <label for="disciplineCode">Code <span class="required">*</span></label>
+        <input class="form-control" id="disciplineCode" name="code" type="text" value="{{ old('code') }}" required maxlength="30" pattern="[A-Z0-9]+(?:[-_][A-Z0-9]+)*" placeholder="Ex. MATH" autocomplete="off">
+        @error('code')<span class="field-error" role="alert">{{ $message }}</span>@enderror
+      </div>
+
+      <div class="form-group">
+        <label for="disciplineLibelle">Libellé <span class="required">*</span></label>
+        <input class="form-control" id="disciplineLibelle" name="libelle" type="text" value="{{ old('libelle') }}" required maxlength="150" placeholder="Ex. Mathématiques" autocomplete="off">
+        @error('libelle')<span class="field-error" role="alert">{{ $message }}</span>@enderror
+      </div>
+
+      <div class="form-group">
+        <label for="disciplineCreateStatus">Statut <span class="required">*</span></label>
+        <select class="form-control" id="disciplineCreateStatus" name="statut" required>
+          <option value="actif" @selected(old('statut', 'actif') === 'actif')>Actif</option>
+          <option value="inactif" @selected(old('statut') === 'inactif')>Inactif</option>
+        </select>
+        @error('statut')<span class="field-error" role="alert">{{ $message }}</span>@enderror
+      </div>
+
+      <div class="form-group full">
+        <label for="disciplineDescription">Description</label>
+        <textarea class="form-control" id="disciplineDescription" name="description" rows="4" maxlength="500" placeholder="Ajoutez une courte description de la discipline…">{{ old('description') }}</textarea>
+        @error('description')<span class="field-error" role="alert">{{ $message }}</span>@enderror
+      </div>
+    </div>
+
+    <div class="form-actions">
+      <button class="btn-secondary" type="button" data-modal-close>Annuler</button>
+      <button class="btn-primary" type="submit" data-discipline-submit><span data-submit-label>Ajouter</span></button>
+    </div>
   </form>
 </x-module-indemnite>
 @endif
@@ -82,11 +130,34 @@
   </form>
 </x-module-indemnite>
 @endif
+@push('styles')
+<style>
+  #discipline-create-modal .modal-dialog {
+    width: calc(100% - 32px);
+    max-width: 920px;
+  }
+</style>
+@endpush
 @push('scripts')
 <script>
-  document.querySelector('[data-discipline-filter]').addEventListener('submit', function () { this.querySelector('[data-loading]').hidden = false; });
+  var filterForm = document.querySelector('[data-discipline-filter]');
+  var searchInput = document.getElementById('disciplineSearch');
+  var statusInput = document.getElementById('disciplineStatus');
+  var filterTimer;
+  function submitFilters() {
+    filterForm.querySelector('[data-loading]').hidden = false;
+    filterForm.requestSubmit();
+  }
+  searchInput?.addEventListener('input', function () {
+    window.clearTimeout(filterTimer);
+    filterTimer = window.setTimeout(submitFilters, 400);
+  });
+  statusInput?.addEventListener('change', submitFilters);
   var createForm = document.getElementById('disciplineCreateForm');
   if (createForm) {
+    var createCode = document.getElementById('disciplineCode');
+    createCode.addEventListener('input', function () { createCode.value = createCode.value.toUpperCase(); });
+    createCode.value = createCode.value.toUpperCase();
     createForm.addEventListener('submit', function () {
       if (!createForm.checkValidity()) return;
       var submit = createForm.querySelector('[data-discipline-submit]');
@@ -117,13 +188,13 @@
       submit.querySelector('[data-update-label]').textContent = 'Enregistrement…';
     });
   }
-  document.querySelectorAll('[data-status-form]').forEach(function (form) {
+  document.querySelectorAll('[data-delete-form]').forEach(function (form) {
     form.addEventListener('submit', function (event) {
-      if (!window.confirm(form.dataset.confirm)) {
+      if (!window.confirm(form.dataset.confirmMessage)) {
         event.preventDefault();
         return;
       }
-      var button = form.querySelector('[data-status-submit]');
+      var button = form.querySelector('[data-delete-submit]');
       button.disabled = true;
       button.setAttribute('aria-busy', 'true');
     });
