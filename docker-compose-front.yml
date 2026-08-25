@@ -1,0 +1,27 @@
+# Compose local/VPS pour lancer SICORE frontend + backend + MySQL.
+# A lancer depuis le dossier sicoreFront/sicoreFront.
+# Le chemin du backend suppose l'arborescence suivante:
+# Downloads/sicoreFront/sicoreFront et Downloads/sicoreBack/sicoreBack.
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: sicorefront
+    restart: unless-stopped
+    depends_on:
+      - backend
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      API_BASE_URL: http://sicore_backend:8080/api
+    ports:
+      - "8080:8080"
+    volumes:
+      - frontend_storage:/var/www/html/storage
+
+volumes:
+  # sicore_mysql_data:
+  # backend_storage:
+  frontend_storage:
