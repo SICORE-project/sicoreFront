@@ -10,11 +10,12 @@ class="app-body" @yield('page_attributes')
 
 @section('body')
   <x-sidebar />
-  <x-flash-messages />
+  @if (! ($hideFlashMessages ?? false))
+    <x-flash-messages />
+  @endif
 
   @yield('content')
 
   <div class="mobile-overlay" data-sidebar-close aria-hidden="true"></div>
   
 @endsection
-

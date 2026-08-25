@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Parametrage;
 
 use App\Http\Controllers\Controller;
-use App\Http\Middleware\EnsureSicorePermission;
 use App\Services\Parametrage\DisciplineService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -28,11 +27,14 @@ class DisciplineController extends Controller
             return redirect()->route('login')->with('warning', $result['error']);
         }
 
+        $canManage = in_array($request->session()->get('sicore_user.role_slug'), ['admin', 'super_admin'], true);
+
         return view('pages.parametres.disciplines', $result + [
             'filters' => $filters,
-            'canCreate' => app(EnsureSicorePermission::class)->allows($request, 'parametrage.disciplines.creer'),
-            'canUpdate' => app(EnsureSicorePermission::class)->allows($request, 'parametrage.disciplines.modifier'),
-            'canChangeStatus' => app(EnsureSicorePermission::class)->allows($request, 'parametrage.disciplines.changer-statut'),
+            'canCreate' => $canManage,
+            'canUpdate' => $canManage,
+            'canDelete' => $canManage,
+            'hideFlashMessages' => true,
         ]);
     }
 
@@ -85,5 +87,13 @@ class DisciplineController extends Controller
         }
 
         return back()->with('error', $result['message']);
+    }
+
+    public function destroy(string $discipline, DisciplineService $service): RedirectResponse
+    {
+        $result = $service->delete($discipline);
+
+        return redirect()->route('parametres.disciplines.index')
+            ->with($result['success'] ? 'success' : 'error', $result['message']);
     }
 }

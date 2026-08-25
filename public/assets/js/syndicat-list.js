@@ -23,6 +23,12 @@
 
     document.querySelectorAll("[data-edit-syndicat-form]").forEach(function (editForm) {
       var submitted = false;
+      var codeInput = editForm.querySelector('[name="code"]');
+      if (codeInput) {
+        codeInput.addEventListener("input", function () {
+          codeInput.value = codeInput.value.toUpperCase();
+        });
+      }
       editForm.addEventListener("submit", function (event) {
         if (submitted) {
           event.preventDefault();

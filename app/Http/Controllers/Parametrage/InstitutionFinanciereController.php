@@ -13,7 +13,11 @@ class InstitutionFinanciereController extends Controller
 {
     public function index(Request $request, InstitutionFinanciereService $service, CompteBancaireEnseignantService $bankAccounts): View|RedirectResponse
     {
-        $result = $service->getAll(max(1, $request->integer('page', 1)), 10);
+        $result = $service->getAll(max(1, $request->integer('page', 1)), 10, [
+            'search' => $request->string('search')->trim()->toString(),
+            'type_institution' => $request->string('type_institution')->trim()->toString(),
+            'est_actif' => $request->has('est_actif') && $request->input('est_actif') !== '' ? $request->boolean('est_actif') : null,
+        ]);
 
         if ($result['unauthorized']) {
             $request->session()->forget(['access_token', 'sicore_user']);
@@ -44,18 +48,22 @@ class InstitutionFinanciereController extends Controller
     public function store(Request $request, InstitutionFinanciereService $service): RedirectResponse
     {
         $data = $request->validate([
-            'code' => ['required', 'string', 'max:30'],
-            'nom' => ['required', 'string', 'max:255'],
+            'code' => ['required', 'string', 'max:20'],
+            'nom' => ['required', 'string', 'max:150'],
             'sigle' => ['required', 'string', 'max:30'],
             'type_institution' => ['required', 'string', 'max:100'],
-            'adresse' => ['nullable', 'string', 'max:500'],
-            'telephone' => ['nullable', 'string', 'max:30'],
-            'email' => ['nullable', 'email', 'max:255'],
+            'adresse' => ['nullable', 'string', 'max:255'],
+            'telephone' => ['nullable', 'string', 'max:20'],
+            'email' => ['nullable', 'email', 'max:100'],
             'statut' => ['required', 'in:actif,inactif'],
         ], [
             'required' => 'Le champ :attribute est obligatoire.',
             'email' => 'L’adresse e-mail doit être valide.',
         ]);
+
+        $data['libelle'] = $data['nom'];
+        $data['est_actif'] = $data['statut'] === 'actif';
+        unset($data['nom'], $data['statut']);
 
         $result = $service->create($data);
 
@@ -82,17 +90,22 @@ class InstitutionFinanciereController extends Controller
     public function update(Request $request, string $institution, InstitutionFinanciereService $service): RedirectResponse
     {
         $data = $request->validate([
-            'code' => ['required', 'string', 'max:30'],
-            'nom' => ['required', 'string', 'max:255'],
+            'code' => ['required', 'string', 'max:20'],
+            'nom' => ['required', 'string', 'max:150'],
             'sigle' => ['required', 'string', 'max:30'],
             'type_institution' => ['required', 'string', 'max:100'],
-            'adresse' => ['nullable', 'string', 'max:500'],
-            'telephone' => ['nullable', 'string', 'max:30'],
-            'email' => ['nullable', 'email', 'max:255'],
+            'adresse' => ['nullable', 'string', 'max:255'],
+            'telephone' => ['nullable', 'string', 'max:20'],
+            'email' => ['nullable', 'email', 'max:100'],
+            'statut' => ['required', 'in:actif,inactif'],
         ], [
             'required' => 'Le champ :attribute est obligatoire.',
             'email' => 'L’adresse e-mail doit être valide.',
         ]);
+
+        $data['libelle'] = $data['nom'];
+        $data['est_actif'] = $data['statut'] === 'actif';
+        unset($data['nom'], $data['statut']);
 
         $result = $service->update($institution, $data);
 

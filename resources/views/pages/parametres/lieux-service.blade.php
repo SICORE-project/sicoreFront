@@ -17,7 +17,7 @@
       <article class="stat-card"><div><p class="stat-label">Inactifs</p><p class="stat-value">{{ $inactiveCount }}</p><p class="stat-note">Non disponibles</p></div></article>
       <article class="stat-card"><div><p class="stat-label">Incohérences</p><p class="stat-value">{{ $inconsistentCount }}</p><p class="stat-note">Entre IA et IEF</p></div></article>
     </div>
-    <div class="actions-row"><p class="breadcrumb"><a href="{{ route('parametres.index') }}">Paramétrage</a> &gt; Lieux de service</p><div class="actions-group"><button class="btn-primary" type="button" data-modal-open="lieu-service-create-modal">+ Nouveau lieu</button><a class="btn-secondary" href="{{ route('parametres.lieux-service.index') }}">Actualiser</a></div></div>
+    <div class="actions-row"><p class="breadcrumb">Paramétrage &gt; Lieux de service</p><div class="actions-group"><button class="btn-primary" type="button" data-modal-open="lieu-service-create-modal">+ Nouveau lieu</button><a class="btn-secondary" href="{{ route('parametres.lieux-service.index') }}">Actualiser</a></div></div>
     <section class="filter-panel" aria-label="Filtres des lieux de service">
       <div class="form-group">
         <label for="lieuFilterIa">IA</label>

@@ -43,12 +43,12 @@
     </form>
 
     <div class="actions-row">
-      <p class="breadcrumb"><a href="{{ route('parametres.index') }}">Paramétrage</a> &gt; Syndicats</p>
-      <div class="actions-group">
+      <p class="breadcrumb">Paramétrage &gt; Syndicats</p>
+      @if ($canManage)<div class="actions-group">
         <button class="btn-primary" type="button" data-modal-open="create-syndicat-modal">
           <i class="fa-solid fa-plus" aria-hidden="true"></i> Nouveau syndicat
         </button>
-      </div>
+      </div>@endif
     </div>
 
     @if ($apiError)
@@ -84,13 +84,15 @@
                   </span>
                 </td>
                 <td class="actions-cell">
-                  <button class="icon-action" type="button" data-modal-open="show-syndicat-{{ $syndicat['id'] }}" title="Consulter" aria-label="Consulter {{ $syndicat['libelle'] ?? '' }}">&#128065;</button>
-                  <button class="icon-action" type="button" data-modal-open="edit-syndicat-{{ $syndicat['id'] }}" title="Modifier" aria-label="Modifier {{ $syndicat['libelle'] ?? '' }}">&#9998;</button>
-                  <form class="inline-action-form" action="{{ route('parametres.syndicats.destroy', $syndicat['id']) }}" method="POST">
-                    @csrf
-                    @method('DELETE')
-                    <button class="icon-action" type="submit" aria-label="Supprimer {{ $syndicat['libelle'] ?? '' }}" data-confirm="Voulez-vous vraiment supprimer le syndicat « {{ $syndicat['libelle'] ?? '' }} » ?" data-confirm-submit>&#128465;</button>
-                  </form>
+                  <button class="icon-action" type="button" data-modal-open="show-syndicat-{{ $syndicat['id'] }}" title="Consulter" aria-label="Consulter {{ $syndicat['libelle'] ?? '' }}"><i class="fa-solid fa-eye" aria-hidden="true"></i></button>
+                  @if ($canManage)
+                    <button class="icon-action" type="button" data-modal-open="edit-syndicat-{{ $syndicat['id'] }}" title="Modifier" aria-label="Modifier {{ $syndicat['libelle'] ?? '' }}"><i class="fa-solid fa-pen-to-square" aria-hidden="true"></i></button>
+                    <form class="inline-action-form" action="{{ route('parametres.syndicats.destroy', $syndicat['id']) }}" method="POST">
+                      @csrf
+                      @method('DELETE')
+                      <button class="icon-action delete" type="submit" title="Supprimer" aria-label="Supprimer {{ $syndicat['libelle'] ?? '' }}" data-confirm="Voulez-vous vraiment supprimer le syndicat « {{ $syndicat['libelle'] ?? '' }} » ?" data-confirm-submit><i class="fa-solid fa-trash-can" aria-hidden="true"></i></button>
+                    </form>
+                  @endif
                 </td>
               </tr>
             @empty
@@ -123,9 +125,11 @@
   </section>
 </main>
 
-<x-module-indemnite type="modal" id="create-syndicat-modal" title="Ajouter un syndicat" :open="$errors->any() && old('_editing_id') === null">
-  @include('pages.parametres.syndicats.create')
-</x-module-indemnite>
+@if ($canManage)
+  <x-module-indemnite type="modal" id="create-syndicat-modal" title="Ajouter un syndicat" :open="$errors->any() && old('_editing_id') === null">
+    @include('pages.parametres.syndicats.create')
+  </x-module-indemnite>
+@endif
 
 @foreach ($syndicats as $syndicat)
   @php
@@ -136,28 +140,28 @@
 
   <x-module-indemnite type="modal" id="show-syndicat-{{ $syndicat['id'] }}" title="Détail du syndicat">
     <div class="syndicat-detail-grid">
-      <div><span>Code</span><strong>{{ $syndicat['code'] ?? '—' }}</strong></div>
-      <div><span>Libellé</span><strong>{{ $syndicat['libelle'] ?? '—' }}</strong></div>
-      <div><span>Check-off</span><strong>{{ isset($syndicat['montant_check_off']) ? number_format((float) $syndicat['montant_check_off'], 2, ',', ' ').' FCFA' : '—' }}</strong></div>
-      <div><span>Œuvre sociale</span><strong>{{ isset($syndicat['montant_oeuvre_sociale']) ? number_format((float) $syndicat['montant_oeuvre_sociale'], 2, ',', ' ').' FCFA' : '—' }}</strong></div>
-      <div><span>Statut</span><strong>{{ ! empty($syndicat['est_actif']) ? 'Actif' : 'Inactif' }}</strong></div>
-      <div><span>Enseignants adhérents</span><strong>{{ $nombreAdherents ?? '—' }}</strong></div>
+      <div><i class="fa-solid fa-hashtag" aria-hidden="true"></i><span>Code</span><strong>{{ $syndicat['code'] ?? '—' }}</strong></div>
+      <div><i class="fa-solid fa-people-group" aria-hidden="true"></i><span>Libellé</span><strong>{{ $syndicat['libelle'] ?? '—' }}</strong></div>
+      <div><i class="fa-solid fa-money-check-dollar" aria-hidden="true"></i><span>Check-off</span><strong>{{ isset($syndicat['montant_check_off']) ? number_format((float) $syndicat['montant_check_off'], 2, ',', ' ').' FCFA' : '—' }}</strong></div>
+      <div><i class="fa-solid fa-hand-holding-heart" aria-hidden="true"></i><span>Œuvre sociale</span><strong>{{ isset($syndicat['montant_oeuvre_sociale']) ? number_format((float) $syndicat['montant_oeuvre_sociale'], 2, ',', ' ').' FCFA' : '—' }}</strong></div>
+      <div><i class="fa-solid fa-circle-check" aria-hidden="true"></i><span>Statut</span><strong><span class="badge {{ ! empty($syndicat['est_actif']) ? 'badge-active' : 'badge-inactive' }}">{{ ! empty($syndicat['est_actif']) ? 'Actif' : 'Inactif' }}</span></strong></div>
+      <div><i class="fa-solid fa-user-group" aria-hidden="true"></i><span>Enseignants adhérents</span><strong>{{ $nombreAdherents ?? '—' }}</strong></div>
     </div>
     @if ($nombreAdherents === null)<p class="detail-hint">Le nombre d’adhérents n’est pas encore fourni par l’API.</p>@endif
     <div class="form-actions"><button class="btn-secondary" type="button" data-modal-close>Fermer</button></div>
   </x-module-indemnite>
 
-  <x-module-indemnite type="modal" id="edit-syndicat-{{ $syndicat['id'] }}" title="Modifier le syndicat" :open="$isEditing && $errors->any()">
+  @if ($canManage)<x-module-indemnite type="modal" id="edit-syndicat-{{ $syndicat['id'] }}" title="Modifier le syndicat" :open="$isEditing && $errors->any()">
     @if ($isEditing && $errors->has('api'))<div class="form-alert" role="alert">{{ $errors->first('api') }}</div>@endif
     <form class="teacher-form" action="{{ route('parametres.syndicats.update', $syndicat['id']) }}" method="POST" data-edit-syndicat-form>
       @csrf
       @method('PUT')
       <input type="hidden" name="_editing_id" value="{{ $syndicat['id'] }}">
-      <div class="form-grid">
+      <div class="form-grid form-grid--balanced">
         <div class="form-group">
-          <label for="edit-code-{{ $syndicat['id'] }}">Code</label>
-          <input class="form-control" id="edit-code-{{ $syndicat['id'] }}" value="{{ $syndicat['code'] }}" disabled>
-          <small>Le code ne peut pas être modifié.</small>
+          <label for="edit-code-{{ $syndicat['id'] }}">Code *</label>
+          <input class="form-control {{ $isEditing && $errors->has('code') ? 'is-invalid' : '' }}" id="edit-code-{{ $syndicat['id'] }}" name="code" value="{{ $isEditing ? old('code') : $syndicat['code'] }}" maxlength="20" required>
+          @if ($isEditing)@error('code')<div class="invalid-feedback">{{ $message }}</div>@enderror @endif
         </div>
         <div class="form-group">
           <label for="edit-libelle-{{ $syndicat['id'] }}">Libellé *</label>
@@ -166,20 +170,21 @@
         </div>
         <div class="form-group">
           <label for="edit-check-off-{{ $syndicat['id'] }}">Montant check-off</label>
-          <input class="form-control" id="edit-check-off-{{ $syndicat['id'] }}" name="montant_check_off" type="number" min="0" max="9999999999.99" step="0.01" value="{{ $isEditing ? old('montant_check_off') : ($syndicat['montant_check_off'] ?? '') }}">
+          <input class="form-control {{ $isEditing && $errors->has('montant_check_off') ? 'is-invalid' : '' }}" id="edit-check-off-{{ $syndicat['id'] }}" name="montant_check_off" type="number" min="0" max="9999999999.99" step="0.01" value="{{ $isEditing ? old('montant_check_off') : ($syndicat['montant_check_off'] ?? '') }}">
           @if ($isEditing)@error('montant_check_off')<div class="invalid-feedback">{{ $message }}</div>@enderror @endif
         </div>
         <div class="form-group">
           <label for="edit-oeuvre-{{ $syndicat['id'] }}">Montant œuvre sociale</label>
-          <input class="form-control" id="edit-oeuvre-{{ $syndicat['id'] }}" name="montant_oeuvre_sociale" type="number" min="0" max="9999999999.99" step="0.01" value="{{ $isEditing ? old('montant_oeuvre_sociale') : ($syndicat['montant_oeuvre_sociale'] ?? '') }}">
+          <input class="form-control {{ $isEditing && $errors->has('montant_oeuvre_sociale') ? 'is-invalid' : '' }}" id="edit-oeuvre-{{ $syndicat['id'] }}" name="montant_oeuvre_sociale" type="number" min="0" max="9999999999.99" step="0.01" value="{{ $isEditing ? old('montant_oeuvre_sociale') : ($syndicat['montant_oeuvre_sociale'] ?? '') }}">
           @if ($isEditing)@error('montant_oeuvre_sociale')<div class="invalid-feedback">{{ $message }}</div>@enderror @endif
         </div>
-        <div class="form-group">
+        <div class="form-group syndicat-status-field">
           <label for="edit-status-{{ $syndicat['id'] }}">Statut *</label>
-          <select class="form-control" id="edit-status-{{ $syndicat['id'] }}" name="est_actif" required>
+          <select class="form-control {{ $isEditing && $errors->has('est_actif') ? 'is-invalid' : '' }}" id="edit-status-{{ $syndicat['id'] }}" name="est_actif" required>
             <option value="1" @selected((string) ($isEditing ? old('est_actif') : (int) $syndicat['est_actif']) === '1')>Actif</option>
             <option value="0" @selected((string) ($isEditing ? old('est_actif') : (int) $syndicat['est_actif']) === '0')>Inactif</option>
           </select>
+          @if ($isEditing)@error('est_actif')<div class="invalid-feedback">{{ $message }}</div>@enderror @endif
         </div>
       </div>
       <div class="form-actions">
@@ -187,26 +192,42 @@
         <button class="btn-primary" type="submit"><i class="fa-solid fa-floppy-disk"></i> Enregistrer</button>
       </div>
     </form>
-  </x-module-indemnite>
+  </x-module-indemnite>@endif
 @endforeach
 @endsection
 
 @push('styles')
 <style>
-  #create-syndicat-modal .modal-dialog { max-width: 760px; }
-  [id^="edit-syndicat-"] .modal-dialog { max-width: 760px; }
-  #create-syndicat-modal .teacher-form { margin-top: 18px; }
+  #create-syndicat-modal .modal-dialog,
+  [id^="edit-syndicat-"] .modal-dialog { width: calc(100% - 32px); max-width: 900px; }
+  [id^="show-syndicat-"] .modal-dialog { width: calc(100% - 32px); max-width: 820px; }
+  #create-syndicat-modal .modal-header,
+  [id^="edit-syndicat-"] .modal-header,
+  [id^="show-syndicat-"] .modal-header { margin-bottom: 0; padding-bottom: 16px; border-bottom: 1px solid #e2e8f0; }
+  #create-syndicat-modal .teacher-form,
+  [id^="edit-syndicat-"] .teacher-form { gap: 20px; padding: 22px 0 0; }
+  #create-syndicat-modal .form-actions,
+  [id^="edit-syndicat-"] .form-actions,
+  [id^="show-syndicat-"] .form-actions { margin-top: 4px; padding-top: 18px; border-top: 1px solid #e2e8f0; }
+  .syndicat-status-field { grid-column: 1 / -1; max-width: 320px; }
   .form-alert { margin: 12px 0; padding: 12px 16px; border-radius: 8px; background: #fef2f2; color: #b91c1c; }
   .syndicats-filters { margin-bottom: 20px; }
   .syndicats-filter-actions { align-self: end; }
   .pagination .page-btn[aria-disabled="true"] { cursor: not-allowed; opacity: .5; }
-  .syndicat-detail-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 20px; }
-  .syndicat-detail-grid div { padding: 14px; border-radius: 8px; background: #f8fafc; }
-  .syndicat-detail-grid span, .syndicat-detail-grid strong { display: block; }
-  .syndicat-detail-grid span { margin-bottom: 6px; color: #64748b; font-size: .8rem; }
+  .syndicat-detail-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-top: 20px; }
+  .syndicat-detail-grid div { position: relative; min-height: 108px; padding: 16px; border: 1px solid #e2e8f0; border-radius: 11px; background: #f8fafc; }
+  .syndicat-detail-grid div > i { margin-bottom: 12px; color: var(--primary); font-size: 1rem; }
+  .syndicat-detail-grid div > span, .syndicat-detail-grid div > strong { display: block; }
+  .syndicat-detail-grid div > span { margin-bottom: 6px; color: #64748b; font-size: .8rem; }
   .detail-hint { margin-top: 12px; color: #64748b; font-size: .8rem; }
   .inline-action-form { display: inline; }
-  @media (max-width: 640px) { .syndicat-detail-grid { grid-template-columns: 1fr; } }
+  @media (max-width: 760px) {
+    #create-syndicat-modal .modal-dialog,
+    [id^="edit-syndicat-"] .modal-dialog,
+    [id^="show-syndicat-"] .modal-dialog { width: calc(100% - 20px); }
+    .syndicat-status-field { max-width: none; }
+    .syndicat-detail-grid { grid-template-columns: 1fr; }
+  }
 </style>
 @endpush
 

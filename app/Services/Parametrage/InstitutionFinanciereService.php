@@ -11,13 +11,13 @@ class InstitutionFinanciereService
     {
     }
 
-    public function getAll(int $page = 1, int $perPage = 10): array
+    public function getAll(int $page = 1, int $perPage = 10, array $filters = []): array
     {
         try {
-            $response = $this->apiClient->get('parametrage/institutions-financieres', [
+            $response = $this->apiClient->get('parametrage/institutions-financieres', array_filter(array_merge($filters, [
                 'page' => $page,
                 'per_page' => $perPage,
-            ]);
+            ]), static fn ($value) => $value !== null && $value !== ''));
         } catch (ConnectionException) {
             return $this->emptyResult($page, $perPage, 'Le service backend est momentanément inaccessible.');
         }

@@ -501,13 +501,6 @@
   function setupConfirmations() {
     ensureConfirmModal();
 
-    document.querySelectorAll(".icon-action[title='Supprimer']").forEach(function (button) {
-      if (!button.hasAttribute("data-confirm")) {
-        button.setAttribute("data-confirm", "Voulez-vous vraiment supprimer cet \u00e9l\u00e9ment ?");
-        button.setAttribute("data-success-message", "\u00c9l\u00e9ment supprim\u00e9 avec succ\u00e8s.");
-      }
-    });
-
     document.querySelectorAll("[data-confirm]").forEach(function (trigger) {
       if (trigger.dataset.confirmBound === "true") {
         return;
@@ -518,10 +511,11 @@
         confirmAction(trigger.getAttribute("data-confirm"), function () {
           if (trigger.hasAttribute("data-confirm-submit") && trigger.form) {
             trigger.disabled = true;
-            trigger.form.submit();
+            trigger.form.requestSubmit();
             return;
           }
-          notify("success", trigger.getAttribute("data-success-message") || "Action confirm\u00e9e.");
+
+          notify("error", "Cette action n’est reliée à aucune API.");
         });
       });
     });
@@ -742,5 +736,4 @@
     notify: notify
   };
 })();
-
 
