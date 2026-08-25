@@ -1,0 +1,262 @@
+name: CI/CD Frontend
+
+on:
+  push:
+    branches:
+      - deploy
+
+  pull_request:
+    branches:
+      - deploy
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+
+  # ==========================================================
+  # 1. CONTINUOUS INTEGRATION
+  # ==========================================================
+  ci:
+    name: Tests et Build Frontend
+    runs-on: ubuntu-latest
+
+    steps:
+
+      # ------------------------------------------------------
+      # Récupération du code
+      # ------------------------------------------------------
+
+      - name: Recuperer le code
+        uses: actions/checkout@v4
+
+      # ------------------------------------------------------
+      # Node.js
+      # ------------------------------------------------------
+
+      - name: Installer Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Verifier les versions
+        run: |
+          node --version
+          npm --version
+
+      # ------------------------------------------------------
+      # Vérification package.json
+      # ------------------------------------------------------
+
+      - name: Verifier package.json
+        run: |
+          echo "Contenu du repository :"
+          ls -la
+
+          echo "Verification de package.json..."
+          test -f ./package.json
+
+      # ------------------------------------------------------
+      # Installation des dépendances
+      # ------------------------------------------------------
+
+      - name: Installer les dependances Node
+        run: |
+          if [ -f package-lock.json ]; then
+            npm ci
+          else
+            npm install
+          fi
+
+      # ------------------------------------------------------
+      # Vérification du script build
+      # ------------------------------------------------------
+
+      - name: Verifier le script build
+        run: |
+          npm run
+
+      # ------------------------------------------------------
+      # Build Frontend
+      # ------------------------------------------------------
+
+      - name: Compiler le frontend
+        run: npm run build
+
+
+  # ==========================================================
+  # 2. BUILD + PUSH IMAGE DOCKER
+  # ==========================================================
+  docker:
+    name: Build and Push Docker Image
+    runs-on: ubuntu-latest
+
+    needs: ci
+
+    if: github.event_name == 'push' && github.ref == 'refs/heads/deploy'
+
+    steps:
+
+      # ------------------------------------------------------
+      # Récupération du code
+      # ------------------------------------------------------
+
+      - name: Recuperer le code
+        uses: actions/checkout@v4
+
+      # ------------------------------------------------------
+      # Vérification Dockerfile
+      # ------------------------------------------------------
+
+      - name: Verifier Dockerfile
+        run: |
+          echo "Contenu du repository :"
+          ls -la
+
+          echo "Verification du Dockerfile..."
+
+          test -f ./Dockerfile
+
+          echo "Dockerfile trouvé."
+
+      # ------------------------------------------------------
+      # Connexion à GHCR
+      # ------------------------------------------------------
+
+      - name: Connexion à GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # ------------------------------------------------------
+      # Build + Push
+      # ------------------------------------------------------
+
+      - name: Construire et pousser l'image frontend
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+
+          tags: |
+            ghcr.io/sicore-project/sicore-frontend:latest
+            ghcr.io/sicore-project/sicore-frontend:${{ github.sha }}
+
+
+  # ==========================================================
+  # 3. DEPLOY VPS
+  # ==========================================================
+  deploy:
+    name: Deploy Frontend VPS
+    runs-on: ubuntu-latest
+
+    needs:
+      - ci
+      - docker
+
+    if: github.event_name == 'push' && github.ref == 'refs/heads/deploy'
+
+    steps:
+
+      # ------------------------------------------------------
+      # Déploiement SSH
+      # ------------------------------------------------------
+
+      - name: Deployer sur le VPS
+        uses: appleboy/ssh-action@v1.2.0
+
+        with:
+          host: ${{ secrets.VPS_IP }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.VPS_KEY }}
+          port: ${{ secrets.VPS_PORT || 22 }}
+
+          timeout: 30s
+          command_timeout: 10m
+          script_stop: true
+
+          script: |
+
+            echo "======================================"
+            echo "Déploiement SICORE Frontend"
+            echo "======================================"
+
+            # ------------------------------------------------
+            # Dossier du projet
+            # ------------------------------------------------
+
+            cd "${{ secrets.FRONTEND_DEPLOY_PATH }}"
+
+            echo "Répertoire courant :"
+            pwd
+
+            echo "Contenu :"
+            ls -la
+
+            # ------------------------------------------------
+            # Vérification Docker
+            # ------------------------------------------------
+
+            echo "Vérification Docker..."
+
+            docker --version
+            docker compose version
+
+            # ------------------------------------------------
+            # Connexion à GHCR
+            # ------------------------------------------------
+
+            echo "Connexion à GHCR..."
+
+            echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io \
+              -u "${{ secrets.GHCR_USERNAME }}" \
+              --password-stdin
+
+            # ------------------------------------------------
+            # Télécharger la nouvelle image
+            # ------------------------------------------------
+
+            echo "Téléchargement de la nouvelle image frontend..."
+
+            docker compose -f docker-compose-frontend.yml pull
+
+            # ------------------------------------------------
+            # Démarrer les conteneurs
+            # ------------------------------------------------
+
+            echo "Démarrage des conteneurs frontend..."
+
+            docker compose -f docker-compose-frontend.yml up -d
+
+            # ------------------------------------------------
+            # Vérifier les conteneurs
+            # ------------------------------------------------
+
+            echo "État des conteneurs..."
+
+            docker compose -f docker-compose-frontend.yml ps
+
+            # ------------------------------------------------
+            # Vérification du frontend
+            # ------------------------------------------------
+
+            echo "Vérification du frontend..."
+
+            docker compose -f docker-compose-frontend.yml ps --services
+
+            # ------------------------------------------------
+            # Nettoyage
+            # ------------------------------------------------
+
+            echo "Nettoyage des anciennes images..."
+
+            docker image prune -f
+
+            echo "======================================"
+            echo "Déploiement frontend terminé"
+            echo "======================================"
