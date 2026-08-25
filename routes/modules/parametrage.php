@@ -14,7 +14,7 @@ use App\Http\Controllers\Parametrage\PeriodePaieController;
 use App\Http\Controllers\Parametrage\RubriquePaieController;
 use App\Http\Controllers\Parametrage\SyndicatController;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Admin\LieuServiceController;
+//use App\Http\Controllers\Admin\LieuServiceController;
 
 /*
 |--------------------------------------------------------------------------
