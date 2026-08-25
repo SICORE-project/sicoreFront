@@ -18,7 +18,7 @@
     <section class="content-area">
 
 
-        <div class="stats-grid four" data-ajax-region="stats">
+        <div class="stats-grid three" data-ajax-region="stats">
 
             <article class="stat-card">
                 <div>
@@ -52,17 +52,6 @@
                 </div>
                 <span class="stat-icon yellow">
                     <i class="fa-solid fa-clock" aria-hidden="true"></i>
-                </span>
-            </article>
-
-            <article class="stat-card">
-                <div>
-                    <p class="stat-label">Clôturées</p>
-                    <p class="stat-value">{{ $stats['cloturees'] ?? 0 }}</p>
-                    <p class="stat-note">Traitées</p>
-                </div>
-                <span class="stat-icon red">
-                    <i class="fa-solid fa-circle-xmark" aria-hidden="true"></i>
                 </span>
             </article>
 

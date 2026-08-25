@@ -388,7 +388,6 @@ class EtatPaieIndemnitesController extends Controller
             'objet' => $objet,
             'session' => $session,
             'centre' => $centre,
-            'libelle_operation' => trim($typeLibelle.' '.($session ?? '')),
             'details' => $membres->values()->all(),
         ]);
 

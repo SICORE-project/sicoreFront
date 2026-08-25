@@ -71,20 +71,18 @@ class ConvocationsController extends Controller
         // fournit pas d'agregat dedie : "total" reprend le total reel de la
         // pagination, le reste est calcule sur la page courante uniquement.
         // NB: les cles doivent correspondre a index.blade.php
-        // ($stats['envoyees'], $stats['brouillons'], $stats['cloturees']).
+        // ($stats['envoyees'], $stats['brouillons']).
         $stats = [
             'total' => $convocations->total(),
             'brouillons' => 0,
             'emises' => 0,
             'envoyees' => 0,
-            'cloturees' => 0,
         ];
 
         $statutVersCleStat = [
             'brouillon' => 'brouillons',
             'emise' => 'emises',
             'envoyee' => 'envoyees',
-            'cloturee' => 'cloturees',
         ];
 
         foreach ($items as $convocation) {
@@ -433,7 +431,7 @@ class ConvocationsController extends Controller
             'heure_debut' => ['required', 'date_format:H:i'],
             'lieu_affectation' => ['nullable', 'string', 'max:255'],
             'ordre_de_mission' => ['nullable', 'boolean'],
-            'statut' => ['nullable', 'in:brouillon,emise,envoyee,cloturee'],
+            'statut' => ['nullable', 'in:brouillon,emise,envoyee'],
 
             // Centres d'examen (etape 2 du wizard) : centre, jury, chef de
             // centre — UNE seule entree par centre physique (une convocation
@@ -564,9 +562,30 @@ class ConvocationsController extends Controller
             }
         }
 
+        // Notifie automatiquement tous les bénéficiaires dès la création —
+        // demande utilisatrice : "quelque soit le statut on dois avoir la
+        // notification" (peu importe brouillon/émise/envoyée choisi sur le
+        // formulaire, jamais conditionné dessus). Réutilise le même envoi
+        // que le bouton "Envoyer aux bénéficiaires" (voir envoyer()
+        // ci-dessous) — silencieux si personne n'a encore été ajouté (rien
+        // à notifier) ou en cas d'échec (la convocation reste créée avec
+        // succès, l'envoi peut toujours être relancé manuellement depuis sa
+        // fiche).
+        $messageSucces = 'Convocation créée avec succès.';
+
+        if (! empty($beneficiaires)) {
+            $envoiResultat = $this->convocations->envoyer($convocationId);
+
+            if ($envoiResultat['success']) {
+                $messageSucces .= ' '.($envoiResultat['data']['envoyes'] ?? 0).' notification(s) envoyée(s).';
+            } else {
+                $messageSucces .= ' La notification automatique des bénéficiaires a échoué : '.($envoiResultat['message'] ?? 'erreur inconnue').' — relancez-la depuis la fiche de la convocation.';
+            }
+        }
+
         return redirect()
             ->route('indemnites.convocations.show', $convocationSlug)
-            ->with('success', 'Convocation creee avec succes.');
+            ->with('success', $messageSucces);
     }
 
     // Recherche d'enseignants pour le tableau de beneficiaires (AJAX, JSON)
@@ -872,7 +891,7 @@ class ConvocationsController extends Controller
             'heure_debut' => ['sometimes', 'date_format:H:i'],
             'lieu_affectation' => ['nullable', 'string', 'max:255'],
             'ordre_de_mission' => ['nullable', 'boolean'],
-            'statut' => ['nullable', 'in:brouillon,emise,envoyee,cloturee'],
+            'statut' => ['nullable', 'in:brouillon,emise,envoyee'],
 
             'centres' => ['required', 'array', 'min:1'],
             'centres.*.id' => ['nullable', 'integer'],

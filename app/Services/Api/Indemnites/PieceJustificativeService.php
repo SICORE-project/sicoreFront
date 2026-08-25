@@ -78,6 +78,18 @@ class PieceJustificativeService
         return $this->api->get("pieces-justificatives/{$id}/download");
     }
 
+    public function valider(int|string $id): array
+    {
+        return $this->wrap($this->api->post("pieces-justificatives/{$id}/valider"));
+    }
+
+    public function rejeter(int|string $id, string $commentaireRejet): array
+    {
+        return $this->wrap($this->api->post("pieces-justificatives/{$id}/rejeter", [
+            'commentaire_rejet' => $commentaireRejet,
+        ]));
+    }
+
     /**
      * $fichiers est indexé par type ('service_fait', 'ordre_mission', ...) ;
      * les entrées absentes/vides (aucun fichier choisi pour ce type) sont

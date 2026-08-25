@@ -563,30 +563,38 @@
         return div.innerHTML;
     }
 
+    // Matche par id d'enseignant si les deux le portent, sinon par
+    // nom+prenom (repli pour les etats crees avant l'ajout de 'details[].id'
+    // — sans ce repli, "Voir état" ne pouvait jamais apparaitre pour les
+    // etats deja existants au moment de ce changement). Partagee entre
+    // etatsDuMembre() (quel(s) etat(s) contiennent ce membre) et
+    // afficherEtatsExistants() (quelle(s) ligne(s) de CET etat lui
+    // appartiennent — un etat groupe plusieurs membres, "Voir état" ne
+    // doit montrer que celui sur lequel on a cliqué).
+    function detailCorrespondAuMembre(detail, membreId, nom, prenom) {
+        if (detail.id != null && membreId) {
+            return String(detail.id) === String(membreId);
+        }
+
+        var nomNormalise = (nom || "").trim().toLowerCase();
+        var prenomNormalise = (prenom || "").trim().toLowerCase();
+
+        if (!nomNormalise || !prenomNormalise) {
+            return false;
+        }
+
+        return (detail.nom || "").trim().toLowerCase() === nomNormalise
+            && (detail.prenom || "").trim().toLowerCase() === prenomNormalise;
+    }
+
     // Etat(s) deja crees contenant ce membre (matche par id d'enseignant,
     // enregistre dans 'details[].id' depuis cette mise a jour — les etats
     // crees avant n'ont pas cette cle et ne matcheront donc jamais, ce qui
     // est correct : on ne peut pas les rattacher a coup sur a un membre).
-    // Matche par id d'enseignant si les deux le portent, sinon par
-    // nom+prenom (repli pour les etats crees avant l'ajout de 'details[].id'
-    // — sans ce repli, "Voir état" ne pouvait jamais apparaitre pour les
-    // etats deja existants au moment de ce changement).
     function etatsDuMembre(membreId, nom, prenom) {
-        var nomNormalise = (nom || "").trim().toLowerCase();
-        var prenomNormalise = (prenom || "").trim().toLowerCase();
-
         return etatsExistants.filter(function (etat) {
             return (etat.details || []).some(function (d) {
-                if (d.id != null && membreId) {
-                    return String(d.id) === String(membreId);
-                }
-
-                if (!nomNormalise || !prenomNormalise) {
-                    return false;
-                }
-
-                return (d.nom || "").trim().toLowerCase() === nomNormalise
-                    && (d.prenom || "").trim().toLowerCase() === prenomNormalise;
+                return detailCorrespondAuMembre(d, membreId, nom, prenom);
             });
         });
     }
@@ -777,13 +785,32 @@
     }
 
     // $liste : sous-ensemble d'etatsExistants a afficher (celui/ceux
-    // contenant le membre sur lequel "Voir état" a ete clique).
-    function afficherEtatsExistants(liste) {
+    // contenant le membre sur lequel "Voir état" a ete clique). Un etat
+    // groupe plusieurs membres (voir "MEMBRE" en tete de tableau) — sans
+    // filtrer $etat.details ici, "Voir état" sur UN membre affichait TOUT
+    // le monde present dans le meme etat, pas seulement lui (demande
+    // utilisatrice : "il devait juste afficher l'état de paie qui
+    // conserve le membre uniquement"). Le total affiche est donc aussi
+    // recalcule sur les lignes filtrees, pas etat.total_montant (qui
+    // reste la somme de TOUS les membres de l'etat).
+    function afficherEtatsExistants(liste, membreId, nom, prenom) {
         if (!voirBody) return;
 
         voirBody.innerHTML = "";
 
         liste.forEach(function (etat) {
+            var detailsMembre = (etat.details || []).filter(function (d) {
+                return detailCorrespondAuMembre(d, membreId, nom, prenom);
+            });
+
+            if (!detailsMembre.length) {
+                return;
+            }
+
+            var totalMembre = detailsMembre.reduce(function (somme, d) {
+                return somme + (Number(d.montant) || 0);
+            }, 0);
+
             var carte = document.createElement("div");
             carte.className = "etat-paie-voir-carte";
 
@@ -799,7 +826,7 @@
                 "</div>" +
                 "<div class=\"etat-paie-voir-montant-wrap\">" +
                     "<span class=\"etat-paie-voir-montant-label\">Total</span>" +
-                    "<span class=\"etat-paie-voir-montant\">" + formatFCFA(etat.total_montant || 0) + "</span>" +
+                    "<span class=\"etat-paie-voir-montant\">" + formatFCFA(totalMembre) + "</span>" +
                 "</div>";
             carte.appendChild(header);
 
@@ -809,7 +836,7 @@
             var table = document.createElement("table");
             table.className = "etat-paie-voir-table";
 
-            var lignes = (etat.details || []).map(function (d) {
+            var lignes = detailsMembre.map(function (d) {
                 var initiales = ((d.prenom || "").charAt(0) + (d.nom || "").charAt(0)).toUpperCase();
 
                 return "<tr>" +
@@ -849,7 +876,12 @@
             return;
         }
 
-        afficherEtatsExistants(etatsDuMembre(ligne.dataset.id, ligne.dataset.nom, ligne.dataset.prenom));
+        afficherEtatsExistants(
+            etatsDuMembre(ligne.dataset.id, ligne.dataset.nom, ligne.dataset.prenom),
+            ligne.dataset.id,
+            ligne.dataset.nom,
+            ligne.dataset.prenom
+        );
         voirModal.hidden = false;
     });
 

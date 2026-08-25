@@ -127,7 +127,7 @@
                         <div class="form-group">
                             <label for="statut">Statut</label>
                             <select class="form-control @error('statut') is-invalid @enderror" id="statut" name="statut">
-                                @foreach (['brouillon' => 'Brouillon', 'emise' => 'Émise', 'envoyee' => 'Envoyée', 'cloturee' => 'Clôturée'] as $value => $label)
+                                @foreach (['brouillon' => 'Brouillon', 'emise' => 'Émise', 'envoyee' => 'Envoyée'] as $value => $label)
                                     <option value="{{ $value }}" @selected(old('statut', 'brouillon') === $value)>
                                         {{ $label }}
                                     </option>

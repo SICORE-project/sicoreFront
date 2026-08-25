@@ -147,6 +147,15 @@ Route::middleware('sicore.auth')
         Route::get('/pieces-justificatives/{id}/telecharger', [PiecesJustificativesController::class, 'telecharger'])
             ->name('pieces-justificatives.telecharger');
 
+        // Boutons "Valider"/"Rejeter" de la modale "Voir le dossier" —
+        // appelés en AJAX (fetch), réponse JSON, pas de rechargement de
+        // page (voir remplirDossier() côté vue).
+        Route::post('/pieces-justificatives/{id}/valider', [PiecesJustificativesController::class, 'valider'])
+            ->name('pieces-justificatives.valider');
+
+        Route::post('/pieces-justificatives/{id}/rejeter', [PiecesJustificativesController::class, 'rejeter'])
+            ->name('pieces-justificatives.rejeter');
+
         // Remplace l'ancien Route::view() (page statique sans donnees) qui
         // provoquait "Undefined variable $filtreActif" : la vue existante
         // (~40 Ko, ecrite par un coequipier) attendait deja $filtreActif,

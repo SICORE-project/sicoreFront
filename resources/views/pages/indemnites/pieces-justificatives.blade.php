@@ -472,6 +472,8 @@
             data-modal
             hidden
             data-dossier-download-url-template="{{ route('indemnites.pieces-justificatives.telecharger', ':id') }}"
+            data-dossier-valider-url-template="{{ route('indemnites.pieces-justificatives.valider', ':id') }}"
+            data-dossier-rejeter-url-template="{{ route('indemnites.pieces-justificatives.rejeter', ':id') }}"
         >
             <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="modal-voir-dossier-title">
 
@@ -962,7 +964,9 @@
         }
 
         // Statuts possibles d'une piece (voir piece_justificatives.statut
-        // cote back) : "null" = pas encore deposee du tout.
+        // cote back) : "null" = pas encore deposee du tout — reste au
+        // depot par defaut (demande utilisatrice), seuls les boutons
+        // Valider/Rejeter font evoluer une piece deja deposee.
         var LIBELLES_STATUT_DOSSIER = {
             depose: { label: "Déposé", classe: "badge-primary" },
             valide: { label: "Validé", classe: "badge-active" },
@@ -979,10 +983,76 @@
             return parties.length === 3 ? parties.reverse().join("/") : date;
         }
 
-        function remplirDossier(modal, bouton) {
+        function csrfToken() {
+            var meta = document.querySelector('meta[name="csrf-token"]');
+            return meta ? meta.getAttribute("content") : "";
+        }
+
+        // "Voir le dossier" ET "Modifier" portent chacun leur propre
+        // data-dossier-json (meme donnees, voir le tableau server-rendu) —
+        // sans re-synchroniser les deux apres un Valider/Rejeter, rouvrir
+        // la modale (ou "Modifier") reafficherait l'ancien statut, remplirDossier()
+        // relisant cet attribut a chaque ouverture plutot que l'etat couarant.
+        function synchroniserDossierJson(boutonVoir, dossier) {
+            var json = JSON.stringify(dossier);
+            var actions = boutonVoir.closest(".table-actions-inline");
+
+            if (!actions) {
+                boutonVoir.setAttribute("data-dossier-json", json);
+                return;
+            }
+
+            actions.querySelectorAll("[data-dossier-json]").forEach(function (autreBouton) {
+                autreBouton.setAttribute("data-dossier-json", json);
+            });
+        }
+
+        // Appelle valider()/rejeter() en AJAX (fetch) — pas de rechargement
+        // de page, la modale reste ouverte et seule cette ligne est
+        // redessinee (demande utilisatrice : "en cliquant sur validé il se
+        // change en validé").
+        function traiterActionPiece(modal, boutonVoir, dossier, piece, action, motifRejet, apresSucces) {
+            var attribut = action === "valider" ? "data-dossier-valider-url-template" : "data-dossier-rejeter-url-template";
+            var urlTemplate = modal.getAttribute(attribut) || "";
+
+            if (!urlTemplate || !piece.id) {
+                return;
+            }
+
+            fetch(urlTemplate.replace(":id", piece.id), {
+                method: "POST",
+                headers: {
+                    "X-CSRF-TOKEN": csrfToken(),
+                    "X-Requested-With": "XMLHttpRequest",
+                    "Content-Type": "application/json",
+                    "Accept": "application/json",
+                },
+                body: JSON.stringify(action === "rejeter" ? { commentaire_rejet: motifRejet } : {}),
+            })
+                .then(function (reponse) {
+                    return reponse.json().then(function (corps) {
+                        return { ok: reponse.ok, corps: corps };
+                    });
+                })
+                .then(function (resultat) {
+                    if (!resultat.ok || !resultat.corps.success) {
+                        window.alert((resultat.corps && resultat.corps.message) || "Une erreur est survenue.");
+                        return;
+                    }
+
+                    piece.statut = resultat.corps.statut;
+                    synchroniserDossierJson(boutonVoir, dossier);
+                    apresSucces();
+                })
+                .catch(function () {
+                    window.alert("Le service SICORE Backend est injoignable.");
+                });
+        }
+
+        function remplirDossier(modal, boutonVoir) {
             var libelle = modal.querySelector("[data-dossier-membre-label]");
             if (libelle) {
-                libelle.textContent = bouton.getAttribute("data-dossier-label") || "";
+                libelle.textContent = boutonVoir.getAttribute("data-dossier-label") || "";
             }
 
             var liste = modal.querySelector("[data-dossier-liste]");
@@ -994,12 +1064,12 @@
 
             var dossier = [];
             try {
-                dossier = JSON.parse(bouton.getAttribute("data-dossier-json") || "[]");
+                dossier = JSON.parse(boutonVoir.getAttribute("data-dossier-json") || "[]");
             } catch (erreur) {
                 dossier = [];
             }
 
-            var urlTemplate = modal.getAttribute("data-dossier-download-url-template") || "";
+            var urlTelechargerTemplate = modal.getAttribute("data-dossier-download-url-template") || "";
 
             dossier.forEach(function (piece) {
                 var item = document.createElement("li");
@@ -1025,27 +1095,71 @@
                 var actions = document.createElement("div");
                 actions.className = "piece-dossier-item-actions";
 
-                var infoStatut = LIBELLES_STATUT_DOSSIER[piece.statut] || { label: "Non déposé", classe: "badge-pending" };
-                var badge = document.createElement("span");
-                badge.className = "badge " + infoStatut.classe;
-                badge.textContent = infoStatut.label;
-                actions.appendChild(badge);
+                // Redessine juste cette ligne (badge + boutons) apres un
+                // Valider/Rejeter reussi, sans reconstruire toute la liste.
+                function redessinerLigne() {
+                    actions.innerHTML = "";
 
-                if (piece.id && urlTemplate) {
-                    // Ouvre dans un nouvel onglet : le fichier s'affiche
-                    // (visionneuse du navigateur) plutot que de forcer un
-                    // telechargement immediat — l'utilisateur peut ensuite
-                    // le telecharger lui-meme depuis cette visionneuse s'il
-                    // le souhaite, sans quitter la page/la modale.
-                    var lien = document.createElement("a");
-                    lien.className = "table-action";
-                    lien.href = urlTemplate.replace(":id", piece.id);
-                    lien.target = "_blank";
-                    lien.rel = "noopener";
-                    lien.textContent = "Voir / Télécharger";
-                    actions.appendChild(lien);
+                    var infoStatut = LIBELLES_STATUT_DOSSIER[piece.statut] || { label: "Non déposé", classe: "badge-pending" };
+                    var badge = document.createElement("span");
+                    badge.className = "badge " + infoStatut.classe;
+                    badge.textContent = infoStatut.label;
+                    actions.appendChild(badge);
+
+                    if (piece.id && urlTelechargerTemplate) {
+                        // Ouvre dans un nouvel onglet : le fichier s'affiche
+                        // (visionneuse du navigateur) plutot que de forcer un
+                        // telechargement immediat — l'utilisateur peut ensuite
+                        // le telecharger lui-meme depuis cette visionneuse s'il
+                        // le souhaite, sans quitter la page/la modale.
+                        var lien = document.createElement("a");
+                        lien.className = "table-action";
+                        lien.href = urlTelechargerTemplate.replace(":id", piece.id);
+                        lien.target = "_blank";
+                        lien.rel = "noopener";
+                        lien.textContent = "Voir / Télécharger";
+                        actions.appendChild(lien);
+                    }
+
+                    // Valider/Rejeter : uniquement sur une piece reellement
+                    // deposee (piece.id) — rien a faire evoluer tant
+                    // qu'aucun fichier n'existe. Le bouton correspondant au
+                    // statut courant est masque (pas de "Valider" sur une
+                    // piece deja validee).
+                    if (!piece.id) {
+                        return;
+                    }
+
+                    if (piece.statut !== "valide") {
+                        var boutonValider = document.createElement("button");
+                        boutonValider.type = "button";
+                        boutonValider.className = "table-action";
+                        boutonValider.textContent = "Valider";
+                        boutonValider.addEventListener("click", function () {
+                            boutonValider.disabled = true;
+                            traiterActionPiece(modal, boutonVoir, dossier, piece, "valider", null, redessinerLigne);
+                        });
+                        actions.appendChild(boutonValider);
+                    }
+
+                    if (piece.statut !== "rejete") {
+                        var boutonRejeter = document.createElement("button");
+                        boutonRejeter.type = "button";
+                        boutonRejeter.className = "table-action danger";
+                        boutonRejeter.textContent = "Rejeter";
+                        boutonRejeter.addEventListener("click", function () {
+                            var motif = window.prompt("Motif du rejet :");
+                            if (!motif) {
+                                return;
+                            }
+                            boutonRejeter.disabled = true;
+                            traiterActionPiece(modal, boutonVoir, dossier, piece, "rejeter", motif, redessinerLigne);
+                        });
+                        actions.appendChild(boutonRejeter);
+                    }
                 }
 
+                redessinerLigne();
                 item.appendChild(actions);
                 liste.appendChild(item);
             });

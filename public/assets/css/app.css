@@ -435,6 +435,10 @@
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
+.stats-grid.three {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
 .stat-card {
   min-height: 86px;
   display: flex;

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Indemnites;
 use App\Http\Controllers\Controller;
 use App\Services\Api\Indemnites\ConvocationService;
 use App\Services\Api\Indemnites\PieceJustificativeService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -485,6 +486,38 @@ class PiecesJustificativesController extends Controller
         return redirect()
             ->back()
             ->with('success', 'Dossier modifié avec succès.');
+    }
+
+    /**
+     * Boutons "Valider"/"Rejeter" de la modale "Voir le dossier" — appelés
+     * en AJAX (fetch), voir remplirDossier() côté vue : réponse JSON directe
+     * plutôt qu'une redirection, pour mettre à jour le badge de statut sans
+     * recharger la page ni fermer la modale.
+     */
+    public function valider(string $id): JsonResponse
+    {
+        $resultat = $this->pieces->valider($id);
+
+        return response()->json([
+            'success' => $resultat['success'],
+            'message' => $resultat['message'] ?? null,
+            'statut' => $resultat['success'] ? 'valide' : null,
+        ], $resultat['success'] ? 200 : ($resultat['status'] ?? 422));
+    }
+
+    public function rejeter(Request $request, string $id): JsonResponse
+    {
+        $data = $request->validate([
+            'commentaire_rejet' => ['required', 'string', 'max:1000'],
+        ]);
+
+        $resultat = $this->pieces->rejeter($id, $data['commentaire_rejet']);
+
+        return response()->json([
+            'success' => $resultat['success'],
+            'message' => $resultat['message'] ?? null,
+            'statut' => $resultat['success'] ? 'rejete' : null,
+        ], $resultat['success'] ? 200 : ($resultat['status'] ?? 422));
     }
 
     public function telecharger(string $id): StreamedResponse
