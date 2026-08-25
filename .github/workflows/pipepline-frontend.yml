@@ -19,7 +19,7 @@ jobs:
   # 1. CONTINUOUS INTEGRATION
   # ==========================================================
   ci:
-    name: Tests et Build Frontend
+    name: Tests et Vérification Frontend
     runs-on: ubuntu-latest
 
     steps:
@@ -31,59 +31,117 @@ jobs:
       - name: Recuperer le code
         uses: actions/checkout@v4
 
+
       # ------------------------------------------------------
-      # Node.js
+      # PHP
       # ------------------------------------------------------
 
-      - name: Installer Node.js
-        uses: actions/setup-node@v4
+      - name: Installer PHP
+        uses: shivammathur/setup-php@v2
         with:
-          node-version: '22'
-          cache: npm
+          php-version: '8.2'
+          extensions: mbstring, dom, fileinfo, pdo, pdo_mysql, intl, zip
+          coverage: none
 
-      - name: Verifier les versions
+      - name: Verifier PHP
         run: |
-          node --version
-          npm --version
+          php -v
+
 
       # ------------------------------------------------------
-      # Vérification package.json
+      # Composer
       # ------------------------------------------------------
 
-      - name: Verifier package.json
+      - name: Verifier Composer
         run: |
-          echo "Contenu du repository :"
-          ls -la
+          composer --version
 
-          echo "Verification de package.json..."
-          test -f ./package.json
 
-      # ------------------------------------------------------
-      # Installation des dépendances
-      # ------------------------------------------------------
-
-      - name: Installer les dependances Node
+      - name: Verifier composer.json
         run: |
-          if [ -f package-lock.json ]; then
-            npm ci
+          composer validate --no-check-publish
+
+
+      - name: Installer les dependances PHP
+        run: |
+          if [ -f composer.lock ]; then
+            composer install \
+              --no-interaction \
+              --prefer-dist \
+              --no-progress \
+              --no-dev \
+              --optimize-autoloader
           else
-            npm install
+            composer update \
+              --no-interaction \
+              --prefer-dist \
+              --no-progress \
+              --no-dev \
+              --optimize-autoloader
           fi
 
+
       # ------------------------------------------------------
-      # Vérification du script build
+      # Préparation Laravel
       # ------------------------------------------------------
 
-      - name: Verifier le script build
+      - name: Verifier .env.example
         run: |
-          npm run
+          test -f .env.example
+          echo ".env.example trouvé."
+
+
+      - name: Preparer Laravel
+        run: |
+          cp .env.example .env
+          php artisan key:generate --ansi
+
 
       # ------------------------------------------------------
-      # Build Frontend
+      # Vérification Laravel
       # ------------------------------------------------------
 
-      - name: Compiler le frontend
-        run: npm run build
+      - name: Verifier Laravel
+        run: |
+          php artisan --version
+          php artisan about
+
+
+      # ------------------------------------------------------
+      # Vérification des assets frontend
+      # ------------------------------------------------------
+
+      - name: Verifier les assets frontend
+        run: |
+          test -d public/assets
+
+          echo "======================================"
+          echo "Dossier public/assets trouvé"
+          echo "======================================"
+
+          find public/assets -type f | head -30
+
+
+      # ------------------------------------------------------
+      # Vérification Dockerfile
+      # ------------------------------------------------------
+
+      - name: Verifier Dockerfile
+        run: |
+          test -f ./Dockerfile
+          echo "Dockerfile trouvé."
+
+
+      # ------------------------------------------------------
+      # Vérification des fichiers Docker
+      # ------------------------------------------------------
+
+      - name: Verifier les fichiers Docker
+        run: |
+          test -f ./docker/nginx.conf
+          test -f ./docker/supervisord.conf
+
+          echo "Configuration Docker valide."
 
 
   # ==========================================================
@@ -95,6 +153,7 @@ jobs:
 
     needs: ci
 
+    # Docker uniquement après un push vers deploy
     if: github.event_name == 'push' && github.ref == 'refs/heads/deploy'
 
     steps:
@@ -106,20 +165,39 @@ jobs:
       - name: Recuperer le code
         uses: actions/checkout@v4
 
+
       # ------------------------------------------------------
       # Vérification Dockerfile
       # ------------------------------------------------------
 
       - name: Verifier Dockerfile
         run: |
-          echo "Contenu du repository :"
+          echo "======================================"
+          echo "Contenu du repository"
+          echo "======================================"
+
           ls -la
 
-          echo "Verification du Dockerfile..."
+          echo "======================================"
+          echo "Verification du Dockerfile"
+          echo "======================================"
 
           test -f ./Dockerfile
 
           echo "Dockerfile trouvé."
+
+
+      # ------------------------------------------------------
+      # Vérification configuration Docker
+      # ------------------------------------------------------
+
+      - name: Verifier configuration Docker
+        run: |
+          test -f ./docker/nginx.conf
+          test -f ./docker/supervisord.conf
+
+          echo "Fichiers Docker trouvés."
+
 
       # ------------------------------------------------------
       # Connexion à GHCR
@@ -131,6 +209,7 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+
 
       # ------------------------------------------------------
       # Build + Push
@@ -147,6 +226,9 @@ jobs:
             ghcr.io/sicore-project/sicore-frontend:latest
             ghcr.io/sicore-project/sicore-frontend:${{ github.sha }}
 
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
 
   # ==========================================================
   # 3. DEPLOY VPS
@@ -159,6 +241,7 @@ jobs:
       - ci
       - docker
 
+    # Déploiement uniquement après un push vers deploy
     if: github.event_name == 'push' && github.ref == 'refs/heads/deploy'
 
     steps:
@@ -186,77 +269,127 @@ jobs:
             echo "Déploiement SICORE Frontend"
             echo "======================================"
 
+
             # ------------------------------------------------
             # Dossier du projet
             # ------------------------------------------------
+
+            echo "Accès au dossier frontend..."
 
             cd "${{ secrets.FRONTEND_DEPLOY_PATH }}"
 
             echo "Répertoire courant :"
             pwd
 
-            echo "Contenu :"
+            echo "Contenu du répertoire :"
             ls -la
+
 
             # ------------------------------------------------
             # Vérification Docker
             # ------------------------------------------------
 
-            echo "Vérification Docker..."
+            echo "======================================"
+            echo "Vérification Docker"
+            echo "======================================"
 
             docker --version
             docker compose version
+
+
+            # ------------------------------------------------
+            # Vérification docker-compose
+            # ------------------------------------------------
+
+            echo "======================================"
+            echo "Vérification docker-compose"
+            echo "======================================"
+
+            test -f docker-compose-frontend.yml
+
+            echo "docker-compose-frontend.yml trouvé."
+
 
             # ------------------------------------------------
             # Connexion à GHCR
             # ------------------------------------------------
 
-            echo "Connexion à GHCR..."
+            echo "======================================"
+            echo "Connexion à GHCR"
+            echo "======================================"
 
             echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io \
               -u "${{ secrets.GHCR_USERNAME }}" \
               --password-stdin
 
+
             # ------------------------------------------------
             # Télécharger la nouvelle image
             # ------------------------------------------------
 
-            echo "Téléchargement de la nouvelle image frontend..."
+            echo "======================================"
+            echo "Téléchargement de la nouvelle image"
+            echo "======================================"
 
-            docker compose -f docker-compose-frontend.yml pull
+            docker compose \
+              -f docker-compose-frontend.yml \
+              pull
+
 
             # ------------------------------------------------
-            # Démarrer les conteneurs
+            # Redémarrer les conteneurs
             # ------------------------------------------------
 
-            echo "Démarrage des conteneurs frontend..."
+            echo "======================================"
+            echo "Démarrage des conteneurs"
+            echo "======================================"
 
-            docker compose -f docker-compose-frontend.yml up -d
+            docker compose \
+              -f docker-compose-frontend.yml \
+              up -d
+
 
             # ------------------------------------------------
             # Vérifier les conteneurs
             # ------------------------------------------------
 
-            echo "État des conteneurs..."
+            echo "======================================"
+            echo "État des conteneurs"
+            echo "======================================"
 
-            docker compose -f docker-compose-frontend.yml ps
+            docker compose \
+              -f docker-compose-frontend.yml \
+              ps
+
 
             # ------------------------------------------------
-            # Vérification du frontend
+            # Vérifier les logs
             # ------------------------------------------------
 
-            echo "Vérification du frontend..."
+            echo "======================================"
+            echo "Logs du frontend"
+            echo "======================================"
 
-            docker compose -f docker-compose-frontend.yml ps --services
+            docker compose \
+              -f docker-compose-frontend.yml \
+              logs --tail=50 frontend
+
 
             # ------------------------------------------------
             # Nettoyage
             # ------------------------------------------------
 
-            echo "Nettoyage des anciennes images..."
+            echo "======================================"
+            echo "Nettoyage des anciennes images"
+            echo "======================================"
 
             docker image prune -f
 
+
+            # ------------------------------------------------
+            # Fin
+            # ------------------------------------------------
+
             echo "======================================"
-            echo "Déploiement frontend terminé"
+            echo "Déploiement frontend terminé avec succès"
             echo "======================================"
