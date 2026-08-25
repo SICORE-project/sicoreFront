@@ -63,3 +63,5 @@ Route::middleware('sicore.auth')
             Route::get('/sync', [PermissionController::class, 'sync'])->name('sync');
         });
     });
+
+    // test
