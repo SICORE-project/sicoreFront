@@ -200,6 +200,19 @@
                                     value="150 000 FCFA (montant fixe vacataire)"
                                     disabled
                                 >
+                                {{--
+                                    Un champ disabled n'est JAMAIS envoyé par
+                                    le navigateur (même principe que
+                                    indice_agent_affiche pour un
+                                    fonctionnaire ci-dessous) — sans ce champ
+                                    caché, montant_saisi arrivait vide côté
+                                    serveur : le salaire annuel retombait à 0
+                                    et la fiche affichait ensuite "Montant
+                                    mensuel non saisi" partout (page Calcul
+                                    groupé) malgré un montant fixe pourtant
+                                    bien défini.
+                                --}}
+                                <input type="hidden" name="montant_saisi" value="150000">
                                 <small class="form-hint">Montant fixe, déjà déterminé — non modifiable ici.</small>
                             </div>
 

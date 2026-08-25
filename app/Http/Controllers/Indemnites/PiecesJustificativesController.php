@@ -520,14 +520,23 @@ class PiecesJustificativesController extends Controller
         ], $resultat['success'] ? 200 : ($resultat['status'] ?? 422));
     }
 
+    /**
+     * Le back (PieceJustificativesController::download(), Storage::response())
+     * renvoie déjà un Content-Disposition avec le VRAI nom de fichier
+     * d'origine (extension comprise) — le relayer tel quel plutôt que
+     * d'inventer un nom générique sans extension ("piece-justificative-{id}")
+     * qui faisait passer le fichier téléchargé pour corrompu (l'OS/la
+     * visionneuse ne reconnaissait plus son type sans extension).
+     */
     public function telecharger(string $id): StreamedResponse
     {
         $reponse = $this->pieces->telecharger($id);
 
         return response()->streamDownload(function () use ($reponse) {
             echo $reponse->body();
-        }, 'piece-justificative-'.$id, [
+        }, null, array_filter([
             'Content-Type' => $reponse->header('Content-Type') ?: 'application/octet-stream',
-        ]);
+            'Content-Disposition' => $reponse->header('Content-Disposition'),
+        ]));
     }
 }

@@ -451,7 +451,11 @@ class FraisDeplacementController extends Controller
 
     /**
      * Téléchargement d'une pièce jointe (recto ou verso) de la fiche —
-     * même principe que PiecesJustificativesController::telecharger().
+     * même principe que PiecesJustificativesController::telecharger() : le
+     * back renvoie déjà un Content-Disposition avec le vrai nom de fichier
+     * d'origine (extension comprise), on le relaie tel quel plutôt que
+     * d'inventer un nom générique sans extension (faisait passer le
+     * fichier téléchargé pour corrompu).
      */
     public function telechargerJustificatif(string $id, string $justificatifId): StreamedResponse
     {
@@ -459,9 +463,10 @@ class FraisDeplacementController extends Controller
 
         return response()->streamDownload(function () use ($reponse) {
             echo $reponse->body();
-        }, 'feuille-deplacement-'.$justificatifId, [
+        }, null, array_filter([
             'Content-Type' => $reponse->header('Content-Type') ?: 'application/octet-stream',
-        ]);
+            'Content-Disposition' => $reponse->header('Content-Disposition'),
+        ]));
     }
 
     /**

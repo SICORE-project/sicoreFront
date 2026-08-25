@@ -584,7 +584,7 @@ class ConvocationsController extends Controller
         }
 
         return redirect()
-            ->route('indemnites.convocations.show', $convocationSlug)
+            ->route('indemnites.convocations')
             ->with('success', $messageSucces);
     }
 

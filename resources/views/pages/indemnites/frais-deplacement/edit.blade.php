@@ -185,6 +185,8 @@
                                     value="150 000 FCFA (montant fixe vacataire)"
                                     disabled
                                 >
+                                {{-- Un champ disabled n'est jamais envoyé par le navigateur — voir create.blade.php pour le detail du bug que ce champ caché corrige. --}}
+                                <input type="hidden" name="montant_saisi" value="150000">
                                 <small class="form-hint">Montant fixe, déjà déterminé — non modifiable ici.</small>
                             </div>
 
