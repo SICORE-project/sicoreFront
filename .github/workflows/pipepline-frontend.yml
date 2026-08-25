@@ -19,7 +19,7 @@ jobs:
   # 1. CONTINUOUS INTEGRATION
   # ==========================================================
   ci:
-    name: Tests et Vérification Frontend
+    name: Vérification Frontend Laravel
     runs-on: ubuntu-latest
 
     steps:
@@ -59,7 +59,7 @@ jobs:
 
       - name: Verifier composer.json
         run: |
-          composer validate --no-check-publish
+          composer validate --no-check-publish --no-interaction
 
 
       - name: Installer les dependances PHP
@@ -108,15 +108,18 @@ jobs:
 
 
       # ------------------------------------------------------
-      # Vérification des assets frontend
+      # Vérification des assets
       # ------------------------------------------------------
 
       - name: Verifier les assets frontend
         run: |
-          test -d public/assets
+          if [ ! -d "public/assets" ]; then
+            echo "ERREUR : public/assets n'existe pas."
+            exit 1
+          fi
 
           echo "======================================"
-          echo "Dossier public/assets trouvé"
+          echo "Assets frontend trouvés"
           echo "======================================"
 
           find public/assets -type f | head -30
@@ -128,18 +131,22 @@ jobs:
 
       - name: Verifier Dockerfile
         run: |
-          test -f ./Dockerfile
+          if [ ! -f "Dockerfile" ]; then
+            echo "ERREUR : Dockerfile introuvable."
+            exit 1
+          fi
+
           echo "Dockerfile trouvé."
 
 
       # ------------------------------------------------------
-      # Vérification des fichiers Docker
+      # Vérification configuration Docker
       # ------------------------------------------------------
 
-      - name: Verifier les fichiers Docker
+      - name: Verifier fichiers Docker
         run: |
-          test -f ./docker/nginx.conf
-          test -f ./docker/supervisord.conf
+          test -f docker/nginx.conf
+          test -f docker/supervisord.conf
 
           echo "Configuration Docker valide."
 
@@ -148,12 +155,11 @@ jobs:
   # 2. BUILD + PUSH IMAGE DOCKER
   # ==========================================================
   docker:
-    name: Build and Push Docker Image
+    name: Build et Push Image Frontend
     runs-on: ubuntu-latest
 
     needs: ci
 
-    # Docker uniquement après un push vers deploy
     if: github.event_name == 'push' && github.ref == 'refs/heads/deploy'
 
     steps:
@@ -173,30 +179,14 @@ jobs:
       - name: Verifier Dockerfile
         run: |
           echo "======================================"
-          echo "Contenu du repository"
-          echo "======================================"
-
-          ls -la
-
-          echo "======================================"
-          echo "Verification du Dockerfile"
+          echo "Verification Dockerfile"
           echo "======================================"
 
           test -f ./Dockerfile
-
-          echo "Dockerfile trouvé."
-
-
-      # ------------------------------------------------------
-      # Vérification configuration Docker
-      # ------------------------------------------------------
-
-      - name: Verifier configuration Docker
-        run: |
           test -f ./docker/nginx.conf
           test -f ./docker/supervisord.conf
 
-          echo "Fichiers Docker trouvés."
+          echo "Tous les fichiers Docker sont présents."
 
 
       # ------------------------------------------------------
@@ -212,6 +202,14 @@ jobs:
 
 
       # ------------------------------------------------------
+      # Configuration Buildx
+      # ------------------------------------------------------
+
+      - name: Configurer Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+
+      # ------------------------------------------------------
       # Build + Push
       # ------------------------------------------------------
 
@@ -220,6 +218,7 @@ jobs:
         with:
           context: .
           file: ./Dockerfile
+
           push: true
 
           tags: |
@@ -234,20 +233,19 @@ jobs:
   # 3. DEPLOY VPS
   # ==========================================================
   deploy:
-    name: Deploy Frontend VPS
+    name: Déploiement Frontend VPS
     runs-on: ubuntu-latest
 
     needs:
       - ci
       - docker
 
-    # Déploiement uniquement après un push vers deploy
     if: github.event_name == 'push' && github.ref == 'refs/heads/deploy'
 
     steps:
 
       # ------------------------------------------------------
-      # Déploiement SSH
+      # Connexion SSH + déploiement
       # ------------------------------------------------------
 
       - name: Deployer sur le VPS
@@ -298,20 +296,39 @@ jobs:
 
 
             # ------------------------------------------------
-            # Vérification docker-compose
+            # Vérification Docker Compose
             # ------------------------------------------------
 
             echo "======================================"
-            echo "Vérification docker-compose"
+            echo "Vérification Docker Compose"
             echo "======================================"
 
-            test -f docker-compose-frontend.yml
+            if [ ! -f "docker-compose-frontend.yml" ]; then
+              echo "ERREUR : docker-compose-frontend.yml introuvable."
+              exit 1
+            fi
 
             echo "docker-compose-frontend.yml trouvé."
 
 
             # ------------------------------------------------
-            # Connexion à GHCR
+            # Vérification du fichier .env
+            # ------------------------------------------------
+
+            echo "======================================"
+            echo "Vérification .env"
+            echo "======================================"
+
+            if [ ! -f ".env" ]; then
+              echo "ERREUR : .env introuvable sur le VPS."
+              exit 1
+            fi
+
+            echo ".env trouvé."
+
+
+            # ------------------------------------------------
+            # Connexion GHCR
             # ------------------------------------------------
 
             echo "======================================"
@@ -328,7 +345,7 @@ jobs:
             # ------------------------------------------------
 
             echo "======================================"
-            echo "Téléchargement de la nouvelle image"
+            echo "Téléchargement de l'image frontend"
             echo "======================================"
 
             docker compose \
@@ -337,7 +354,7 @@ jobs:
 
 
             # ------------------------------------------------
-            # Redémarrer les conteneurs
+            # Démarrage des conteneurs
             # ------------------------------------------------
 
             echo "======================================"
@@ -350,7 +367,7 @@ jobs:
 
 
             # ------------------------------------------------
-            # Vérifier les conteneurs
+            # Vérification des conteneurs
             # ------------------------------------------------
 
             echo "======================================"
@@ -363,11 +380,24 @@ jobs:
 
 
             # ------------------------------------------------
-            # Vérifier les logs
+            # Vérification du service frontend
             # ------------------------------------------------
 
             echo "======================================"
-            echo "Logs du frontend"
+            echo "Vérification du service frontend"
+            echo "======================================"
+
+            docker compose \
+              -f docker-compose-frontend.yml \
+              ps frontend
+
+
+            # ------------------------------------------------
+            # Logs
+            # ------------------------------------------------
+
+            echo "======================================"
+            echo "Derniers logs frontend"
             echo "======================================"
 
             docker compose \
