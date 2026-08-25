@@ -54,7 +54,7 @@ class AuthController extends Controller
             'email' => $data['user']['email'],
             'role' => $data['user']['role']['nom'] ?? null,
             'role_slug' => $data['user']['role']['slug'] ?? null,
-            'permissions' => $data['user']['permissions'] ?? $data['user']['role']['permissions'] ?? [],
+            'acces_organisationnel' => $data['user']['acces_organisationnel'] ?? $data['user']['organisation_access'] ?? [],
         ]);
 
         return redirect()

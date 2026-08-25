@@ -2,6 +2,8 @@
 
 namespace App\Services\Api;
 
+use App\Services\Organisation\OrganisationContext;
+
 use Illuminate\Support\Facades\Http;
 
 class ApiClient
@@ -31,7 +33,7 @@ class ApiClient
     {
         return $this->request()->get(
             $this->baseUrl . '/' . $uri,
-            $query
+            array_merge($query, app(OrganisationContext::class)->query())
         );
     }
 

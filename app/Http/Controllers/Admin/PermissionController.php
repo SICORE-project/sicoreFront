@@ -4,24 +4,36 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 
 class PermissionController extends Controller
 {
     public function index(Request $request)
     {
         $response = Http::withToken(session('access_token'))
-            ->get(config('services.backend.url') . '/admin/permissions', [
-                'groupe' => $request->groupe,
-                'module' => $request->module,
-                'per_page' => 50,
-            ]);
+            ->get(config('services.backend.url') . '/admin/permissions/all');
 
-        $permissions = $response->successful()
-            ? $response->json()['data'] ?? []
-            : [];
+        $payload = $response->json();
+        $items = $response->successful() ? data_get($payload, 'data', []) : [];
+        $items = is_array($items) ? array_values($items) : [];
+        $perPage = 10;
+        $page = max(1, $request->integer('page', 1));
+        $paginator = new LengthAwarePaginator(
+            array_slice($items, ($page - 1) * $perPage, $perPage),
+            count($items),
+            $perPage,
+            $page,
+            ['path' => $request->url(), 'query' => $request->query()]
+        );
+        $permissions = $paginator->toArray();
 
-        return view('pages.administration.permissions', compact('permissions'));
+        $permissionsError = $response->successful()
+            ? null
+            : $response->json('message', "Impossible de charger les permissions (HTTP {$response->status()}).");
+
+        return view('pages.administration.permissions', compact('permissions', 'permissionsError'));
     }
 
     public function create()
@@ -29,12 +41,24 @@ class PermissionController extends Controller
         return view('pages.administration.permissions-create');
     }
 
+    public function show($id)
+    {
+        $permission = $this->findPermission($id);
+
+        if (!$permission) {
+            return redirect()->route('admin.permissions.index')
+                ->with('error', 'Permission non trouvée.');
+        }
+
+        return view('pages.administration.permissions-show', compact('permission'));
+    }
+
     public function store(Request $request)
     {
         $response = Http::withToken(session('access_token'))
             ->post(config('services.backend.url') . '/admin/permissions', [
                 'nom' => $request->nom,
-                'slug' => $request->slug,
+                'slug' => $this->permissionSlug($request),
                 'groupe' => $request->groupe,
                 'module' => $request->module,
                 'action' => $request->action,
@@ -52,10 +76,7 @@ class PermissionController extends Controller
 
     public function edit($id)
     {
-        $response = Http::withToken(session('access_token'))
-            ->get(config('services.backend.url') . '/admin/permissions/' . $id);
-
-        $permission = $response->successful() ? $response->json()['data'] ?? null : null;
+        $permission = $this->findPermission($id);
 
         if (!$permission) {
             return redirect()->route('admin.permissions.index')->with('error', 'Permission non trouvée');
@@ -64,12 +85,26 @@ class PermissionController extends Controller
         return view('pages.administration.permissions-edit', compact('permission'));
     }
 
+    private function findPermission($id): ?array
+    {
+        $response = Http::withToken(session('access_token'))
+            ->get(config('services.backend.url') . '/admin/permissions/all');
+
+        if (!$response->successful()) {
+            return null;
+        }
+
+        return collect($response->json('data', []))->first(
+            fn (array $permission): bool => (string) ($permission['id'] ?? '') === (string) $id
+        );
+    }
+
     public function update(Request $request, $id)
     {
         $response = Http::withToken(session('access_token'))
             ->put(config('services.backend.url') . '/admin/permissions/' . $id, [
                 'nom' => $request->nom,
-                'slug' => $request->slug,
+                'slug' => $this->permissionSlug($request),
                 'groupe' => $request->groupe,
                 'module' => $request->module,
                 'action' => $request->action,
@@ -96,6 +131,19 @@ class PermissionController extends Controller
         }
 
         return back()->with('error', $response->json()['message'] ?? 'Erreur lors de la suppression');
+    }
+
+    private function permissionSlug(Request $request): string
+    {
+        return collect([$request->groupe, $request->module, $request->action])
+            ->map(fn ($part): string => Str::of((string) $part)
+                ->ascii()
+                ->lower()
+                ->replaceMatches('/[^a-z0-9]+/', '_')
+                ->trim('_')
+                ->toString())
+            ->filter()
+            ->implode('.');
     }
 
     public function sync()

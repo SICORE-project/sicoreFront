@@ -15,7 +15,7 @@ Après validation, Laravel crée une session locale et redirige uniquement vers 
 
 ## Prérequis
 
-- PHP 8.2 ou supérieur ; compatible avec PHP 8.2.12.
+- PHP 8.4.1 ou supérieur (PHP 8.4.12 est recommandé avec Laragon).
 - Composer 2, seulement si le dossier `vendor` doit être réinstallé.
 - Extensions PHP habituelles de Laravel : `mbstring`, `openssl`, `fileinfo`, `tokenizer`, `ctype`, `dom`, `xml` et `xmlwriter`.
 - Aucun lancement npm ou Vite n’est nécessaire : les assets sont déjà présents dans `public/assets`.

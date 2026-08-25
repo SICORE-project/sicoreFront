@@ -18,11 +18,6 @@
                         <input type="text" id="nom" name="nom" required class="form-control">
                         @error('nom') <p style="color:#dc2626; font-size:12px; margin-top:4px;">{{ $message }}</p> @enderror
                     </div>
-                    <div class="form-group">
-                        <label for="slug">Slug *</label>
-                        <input type="text" id="slug" name="slug" required class="form-control">
-                        @error('slug') <p style="color:#dc2626; font-size:12px; margin-top:4px;">{{ $message }}</p> @enderror
-                    </div>
                 </div>
 
                 <div class="form-group" style="margin-bottom: 20px;">
@@ -31,20 +26,20 @@
                     @error('description') <p style="color:#dc2626; font-size:12px; margin-top:4px;">{{ $message }}</p> @enderror
                 </div>
 
-                <div class="filter-panel" aria-label="Niveau et statut" style="margin-bottom: 20px;">
+                <div class="filter-panel" aria-label="Type et statut" style="margin-bottom: 20px;">
                     <div class="form-group">
-                        <label for="niveau">Niveau</label>
-                        <select id="niveau" name="niveau" class="form-control">
-                            <option value="systeme">Système</option>
-                            <option value="admin_metier">Admin Métier</option>
-                            <option value="gestionnaire">Gestionnaire</option>
-                            <option value="consultation">Consultation</option>
+                        <label for="type_role_id">Type de rôle *</label>
+                        <select id="type_role_id" name="type_role_id" class="form-control" required>
+                            <option value="">Sélectionnez un type</option>
+                            @foreach ($typeRoles as $typeRole)
+                                <option value="{{ $typeRole['id'] }}" @selected(old('type_role_id') == $typeRole['id'])>{{ $typeRole['libelle'] }}</option>
+                            @endforeach
                         </select>
-                        @error('niveau') <p style="color:#dc2626; font-size:12px; margin-top:4px;">{{ $message }}</p> @enderror
+                        @error('type_role_id') <p style="color:#dc2626; font-size:12px; margin-top:4px;">{{ $message }}</p> @enderror
                     </div>
                     <div class="form-group">
-                        <label for="est_actif">Statut</label>
-                        <select id="est_actif" name="est_actif" class="form-control">
+                        <label for="est_actif">Statut *</label>
+                        <select id="est_actif" name="est_actif" class="form-control" required>
                             <option value="1">Actif</option>
                             <option value="0">Inactif</option>
                         </select>
@@ -70,10 +65,8 @@
                 @endforeach
 
                 <div class="actions-group" style="justify-content: flex-end; margin-top: 24px;">
-                    <a href="{{ route('admin.roles.index') }}" class="btn-secondary">Annuler</a>
-                    <button type="submit" class="btn-primary">
-                        <i class="fas fa-save"></i> Enregistrer
-                    </button>
+                    <a href="{{ route('admin.roles.index') }}" class="btn-secondary">Retour</a>
+                    <button type="submit" class="btn-primary">Enregistrer</button>
                 </div>
             </form>
 
