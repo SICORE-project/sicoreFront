@@ -58,9 +58,6 @@
         @endforeach
 
         @if (! empty($page['closePeriod']))
-          <button class="btn-danger-soft" type="button" data-confirm="Êtes-vous sûr de vouloir fermer cette période de paie ? Cette action est sensible." data-success-message="Période de paie fermée.">
-            Fermer la période
-          </button>
         @endif
       </div>
     </div>

@@ -14,7 +14,7 @@
     </div>
 
     <div class="actions-row">
-      <p class="breadcrumb"><a href="{{ route('parametres.index') }}">Paramétrage</a> &gt; Années académiques</p>
+      <p class="breadcrumb">Paramétrage &gt; Années académiques</p>
       <button class="btn-primary" type="button" data-modal-open="annee-create-modal"><i class="fa-solid fa-plus" aria-hidden="true"></i> Ajouter une année</button>
     </div>
 

@@ -9,7 +9,7 @@
   </header>
   <section class="content-area">
     <div class="actions-row">
-      <p class="breadcrumb"><a href="{{ route('parametres.index') }}">Paramétrage</a> &gt; Disciplines</p>
+      <p class="breadcrumb">Paramétrage &gt; Disciplines</p>
       @if ($canCreate)
         <button class="btn-primary" type="button" data-modal-open="discipline-create-modal">+ Ajouter une discipline</button>
       @endif

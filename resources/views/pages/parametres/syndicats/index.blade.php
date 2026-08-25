@@ -43,7 +43,7 @@
     </form>
 
     <div class="actions-row">
-      <p class="breadcrumb"><a href="{{ route('parametres.index') }}">Paramétrage</a> &gt; Syndicats</p>
+      <p class="breadcrumb">Paramétrage &gt; Syndicats</p>
       @if ($canManage)<div class="actions-group">
         <button class="btn-primary" type="button" data-modal-open="create-syndicat-modal">
           <i class="fa-solid fa-plus" aria-hidden="true"></i> Nouveau syndicat

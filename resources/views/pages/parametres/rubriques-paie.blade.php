@@ -15,7 +15,7 @@
     </div>
 
     <div class="actions-row">
-      <p class="breadcrumb"><a href="{{ route('parametres.index') }}">Paramétrage</a> &gt; Rubriques de paie</p>
+      <p class="breadcrumb">Paramétrage &gt; Rubriques de paie</p>
       @if ($canManage)
         <button class="btn-primary" type="button" data-modal-open="rubrique-create-modal"><i class="fa-solid fa-plus" aria-hidden="true"></i> Ajouter une rubrique</button>
       @endif

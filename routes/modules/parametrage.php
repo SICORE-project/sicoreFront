@@ -10,6 +10,7 @@ use App\Http\Controllers\Parametrage\IefController;
 use App\Http\Controllers\Parametrage\InspectionAcademieController;
 use App\Http\Controllers\Parametrage\InstitutionFinanciereController;
 use App\Http\Controllers\Parametrage\LieuServiceController;
+use App\Http\Controllers\Parametrage\PeriodePaieController;
 use App\Http\Controllers\Parametrage\RubriquePaieController;
 use App\Http\Controllers\Parametrage\SyndicatController;
 use Illuminate\Support\Facades\Route;
@@ -30,12 +31,6 @@ Route::middleware('sicore.auth')
         |--------------------------------------------------------------------------
         */
 
-        Route::view('/enseignants', 'pages.enseignants.index')
-            ->name('enseignants.index');
-
-        Route::view('/enseignants/nouveau', 'pages.enseignants.create')
-            ->name('enseignants.create');
-
         Route::get('/enseignants/{enseignant}', [EnseignantDisciplineController::class, 'show'])
             ->name('enseignants.show');
         Route::post('/enseignants/{enseignant}/disciplines', [EnseignantDisciplineController::class, 'store'])
@@ -47,9 +42,6 @@ Route::middleware('sicore.auth')
         | Paramètres
         |--------------------------------------------------------------------------
         */
-
-        Route::view('/parametres', 'pages.parametres.index')
-            ->name('parametres.index');
 
         Route::get('/parametres/corps', [CorpsController::class, 'index'])->name('parametres.corps.index');
         Route::post('/parametres/corps', [CorpsController::class, 'store'])->name('parametres.corps.store');
@@ -104,6 +96,15 @@ Route::middleware('sicore.auth')
             ->whereNumber('rubrique')->name('parametres.rubriques-paie.update');
         Route::delete('/parametres/rubriques-paie/{rubrique}', [RubriquePaieController::class, 'destroy'])
             ->whereNumber('rubrique')->name('parametres.rubriques-paie.destroy');
+
+        Route::get('/parametres/periodes-paie', [PeriodePaieController::class, 'index'])
+            ->name('parametres.periodes-paie.index');
+        Route::post('/parametres/periodes-paie', [PeriodePaieController::class, 'store'])
+            ->name('parametres.periodes-paie.store');
+        Route::put('/parametres/periodes-paie/{periode}', [PeriodePaieController::class, 'update'])
+            ->whereNumber('periode')->name('parametres.periodes-paie.update');
+        Route::delete('/parametres/periodes-paie/{periode}', [PeriodePaieController::class, 'destroy'])
+            ->whereNumber('periode')->name('parametres.periodes-paie.destroy');
 
         Route::get('/parametres/ia', [InspectionAcademieController::class, 'index'])
             ->name('parametres.ia.index');

@@ -35,7 +35,7 @@
     </div>
 
     <div class="actions-row">
-      <p class="breadcrumb"><a href="{{ route('parametres.index') }}">Paramétrage</a> &gt; Inspections d’académie</p>
+      <p class="breadcrumb">Paramétrage &gt; Inspections d’académie</p>
       <div class="actions-group">
         <button class="btn-primary" type="button" data-modal-open="ia-create-modal">+ Nouvelle IA</button>
       </div>

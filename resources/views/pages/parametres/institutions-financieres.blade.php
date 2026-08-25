@@ -40,7 +40,7 @@
       </article>
     </div>
     <div class="actions-row">
-      <p class="breadcrumb"><a href="{{ route('parametres.index') }}">Paramétrage</a> &gt; Institutions financières</p>
+      <p class="breadcrumb">Paramétrage &gt; Institutions financières</p>
       <div class="actions-group">
         <button class="btn-primary" type="button" id="newInstitution" data-modal-open="institution-form-modal">+ Nouvelle institution</button>
         <button class="btn-secondary" type="button" data-modal-open="teacher-bank-account-modal">Associer à un enseignant</button>

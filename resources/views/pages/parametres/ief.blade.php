@@ -10,7 +10,7 @@
       <article class="stat-card"><div><p class="stat-label">Total IEF</p><p class="stat-value">{{ $pagination['total'] }}</p><p class="stat-note">IEF enregistrées</p></div><span class="stat-icon green"><i class="fa-solid fa-sitemap"></i></span></article>
       <article class="stat-card"><div><p class="stat-label">IA disponibles</p><p class="stat-value">{{ count($ias) }}</p><p class="stat-note">Rattachements possibles</p></div><span class="stat-icon blue"><i class="fa-solid fa-building-columns"></i></span></article>
     </div>
-    <div class="actions-row"><p class="breadcrumb"><a href="{{ route('parametres.index') }}">Paramétrage</a> &gt; IEF</p><div class="actions-group"><button class="btn-primary" type="button" data-modal-open="ief-create-modal">+ Nouvelle IEF</button></div></div>
+    <div class="actions-row"><p class="breadcrumb">Paramétrage &gt; IEF</p><div class="actions-group"><button class="btn-primary" type="button" data-modal-open="ief-create-modal">+ Nouvelle IEF</button></div></div>
     <form class="filter-panel" id="iefFilterForm" method="GET" action="{{ route('parametres.ief.index') }}">
       <div class="form-group"><label for="iefSearch">Rechercher</label><input class="form-control" id="iefSearch" name="search" value="{{ request('search') }}" placeholder="Code ou libellé"></div>
       <div class="form-group"><label for="iefFilterIa">IA de rattachement</label><select class="form-control" id="iefFilterIa" name="ia_id"><option value="">Toutes les IA</option>@foreach ($ias as $ia)<option value="{{ data_get($ia, 'id') }}" @selected((string) request('ia_id') === (string) data_get($ia, 'id'))>{{ data_get($ia, 'code') }} — {{ data_get($ia, 'libelle') }}</option>@endforeach</select></div>
