@@ -122,16 +122,16 @@ Route::middleware('sicore.auth')
         Route::get('/parametres/ia/nouvelle', [InspectionAcademieController::class, 'create'])
             ->name('parametres.ia.create');
 
-//         Route::get('/parametres/lieux-service', [LieuServiceController::class, 'index'])
-//             ->name('parametres.lieux-service.index');
-//         Route::post('/parametres/lieux-service', [LieuServiceController::class, 'store'])
-//             ->name('parametres.lieux-service.store');
-//         Route::put('/parametres/lieux-service/{lieu}', [LieuServiceController::class, 'update'])
-//             ->name('parametres.lieux-service.update');
-//         Route::patch('/parametres/lieux-service/{lieu}/statut', [LieuServiceController::class, 'updateStatus'])
-//             ->name('parametres.lieux-service.status');
-//         Route::post('/parametres/lieux-service/{lieu}/affectations', [LieuServiceController::class, 'storeAssignment'])
-//             ->name('parametres.lieux-service.affectations.store');
+        Route::get('/parametres/lieux-service', [LieuServiceController::class, 'index'])
+            ->name('parametres.lieux-service.index');
+        Route::post('/parametres/lieux-service', [LieuServiceController::class, 'store'])
+            ->name('parametres.lieux-service.store');
+        Route::put('/parametres/lieux-service/{lieu}', [LieuServiceController::class, 'update'])
+            ->name('parametres.lieux-service.update');
+        Route::patch('/parametres/lieux-service/{lieu}/statut', [LieuServiceController::class, 'updateStatus'])
+            ->name('parametres.lieux-service.status');
+        Route::post('/parametres/lieux-service/{lieu}/affectations', [LieuServiceController::class, 'storeAssignment'])
+            ->name('parametres.lieux-service.affectations.store');
 
         Route::get('/parametres/institutions-financieres', [InstitutionFinanciereController::class, 'index'])
             ->name('parametres.institutions-financieres');
