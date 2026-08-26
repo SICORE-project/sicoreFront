@@ -306,13 +306,11 @@ jobs:
             # Authentification de Docker auprès de GHCR pour télécharger l'image
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
+            # Créer le réseau externe s'il n'existe pas
+            docker network create sicore-network 2>/dev/null || true
+
             # Récupération de la dernière version de l'image construite
             docker compose -f docker-compose-frontend.yml pull
 
             # Relance des conteneurs en arrière-plan sans coupure
             docker compose -f docker-compose-frontend.yml up -d --remove-orphans
-
-            # Nettoyage des anciennes images inutilisées sur le serveur
-            docker image prune -f
-
-            echo "Déploiement terminé avec succès !"
