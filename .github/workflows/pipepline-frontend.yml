@@ -274,7 +274,7 @@ jobs:
 
             echo "Accès au dossier frontend..."
 
-            cd /var/www/sicoreFront || exit 1
+            cd "${{ secrets.DEPLOY_PATH }}" || exit 1
 
             echo "Répertoire courant :"
             pwd
