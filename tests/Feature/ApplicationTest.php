@@ -387,6 +387,25 @@ class ApplicationTest extends TestCase
             && $request['est_actif'] === false);
     }
 
+    public function test_financial_institution_can_be_deleted(): void
+    {
+        Http::fake([
+            '*/parametrage/institutions-financieres/15' => Http::response([
+                'message' => 'Institution financière supprimée avec succès.',
+            ]),
+        ]);
+
+        $this->withSession([
+            'sicore_user' => ['name' => 'Admin', 'role' => 'Administrateur'],
+            'access_token' => 'valid-token',
+        ])->delete('/parametrage/parametres/institutions-financieres/15')
+            ->assertRedirect(route('parametres.institutions-financieres'))
+            ->assertSessionHas('success');
+
+        Http::assertSent(fn ($request): bool => $request->method() === 'DELETE'
+            && str_ends_with($request->url(), '/parametrage/institutions-financieres/15'));
+    }
+
     public function test_financial_institution_status_only_accepts_known_values(): void
     {
         $this->withSession([
