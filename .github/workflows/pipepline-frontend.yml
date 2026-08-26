@@ -274,7 +274,7 @@ jobs:
 
             echo "Accès au dossier frontend..."
 
-            cd "${{ secrets.FRONTEND_DEPLOY_PATH }}"
+            cd "${{ secrets.DEPLOY_PATH }}"
 
             echo "Répertoire courant :"
             pwd
