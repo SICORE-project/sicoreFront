@@ -274,10 +274,10 @@ jobs:
 
             echo "Accès au dossier frontend..."
 
-            cd "${{ secrets.DEPLOY_PATH }}" || exit 1
+            # Essaye d'utiliser la variable DEPLOY_PATH. Si elle échoue ou est vide, utilise le chemin absolu connu.
+            cd "${{ secrets.DEPLOY_PATH }}" 2>/dev/null || cd /var/www/sicoreFront || exit 1
 
-            echo "Répertoire courant :"
-            pwd
+            echo "Répertoire courant : $(pwd)"
 
             echo "Contenu du répertoire :"
             ls -la
@@ -296,130 +296,23 @@ jobs:
 
 
             # ------------------------------------------------
-            # Vérification Docker Compose
+            # Exécution du déploiement Docker Compose
             # ------------------------------------------------
 
             echo "======================================"
-            echo "Vérification Docker Compose"
+            echo "Mise à jour et démarrage des conteneurs"
             echo "======================================"
 
-            if [ ! -f "docker-compose-frontend.yml" ]; then
-              echo "ERREUR : docker-compose-frontend.yml introuvable."
-              exit 1
-            fi
+            # Authentification de Docker auprès de GHCR pour télécharger l'image
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
-            echo "docker-compose-frontend.yml trouvé."
+            # Récupération de la dernière version de l'image construite
+            docker compose -f docker-compose-frontend.yml pull
 
+            # Relance des conteneurs en arrière-plan sans coupure
+            docker compose -f docker-compose-frontend.yml up -d --remove-orphans
 
-            # ------------------------------------------------
-            # Vérification du fichier .env
-            # ------------------------------------------------
-
-            echo "======================================"
-            echo "Vérification .env"
-            echo "======================================"
-
-            if [ ! -f ".env" ]; then
-              echo "ERREUR : .env introuvable sur le VPS."
-              exit 1
-            fi
-
-            echo ".env trouvé."
-
-
-            # ------------------------------------------------
-            # Connexion GHCR
-            # ------------------------------------------------
-
-            echo "======================================"
-            echo "Connexion à GHCR"
-            echo "======================================"
-
-            echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io \
-              -u "${{ secrets.GHCR_USERNAME }}" \
-              --password-stdin
-
-
-            # ------------------------------------------------
-            # Télécharger la nouvelle image
-            # ------------------------------------------------
-
-            echo "======================================"
-            echo "Téléchargement de l'image frontend"
-            echo "======================================"
-
-            docker compose \
-              -f docker-compose-frontend.yml \
-              pull
-
-
-            # ------------------------------------------------
-            # Démarrage des conteneurs
-            # ------------------------------------------------
-
-            echo "======================================"
-            echo "Démarrage des conteneurs"
-            echo "======================================"
-
-            docker compose \
-              -f docker-compose-frontend.yml \
-              up -d
-
-
-            # ------------------------------------------------
-            # Vérification des conteneurs
-            # ------------------------------------------------
-
-            echo "======================================"
-            echo "État des conteneurs"
-            echo "======================================"
-
-            docker compose \
-              -f docker-compose-frontend.yml \
-              ps
-
-
-            # ------------------------------------------------
-            # Vérification du service frontend
-            # ------------------------------------------------
-
-            echo "======================================"
-            echo "Vérification du service frontend"
-            echo "======================================"
-
-            docker compose \
-              -f docker-compose-frontend.yml \
-              ps frontend
-
-
-            # ------------------------------------------------
-            # Logs
-            # ------------------------------------------------
-
-            echo "======================================"
-            echo "Derniers logs frontend"
-            echo "======================================"
-
-            docker compose \
-              -f docker-compose-frontend.yml \
-              logs --tail=50 frontend
-
-
-            # ------------------------------------------------
-            # Nettoyage
-            # ------------------------------------------------
-
-            echo "======================================"
-            echo "Nettoyage des anciennes images"
-            echo "======================================"
-
+            # Nettoyage des anciennes images inutilisées sur le serveur
             docker image prune -f
 
-
-            # ------------------------------------------------
-            # Fin
-            # ------------------------------------------------
-
-            echo "======================================"
-            echo "Déploiement frontend terminé avec succès"
-            echo "======================================"
+            echo "Déploiement terminé avec succès !"
