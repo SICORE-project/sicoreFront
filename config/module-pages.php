@@ -639,10 +639,12 @@ return [
         'icon' => 'ES',
         'breadcrumb' => 'Gestion de la paie > État des salaires',
         'objectives' => [
-            'Calculer le salaire brut.',
+            'Éditer l’état mensuel détaillé des salaires à partir des bulletins calculés.',
+            'Contrôler chaque rubrique de gain, retenue et cotisation avant paiement.',
+            'Produire une édition filtrée, imprimable et exportable pour la traçabilité.',
         ],
-        'helpTitle' => 'Aide : comment le salaire brut est calcule ?',
-        'helpText' => 'Le salaire brut est calcule a partir du traitement indiciaire, des indemnites, des elements variables et des eventuels rappels, avant application des retenues sociales, fiscales ou administratives.',
+        'helpTitle' => 'Lecture de l’état des salaires',
+        'helpText' => 'Le salaire catégoriel regroupe le salaire de base et ses augmentations historiques. Le brut ajoute les primes, indemnités et rappels ; le net déduit ensuite les cotisations et retenues détaillées.',
         'stats' => [
             [
                 'label' => 'Salaires calcules',
@@ -1428,8 +1430,14 @@ return [
             'Statut',
         ],
         'actions' => [
-            'Editer',
-            'Exporter',
+            [
+                'label' => 'Éditer',
+                'url' => '/credits/edition-delegations/apercu',
+            ],
+            [
+                'label' => 'Exporter',
+                'url' => '/credits/edition-delegations/export',
+            ],
         ],
         'columns' => [
             'Reference',
@@ -1450,7 +1458,7 @@ return [
                 '92 000 000',
                 '30 000 000',
                 '<span class="badge badge-active">Actif</span>',
-                '<div class="table-actions-inline"><button class="table-action " type="button">Voir</button></div>',
+                '<div class="table-actions-inline"><a class="table-action" href="/credits/edition-delegations/DEL-2026-001">Voir</a></div>',
             ],
             [
                 'DEL-2026-002',
@@ -1460,7 +1468,7 @@ return [
                 '50 000 000',
                 '28 000 000',
                 '<span class="badge badge-active">Actif</span>',
-                '<div class="table-actions-inline"><button class="table-action " type="button">Voir</button></div>',
+                '<div class="table-actions-inline"><a class="table-action" href="/credits/edition-delegations/DEL-2026-002">Voir</a></div>',
             ],
         ],
     ],
@@ -1507,8 +1515,14 @@ return [
             'Statut',
         ],
         'actions' => [
-            'Export PDF',
-            'Export Excel',
+            [
+                'label' => 'Export PDF',
+                'url' => '/credits/edition-engagements/export/pdf',
+            ],
+            [
+                'label' => 'Export Excel',
+                'url' => '/credits/edition-engagements/export/excel',
+            ],
         ],
         'columns' => [
             'Periode',
@@ -1527,7 +1541,7 @@ return [
                 '120 000 000',
                 '92 000 000',
                 '30 000 000',
-                '<div class="table-actions-inline"><button class="table-action " type="button">PDF</button><button class="table-action " type="button">Excel</button></div>',
+                '<div class="table-actions-inline"><a class="table-action" href="/credits/edition-engagements/0/pdf">PDF</a><a class="table-action" href="/credits/edition-engagements/0/excel">Excel</a></div>',
             ],
             [
                 'Juin 2026',
@@ -1536,7 +1550,7 @@ return [
                 '62 000 000',
                 '50 000 000',
                 '28 000 000',
-                '<div class="table-actions-inline"><button class="table-action " type="button">PDF</button><button class="table-action " type="button">Excel</button></div>',
+                '<div class="table-actions-inline"><a class="table-action" href="/credits/edition-engagements/1/pdf">PDF</a><a class="table-action" href="/credits/edition-engagements/1/excel">Excel</a></div>',
             ],
         ],
     ],

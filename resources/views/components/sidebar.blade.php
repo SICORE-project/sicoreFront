@@ -143,6 +143,9 @@
 
     <form method="POST" action="{{ route('logout') }}" class="sidebar-logout-form">
       @csrf
+      @if (request()->is('paie', 'paie/*'))
+        <input type="hidden" name="next" value="{{ request()->getRequestUri() }}">
+      @endif
       <button class="logout-btn" type="submit" data-tooltip="Déconnexion" title="Déconnexion" aria-label="Déconnexion">
         <i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i>
         <span class="logout-label">Déconnexion</span>

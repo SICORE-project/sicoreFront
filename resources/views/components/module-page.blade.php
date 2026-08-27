@@ -11,7 +11,7 @@
   Modifier ici pour changer toutes les pages. Pour les colonnes ou données
   d'une page Paie, modifier sa méthode dans PayrollPageService.php.
 --}}
-<main class="main-content" @if($connected) data-payroll-module="{{ $slug }}" @endif>
+<main @class(['main-content', 'salary-statement-page' => $slug === 'paie-etat-salaires']) @if($connected) data-payroll-module="{{ $slug }}" @endif>
   {{-- En-tête commun : titre, fil d'Ariane et recherche générale. --}}
   <x-topbar
     :title="$page['title']"
@@ -81,12 +81,25 @@
         @if ($connected)
           @foreach ($page['actions'] as $action)
             @if (($action['code'] ?? '') === 'export')
-              <a
-                class="btn-secondary"
-                href="{{ route('paie.export', array_filter([
+              @php
+                $exportParameters = array_filter([
                   'slug' => $slug,
                   'period_id' => data_get($moduleData, 'period.id'),
-                ])) }}"
+                ]);
+                if ($slug === 'paie-etat-salaires') {
+                  $exportParameters = array_merge(
+                    $exportParameters,
+                    request()->only([
+                      'academic_year_id', 'corps_id', 'ia_id', 'ief_id', 'matricule',
+                      'payment_place_id', 'training_center_id', 'tabaski_only',
+                      'with_signature', 'without_service_done', 'dage_signatory',
+                    ])
+                  );
+                }
+              @endphp
+              <a
+                class="btn-secondary"
+                href="{{ route('paie.export', $exportParameters) }}"
               >
                 <i class="fa-solid fa-file-csv" aria-hidden="true"></i>
                 {{ $action['label'] }}
@@ -140,9 +153,72 @@
       </div>
     </div>
 
+    @if ($connected && ! empty($moduleData['report_catalog']))
+      <section class="periodic-reports" aria-labelledby="periodicReportsTitle">
+        <header class="periodic-reports-header">
+          <div>
+            <span class="auth-kicker">Centre des éditions de paie</span>
+            <h2 id="periodicReportsTitle">Rapports des travaux périodiques</h2>
+            <p>La période choisie est transmise automatiquement à chaque consultation.</p>
+          </div>
+          <div class="periodic-reports-toolbar">
+            <form method="GET" class="periodic-period-form" aria-label="Choisir la période des rapports">
+              <label for="periodicReportsPeriod">Période de paie</label>
+              <select class="form-control" id="periodicReportsPeriod" name="period_id">
+                @foreach (($moduleData['periods'] ?? []) as $periodOption)
+                  <option
+                    value="{{ $periodOption['id'] }}"
+                    @selected((string) $periodOption['id'] === (string) data_get($moduleData, 'period.id'))
+                  >
+                    {{ $periodOption['label'] }} — {{ $periodOption['status_label'] }}
+                  </option>
+                @endforeach
+              </select>
+              <button class="btn-secondary" type="submit">Actualiser</button>
+            </form>
+            <span class="periodic-reports-count">{{ count($moduleData['report_catalog']) }} rapports</span>
+          </div>
+        </header>
+
+        @foreach (collect($moduleData['report_catalog'])->groupBy('group') as $group => $reports)
+          <section class="periodic-report-group" aria-labelledby="periodic-group-{{ $loop->index }}">
+            <h3 id="periodic-group-{{ $loop->index }}">{{ $group }}</h3>
+            <div class="periodic-report-grid">
+              @foreach ($reports as $report)
+                @php
+                  $reportUrl = url('/paie/'.Illuminate\Support\Str::after($report['slug'], 'paie-'));
+                  $periodId = data_get($moduleData, 'period.id');
+                @endphp
+                <a
+                  class="periodic-report-card"
+                  href="{{ $reportUrl.($periodId ? '?period_id='.$periodId : '') }}"
+                  data-periodic-report="{{ $report['slug'] }}"
+                >
+                  <span class="periodic-report-icon" aria-hidden="true">
+                    <i class="{{ $report['icon'] }}"></i>
+                  </span>
+                  <span class="periodic-report-copy">
+                    <strong>{{ $report['label'] }}</strong>
+                    <small>{{ $report['description'] }}</small>
+                  </span>
+                  <i class="fa-solid fa-arrow-right periodic-report-arrow" aria-hidden="true"></i>
+                </a>
+              @endforeach
+            </div>
+          </section>
+        @endforeach
+      </section>
+    @endif
+
+    @if ($connected && $slug === 'paie-etat-salaires' && ! empty($moduleData['salary_statement']))
+      @include('pages.paie.partials.salary-statement', [
+        'statement' => $moduleData['salary_statement'],
+      ])
+    @else
     {{-- Filtre de période transmis par GET au contrôleur. --}}
     @if ($connected)
-      <form class="filter-panel" method="GET" aria-label="Filtres de la page">
+      @if (empty($moduleData['report_catalog']))
+        <form class="filter-panel" method="GET" aria-label="Filtres de la page">
         @foreach ($page['filters'] as $index => $filter)
           @php
             $filterId = $slug.'-filter-'.$index;
@@ -167,10 +243,10 @@
             Appliquer
           </button>
         </div>
-      </form>
+        </form>
 
       {{-- Recherche instantanée IA → IEF → matricule, sans rechargement. --}}
-      @if (! empty($moduleData['supports_hierarchy_filter']))
+        @if (! empty($moduleData['supports_hierarchy_filter']))
         <section class="payroll-live-filter" data-payroll-live-filter aria-labelledby="payrollLiveFilterTitle">
           <header class="payroll-live-filter-header">
             <span class="payroll-live-filter-icon" aria-hidden="true">
@@ -228,6 +304,7 @@
             <span data-payroll-live-results>Affichage de tous les résultats.</span>
           </p>
         </section>
+        @endif
       @endif
     @else
       <section class="filter-panel" aria-label="Filtres de la page">
@@ -390,6 +467,7 @@
         </div>
       </nav>
     </section>
+    @endif
   </section>
 </main>
 

@@ -44,7 +44,8 @@ class ModulePage extends Component
         public array|string|null $error = null,
     ) {
         // Exemple : le slug paie-bulletins lit config('module-pages.paie-bulletins').
-        $page = config("module-pages.{$slug}");
+        $page = config("module-pages.{$slug}")
+            ?? config("payroll-periodic-pages.{$slug}");
 
         abort_unless(is_array($page), 404, 'Page SICORE introuvable.');
 
@@ -93,6 +94,18 @@ class ModulePage extends Component
             'paie-effectifs-corps' => 'fa-solid fa-users',
             'paie-non-generee' => 'fa-solid fa-triangle-exclamation',
             'paie-sommes-percues' => 'fa-solid fa-wallet',
+            'paie-edition-enseignants' => 'fa-solid fa-chalkboard-user',
+            'paie-prime-scolaire' => 'fa-solid fa-graduation-cap',
+            'paie-reliquats' => 'fa-solid fa-clock-rotate-left',
+            'paie-double-flux' => 'fa-solid fa-people-arrows-left-right',
+            'paie-directeurs-interim' => 'fa-solid fa-user-shield',
+            'paie-cumul-enseignants-ief' => 'fa-solid fa-sitemap',
+            'paie-recap-elements-corps' => 'fa-solid fa-layer-group',
+            'paie-edition-fonctionnaires' => 'fa-solid fa-user-tie',
+            'paie-mutuelles-sante' => 'fa-solid fa-heart-pulse',
+            'paie-situation-affectations' => 'fa-solid fa-location-dot',
+            'paie-montants-engages-banque' => 'fa-solid fa-money-bill-transfer',
+            'paie-heures-supplementaires-interim' => 'fa-solid fa-business-time',
             'credit-delegation' => 'fa-solid fa-scale-balanced',
             'credit-edition-delegations' => 'fa-solid fa-file-signature',
             'credit-edition-engagements' => 'fa-solid fa-clipboard-check',

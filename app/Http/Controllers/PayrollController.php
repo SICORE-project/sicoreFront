@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Contracts\SicoreApiClientInterface;
 use App\Exceptions\SicoreApiException;
+use App\Support\PayrollReturnUrl;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -38,10 +39,7 @@ class PayrollController extends Controller
      */
     public function show(Request $request, string $slug): View|RedirectResponse
     {
-        // period_id est le seul filtre transmis dans l'URL de la page.
-        $filters = $request->validate([
-            'period_id' => ['nullable', 'integer', 'min:1'],
-        ]);
+        $filters = $this->validatedPageFilters($request, $slug);
 
         try {
             // Le backend renvoie statistiques, filtres, colonnes, lignes et actions.
@@ -88,6 +86,10 @@ class PayrollController extends Controller
 
             return response()->json($result);
         } catch (SicoreApiException $exception) {
+            if ($exception->status === 401) {
+                return $this->expiredJson($request);
+            }
+
             return response()->json([
                 'message' => $this->apiErrorMessage($request, $exception),
                 'errors' => $exception->errors,
@@ -101,9 +103,7 @@ class PayrollController extends Controller
      */
     public function export(Request $request, string $slug): Response
     {
-        $filters = $request->validate([
-            'period_id' => ['nullable', 'integer', 'min:1'],
-        ]);
+        $filters = $this->validatedPageFilters($request, $slug);
 
         try {
             $apiResponse = $this->api->payrollExport(
@@ -127,6 +127,38 @@ class PayrollController extends Controller
             'Content-Disposition' => $disposition,
             'Cache-Control' => 'no-store, private',
         ]);
+    }
+
+    /**
+     * Le reste du module conserve son filtre de période historique. Les
+     * critères supplémentaires sont autorisés uniquement pour l'état mensuel
+     * des salaires afin de ne pas modifier le comportement des autres pages.
+     *
+     * @return array<string, mixed>
+     */
+    private function validatedPageFilters(Request $request, string $slug): array
+    {
+        $rules = [
+            'period_id' => ['nullable', 'integer', 'min:1'],
+        ];
+
+        if ($slug === 'paie-etat-salaires') {
+            $rules += [
+                'academic_year_id' => ['nullable', 'integer', 'min:1'],
+                'corps_id' => ['nullable', 'integer', 'min:1'],
+                'ia_id' => ['nullable', 'integer', 'min:1'],
+                'ief_id' => ['nullable', 'integer', 'min:1'],
+                'matricule' => ['nullable', 'string', 'max:50'],
+                'payment_place_id' => ['nullable', 'integer', 'min:1'],
+                'training_center_id' => ['nullable', 'integer', 'min:1'],
+                'tabaski_only' => ['nullable', 'boolean'],
+                'with_signature' => ['nullable', 'boolean'],
+                'without_service_done' => ['nullable', 'boolean'],
+                'dage_signatory' => ['nullable', 'boolean'],
+            ];
+        }
+
+        return $request->validate($rules);
     }
 
     /**
@@ -199,10 +231,27 @@ class PayrollController extends Controller
     /** Nettoie une session expirée et renvoie l'utilisateur vers la connexion. */
     private function expired(Request $request): RedirectResponse
     {
+        $returnUrl = PayrollReturnUrl::capture($request);
+
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return redirect()->route('login')
+        return redirect()->route('login', array_filter(['next' => $returnUrl]))
             ->with('warning', 'Votre session est absente, expirée ou révoquée. Reconnectez-vous pour continuer.');
+    }
+
+    /** Réponse AJAX cohérente avec le retour next des pages HTML. */
+    private function expiredJson(Request $request): JsonResponse
+    {
+        $returnUrl = PayrollReturnUrl::capture($request);
+
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        return response()->json([
+            'message' => 'Votre session est absente, expirée ou révoquée. Reconnectez-vous pour continuer.',
+            'next' => $returnUrl,
+            'login_url' => route('login', array_filter(['next' => $returnUrl])),
+        ], 401);
     }
 }

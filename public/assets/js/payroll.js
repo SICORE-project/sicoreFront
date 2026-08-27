@@ -861,11 +861,18 @@
         "Accept": "application/json",
         "Content-Type": "application/json",
         "X-CSRF-TOKEN": csrf ? csrf.content : "",
+        "X-SICORE-NEXT": window.location.pathname + window.location.search,
         "Idempotency-Key": idempotencyKey()
       },
       body: JSON.stringify(payloadFromForm())
     }).then(function (response) {
       return response.json().catch(function () { return {}; }).then(function (payload) {
+        if (response.status === 401 && payload.login_url) {
+          var redirectError = new Error(payload.message || "Votre session a expiré. Reconnexion requise.");
+          redirectError.redirecting = true;
+          window.location.assign(payload.login_url);
+          throw redirectError;
+        }
         if (!response.ok) {
           throw new Error(errorMessage(payload));
         }
@@ -880,6 +887,7 @@
         window.location.reload();
       }, 650);
     }).catch(function (error) {
+      if (error.redirecting) return;
       status.classList.remove("success");
       status.textContent = error.message;
       notify("error", error.message);

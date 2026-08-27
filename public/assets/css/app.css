@@ -8,6 +8,192 @@
   background: var(--bg-main);
 }
 
+/* Centre des rapports des travaux périodiques. */
+.periodic-reports {
+  margin-bottom: 24px;
+  padding: 24px;
+  border: 1px solid rgba(22, 101, 52, 0.16);
+  border-radius: var(--radius-card);
+  background: linear-gradient(145deg, #ffffff 0%, #f7fbf8 100%);
+  box-shadow: var(--shadow-card);
+}
+
+.periodic-reports-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.periodic-reports-header h2 {
+  margin: 5px 0 4px;
+  color: var(--text-main);
+  font-size: clamp(20px, 2vw, 27px);
+}
+
+.periodic-reports-header p,
+.periodic-report-copy small {
+  color: var(--text-muted);
+}
+
+.periodic-reports-count {
+  flex: 0 0 auto;
+  padding: 8px 12px;
+  border-radius: 999px;
+  color: var(--primary-dark);
+  background: #dcfce7;
+  font-weight: 800;
+  font-size: 13px;
+}
+
+.periodic-reports-toolbar,
+.periodic-period-form {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.periodic-reports-toolbar {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.periodic-period-form label {
+  align-self: center;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.periodic-period-form .form-control {
+  min-width: 210px;
+}
+
+.periodic-report-group {
+  margin-top: 22px;
+}
+
+.periodic-report-group h3 {
+  margin: 0 0 12px;
+  color: var(--primary-dark);
+  font-size: 15px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.periodic-report-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.periodic-report-card {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr) 20px;
+  align-items: center;
+  gap: 13px;
+  padding: 15px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  color: var(--text-main);
+  background: #ffffff;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+}
+
+.periodic-report-card:hover,
+.periodic-report-card:focus-visible {
+  border-color: rgba(22, 101, 52, 0.45);
+  box-shadow: 0 12px 26px rgba(22, 101, 52, 0.1);
+  transform: translateY(-2px);
+}
+
+.periodic-report-icon {
+  width: 46px;
+  height: 46px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  color: var(--primary);
+  background: #ecfdf3;
+  font-size: 18px;
+}
+
+.periodic-report-copy {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.periodic-report-copy strong {
+  color: var(--text-main);
+  font-size: 14px;
+  line-height: 1.25;
+}
+
+.periodic-report-copy small {
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.periodic-report-arrow {
+  color: var(--primary-light);
+  transition: transform 0.18s ease;
+}
+
+.periodic-report-card:hover .periodic-report-arrow,
+.periodic-report-card:focus-visible .periodic-report-arrow {
+  transform: translateX(3px);
+}
+
+@media (max-width: 900px) {
+  .periodic-report-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .periodic-reports {
+    padding: 18px;
+  }
+
+  .periodic-reports-header {
+    display: grid;
+  }
+
+  .periodic-reports-toolbar,
+  .periodic-period-form {
+    width: 100%;
+    align-items: stretch;
+  }
+
+  .periodic-period-form {
+    display: grid;
+  }
+
+  .periodic-period-form .form-control {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .periodic-reports-count {
+    width: max-content;
+  }
+
+  .periodic-report-card {
+    grid-template-columns: 40px minmax(0, 1fr) 16px;
+    padding: 13px;
+  }
+
+  .periodic-report-icon {
+    width: 40px;
+    height: 40px;
+  }
+}
+
 .sidebar {
   position: fixed;
   inset: 0 auto 0 0;
@@ -2543,6 +2729,537 @@ body.sidebar-collapsed .logout-btn {
 
   .payslip-lines {
     min-width: 700px;
+  }
+}
+
+/* État mensuel détaillé des salaires : formulaire, aperçu officiel et grand tableau. */
+.salary-statement-workspace {
+  display: grid;
+  gap: 24px;
+}
+
+.salary-statement-filter,
+.salary-statement-document {
+  overflow: hidden;
+  border: 1px solid #cfe3d8;
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 16px 38px rgba(16, 58, 40, 0.08);
+}
+
+.salary-statement-filter {
+  padding: 24px;
+}
+
+.salary-statement-filter-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 22px;
+}
+
+.salary-statement-filter-header h2 {
+  margin: 5px 0 4px;
+  color: #092419;
+  font-size: 24px;
+}
+
+.salary-statement-filter-header p {
+  margin: 0;
+  color: #62736c;
+}
+
+.salary-statement-filter-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+  padding: 10px 14px;
+  border-radius: 999px;
+  background: #e8f7ef;
+  color: #087445;
+  font-weight: 800;
+}
+
+.salary-statement-filter-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.salary-statement-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 20px;
+  margin: 22px 0 0;
+  padding: 18px;
+  border: 1px solid #d7e5de;
+  border-radius: 14px;
+  background: #f8fbf9;
+}
+
+.salary-statement-options legend {
+  padding: 0 8px;
+  color: #315345;
+  font-size: 13px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.salary-statement-options label {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  color: #1f382e;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.salary-statement-options input {
+  width: 17px;
+  height: 17px;
+  margin-top: 1px;
+  accent-color: #087445;
+}
+
+.salary-statement-filter-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.salary-statement-official-header {
+  display: grid;
+  grid-template-columns: minmax(250px, 0.9fr) minmax(380px, 1.45fr) minmax(220px, 0.8fr);
+  align-items: center;
+  gap: 28px;
+  padding: 26px 30px;
+  border-top: 8px solid #087445;
+  border-bottom: 1px solid #d8e4de;
+  background: linear-gradient(110deg, #fff 0%, #f7fbf9 100%);
+}
+
+.salary-statement-republic {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.salary-statement-republic img {
+  width: 60px;
+  border-radius: 7px;
+  box-shadow: 0 7px 18px rgba(8, 116, 69, 0.16);
+}
+
+.salary-statement-republic strong,
+.salary-statement-republic span,
+.salary-statement-title span,
+.salary-statement-title strong,
+.salary-statement-edition-meta span,
+.salary-statement-edition-meta small {
+  display: block;
+}
+
+.salary-statement-republic strong {
+  color: #102f23;
+  font-size: 17px;
+  text-transform: uppercase;
+}
+
+.salary-statement-republic span {
+  margin-top: 4px;
+  color: #607168;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.salary-statement-title {
+  text-align: center;
+}
+
+.salary-statement-title span,
+.salary-statement-edition-meta span {
+  color: #718078;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+
+.salary-statement-title h2 {
+  margin: 7px 0 3px;
+  color: #087445;
+  font-size: 30px;
+  text-transform: uppercase;
+}
+
+.salary-statement-title strong {
+  color: #172f25;
+  font-size: 14px;
+}
+
+.salary-statement-edition-meta {
+  padding: 14px 16px;
+  border: 1px solid #cfe3d8;
+  border-radius: 13px;
+  text-align: right;
+}
+
+.salary-statement-edition-meta strong {
+  display: block;
+  margin: 4px 0;
+  color: #087445;
+  font-size: 18px;
+}
+
+.salary-statement-edition-meta small {
+  color: #687970;
+  font-weight: 700;
+}
+
+.salary-statement-scope {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 1px;
+  background: #dfe9e4;
+  border-bottom: 1px solid #dfe9e4;
+}
+
+.salary-statement-scope div {
+  min-width: 0;
+  padding: 13px 16px;
+  background: #f4f8f6;
+}
+
+.salary-statement-scope span,
+.salary-statement-scope strong {
+  display: block;
+}
+
+.salary-statement-scope span {
+  margin-bottom: 4px;
+  color: #77877f;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.salary-statement-scope strong {
+  overflow: hidden;
+  color: #18382b;
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.salary-statement-table-wrap {
+  overflow-x: auto;
+  padding: 20px;
+}
+
+.salary-statement-table {
+  width: 100%;
+  min-width: 3300px;
+  border-collapse: separate;
+  border-spacing: 0;
+  color: #172b23;
+  font-size: 11px;
+}
+
+.salary-statement-table th,
+.salary-statement-table td {
+  padding: 10px 9px;
+  border-right: 1px solid #dde7e2;
+  border-bottom: 1px solid #dde7e2;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.salary-statement-table th:first-child,
+.salary-statement-table td:first-child {
+  border-left: 1px solid #dde7e2;
+}
+
+.salary-statement-table thead th {
+  border-top: 1px solid #174d37;
+  background: #145b3e;
+  color: #fff;
+  font-size: 10px;
+  text-align: left;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+.salary-statement-table thead th:first-child {
+  border-top-left-radius: 8px;
+}
+
+.salary-statement-table thead th:last-child {
+  border-top-right-radius: 8px;
+}
+
+.salary-statement-table tbody tr:nth-child(even) td {
+  background: #f8fbf9;
+}
+
+.salary-statement-table tbody tr:hover td {
+  background: #eef8f2;
+}
+
+.salary-statement-table .salary-statement-amount {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.salary-statement-table tfoot td {
+  border-color: #174d37;
+  background: #123e2d;
+  color: #fff;
+  font-weight: 900;
+}
+
+.salary-statement-signature-line {
+  display: block;
+  width: 90px;
+  height: 26px;
+  border-bottom: 1px dotted #6c7c74;
+}
+
+.salary-statement-empty {
+  padding: 45px !important;
+  color: #687870;
+  font-size: 14px;
+  font-weight: 800;
+  text-align: center;
+}
+
+.salary-statement-footer {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 40px;
+  padding: 22px 30px 34px;
+  border-top: 1px solid #d8e4de;
+}
+
+.salary-statement-footer strong,
+.salary-statement-footer span {
+  display: block;
+}
+
+.salary-statement-footer strong {
+  color: #173b2b;
+}
+
+.salary-statement-footer span {
+  margin-top: 5px;
+  color: #6c7b74;
+  font-size: 12px;
+}
+
+.salary-statement-signatory {
+  max-width: 390px;
+  min-width: 280px;
+  text-align: center;
+}
+
+@media (max-width: 1250px) {
+  .salary-statement-filter-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .salary-statement-official-header {
+    grid-template-columns: 1fr 1.4fr;
+  }
+
+  .salary-statement-edition-meta {
+    grid-column: 1 / -1;
+    text-align: left;
+  }
+
+  .salary-statement-scope {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .salary-statement-filter,
+  .salary-statement-table-wrap {
+    padding: 16px;
+  }
+
+  .salary-statement-filter-header,
+  .salary-statement-footer {
+    flex-direction: column;
+  }
+
+  .salary-statement-filter-grid,
+  .salary-statement-options,
+  .salary-statement-official-header,
+  .salary-statement-scope {
+    grid-template-columns: 1fr;
+  }
+
+  .salary-statement-title {
+    text-align: left;
+  }
+}
+
+@media print {
+  @page salaryState {
+    size: A3 landscape;
+    margin: 9mm 7mm 14mm;
+
+    @bottom-center {
+      content: "Page " counter(page) " sur " counter(pages);
+      color: #3d5249;
+      font-size: 7pt;
+      font-weight: 700;
+    }
+  }
+
+  .salary-statement-page {
+    margin: 0 !important;
+  }
+
+  .salary-statement-page .topbar,
+  .salary-statement-page .connection-banner,
+  .salary-statement-page .objective-card,
+  .salary-statement-page .stats-grid,
+  .salary-statement-page .actions-row,
+  .salary-statement-filter {
+    display: none !important;
+  }
+
+  .salary-statement-page .content-area {
+    padding: 0 !important;
+    background: #fff !important;
+  }
+
+  .salary-statement-workspace {
+    display: block;
+  }
+
+  .salary-statement-document {
+    page: salaryState;
+    overflow: visible;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  .salary-statement-official-header {
+    grid-template-columns: 0.9fr 1.5fr 0.8fr;
+    gap: 12px;
+    padding: 8px 10px;
+    border-top-width: 4px;
+  }
+
+  .salary-statement-republic img {
+    width: 34px;
+  }
+
+  .salary-statement-republic strong {
+    font-size: 8pt;
+  }
+
+  .salary-statement-republic span,
+  .salary-statement-title span,
+  .salary-statement-edition-meta span,
+  .salary-statement-edition-meta small {
+    font-size: 5.5pt;
+  }
+
+  .salary-statement-title h2 {
+    margin: 3px 0 1px;
+    font-size: 14pt;
+  }
+
+  .salary-statement-title strong,
+  .salary-statement-edition-meta strong {
+    font-size: 7pt;
+  }
+
+  .salary-statement-edition-meta {
+    grid-column: auto;
+    padding: 5px 7px;
+    text-align: right;
+  }
+
+  .salary-statement-scope {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+
+  .salary-statement-scope div {
+    padding: 5px 7px;
+  }
+
+  .salary-statement-scope span {
+    font-size: 5pt;
+  }
+
+  .salary-statement-scope strong {
+    font-size: 6pt;
+  }
+
+  .salary-statement-table-wrap {
+    overflow: visible;
+    padding: 5mm 0 2mm;
+  }
+
+  .salary-statement-table {
+    min-width: 0;
+    table-layout: auto;
+    font-size: 5.3pt;
+  }
+
+  .salary-statement-table thead {
+    display: table-header-group;
+  }
+
+  .salary-statement-table tfoot {
+    display: table-row-group;
+  }
+
+  .salary-statement-table th,
+  .salary-statement-table td {
+    padding: 2.2mm 1.2mm;
+    white-space: normal;
+  }
+
+  .salary-statement-table thead th {
+    font-size: 4.8pt;
+  }
+
+  .salary-statement-table tr {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .salary-statement-table .badge {
+    padding: 1mm 1.5mm;
+    font-size: 4.7pt;
+  }
+
+  .salary-statement-signature-line {
+    width: 16mm;
+    height: 7mm;
+  }
+
+  .salary-statement-footer {
+    padding: 4mm 2mm 0;
+    font-size: 6pt;
+  }
+
+  .salary-statement-footer span {
+    font-size: 5pt;
   }
 }
 
