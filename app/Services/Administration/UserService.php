@@ -38,7 +38,7 @@ class UserService
     /**
      * Récupérer la liste des utilisateurs depuis le backend.
      */
-    public function getUsers(int $page = 1, int $perPage = 10, ?string $structureType = null): array
+    public function getUsers(int $page = 1, int $perPage = 10, ?int $roleId = null): array
     {
         try {
             $response = $this->apiClient->get('admin/users/all');
@@ -71,8 +71,11 @@ class UserService
         $data = $response->json();
         $allItems = data_get($data, 'data.data', data_get($data, 'data', data_get($data, 'users', [])));
         $allItems = is_array($allItems) ? array_values($allItems) : [];
-        if ($structureType) {
-            $allItems = array_values(array_filter($allItems, fn (array $user): bool => $this->organisationType($user) === $structureType));
+        if ($roleId !== null) {
+            $allItems = array_values(array_filter(
+                $allItems,
+                fn (array $user): bool => (int) data_get($user, 'role.id', 0) === $roleId
+            ));
         }
         $total = count($allItems);
         $lastPage = max(1, (int) ceil($total / $perPage));
@@ -176,16 +179,6 @@ class UserService
         return ['success' => $response->successful(), 'message' => $response->json('message')];
     }
 
-    private function organisationType(array $user): ?string
-    {
-        $access = data_get($user, 'acces_organisationnel', []);
-        $type = strtolower((string) data_get($access, 'niveau', data_get($access, 'type_structure', '')));
-        if (in_array($type, ['national', 'ia', 'ief'], true)) return $type;
-        if (data_get($access, 'ief') || data_get($access, 'ief_id')) return 'ief';
-        if (data_get($access, 'ia') || data_get($access, 'ia_id')) return 'ia';
-        if (data_get($access, 'structure') || data_get($access, 'lieu_service_id')) return 'national';
-        return null;
-    }
     public function createUser(array $data): array
     {
         try {

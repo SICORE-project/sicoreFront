@@ -16,8 +16,9 @@ class UserController extends Controller
     {
         $page = max(1, (int) $request->query('page', 1));
         $perPage = 10;
+        $roleId = filter_var($request->query('role_id'), FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]) ?: null;
 
-        $response = $this->userService->getUsers($page, $perPage);
+        $response = $this->userService->getUsers($page, $perPage, $roleId);
         $users = $response['items'] ?? [];
         $pagination = $response['pagination'] ?? [
             'current_page' => $page,

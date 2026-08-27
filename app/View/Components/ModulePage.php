@@ -15,7 +15,7 @@ class ModulePage extends Component
     /** @var array<string, string> */
     public array $statIconMap;
 
-    public function __construct(public string $slug)
+    public function __construct(public string $slug, public array $roles = [])
     {
         $page = config("module-pages.{$slug}");
 

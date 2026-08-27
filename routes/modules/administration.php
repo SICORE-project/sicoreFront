@@ -75,6 +75,9 @@ Route::middleware('sicore.auth')
 
         Route::prefix('permissions')->name('admin.permissions.')->group(function (): void {
             Route::get('/', [PermissionController::class, 'index'])->name('index');
+            Route::get('/types/{type}', [PermissionController::class, 'types'])->name('types.index');
+            Route::get('/types/{type}/create', [PermissionController::class, 'createType'])->name('types.create');
+            Route::post('/types/{type}', [PermissionController::class, 'prepareType'])->name('types.prepare');
             Route::get('/create', [PermissionController::class, 'create'])->name('create');
             Route::post('/', [PermissionController::class, 'store'])->name('store');
             Route::get('/sync', [PermissionController::class, 'sync'])->name('sync');

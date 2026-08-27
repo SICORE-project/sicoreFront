@@ -22,19 +22,25 @@
                 <div class="filter-panel" aria-label="Groupe et module" style="margin-bottom: 20px;">
                     <div class="form-group">
                         <label for="groupe">Groupe *</label>
-                        <input type="text" id="groupe" name="groupe" value="{{ $permission['groupe'] }}" required class="form-control">
+                        <select id="groupe" name="groupe" required class="form-control">
+                            @foreach($groupes as $groupe)<option value="{{ $groupe['value'] }}" @selected(old('groupe', $permission['groupe']) === $groupe['value'])>{{ $groupe['label'] }}</option>@endforeach
+                        </select>
                         @error('groupe') <p style="color:#dc2626; font-size:12px; margin-top:4px;">{{ $message }}</p> @enderror
                     </div>
                     <div class="form-group">
                         <label for="module">Module *</label>
-                        <input type="text" id="module" name="module" value="{{ $permission['module'] }}" required class="form-control">
+                        <select id="module" name="module" required class="form-control">
+                            @foreach($modules as $module)<option value="{{ $module['value'] }}" @selected(old('module', $permission['module']) === $module['value'])>{{ $module['label'] }}</option>@endforeach
+                        </select>
                         @error('module') <p style="color:#dc2626; font-size:12px; margin-top:4px;">{{ $message }}</p> @enderror
                     </div>
                 </div>
 
                 <div class="form-group" style="margin-bottom: 20px;">
                     <label for="action">Action *</label>
-                    <input type="text" id="action" name="action" value="{{ $permission['action'] }}" required class="form-control">
+                    <select id="action" name="action" required class="form-control">
+                        @foreach($actions as $action)<option value="{{ $action }}" @selected(old('action', $permission['action']) === $action)>{{ \Illuminate\Support\Str::of($action)->replace(['_', '-'], ' ')->title() }}</option>@endforeach
+                    </select>
                     @error('action') <p style="color:#dc2626; font-size:12px; margin-top:4px;">{{ $message }}</p> @enderror
                 </div>
 

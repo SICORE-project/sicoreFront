@@ -66,12 +66,12 @@
       @if (($slug ?? '') === 'utilisateurs')
         <form class="filter-panel users-filter-panel" method="GET" action="{{ route('utilisateurs.index') }}" aria-label="Filtres de la page">
           <div class="form-group">
-            <label for="structure-type-filter">Type de structure</label>
-            <select class="form-control" id="structure-type-filter" name="structure_type">
-              <option value="">Tous</option>
-              <option value="national" @selected(request('structure_type') === 'national')>Structure nationale</option>
-              <option value="ia" @selected(request('structure_type') === 'ia')>IA</option>
-              <option value="ief" @selected(request('structure_type') === 'ief')>IEF</option>
+            <label for="role-filter">Type de profil</label>
+            <select class="form-control" id="role-filter" name="role_id">
+              <option value="">Tous les profils</option>
+              @foreach($roles as $role)
+                <option value="{{ $role['id'] }}" @selected((string) request('role_id') === (string) $role['id'])>{{ $role['nom'] }}</option>
+              @endforeach
             </select>
           </div>
           <div class="actions-group"><button class="btn-secondary" type="submit">Filtrer</button></div>

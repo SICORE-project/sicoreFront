@@ -3,7 +3,7 @@
 @section('title', 'SICORE - Utilisateurs')
 @section('content')
   
-  <x-module-page slug="utilisateurs" />
+  <x-module-page slug="utilisateurs" :roles="$roles" />
 
   <x-module-indemnite
     type="modal"

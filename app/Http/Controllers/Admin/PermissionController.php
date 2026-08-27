@@ -38,7 +38,7 @@ class PermissionController extends Controller
 
     public function create()
     {
-        return view('pages.administration.permissions-create');
+        return view('pages.administration.permissions-create', $this->permissionOptions());
     }
 
     public function show($id)
@@ -82,7 +82,94 @@ class PermissionController extends Controller
             return redirect()->route('admin.permissions.index')->with('error', 'Permission non trouvée');
         }
 
-        return view('pages.administration.permissions-edit', compact('permission'));
+        return view('pages.administration.permissions-edit', array_merge(
+            compact('permission'),
+            $this->permissionOptions()
+        ));
+    }
+
+    public function types(string $type)
+    {
+        abort_unless(in_array($type, ['modules', 'groupes'], true), 404);
+
+        $endpoint = $type === 'modules' ? 'permission-modules' : 'permission-groupes';
+        $response = Http::withToken(session('access_token'))
+                ->get(config('services.backend.url') . '/admin/' . $endpoint);
+        if ($response->successful()) {
+            $data = $response->successful() ? $response->json('data', []) : [];
+            $data = is_array(data_get($data, 'data')) ? data_get($data, 'data') : $data;
+            $permissionField = $type === 'modules' ? 'module' : 'groupe';
+            $permissions = collect($this->existingPermissions());
+            $items = collect(is_array($data) ? $data : [])->map(function (array $item) use ($permissions, $permissionField): array {
+                $code = (string) ($item['code'] ?? $item['nom'] ?? $item['libelle'] ?? '');
+                $matchingPermissions = $permissions->filter(
+                    fn (array $permission): bool => Str::lower((string) ($permission[$permissionField] ?? '')) === Str::lower($code)
+                );
+                $permissionNames = $matchingPermissions->pluck('nom')->filter()->unique()->values()->all();
+                $activeNames = $matchingPermissions->filter(
+                    fn (array $permission): bool => filter_var($permission['est_actif'] ?? false, FILTER_VALIDATE_BOOLEAN)
+                )->pluck('nom')->filter()->unique()->values()->all();
+
+                return [
+                    'name' => $item['nom'] ?? $item['libelle'] ?? $item['code'] ?? '-',
+                    'permissions' => $permissionNames,
+                    'active_permissions' => $activeNames,
+                    'usage_status' => $matchingPermissions->isNotEmpty() ? 'Utilisé' : 'Non utilisé',
+                ];
+            })->all();
+            $typesError = null;
+
+            return view('pages.administration.permission-types.index', compact('type', 'items', 'typesError'));
+        }
+
+        $field = $type === 'modules' ? 'module' : 'groupe';
+        $permissions = $this->allPermissions();
+        $items = collect($permissions)
+            ->filter(fn (array $permission): bool => filled($permission[$field] ?? null))
+            ->groupBy($field)
+            ->map(fn ($entries, $name): array => [
+                'name' => $name,
+                'permissions' => $entries->pluck('nom')->filter()->unique()->values()->all(),
+                'active_permissions' => $entries->where('est_actif', true)->pluck('nom')->filter()->unique()->values()->all(),
+            ])
+            ->sortBy('name', SORT_NATURAL | SORT_FLAG_CASE)
+            ->values()
+            ->all();
+
+        $typesError = null;
+        return view('pages.administration.permission-types.index', compact('type', 'items', 'typesError'));
+    }
+
+    public function createType(string $type)
+    {
+        abort_unless(in_array($type, ['modules', 'groupes'], true), 404);
+
+        return view('pages.administration.permission-types.create', [
+            'type' => $type,
+        ]);
+    }
+
+    public function prepareType(Request $request, string $type)
+    {
+        abort_unless(in_array($type, ['modules', 'groupes'], true), 404);
+
+        $data = $request->validate([
+            'libelle' => ['required', 'string', 'max:150'],
+            'est_actif' => ['required', 'boolean'],
+        ]);
+        $data['code'] = Str::of($data['libelle'])->ascii()->snake()->limit(100, '')->toString();
+        $endpoint = $type === 'modules' ? 'permission-modules' : 'permission-groupes';
+        $response = Http::withToken(session('access_token'))
+            ->post(config('services.backend.url') . '/admin/' . $endpoint, $data);
+
+        if ($response->successful()) {
+            return redirect()->route('admin.permissions.types.index', $type)
+                ->with('success', ($type === 'modules' ? 'Module' : 'Groupe').' créé avec succès.');
+        }
+
+        return back()->withInput()->withErrors(
+            $response->json('errors', ['error' => $response->json('message', 'Création impossible.')])
+        );
     }
 
     private function findPermission($id): ?array
@@ -97,6 +184,56 @@ class PermissionController extends Controller
         return collect($response->json('data', []))->first(
             fn (array $permission): bool => (string) ($permission['id'] ?? '') === (string) $id
         );
+    }
+
+    private function permissionOptions(): array
+    {
+        $permissions = collect($this->allPermissions());
+
+        return [
+            'modules' => $this->referenceOptions('permission-modules', $permissions->pluck('module')),
+            'groupes' => $this->referenceOptions('permission-groupes', $permissions->pluck('groupe')),
+            'actions' => $permissions->pluck('action')->filter()->unique()->sort(SORT_NATURAL | SORT_FLAG_CASE)->values()->all(),
+        ];
+    }
+
+    private function referenceOptions(string $endpoint, $fallback): array
+    {
+        $response = Http::withToken(session('access_token'))
+            ->get(config('services.backend.url') . '/admin/' . $endpoint);
+        $data = $response->successful() ? $response->json('data', []) : [];
+        $data = is_array(data_get($data, 'data')) ? data_get($data, 'data') : $data;
+
+        if ($response->successful() && is_array($data)) {
+            return collect($data)->map(fn (array $item): array => [
+                'value' => $item['code'] ?? $item['nom'] ?? $item['libelle'],
+                'label' => $item['libelle'] ?? $item['nom'] ?? $item['code'],
+            ])->filter(fn (array $item): bool => filled($item['value']))->values()->all();
+        }
+
+        return collect($fallback)->filter()->unique()->sort(SORT_NATURAL | SORT_FLAG_CASE)
+            ->map(fn ($value): array => ['value' => $value, 'label' => Str::of($value)->replace(['_', '-'], ' ')->title()->toString()])
+            ->values()->all();
+    }
+
+    private function allPermissions(): array
+    {
+        $response = Http::withToken(session('access_token'))
+            ->get(config('services.backend.url') . '/admin/permissions/all');
+
+        return $response->successful() && is_array($response->json('data'))
+            ? $response->json('data')
+            : [];
+    }
+
+    private function existingPermissions(): array
+    {
+        $response = Http::withToken(session('access_token'))
+            ->get(config('services.backend.url') . '/admin/permissions', ['per_page' => 1000]);
+        $data = $response->successful() ? $response->json('data', []) : [];
+        $data = is_array(data_get($data, 'data')) ? data_get($data, 'data') : $data;
+
+        return is_array($data) ? array_values($data) : [];
     }
 
     public function update(Request $request, $id)

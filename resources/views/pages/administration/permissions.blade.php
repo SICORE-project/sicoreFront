@@ -66,6 +66,12 @@
         <div class="actions-row">
             <p class="breadcrumb">Gestion Utilisateur > Permissions</p>
             <div class="actions-group">
+                <a href="{{ route('admin.permissions.types.index', 'modules') }}" class="btn-secondary">
+                    <i class="fas fa-cubes"></i> Types de module
+                </a>
+                <a href="{{ route('admin.permissions.types.index', 'groupes') }}" class="btn-secondary">
+                    <i class="fas fa-layer-group"></i> Types de groupe
+                </a>
                 <a href="{{ route('admin.permissions.create') }}" class="btn-primary">
                     <i class="fas fa-plus"></i> Nouvelle permission
                 </a>
@@ -118,9 +124,9 @@
                     <tbody>
                         @forelse($permissionsData as $permission)
                         <tr data-module="{{ $permission['module'] ?? '' }}" data-permission="{{ $permission['nom'] ?? '' }}">
-                            <td>{{ $permission['module'] ?? '-' }}</td>
+                            <td>{{ filled($permission['module'] ?? null) ? \Illuminate\Support\Str::of($permission['module'])->replace(['_', '-'], ' ')->title() : '-' }}</td>
                             <td><strong>{{ $permission['nom'] ?? '-' }}</strong></td>
-                            <td>{{ $permission['groupe'] ?? '-' }}</td>
+                            <td>{{ filled($permission['groupe'] ?? null) ? \Illuminate\Support\Str::of($permission['groupe'])->replace(['_', '-'], ' ')->title() : '-' }}</td>
                             <td>
                                 <span class="badge {{ ($permission['est_actif'] ?? false) ? 'badge-success' : 'badge-danger' }}">
                                     {{ ($permission['est_actif'] ?? false) ? 'Actif' : 'Inactif' }}
