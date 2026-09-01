@@ -1,36 +1,29 @@
 @extends('layouts.app')
 
-@section('title', 'SICORE - Calcul des indemnités')
+@section('title', 'SICORE - Indemnité de surveillance')
 
 @section('content')
 
 <main class="main-content">
 
     <x-topbar
-        title="Indemnités de correction"
-        subtitle="Indemnites > Calcul"
-        icon="fa-solid fa-pen-nib"
+        title="Indemnités de surveillance"
+        subtitle="Indemnites > Indemnité de surveillance"
+        icon="fa-solid fa-user-shield"
     />
 
     <section class="content-area">
-
-        {{-- ============================================================
-             STATISTIQUES
-             Calculees sur la page courante (convocations filtrees), meme
-             limitation deja acceptee sur Frais de deplacement/Pieces
-             justificatives : l'API ne fournit pas d'agregat dedie.
-        ============================================================ --}}
 
         <div class="stats-grid four" data-ajax-region="stats">
 
             <article class="stat-card">
                 <div>
-                    <p class="stat-label">Correcteurs éligibles</p>
-                    <p class="stat-value">{{ $stats['correcteurs'] ?? 0 }}</p>
-                    <p class="stat-note">Fonction Correction</p>
+                    <p class="stat-label">Surveillants éligibles</p>
+                    <p class="stat-value">{{ $stats['surveillants'] ?? 0 }}</p>
+                    <p class="stat-note">Fonction Surveillant</p>
                 </div>
                 <span class="stat-icon green">
-                    <i class="fa-solid fa-pen-nib" aria-hidden="true"></i>
+                    <i class="fa-solid fa-user-shield" aria-hidden="true"></i>
                 </span>
             </article>
 
@@ -47,12 +40,12 @@
 
             <article class="stat-card">
                 <div>
-                    <p class="stat-label">Copies corrigées</p>
-                    <p class="stat-value">{{ number_format($stats['copies_corrigees'] ?? 0, 0, ',', ' ') }}</p>
+                    <p class="stat-label">Heures surveillées</p>
+                    <p class="stat-value">{{ number_format($stats['heures_surveillees'] ?? 0, 1, ',', ' ') }}</p>
                     <p class="stat-note">Cumul des indemnités créées</p>
                 </div>
                 <span class="stat-icon green">
-                    <i class="fa-solid fa-layer-group" aria-hidden="true"></i>
+                    <i class="fa-solid fa-clock" aria-hidden="true"></i>
                 </span>
             </article>
 
@@ -69,25 +62,19 @@
 
         </div>
 
-        {{-- ============================================================
-             FILTRES
-             Memes menus/memes options que Frais de deplacement/Pieces
-             justificatives (ConvocationService::optionsFiltres()).
-        ============================================================ --}}
-
         <form
-            id="indemniteCorrectionFilterForm"
+            id="indemniteSurveillanceFilterForm"
             class="filter-panel"
             method="GET"
-            action="{{ route('indemnites.calcul') }}"
+            action="{{ route('indemnites.calcul-surveillance') }}"
             aria-label="Filtres de la page"
             data-filtres-coherents="{{ route('indemnites.filtres-options') }}"
             data-filtres-instantanes
         >
 
             <div class="form-group">
-                <label for="correction-filter-session">Session</label>
-                <select class="form-control" id="correction-filter-session" name="session">
+                <label for="surveillance-filter-session">Session</label>
+                <select class="form-control" id="surveillance-filter-session" name="session">
                     <option value="">Sélectionner</option>
                     @foreach ($optionsFiltres['sessions'] ?? [] as $valeur)
                         <option value="{{ $valeur }}" @selected(request('session') === $valeur)>{{ $valeur }}</option>
@@ -96,8 +83,8 @@
             </div>
 
             <div class="form-group">
-                <label for="correction-filter-objet">Objet</label>
-                <select class="form-control" id="correction-filter-objet" name="objet">
+                <label for="surveillance-filter-objet">Objet</label>
+                <select class="form-control" id="surveillance-filter-objet" name="objet">
                     <option value="">Sélectionner</option>
                     @foreach ($optionsFiltres['objets'] ?? [] as $valeur)
                         <option value="{{ $valeur }}" @selected(request('objet') === $valeur)>{{ $valeur }}</option>
@@ -106,8 +93,8 @@
             </div>
 
             <div class="form-group">
-                <label for="correction-filter-centre">Centre</label>
-                <select class="form-control" id="correction-filter-centre" name="centre">
+                <label for="surveillance-filter-centre">Centre</label>
+                <select class="form-control" id="surveillance-filter-centre" name="centre">
                     <option value="">Sélectionner</option>
                     @foreach ($optionsFiltres['centres'] ?? [] as $valeur)
                         <option value="{{ $valeur }}" @selected(request('centre') === $valeur)>{{ $valeur }}</option>
@@ -120,31 +107,22 @@
                     Filtrer
                 </button>
 
-                <a class="btn-secondary" href="{{ route('indemnites.calcul') }}" data-ajax-lien>
+                <a class="btn-secondary" href="{{ route('indemnites.calcul-surveillance') }}" data-ajax-lien>
                     Réinitialiser
                 </a>
             </div>
 
         </form>
 
-        {{-- ============================================================
-             TABLEAU
-             Cache tant qu'aucun filtre (session, objet ou centre) n'est
-             choisi — meme comportement que Frais de deplacement. Une ligne
-             par correcteur x metier, "Calcul groupé" scope toujours a UN
-             centre d'UNE convocation (demande utilisatrice).
-
-             data-ajax-region="corps" : bascule sans recharger la page
-             (indemnites-ajax-resultats.js).
-        ============================================================ --}}
-
+        {{-- data-ajax-region="corps" : bascule sans recharger la page
+             (indemnites-ajax-resultats.js). --}}
         <div data-ajax-region="corps">
 
         @if (! $filtreActif)
 
             <section class="table-card">
                 <p class="empty-message show">
-                    Choisissez une session, un objet ou un centre d'examen ci-dessus pour afficher les correcteurs éligibles.
+                    Choisissez une session, un objet ou un centre d'examen ci-dessus pour afficher les surveillants éligibles.
                 </p>
             </section>
 
@@ -153,14 +131,14 @@
             <section class="table-card">
 
                 <div class="table-responsive">
-                    <table class="table" id="indemniteCorrectionTable">
+                    <table class="table" id="indemniteSurveillanceTable">
 
                         <thead>
                             <tr>
                                 <th>Nom</th>
                                 <th>Prénom</th>
                                 <th>Matricule</th>
-                                <th>Métier corrigé</th>
+                                <th>Métier surveillé</th>
                                 <th>Centre</th>
                                 <th>Objet</th>
                                 <th>Session</th>
@@ -180,14 +158,14 @@
                                     <td>{{ $ligne['objet'] ?? '—' }}</td>
                                     <td>{{ $ligne['session'] ?? '—' }}</td>
                                     <td>
-                                        @if (! empty($ligne['indemnite_correction_id']))
+                                        @if (! empty($ligne['indemnite_surveillance_id']))
                                             <span class="badge badge-active">Calculée</span>
                                         @else
                                             <span class="badge badge-pending">Pas encore créée</span>
                                         @endif
                                     </td>
                                     <td class="actions-cell">
-                                        <a class="table-action" href="{{ route('indemnites.calcul.groupe', ['convocation_id' => $ligne['convocation_id'], 'centre_id' => $ligne['centre_id']]) }}" title="Calculer les indemnités de correction de ce centre">
+                                        <a class="table-action" href="{{ route('indemnites.calcul-surveillance.groupe', ['convocation_id' => $ligne['convocation_id'], 'centre_id' => $ligne['centre_id']]) }}" title="Calculer les indemnités de surveillance de ce centre">
                                             Calcul groupé du centre
                                         </a>
                                     </td>
@@ -200,7 +178,7 @@
                 </div>
 
                 @if (empty($lignes))
-                    <p class="empty-message show">Aucun correcteur pour ce filtre.</p>
+                    <p class="empty-message show">Aucun surveillant pour ce filtre.</p>
                 @endif
 
                 <div class="convocation-pagination" aria-label="Pagination">
@@ -240,9 +218,6 @@
 
 </main>
 
-{{-- .convocation-pagination n'est pas une classe globale (voir
-     frais-deplacement/index.blade.php pour le meme constat) — chaque page
-     qui l'utilise doit definir sa propre regle. --}}
 @push('styles')
 <style>
     .convocation-pagination {

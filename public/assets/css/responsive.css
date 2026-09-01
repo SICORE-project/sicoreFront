@@ -1,6 +1,7 @@
 @media (max-width: 1200px) {
   .stats-grid,
-  .stats-grid.four {
+  .stats-grid.four,
+  .stats-grid.three {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
@@ -88,7 +89,8 @@
 
 @media (max-width: 768px) {
   .stats-grid,
-  .stats-grid.four {
+  .stats-grid.four,
+  .stats-grid.three {
     grid-template-columns: 1fr;
   }
 

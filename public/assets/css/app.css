@@ -182,6 +182,53 @@
   font-size: 12.6px;
 }
 
+/* Menu imbrique sur 2 niveaux (ex: "Indemnité" dans "Gestion des
+   indemnités") — le bouton declencheur reprend la taille/couleur d'un
+   lien de sous-menu (pas celle, plus grande, d'un lien de niveau racine),
+   et son propre sous-menu (.sidebar-subsubmenu) recoit un retrait
+   supplementaire pour marquer le niveau. */
+.subgroup-toggle {
+  position: relative;
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  color: rgba(255, 255, 255, 0.86);
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  padding: 8px 10px;
+  font-size: 12.6px;
+  line-height: 1.22;
+  text-align: left;
+  transition: background 0.18s ease, color 0.18s ease;
+}
+
+.subgroup-toggle:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.subgroup-toggle.active,
+.subgroup-toggle.expanded {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.subgroup-toggle .chevron {
+  margin-left: auto;
+  font-size: 10px;
+  transition: transform 0.2s ease;
+}
+
+.subgroup-toggle.expanded .chevron {
+  transform: rotate(180deg);
+}
+
+.sidebar-subsubmenu {
+  padding-left: 12px;
+}
+
 .sidebar-footer {
   display: grid;
   gap: 10px;
@@ -386,6 +433,10 @@
 
 .stats-grid.four {
   grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.stats-grid.three {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .stat-card {

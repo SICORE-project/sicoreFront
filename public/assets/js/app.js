@@ -292,13 +292,21 @@
       link.classList.toggle("active", isActive);
 
       if (isActive || isRelated) {
+        // Remonte TOUS les sous-menus ancetres (pas seulement le plus
+        // proche) pour gerer un menu imbrique sur 2 niveaux ("Indemnité"
+        // dans "Gestion des indemnités") : sans la boucle, seul le
+        // sous-menu le plus interne s'ouvrait, reste invisible tant que son
+        // propre parent (max-height:0 par defaut) n'est pas deplie aussi.
         var submenu = link.closest(".sidebar-submenu");
-        if (submenu) {
+        while (submenu) {
           var trigger = submenu.previousElementSibling;
           if (trigger) {
             setSubmenuState(trigger, true);
             trigger.classList.add("active");
           }
+          submenu = submenu.parentElement && submenu.parentElement.classList.contains("sidebar-submenu")
+            ? submenu.parentElement
+            : null;
         }
       }
     });

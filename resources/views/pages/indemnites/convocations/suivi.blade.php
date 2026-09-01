@@ -51,6 +51,9 @@
     <div class="actions-row">
         <p class="breadcrumb">Gestion des indemnités &gt; Convocations &gt; Suivi</p>
         <div class="actions-group">
+            <a class="btn-secondary" href="{{ route('indemnites.convocations') }}">
+                Retour à la liste
+            </a>
             <a class="btn-secondary" href="{{ route('indemnites.convocations.show', $id) }}">
                 Retour à la convocation
             </a>

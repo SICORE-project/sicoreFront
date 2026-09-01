@@ -29,7 +29,7 @@
              d'agregat dedie).
         ============================================================ --}}
 
-        <div class="stats-grid four">
+        <div class="stats-grid four" data-ajax-region="stats">
 
             <article class="stat-card">
                 <div>
@@ -91,11 +91,13 @@
             method="GET"
             action="{{ route('indemnites.pieces-justificatives') }}"
             aria-label="Filtres de la page"
+            data-filtres-coherents="{{ route('indemnites.filtres-options') }}"
+            data-filtres-instantanes
         >
 
             <div class="form-group">
                 <label for="piece-filter-session">Session</label>
-                <select class="form-control" id="piece-filter-session" name="session" data-filter-auto-submit>
+                <select class="form-control" id="piece-filter-session" name="session">
                     <option value="">Sélectionner</option>
                     @foreach ($optionsFiltres['sessions'] ?? [] as $valeur)
                         <option value="{{ $valeur }}" @selected(request('session') === $valeur)>{{ $valeur }}</option>
@@ -105,7 +107,7 @@
 
             <div class="form-group">
                 <label for="piece-filter-objet">Objet</label>
-                <select class="form-control" id="piece-filter-objet" name="objet" data-filter-auto-submit>
+                <select class="form-control" id="piece-filter-objet" name="objet">
                     <option value="">Sélectionner</option>
                     @foreach ($optionsFiltres['objets'] ?? [] as $valeur)
                         <option value="{{ $valeur }}" @selected(request('objet') === $valeur)>{{ $valeur }}</option>
@@ -115,7 +117,7 @@
 
             <div class="form-group">
                 <label for="piece-filter-centre">Centre</label>
-                <select class="form-control" id="piece-filter-centre" name="centre" data-filter-auto-submit>
+                <select class="form-control" id="piece-filter-centre" name="centre">
                     <option value="">Sélectionner</option>
                     @foreach ($optionsFiltres['centres'] ?? [] as $valeur)
                         <option value="{{ $valeur }}" @selected(request('centre') === $valeur)>{{ $valeur }}</option>
@@ -124,11 +126,13 @@
             </div>
 
             <div class="actions-group">
-                @if ($filtreActif)
-                    <a class="btn-secondary" href="{{ route('indemnites.pieces-justificatives') }}">
-                        Réinitialiser
-                    </a>
-                @endif
+                <button class="btn-secondary" type="submit">
+                    Filtrer
+                </button>
+
+                <a class="btn-secondary" href="{{ route('indemnites.pieces-justificatives') }}" data-ajax-lien>
+                    Réinitialiser
+                </a>
             </div>
 
         </form>
@@ -139,7 +143,14 @@
              choisi. Une fois un filtre choisi : une ligne par membre du
              jury rattache au centre/a l'objet/a la session selectionnes —
              voir PiecesJustificativesController::construireMembres().
+
+             data-ajax-region="corps" : bascule sans recharger la page
+             entre ce message et le tableau (indemnites-ajax-resultats.js),
+             demande utilisatrice : "je ne veux pas que les filtres
+             rechargent la page".
         ============================================================ --}}
+
+        <div data-ajax-region="corps">
 
         @if (! $filtreActif)
 
@@ -194,10 +205,23 @@
                                     </td>
                                     <td class="actions-cell">
                                         <div class="table-actions-inline">
+                                              <button
+                                                class="table-action"
+                                                type="button"
+                                                data-modal-open="modal-piece-justificative"
+                                                data-piece-mode="ajouter"
+                                                data-piece-convocation-id="{{ $membre['convocation_id'] }}"
+                                                data-piece-enseignant-id="{{ $membre['enseignant_id'] }}"
+                                                data-piece-centre-id="{{ $membre['centre_id'] }}"
+                                                data-piece-label="{{ trim(($membre['prenom'] ?? '').' '.($membre['nom'] ?? '')) }} — {{ $membre['centre'] ?? '—' }}"
+                                            >
+                                                Ajouter une pièce
+                                            </button>
                                             <button
                                                 class="table-action"
                                                 type="button"
                                                 data-modal-open="modal-voir-dossier"
+                                                data-piece-mode="voir"
                                                 data-dossier-label="{{ trim(($membre['prenom'] ?? '').' '.($membre['nom'] ?? '')) }} — {{ $membre['centre'] ?? '—' }}"
                                                 data-dossier-json="{{ json_encode($membre['dossier'] ?? []) }}"
                                             >
@@ -207,12 +231,14 @@
                                                 class="table-action"
                                                 type="button"
                                                 data-modal-open="modal-piece-justificative"
+                                                data-piece-mode="modifier"
                                                 data-piece-convocation-id="{{ $membre['convocation_id'] }}"
                                                 data-piece-enseignant-id="{{ $membre['enseignant_id'] }}"
                                                 data-piece-centre-id="{{ $membre['centre_id'] }}"
                                                 data-piece-label="{{ trim(($membre['prenom'] ?? '').' '.($membre['nom'] ?? '')) }} — {{ $membre['centre'] ?? '—' }}"
+                                                data-dossier-json="{{ json_encode($membre['dossier'] ?? []) }}"
                                             >
-                                                Ajouter une pièce
+                                                Modifier
                                             </button>
                                         </div>
                                     </td>
@@ -240,7 +266,7 @@
                     @if ($convocations->onFirstPage())
                         <span class="page-btn" aria-disabled="true">←</span>
                     @else
-                        <a class="page-btn" href="{{ $convocations->previousPageUrl() }}" aria-label="Page précédente">←</a>
+                        <a class="page-btn" href="{{ $convocations->previousPageUrl() }}" aria-label="Page précédente" data-ajax-lien>←</a>
                     @endif
 
                     @for ($page = 1; $page <= $convocations->lastPage(); $page++)
@@ -248,13 +274,14 @@
                             class="page-btn {{ $page === $convocations->currentPage() ? 'active' : '' }}"
                             href="{{ $convocations->url($page) }}"
                             data-page-number
+                            data-ajax-lien
                         >
                             {{ $page }}
                         </a>
                     @endfor
 
                     @if ($convocations->hasMorePages())
-                        <a class="page-btn" href="{{ $convocations->nextPageUrl() }}" aria-label="Page suivante">→</a>
+                        <a class="page-btn" href="{{ $convocations->nextPageUrl() }}" aria-label="Page suivante" data-ajax-lien>→</a>
                     @else
                         <span class="page-btn" aria-disabled="true">→</span>
                     @endif
@@ -265,23 +292,38 @@
 
         @endif
 
+        </div>
+
         {{-- ============================================================
-             MODALE "Ajouter une pièce justificative"
-             Partagee par tous les boutons "Ajouter une pièce" du tableau
-             (une par membre) : le JS ci-dessous remplit ses champs caches
-             (convocation_id/enseignant_id/centre_id) et son libelle a
-             partir des attributs data-piece-* du bouton cliqué. Le
-             "Dossier de convocation" (5e type) n'a pas de champ fichier :
-             il est toujours rattache automatiquement cote back, a partir
-             du PDF deja genere pour la convocation — voir
+             MODALE "Ajouter une pièce justificative" / "Modifier"
+             Partagee par les boutons "Ajouter une pièce" ET "Modifier" du
+             tableau (demande utilisatrice : "en cliquant sur modifier il
+             doit afficher le formulaire complet en récupérant le fichier
+             qui y était" — même formulaire, pas une vue separee) : le JS
+             ci-dessous bascule entre les deux modes (data-piece-mode du
+             bouton cliqué) — titre, action du formulaire, texte du bouton,
+             et surtout : en mode "modifier", les 5 champs fichier ne sont
+             plus obligatoires et affichent le nom du fichier deja depose
+             (data-dossier-json du bouton) a la place du placeholder, pour
+             qu'on puisse ne remplacer qu'UNE piece sans re-televerser les
+             autres. Le "Dossier de convocation" (6e type) n'a jamais de
+             champ fichier : il est toujours rattache automatiquement cote
+             back, a partir du PDF deja genere pour la convocation — voir
              PieceJustificativesController::attacherDossierConvocation().
         ============================================================ --}}
 
-        <div class="modal-backdrop" id="modal-piece-justificative" data-modal hidden>
+        <div
+            class="modal-backdrop"
+            id="modal-piece-justificative"
+            data-modal
+            hidden
+            data-piece-url-ajouter="{{ route('indemnites.pieces-justificatives.deposer') }}"
+            data-piece-url-modifier="{{ route('indemnites.pieces-justificatives.modifier') }}"
+        >
             <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="modal-piece-justificative-title">
 
                 <div class="modal-header">
-                    <h2 id="modal-piece-justificative-title">Ajouter une pièce justificative</h2>
+                    <h2 id="modal-piece-justificative-title" data-piece-modal-title>Ajouter une pièce justificative</h2>
                     <button class="modal-close" type="button" data-modal-close aria-label="Fermer">&times;</button>
                 </div>
 
@@ -304,27 +346,57 @@
 
                         <div class="form-group">
                             <label for="piece-service-fait">Service fait <span class="form-group-hint">(PDF, JPG, PNG — 100 Ko max)</span></label>
-                            <input class="form-control" id="piece-service-fait" type="file" name="service_fait" accept=".pdf,.jpg,.jpeg,.png" required data-piece-fichier="service_fait">
+                            <div class="dropzone" data-dropzone>
+                                <div class="dropzone-visual">
+                                    <i class="fa-solid fa-cloud-arrow-up" aria-hidden="true"></i>
+                                    <span class="dropzone-text" data-dropzone-text>Cliquez pour joindre un fichier</span>
+                                </div>
+                                <input class="dropzone-input" id="piece-service-fait" type="file" name="service_fait" accept=".pdf,.jpg,.jpeg,.png" required data-piece-fichier="service_fait">
+                            </div>
                         </div>
 
                         <div class="form-group">
                             <label for="piece-ordre-mission">Ordre de mission <span class="form-group-hint">(PDF, JPG, PNG — 100 Ko max)</span></label>
-                            <input class="form-control" id="piece-ordre-mission" type="file" name="ordre_mission" accept=".pdf,.jpg,.jpeg,.png" required data-piece-fichier="ordre_mission">
+                            <div class="dropzone" data-dropzone>
+                                <div class="dropzone-visual">
+                                    <i class="fa-solid fa-cloud-arrow-up" aria-hidden="true"></i>
+                                    <span class="dropzone-text" data-dropzone-text>Cliquez pour joindre un fichier</span>
+                                </div>
+                                <input class="dropzone-input" id="piece-ordre-mission" type="file" name="ordre_mission" accept=".pdf,.jpg,.jpeg,.png" required data-piece-fichier="ordre_mission">
+                            </div>
                         </div>
 
                         <div class="form-group">
                             <label for="piece-rapport-mission">Rapport de mission <span class="form-group-hint">(PDF, JPG, PNG — 100 Ko max)</span></label>
-                            <input class="form-control" id="piece-rapport-mission" type="file" name="rapport_mission" accept=".pdf,.jpg,.jpeg,.png" required data-piece-fichier="rapport_mission">
+                            <div class="dropzone" data-dropzone>
+                                <div class="dropzone-visual">
+                                    <i class="fa-solid fa-cloud-arrow-up" aria-hidden="true"></i>
+                                    <span class="dropzone-text" data-dropzone-text>Cliquez pour joindre un fichier</span>
+                                </div>
+                                <input class="dropzone-input" id="piece-rapport-mission" type="file" name="rapport_mission" accept=".pdf,.jpg,.jpeg,.png" required data-piece-fichier="rapport_mission">
+                            </div>
                         </div>
 
                         <div class="form-group">
                             <label for="piece-bulletin-salaire">Bulletin de salaire <span class="form-group-hint">(PDF, JPG, PNG — 100 Ko max)</span></label>
-                            <input class="form-control" id="piece-bulletin-salaire" type="file" name="bulletin_salaire" accept=".pdf,.jpg,.jpeg,.png" required data-piece-fichier="bulletin_salaire">
+                            <div class="dropzone" data-dropzone>
+                                <div class="dropzone-visual">
+                                    <i class="fa-solid fa-cloud-arrow-up" aria-hidden="true"></i>
+                                    <span class="dropzone-text" data-dropzone-text>Cliquez pour joindre un fichier</span>
+                                </div>
+                                <input class="dropzone-input" id="piece-bulletin-salaire" type="file" name="bulletin_salaire" accept=".pdf,.jpg,.jpeg,.png" required data-piece-fichier="bulletin_salaire">
+                            </div>
                         </div>
 
                         <div class="form-group">
                             <label for="piece-accuse-reception">Accusé de réception <span class="form-group-hint">(PDF, JPG, PNG — 100 Ko max)</span></label>
-                            <input class="form-control" id="piece-accuse-reception" type="file" name="accuse_reception" accept=".pdf,.jpg,.jpeg,.png" required data-piece-fichier="accuse_reception">
+                            <div class="dropzone" data-dropzone>
+                                <div class="dropzone-visual">
+                                    <i class="fa-solid fa-cloud-arrow-up" aria-hidden="true"></i>
+                                    <span class="dropzone-text" data-dropzone-text>Cliquez pour joindre un fichier</span>
+                                </div>
+                                <input class="dropzone-input" id="piece-accuse-reception" type="file" name="accuse_reception" accept=".pdf,.jpg,.jpeg,.png" required data-piece-fichier="accuse_reception">
+                            </div>
                         </div>
 
                     </div>
@@ -374,7 +446,7 @@
                     <div class="actions-group">
                         <button class="btn-primary" type="submit" data-piece-submit>
                             <i class="fa-solid fa-floppy-disk" aria-hidden="true"></i>
-                            Déposer
+                            <span data-piece-submit-label>Déposer</span>
                         </button>
                     </div>
                 </form>
@@ -384,11 +456,14 @@
 
         {{-- ============================================================
              MODALE "Voir le dossier"
-             Consultation seule (statut + date + telechargement) — pas de
-             validation/rejet ici pour l'instant. Partagee par tous les
-             boutons "Voir le dossier" : le JS lit le JSON encode dans
-             data-dossier-json du bouton clique et construit les 5 lignes
-             (une par type attendu, meme si non deposee) a la volee.
+             Consultation seule (statut + date + telechargement) — la
+             modification se fait via le bouton "Modifier" du tableau, qui
+             ouvre le formulaire complet #modal-piece-justificative (voir
+             plus haut), pas cette modale. Partagee par tous les boutons
+             "Voir le dossier" : le JS lit le JSON encode dans
+             data-dossier-json du bouton clique et construit les 6 lignes
+             (les 5 manuelles + le dossier de convocation auto-rattache,
+             une par type attendu meme si non deposee) a la volee.
         ============================================================ --}}
 
         <div
@@ -397,6 +472,8 @@
             data-modal
             hidden
             data-dossier-download-url-template="{{ route('indemnites.pieces-justificatives.telecharger', ':id') }}"
+            data-dossier-valider-url-template="{{ route('indemnites.pieces-justificatives.valider', ':id') }}"
+            data-dossier-rejeter-url-template="{{ route('indemnites.pieces-justificatives.rejeter', ':id') }}"
         >
             <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="modal-voir-dossier-title">
 
@@ -545,6 +622,72 @@
         margin: 0;
     }
 
+    /* Zone de depot façon "dropzone" pour les 5 champs fichiers — remplace
+       le <input type="file"> brut du navigateur. L'input reste en place,
+       en pleine largeur/hauteur mais invisible (opacity, pas display:none
+       qui exclurait le champ "required" de la validation native dans
+       certains navigateurs) : il capte le clic sur toute la zone, pas
+       besoin de JS pour ouvrir le selecteur de fichier. */
+    .dropzone {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px 12px;
+        border: 1.5px dashed #cbd5e1;
+        border-radius: 10px;
+        background: #fafbfc;
+        text-align: center;
+        transition: border-color .15s ease, background-color .15s ease;
+    }
+
+    .dropzone:hover {
+        border-color: var(--blue);
+        background: #f4f7ff;
+    }
+
+    .dropzone-visual {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        pointer-events: none;
+    }
+
+    .dropzone-visual i {
+        font-size: 22px;
+        color: #94a3b8;
+    }
+
+    .dropzone-text {
+        font-size: 13px;
+        color: var(--text-muted);
+    }
+
+    .dropzone-input {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        opacity: 0;
+        cursor: pointer;
+    }
+
+    .dropzone.has-file {
+        border-style: solid;
+        border-color: var(--blue);
+        background: #eff4ff;
+    }
+
+    .dropzone.has-file .dropzone-visual i {
+        color: var(--blue);
+    }
+
+    .dropzone.has-file .dropzone-text {
+        color: #1e293b;
+        font-weight: 600;
+    }
+
     .import-panel-form .actions-group .btn-primary {
         width: 100%;
     }
@@ -637,23 +780,16 @@
 @endpush
 
 {{-- ================================================================
-     SCRIPT — soumet le formulaire de filtres des qu'une valeur est
-     choisie dans un des menus deroulants (session/objet/centre) : pas
-     besoin de cliquer sur un bouton "Filtrer" separe.
+     SCRIPT — les selects Session/Objet/Centre se mettent a jour entre eux
+     en AJAX (indemnites-filtres-coherents.js), et le tableau de resultats
+     (data-ajax-region="corps"/"stats") se rafraichit lui aussi sans jamais
+     recharger la page (indemnites-ajax-resultats.js) — demande
+     utilisatrice : "je ne veux pas que les filtres rechargent la page".
 ================================================================ --}}
 
 @push('scripts')
-<script>
-    (function () {
-        "use strict";
-
-        document.querySelectorAll("[data-filter-auto-submit]").forEach(function (champ) {
-            champ.addEventListener("change", function () {
-                champ.form.submit();
-            });
-        });
-    })();
-</script>
+<script src="{{ asset('assets/js/indemnites-filtres-coherents.js') }}" defer></script>
+<script src="{{ asset('assets/js/indemnites-ajax-resultats.js') }}" defer></script>
 
 {{-- ================================================================
      SCRIPT — modale "Ajouter une pièce justificative" : ouverture/
@@ -760,7 +896,12 @@
             var prets = 1; // le dossier de convocation compte toujours
 
             formulairePiece.querySelectorAll("[data-piece-fichier]").forEach(function (champ) {
-                var estPret = champ.files && champ.files.length > 0;
+                var zone = champ.closest("[data-dropzone]");
+                // En mode "modifier", une piece deja deposee (fichier
+                // existant, non touchee) compte aussi comme prete — pas
+                // besoin de la reteleverser pour valider le formulaire.
+                var estPret = (champ.files && champ.files.length > 0)
+                    || (zone && zone.dataset.existant === "true");
                 var item = recapPiece.querySelector(
                     '[data-piece-recap-item="' + champ.getAttribute("data-piece-fichier") + '"]'
                 );
@@ -786,17 +927,46 @@
             }
         }
 
+        function mettreAJourDropzone(champ) {
+            var zone = champ.closest("[data-dropzone]");
+
+            if (!zone) {
+                return;
+            }
+
+            var texte = zone.querySelector("[data-dropzone-text]");
+            var fichier = champ.files && champ.files[0];
+
+            zone.classList.toggle("has-file", !!fichier);
+
+            if (texte) {
+                if (fichier) {
+                    texte.textContent = fichier.name;
+                } else if (zone.dataset.existant === "true" && zone.dataset.nomExistant) {
+                    // Mode "modifier" : le fichier deja depose, tant qu'on
+                    // n'en choisit pas un nouveau (demande utilisatrice :
+                    // "recuperant le fichier qui y etait").
+                    texte.textContent = "Fichier actuel : " + zone.dataset.nomExistant;
+                } else {
+                    texte.textContent = "Cliquez pour joindre un fichier";
+                }
+            }
+        }
+
         if (formulairePiece) {
             formulairePiece.querySelectorAll("[data-piece-fichier]").forEach(function (champ) {
                 champ.addEventListener("change", function () {
                     verifierTailleFichier(champ);
+                    mettreAJourDropzone(champ);
                     mettreAJourRecap();
                 });
             });
         }
 
         // Statuts possibles d'une piece (voir piece_justificatives.statut
-        // cote back) : "null" = pas encore deposee du tout.
+        // cote back) : "null" = pas encore deposee du tout — reste au
+        // depot par defaut (demande utilisatrice), seuls les boutons
+        // Valider/Rejeter font evoluer une piece deja deposee.
         var LIBELLES_STATUT_DOSSIER = {
             depose: { label: "Déposé", classe: "badge-primary" },
             valide: { label: "Validé", classe: "badge-active" },
@@ -813,10 +983,76 @@
             return parties.length === 3 ? parties.reverse().join("/") : date;
         }
 
-        function remplirDossier(modal, bouton) {
+        function csrfToken() {
+            var meta = document.querySelector('meta[name="csrf-token"]');
+            return meta ? meta.getAttribute("content") : "";
+        }
+
+        // "Voir le dossier" ET "Modifier" portent chacun leur propre
+        // data-dossier-json (meme donnees, voir le tableau server-rendu) —
+        // sans re-synchroniser les deux apres un Valider/Rejeter, rouvrir
+        // la modale (ou "Modifier") reafficherait l'ancien statut, remplirDossier()
+        // relisant cet attribut a chaque ouverture plutot que l'etat couarant.
+        function synchroniserDossierJson(boutonVoir, dossier) {
+            var json = JSON.stringify(dossier);
+            var actions = boutonVoir.closest(".table-actions-inline");
+
+            if (!actions) {
+                boutonVoir.setAttribute("data-dossier-json", json);
+                return;
+            }
+
+            actions.querySelectorAll("[data-dossier-json]").forEach(function (autreBouton) {
+                autreBouton.setAttribute("data-dossier-json", json);
+            });
+        }
+
+        // Appelle valider()/rejeter() en AJAX (fetch) — pas de rechargement
+        // de page, la modale reste ouverte et seule cette ligne est
+        // redessinee (demande utilisatrice : "en cliquant sur validé il se
+        // change en validé").
+        function traiterActionPiece(modal, boutonVoir, dossier, piece, action, motifRejet, apresSucces) {
+            var attribut = action === "valider" ? "data-dossier-valider-url-template" : "data-dossier-rejeter-url-template";
+            var urlTemplate = modal.getAttribute(attribut) || "";
+
+            if (!urlTemplate || !piece.id) {
+                return;
+            }
+
+            fetch(urlTemplate.replace(":id", piece.id), {
+                method: "POST",
+                headers: {
+                    "X-CSRF-TOKEN": csrfToken(),
+                    "X-Requested-With": "XMLHttpRequest",
+                    "Content-Type": "application/json",
+                    "Accept": "application/json",
+                },
+                body: JSON.stringify(action === "rejeter" ? { commentaire_rejet: motifRejet } : {}),
+            })
+                .then(function (reponse) {
+                    return reponse.json().then(function (corps) {
+                        return { ok: reponse.ok, corps: corps };
+                    });
+                })
+                .then(function (resultat) {
+                    if (!resultat.ok || !resultat.corps.success) {
+                        window.alert((resultat.corps && resultat.corps.message) || "Une erreur est survenue.");
+                        return;
+                    }
+
+                    piece.statut = resultat.corps.statut;
+                    synchroniserDossierJson(boutonVoir, dossier);
+                    apresSucces();
+                })
+                .catch(function () {
+                    window.alert("Le service SICORE Backend est injoignable.");
+                });
+        }
+
+        function remplirDossier(modal, boutonVoir) {
             var libelle = modal.querySelector("[data-dossier-membre-label]");
             if (libelle) {
-                libelle.textContent = bouton.getAttribute("data-dossier-label") || "";
+                libelle.textContent = boutonVoir.getAttribute("data-dossier-label") || "";
             }
 
             var liste = modal.querySelector("[data-dossier-liste]");
@@ -828,12 +1064,12 @@
 
             var dossier = [];
             try {
-                dossier = JSON.parse(bouton.getAttribute("data-dossier-json") || "[]");
+                dossier = JSON.parse(boutonVoir.getAttribute("data-dossier-json") || "[]");
             } catch (erreur) {
                 dossier = [];
             }
 
-            var urlTemplate = modal.getAttribute("data-dossier-download-url-template") || "";
+            var urlTelechargerTemplate = modal.getAttribute("data-dossier-download-url-template") || "";
 
             dossier.forEach(function (piece) {
                 var item = document.createElement("li");
@@ -859,80 +1095,202 @@
                 var actions = document.createElement("div");
                 actions.className = "piece-dossier-item-actions";
 
-                var infoStatut = LIBELLES_STATUT_DOSSIER[piece.statut] || { label: "Non déposé", classe: "badge-pending" };
-                var badge = document.createElement("span");
-                badge.className = "badge " + infoStatut.classe;
-                badge.textContent = infoStatut.label;
-                actions.appendChild(badge);
+                // Redessine juste cette ligne (badge + boutons) apres un
+                // Valider/Rejeter reussi, sans reconstruire toute la liste.
+                function redessinerLigne() {
+                    actions.innerHTML = "";
 
-                if (piece.id && urlTemplate) {
-                    // Ouvre dans un nouvel onglet : le fichier s'affiche
-                    // (visionneuse du navigateur) plutot que de forcer un
-                    // telechargement immediat — l'utilisateur peut ensuite
-                    // le telecharger lui-meme depuis cette visionneuse s'il
-                    // le souhaite, sans quitter la page/la modale.
-                    var lien = document.createElement("a");
-                    lien.className = "table-action";
-                    lien.href = urlTemplate.replace(":id", piece.id);
-                    lien.target = "_blank";
-                    lien.rel = "noopener";
-                    lien.textContent = "Voir / Télécharger";
-                    actions.appendChild(lien);
+                    var infoStatut = LIBELLES_STATUT_DOSSIER[piece.statut] || { label: "Non déposé", classe: "badge-pending" };
+                    var badge = document.createElement("span");
+                    badge.className = "badge " + infoStatut.classe;
+                    badge.textContent = infoStatut.label;
+                    actions.appendChild(badge);
+
+                    if (piece.id && urlTelechargerTemplate) {
+                        // Ouvre dans un nouvel onglet : le fichier s'affiche
+                        // (visionneuse du navigateur) plutot que de forcer un
+                        // telechargement immediat — l'utilisateur peut ensuite
+                        // le telecharger lui-meme depuis cette visionneuse s'il
+                        // le souhaite, sans quitter la page/la modale.
+                        var lien = document.createElement("a");
+                        lien.className = "table-action";
+                        lien.href = urlTelechargerTemplate.replace(":id", piece.id);
+                        lien.target = "_blank";
+                        lien.rel = "noopener";
+                        lien.textContent = "Voir / Télécharger";
+                        actions.appendChild(lien);
+                    }
+
+                    // Valider/Rejeter : uniquement sur une piece reellement
+                    // deposee (piece.id) — rien a faire evoluer tant
+                    // qu'aucun fichier n'existe. Le bouton correspondant au
+                    // statut courant est masque (pas de "Valider" sur une
+                    // piece deja validee).
+                    if (!piece.id) {
+                        return;
+                    }
+
+                    if (piece.statut !== "valide") {
+                        var boutonValider = document.createElement("button");
+                        boutonValider.type = "button";
+                        boutonValider.className = "table-action";
+                        boutonValider.textContent = "Valider";
+                        boutonValider.addEventListener("click", function () {
+                            boutonValider.disabled = true;
+                            traiterActionPiece(modal, boutonVoir, dossier, piece, "valider", null, redessinerLigne);
+                        });
+                        actions.appendChild(boutonValider);
+                    }
+
+                    if (piece.statut !== "rejete") {
+                        var boutonRejeter = document.createElement("button");
+                        boutonRejeter.type = "button";
+                        boutonRejeter.className = "table-action danger";
+                        boutonRejeter.textContent = "Rejeter";
+                        boutonRejeter.addEventListener("click", function () {
+                            var motif = window.prompt("Motif du rejet :");
+                            if (!motif) {
+                                return;
+                            }
+                            boutonRejeter.disabled = true;
+                            traiterActionPiece(modal, boutonVoir, dossier, piece, "rejeter", motif, redessinerLigne);
+                        });
+                        actions.appendChild(boutonRejeter);
+                    }
                 }
 
+                redessinerLigne();
                 item.appendChild(actions);
                 liste.appendChild(item);
             });
         }
 
-        document.querySelectorAll("[data-modal-open]").forEach(function (bouton) {
-            var modal = document.getElementById(bouton.getAttribute("data-modal-open"));
+        // Extrait en fonction nommee (au lieu d'un forEach direct) : les
+        // boutons "Ajouter une pièce"/"Voir le dossier" vivent DANS le
+        // tableau (data-ajax-region="corps"), qui est remplace sans
+        // recharger la page a chaque filtre (indemnites-ajax-resultats.js)
+        // — sans re-attacher ces clics sur les NOUVEAUX boutons apres
+        // chaque remplacement, ils resteraient morts.
+        // Bascule le formulaire partage entre les modes "ajouter" et
+        // "modifier" (demande utilisatrice : "en cliquant sur modifier il
+        // doit afficher le formulaire complet en recuperant le fichier qui
+        // y etait") : titre, action, texte du bouton, obligation des 5
+        // champs fichier, et pre-remplissage de chaque dropzone avec le
+        // fichier deja depose (si mode "modifier").
+        function preparerFormulairePiece(modal, bouton, mode) {
+            var titre = modal.querySelector("[data-piece-modal-title]");
+            var libelleSubmit = modal.querySelector("[data-piece-submit-label]");
+            var enModification = mode === "modifier";
 
-            if (!modal) {
-                return;
+            if (titre) {
+                titre.textContent = enModification ? "Modifier le dossier" : "Ajouter une pièce justificative";
             }
 
-            bouton.addEventListener("click", function () {
-                if (bouton.hasAttribute("data-dossier-json")) {
-                    remplirDossier(modal, bouton);
-                    ouvrirModal(modal);
+            if (libelleSubmit) {
+                libelleSubmit.textContent = enModification ? "Enregistrer les modifications" : "Déposer";
+            }
 
+            if (formulairePiece) {
+                formulairePiece.action = modal.getAttribute(
+                    enModification ? "data-piece-url-modifier" : "data-piece-url-ajouter"
+                ) || formulairePiece.action;
+            }
+
+            // Dossier courant (id/nom_original par type) — uniquement en
+            // mode "modifier", pour pre-remplir chaque dropzone.
+            var dossierParType = {};
+
+            if (enModification) {
+                try {
+                    (JSON.parse(bouton.getAttribute("data-dossier-json") || "[]")).forEach(function (piece) {
+                        if (piece.type) {
+                            dossierParType[piece.type] = piece;
+                        }
+                    });
+                } catch (erreur) {
+                    dossierParType = {};
+                }
+            }
+
+            if (formulairePiece) {
+                formulairePiece.querySelectorAll("[data-piece-fichier]").forEach(function (champ) {
+                    var zone = champ.closest("[data-dropzone]");
+                    var piece = dossierParType[champ.getAttribute("data-piece-fichier")];
+
+                    champ.required = ! enModification;
+
+                    if (zone) {
+                        if (piece && piece.nom_original) {
+                            zone.dataset.existant = "true";
+                            zone.dataset.nomExistant = piece.nom_original;
+                        } else {
+                            delete zone.dataset.existant;
+                            delete zone.dataset.nomExistant;
+                        }
+                    }
+
+                    mettreAJourDropzone(champ);
+                });
+            }
+        }
+
+        function attacherOuvertureModales() {
+            document.querySelectorAll("[data-modal-open]").forEach(function (bouton) {
+                var modal = document.getElementById(bouton.getAttribute("data-modal-open"));
+
+                if (!modal) {
                     return;
                 }
 
-                // Pre-remplit les champs caches (convocation/enseignant/
-                // centre) et le libelle du membre a partir des attributs
-                // data-piece-* du bouton clique — un seul formulaire/modale
-                // partage par toutes les lignes du tableau.
-                var champsParAttribut = {
-                    "convocation_id": "pieceConvocationId",
-                    "enseignant_id": "pieceEnseignantId",
-                    "centre_id": "pieceCentreId",
-                };
+                bouton.addEventListener("click", function () {
+                    var mode = bouton.getAttribute("data-piece-mode");
 
-                modal.querySelectorAll("[data-piece-field]").forEach(function (champ) {
-                    var cle = champsParAttribut[champ.getAttribute("data-piece-field")];
-                    champ.value = (cle && bouton.dataset[cle]) || "";
-                });
+                    if (mode === "voir") {
+                        remplirDossier(modal, bouton);
+                        ouvrirModal(modal);
 
-                var libelle = modal.querySelector("[data-piece-membre-label]");
-                if (libelle) {
-                    libelle.textContent = bouton.getAttribute("data-piece-label") || "";
-                }
+                        return;
+                    }
 
-                // Repart de zero a chaque ouverture : sinon un fichier
-                // choisi (ou une erreur de taille affichee) pour un membre
-                // resterait present si on ouvre la modale pour un AUTRE
-                // membre juste apres.
-                if (formulairePiece) {
-                    formulairePiece.reset();
-                    formulairePiece.querySelectorAll("[data-piece-fichier]").forEach(effacerErreurChamp);
+                    // Pre-remplit les champs caches (convocation/enseignant/
+                    // centre) et le libelle du membre a partir des attributs
+                    // data-piece-* du bouton clique — un seul formulaire/modale
+                    // partage par "Ajouter une pièce" ET "Modifier".
+                    var champsParAttribut = {
+                        "convocation_id": "pieceConvocationId",
+                        "enseignant_id": "pieceEnseignantId",
+                        "centre_id": "pieceCentreId",
+                    };
+
+                    modal.querySelectorAll("[data-piece-field]").forEach(function (champ) {
+                        var cle = champsParAttribut[champ.getAttribute("data-piece-field")];
+                        champ.value = (cle && bouton.dataset[cle]) || "";
+                    });
+
+                    var libelle = modal.querySelector("[data-piece-membre-label]");
+                    if (libelle) {
+                        libelle.textContent = bouton.getAttribute("data-piece-label") || "";
+                    }
+
+                    // Repart de zero a chaque ouverture : sinon un fichier
+                    // choisi (ou une erreur de taille affichee) pour un membre
+                    // resterait present si on ouvre la modale pour un AUTRE
+                    // membre juste apres.
+                    if (formulairePiece) {
+                        formulairePiece.reset();
+                        formulairePiece.querySelectorAll("[data-piece-fichier]").forEach(effacerErreurChamp);
+                    }
+
+                    preparerFormulairePiece(modal, bouton, mode);
                     mettreAJourRecap();
-                }
 
-                ouvrirModal(modal);
+                    ouvrirModal(modal);
+                });
             });
-        });
+        }
+
+        attacherOuvertureModales();
+        document.addEventListener("sicore:ajax-regions-mises-a-jour", attacherOuvertureModales);
 
         document.querySelectorAll("[data-modal]").forEach(function (modal) {
             modal.addEventListener("click", function (event) {

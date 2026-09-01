@@ -53,22 +53,61 @@
 
           <div class="sidebar-submenu {{ $groupIsActive ? 'open' : '' }}">
             @foreach ($item['links'] as $link)
-              @php
-                  $linkIsActive = request()->routeIs($link['route'])
-                      && (! isset($link['fragment']) || request()->fullUrlIs('*#'.$link['fragment']));
-                  $href = route($link['route']).(isset($link['fragment']) ? '#'.$link['fragment'] : '');
-              @endphp
-              <a
-                class="{{ $linkIsActive ? 'active' : '' }}"
-                href="{{ $href }}"
-                data-page-link
-                title="{{ $link['label'] }}"
-                aria-label="{{ $link['label'] }}"
-                @if ($linkIsActive) aria-current="page" @endif
-              >
-                <span class="nav-icon submenu-icon"><i class="{{ $link['icon'] }}" aria-hidden="true"></i></span>
-                <span class="submenu-label">{{ $link['label'] }}</span>
-              </a>
+              @if (($link['type'] ?? 'link') === 'group')
+                @php
+                    $subPatterns = (array) ($link['active'] ?? []);
+                    $subGroupIsActive = collect($subPatterns)->contains(fn ($pattern) => request()->routeIs($pattern));
+                @endphp
+
+                <button
+                  class="subgroup-toggle {{ $subGroupIsActive ? 'active expanded' : '' }}"
+                  type="button"
+                  data-submenu-toggle
+                  title="{{ $link['label'] }}"
+                  aria-label="{{ $link['label'] }}"
+                  aria-expanded="{{ $subGroupIsActive ? 'true' : 'false' }}"
+                >
+                  <span class="nav-icon submenu-icon"><i class="{{ $link['icon'] }}" aria-hidden="true"></i></span>
+                  <span class="submenu-label">{{ $link['label'] }}</span>
+                  <span class="chevron"><i class="fa-solid fa-chevron-down" aria-hidden="true"></i></span>
+                </button>
+
+                <div class="sidebar-submenu sidebar-subsubmenu {{ $subGroupIsActive ? 'open' : '' }}">
+                  @foreach ($link['links'] as $subLink)
+                    @php
+                        $subLinkIsActive = request()->routeIs($subLink['route']);
+                    @endphp
+                    <a
+                      class="{{ $subLinkIsActive ? 'active' : '' }}"
+                      href="{{ route($subLink['route']) }}"
+                      data-page-link
+                      title="{{ $subLink['label'] }}"
+                      aria-label="{{ $subLink['label'] }}"
+                      @if ($subLinkIsActive) aria-current="page" @endif
+                    >
+                      <span class="nav-icon submenu-icon"><i class="{{ $subLink['icon'] }}" aria-hidden="true"></i></span>
+                      <span class="submenu-label">{{ $subLink['label'] }}</span>
+                    </a>
+                  @endforeach
+                </div>
+              @else
+                @php
+                    $linkIsActive = request()->routeIs($link['route'])
+                        && (! isset($link['fragment']) || request()->fullUrlIs('*#'.$link['fragment']));
+                    $href = route($link['route']).(isset($link['fragment']) ? '#'.$link['fragment'] : '');
+                @endphp
+                <a
+                  class="{{ $linkIsActive ? 'active' : '' }}"
+                  href="{{ $href }}"
+                  data-page-link
+                  title="{{ $link['label'] }}"
+                  aria-label="{{ $link['label'] }}"
+                  @if ($linkIsActive) aria-current="page" @endif
+                >
+                  <span class="nav-icon submenu-icon"><i class="{{ $link['icon'] }}" aria-hidden="true"></i></span>
+                  <span class="submenu-label">{{ $link['label'] }}</span>
+                </a>
+              @endif
             @endforeach
           </div>
         @endif

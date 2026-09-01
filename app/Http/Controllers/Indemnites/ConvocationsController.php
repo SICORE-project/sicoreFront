@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Indemnites;
 
 use App\Http\Controllers\Controller;
 use App\Services\Api\Indemnites\ConvocationService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -17,19 +18,30 @@ class ConvocationsController extends Controller
         protected ConvocationService $convocations
     ) {}
 
-    // Liste des convocations, avec filtres optionnels (date, objet, metier, centre)
+    // Liste des convocations, avec filtres optionnels (date, objet, metier,
+    // centre) — demande utilisatrice : "par defaut je ne veux pas de filtre
+    // pour afficher les convocations, ils doivent s'afficher" : la liste se
+    // charge toujours (comme n'importe quelle liste), les filtres ne font
+    // que la restreindre s'ils sont renseignes. Contrairement aux pages
+    // Frais de deplacement/Calcul/Calcul-surveillance/Pieces justificatives
+    // (qui EXIGENT un filtre, faute de quoi il n'y a pas de "membre" a
+    // afficher), Convocations est une liste simple : rien n'empeche de la
+    // montrer non filtree.
     public function index(Request $request): View
     {
-         $filtres = array_filter([
-        'date' => $request->query('date'),
-        'objet' => $request->query('objet'),
-        'metier' => $request->query('metier'),
-        'centre' => $request->query('centre'),
-        'per_page' => 10,
-        'page' => $request->query('page', 1),
-    ]);
+        $filtres = array_filter([
+            'date' => $request->query('date'),
+            'objet' => $request->query('objet'),
+            'metier' => $request->query('metier'),
+            'centre' => $request->query('centre'),
+        ]);
 
-        $resultat = $this->convocations->liste($filtres);
+        $filtreActif = count($filtres) > 0;
+
+        $resultat = $this->convocations->liste(array_merge($filtres, [
+            'per_page' => 10,
+            'page' => $request->query('page', 1),
+        ]));
 
         $meta = $resultat['success'] ? ($resultat['data'] ?? []) : [];
         $items = $meta['data'] ?? [];
@@ -59,20 +71,18 @@ class ConvocationsController extends Controller
         // fournit pas d'agregat dedie : "total" reprend le total reel de la
         // pagination, le reste est calcule sur la page courante uniquement.
         // NB: les cles doivent correspondre a index.blade.php
-        // ($stats['envoyees'], $stats['brouillons'], $stats['cloturees']).
+        // ($stats['envoyees'], $stats['brouillons']).
         $stats = [
             'total' => $convocations->total(),
             'brouillons' => 0,
             'emises' => 0,
             'envoyees' => 0,
-            'cloturees' => 0,
         ];
 
         $statutVersCleStat = [
             'brouillon' => 'brouillons',
             'emise' => 'emises',
             'envoyee' => 'envoyees',
-            'cloturee' => 'cloturees',
         ];
 
         foreach ($items as $convocation) {
@@ -83,30 +93,67 @@ class ConvocationsController extends Controller
         }
 
         return view('pages.indemnites.convocations.index', [
+            'filtreActif' => $filtreActif,
             'convocations' => $convocations,
             // Une ligne par (convocation x centre) : chaque centre porte
             // son propre metier (deux centres de meme nom mais de metier
             // different sont deux lignes distinctes en base), donc "Voir"/
             // "Modifier" doivent pointer vers CE centre precis plutot que
             // vers toute la convocation (cf. construireLignesCentres()).
-            'centresLignes' => $this->construireLignesCentres($items),
+            'centresLignes' => $this->construireLignesCentres($items, $filtres['metier'] ?? null, $filtres['centre'] ?? null),
             'stats' => $stats,
             'importAvertissements' => session('import_avertissements', []),
             // Selectionne dans le formulaire d'import (modal) : le type
             // n'est plus un champ du document Word, voir import() ci-dessous.
             'typesConvocation' => $this->typesConvocationPourImport(),
             // Menus deroulants des filtres (Date/Objet/Metier/Centre) :
-            // valeurs distinctes de TOUTE la base, independantes de la page/
-            // du filtre courant — pas seulement celles de $items (page de
-            // 10) — sinon un filtre applique retirerait ses propres options
-            // du menu. Voir ConvocationsController::optionsFiltres() cote back.
-            'filtreOptions' => $this->optionsFiltresPourVue(),
+            // scopes aux valeurs coherentes avec les AUTRES filtres deja
+            // choisis dans l'URL (arrivee directe sur un lien filtre) —
+            // jamais au sien propre, sinon la valeur choisie disparaitrait
+            // de son propre menu. La mise a jour "en direct" au changement
+            // d'un select (sans recharger la page) est geree en AJAX par
+            // filtresOptionsJson() ci-dessous, cf. ConvocationsController::
+            // optionsFiltres() cote back.
+            'filtreOptions' => $this->optionsFiltresPourVue($filtres),
         ]);
     }
 
-    private function optionsFiltresPourVue(): array
+    /**
+     * AJAX — options scopees (Objet/Session/Metier/Centre/Date) pour les
+     * panneaux de filtres du module Indemnites (Convocations, Frais de
+     * deplacement, Calcul, Calcul-surveillance, Pieces justificatives) :
+     * demande utilisatrice : "quand je selectionne un element du select, le
+     * select suivant doit afficher les infos relatif a l'objet selectionne,
+     * instantanement sans recharger la page" — meme principe que
+     * EtatPaieIndemnitesController::centresPourObjetSession(), mais
+     * generique aux 4 champs a la fois (partages par les 5 pages
+     * ci-dessus).
+     */
+    public function filtresOptionsJson(Request $request): JsonResponse
     {
-        $resultat = $this->convocations->optionsFiltres();
+        $filtres = array_filter([
+            'date' => $request->query('date'),
+            'objet' => $request->query('objet'),
+            'metier' => $request->query('metier'),
+            'centre' => $request->query('centre'),
+            'session' => $request->query('session'),
+        ]);
+
+        $resultat = $this->convocations->optionsFiltres($filtres);
+
+        if (! $resultat['success']) {
+            return response()->json([
+                'success' => false,
+                'message' => $resultat['message'] ?? 'Impossible de charger les options de filtres.',
+            ], $resultat['status'] ?? 500);
+        }
+
+        return response()->json(['success' => true, 'data' => $resultat['data'] ?? []]);
+    }
+
+    private function optionsFiltresPourVue(array $filtres = []): array
+    {
+        $resultat = $this->convocations->optionsFiltres($filtres);
 
         $vide = ['objets' => [], 'centres' => [], 'metiers' => [], 'dates' => [], 'statuts' => []];
 
@@ -124,18 +171,34 @@ class ConvocationsController extends Controller
      * Aplati les convocations en lignes "une par centre" pour le tableau de
      * la liste : Objet / Centre / Date debut / Date fin / Action. Une
      * convocation sans centre produit quand meme une ligne (centre "—"),
-     * pour rester visible tant qu'aucun centre n'a ete ajoute.
+     * pour rester visible tant qu'aucun centre n'a ete ajoute (sauf si un
+     * filtre Metier/Centre est actif : une convocation sans centre ne peut
+     * alors jamais y correspondre).
+     *
+     * $filtreMetier/$filtreCentre : le WHERE HAS() cote back (voir
+     * ConvocationsController::index() cote back) ne garde que les
+     * convocations ayant AU MOINS un centre correspondant, mais renvoie
+     * TOUS les centres de ces convocations — sans reappliquer le filtre ici
+     * ligne par ligne, une convocation a 2 centres (ex: "Couture" ET
+     * "Habillement") affichait AUSSI la ligne du centre non filtre des que
+     * l'AUTRE centre de la meme convocation correspondait (demande
+     * utilisatrice : "en selectionnant le metier pour la meme convocation
+     * il ne filtre pas").
      *
      * NB : cette methode avait disparu du fichier (le "call to undefined
      * method" qui cassait la page liste) alors qu'elle est toujours
      * appelee depuis index() ci-dessus — restauree ici.
      */
-    private function construireLignesCentres(array $items): array
+    private function construireLignesCentres(array $items, ?string $filtreMetier = null, ?string $filtreCentre = null): array
     {
         $lignes = [];
 
         foreach ($items as $item) {
             $centres = $item['centres'] ?? [];
+
+            if (empty($centres) && ($filtreMetier || $filtreCentre)) {
+                continue;
+            }
 
             $ligneCommune = [
                 // "ne pas exposer mes donnees" : les liens/checkbox de la
@@ -161,6 +224,10 @@ class ConvocationsController extends Controller
             }
 
             foreach ($centres as $centre) {
+                if (! $this->centreCorrespondFiltres($centre, $filtreMetier, $filtreCentre)) {
+                    continue;
+                }
+
                 $lignes[] = array_merge($ligneCommune, [
                     'centre_id' => $centre['slug'] ?? $centre['id'] ?? null,
                     'centre' => $centre['centre'] ?? null,
@@ -168,13 +235,44 @@ class ConvocationsController extends Controller
                     // la convocation elle-meme (voir
                     // ConvocationCentreController::destroy() cote back) : le
                     // bouton "Supprimer" de la liste doit le dire a l'avance
-                    // plutot que de le decouvrir apres coup.
+                    // plutot que de le decouvrir apres coup. Se base sur le
+                    // nombre REEL de centres de la convocation, pas sur le
+                    // nombre de lignes affichees apres filtre.
                     'dernier_centre' => count($centres) === 1,
                 ]);
             }
         }
 
         return $lignes;
+    }
+
+    /**
+     * Un centre correspond au filtre Metier si son metier "legacy"
+     * (colonne convocation_centres.metier) OU un de ses metiers dedies
+     * (relation centres.metiers, desormais eager-chargee cote back —
+     * ConvocationsController::index() cote back) contient le filtre —
+     * meme logique OR que le WHERE HAS() cote back, pour rester coherent
+     * avec les convocations qu'il laisse passer.
+     */
+    private function centreCorrespondFiltres(array $centre, ?string $filtreMetier, ?string $filtreCentre): bool
+    {
+        if ($filtreCentre && ! str_contains(mb_strtolower($centre['centre'] ?? ''), mb_strtolower($filtreCentre))) {
+            return false;
+        }
+
+        if ($filtreMetier) {
+            $metierLegacy = $centre['metier'] ?? null;
+            $metiersDedies = collect($centre['metiers'] ?? [])->pluck('metier')->filter();
+
+            $correspond = ($metierLegacy && str_contains(mb_strtolower($metierLegacy), mb_strtolower($filtreMetier)))
+                || $metiersDedies->contains(fn ($metier) => str_contains(mb_strtolower($metier), mb_strtolower($filtreMetier)));
+
+            if (! $correspond) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**
@@ -186,12 +284,11 @@ class ConvocationsController extends Controller
     {
         $data = $request->validate([
             'fichier' => ['required', 'file', 'mimes:docx', 'max:5120'],
-            'type_convocation_id' => ['required', 'integer'],
         ]);
 
         $utilisateurId = session('sicore_user.id');
 
-        $resultat = $this->convocations->importer($request->file('fichier'), $utilisateurId, $data['type_convocation_id']);
+        $resultat = $this->convocations->importer($request->file('fichier'), $utilisateurId);
 
         if (! $resultat['success']) {
             return redirect()
@@ -261,7 +358,7 @@ class ConvocationsController extends Controller
                 'session' => $item['session'] ?? null,
                 'date_debut' => $item['date_debut'] ?? null,
                 'date_fin' => $item['date_fin'] ?? null,
-                'lieu_examen' => $item['lieu_examen'] ?? null,
+                'lieu_affectation' => $item['lieu_affectation'] ?? null,
                 'statut' => $item['statut'] ?? null,
             ];
 
@@ -332,10 +429,9 @@ class ConvocationsController extends Controller
             'date_debut' => ['required', 'date'],
             'date_fin' => ['required', 'date', 'after_or_equal:date_debut'],
             'heure_debut' => ['required', 'date_format:H:i'],
-            'lieu_examen' => ['nullable', 'string', 'max:255'],
             'lieu_affectation' => ['nullable', 'string', 'max:255'],
             'ordre_de_mission' => ['nullable', 'boolean'],
-            'statut' => ['nullable', 'in:brouillon,emise,envoyee,cloturee'],
+            'statut' => ['nullable', 'in:brouillon,emise,envoyee'],
 
             // Centres d'examen (etape 2 du wizard) : centre, jury, chef de
             // centre — UNE seule entree par centre physique (une convocation
@@ -353,8 +449,12 @@ class ConvocationsController extends Controller
             'centres.*.metiers.*' => ['nullable', 'string', 'max:255'],
             'centres.*.chef_centre_id' => ['nullable', 'integer'],
             'centres.*.chef_centre_telephone' => ['nullable', 'string', 'max:30'],
+            'centres.*.chef_centre_provenance' => ['nullable', 'string', 'max:255'],
+            'centres.*.chef_centre_categorie_personnel' => ['nullable', 'in:fonctionnaire,contractuel,vacataire'],
             'centres.*.president_jury_id' => ['nullable', 'integer'],
             'centres.*.president_jury_telephone' => ['nullable', 'string', 'max:30'],
+            'centres.*.president_jury_provenance' => ['nullable', 'string', 'max:255'],
+            'centres.*.president_jury_categorie_personnel' => ['nullable', 'in:fonctionnaire,contractuel,vacataire'],
 
             // Membres du jury (etape 2 du wizard) : un enseignant, sa
             // fonction propre a cette convocation, et le centre/metier
@@ -385,7 +485,7 @@ class ConvocationsController extends Controller
 
         if (! $resultat['success']) {
             return back()->withInput()->withErrors(
-                $resultat['errors'] ?? ['objet' => $resultat['message'] ?? 'Erreur lors de la creation.']
+                $resultat['errors'] ?? ['erreur_generale' => $resultat['message'] ?? 'Erreur lors de la creation des informations générales de la convocation.']
             );
         }
 
@@ -406,16 +506,29 @@ class ConvocationsController extends Controller
         $centreIdParIndex = [];
         $metierIdParIndexParCentre = [];
 
+        // La convocation existe deja a ce stade (creee ci-dessus) : un echec
+        // sur les centres ou les beneficiaires ne doit plus etre ignore en
+        // silence — avant ce correctif, la page redirigeait quand meme vers
+        // "Convocation creee avec succes." meme si aucun centre/membre
+        // n'avait ete enregistre, sans aucun moyen de savoir ce qui avait
+        // vraiment ete sauvegarde. On redirige desormais vers la page
+        // "Modifier" de la convocation deja creee (pas back(), qui ferait
+        // perdre la saisie ET donnerait l'illusion que rien n'a ete
+        // enregistre) avec un message d'erreur precis sur l'etape en cause.
         if (! empty($centres)) {
             $centresResultat = $this->convocations->creerCentres($convocationId, $centres);
 
-            if ($centresResultat['success']) {
-                foreach (($centresResultat['data'] ?? []) as $index => $centreCree) {
-                    $centreIdParIndex[$index] = $centreCree['id'] ?? null;
+            if (! $centresResultat['success']) {
+                return redirect()
+                    ->route('indemnites.convocations.edit', $convocationSlug)
+                    ->with('error', "La convocation a été enregistrée, mais l'ajout des centres d'examen a échoué : ".($centresResultat['message'] ?? 'erreur inconnue').". Complétez l'étape « Centres, jurys et membres » ci-dessous pour réessayer.");
+            }
 
-                    foreach (($centreCree['metiers'] ?? []) as $position => $metierCree) {
-                        $metierIdParIndexParCentre[$index][$position] = $metierCree['id'] ?? null;
-                    }
+            foreach (($centresResultat['data'] ?? []) as $index => $centreCree) {
+                $centreIdParIndex[$index] = $centreCree['id'] ?? null;
+
+                foreach (($centreCree['metiers'] ?? []) as $position => $metierCree) {
+                    $metierIdParIndexParCentre[$index][$position] = $metierCree['id'] ?? null;
                 }
             }
         }
@@ -440,12 +553,39 @@ class ConvocationsController extends Controller
                 ];
             }, $beneficiaires);
 
-            $this->convocations->ajouterBeneficiairesAvecFonction($convocationId, $beneficiaires);
+            $beneficiairesResultat = $this->convocations->ajouterBeneficiairesAvecFonction($convocationId, $beneficiaires);
+
+            if (! $beneficiairesResultat['success']) {
+                return redirect()
+                    ->route('indemnites.convocations.edit', $convocationSlug)
+                    ->with('error', "La convocation et ses centres ont été enregistrés, mais l'ajout des membres du jury a échoué : ".($beneficiairesResultat['message'] ?? 'erreur inconnue').". Ajoutez-les depuis l'étape « Centres, jurys et membres » ci-dessous.");
+            }
+        }
+
+        // Notifie automatiquement tous les bénéficiaires dès la création —
+        // demande utilisatrice : "quelque soit le statut on dois avoir la
+        // notification" (peu importe brouillon/émise/envoyée choisi sur le
+        // formulaire, jamais conditionné dessus). Réutilise le même envoi
+        // que le bouton "Envoyer aux bénéficiaires" (voir envoyer()
+        // ci-dessous) — silencieux si personne n'a encore été ajouté (rien
+        // à notifier) ou en cas d'échec (la convocation reste créée avec
+        // succès, l'envoi peut toujours être relancé manuellement depuis sa
+        // fiche).
+        $messageSucces = 'Convocation créée avec succès.';
+
+        if (! empty($beneficiaires)) {
+            $envoiResultat = $this->convocations->envoyer($convocationId);
+
+            if ($envoiResultat['success']) {
+                $messageSucces .= ' '.($envoiResultat['data']['envoyes'] ?? 0).' notification(s) envoyée(s).';
+            } else {
+                $messageSucces .= ' La notification automatique des bénéficiaires a échoué : '.($envoiResultat['message'] ?? 'erreur inconnue').' — relancez-la depuis la fiche de la convocation.';
+            }
         }
 
         return redirect()
-            ->route('indemnites.convocations.show', $convocationSlug)
-            ->with('success', 'Convocation creee avec succes.');
+            ->route('indemnites.convocations')
+            ->with('success', $messageSucces);
     }
 
     // Recherche d'enseignants pour le tableau de beneficiaires (AJAX, JSON)
@@ -555,8 +695,10 @@ class ConvocationsController extends Controller
                     'jury' => null,
                     'president_jury' => null,
                     'president_jury_telephone' => null,
+                    'president_jury_provenance' => null,
                     'chef_centre' => null,
                     'chef_centre_telephone' => null,
+                    'chef_centre_provenance' => null,
                     'metiers' => [
                         ['id' => null, 'metier' => 'Non classés', 'beneficiaires' => $beneficiairesSansCentre],
                     ],
@@ -747,10 +889,9 @@ class ConvocationsController extends Controller
             'date_debut' => ['sometimes', 'date'],
             'date_fin' => ['sometimes', 'date', 'after_or_equal:date_debut'],
             'heure_debut' => ['sometimes', 'date_format:H:i'],
-            'lieu_examen' => ['nullable', 'string', 'max:255'],
             'lieu_affectation' => ['nullable', 'string', 'max:255'],
             'ordre_de_mission' => ['nullable', 'boolean'],
-            'statut' => ['nullable', 'in:brouillon,emise,envoyee,cloturee'],
+            'statut' => ['nullable', 'in:brouillon,emise,envoyee'],
 
             'centres' => ['required', 'array', 'min:1'],
             'centres.*.id' => ['nullable', 'integer'],
@@ -761,8 +902,12 @@ class ConvocationsController extends Controller
             'centres.*.metiers.*.metier' => ['nullable', 'string', 'max:255'],
             'centres.*.chef_centre_id' => ['nullable', 'integer'],
             'centres.*.chef_centre_telephone' => ['nullable', 'string', 'max:30'],
+            'centres.*.chef_centre_provenance' => ['nullable', 'string', 'max:255'],
+            'centres.*.chef_centre_categorie_personnel' => ['nullable', 'in:fonctionnaire,contractuel,vacataire'],
             'centres.*.president_jury_id' => ['nullable', 'integer'],
             'centres.*.president_jury_telephone' => ['nullable', 'string', 'max:30'],
+            'centres.*.president_jury_provenance' => ['nullable', 'string', 'max:255'],
+            'centres.*.president_jury_categorie_personnel' => ['nullable', 'in:fonctionnaire,contractuel,vacataire'],
 
             'beneficiaires' => ['nullable', 'array'],
             // "distinct" : "UN BENEFICIAIRE NE PEUT PAS ETRE CONVOQUE PLUS
@@ -784,7 +929,7 @@ class ConvocationsController extends Controller
 
         if (! $resultat['success']) {
             return back()->withInput()->withErrors(
-                $resultat['errors'] ?? ['objet' => $resultat['message'] ?? 'Erreur lors de la mise a jour.']
+                $resultat['errors'] ?? ['erreur_generale' => $resultat['message'] ?? 'Erreur lors de la mise a jour.']
             );
         }
 

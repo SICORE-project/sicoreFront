@@ -1,7 +1,7 @@
 {{--
     Composant unique pour tout le module Indemnités — badge de statut de
     convocation, badge de statut d'envoi, fenêtre modale — regroupés dans
-    UN SEUL fichier (à la demande de l'utilisatrice) plutôt que 3 fichiers
+    UN SEUL fichier plutôt que 3 fichiers
     séparés, pour que n'importe quelle page du module Indemnités
     (convocations, et les autres pages du module plus tard) y trouve tout
     au même endroit sans avoir à chercher plusieurs composants.
@@ -26,13 +26,12 @@
 
 @if ($type === 'statut-convocation')
 
-    {{-- Statut de la convocation elle-même : brouillon/émise/envoyée/clôturée. --}}
+    {{-- Statut de la convocation elle-même : brouillon/émise/envoyée. --}}
     @php
         $badges = [
             'brouillon' => ['badge-pending', 'Brouillon'],
             'emise' => ['badge-primary', 'Émise'],
             'envoyee' => ['badge-active', 'Envoyée'],
-            'cloturee' => ['badge-inactive', 'Clôturée'],
         ];
 
         [$classe, $libelle] = $badges[$statut] ?? ['badge-pending', $statut ? ucfirst($statut) : '—'];
@@ -48,6 +47,25 @@
         $badges = [
             'envoye' => ['badge-active', 'Envoyé'],
             'echec' => ['badge-inactive', 'Échec'],
+        ];
+
+        [$classe, $libelle] = $badges[$statut] ?? ['badge-pending', $statut ? ucfirst($statut) : '—'];
+    @endphp
+
+    <span {{ $attributes->merge(['class' => "badge {$classe}"]) }}>{{ $libelle }}</span>
+
+@elseif ($type === 'statut-frais-deplacement')
+
+    {{-- Statut d'une fiche de déplacement (module Frais de déplacement) :
+         brouillon -> calcule -> valide -> rembourse -> cloture (ou rejete). --}}
+    @php
+        $badges = [
+            'brouillon' => ['badge-pending', 'Brouillon'],
+            'calcule' => ['badge-primary', 'Calculée'],
+            'valide' => ['badge-active', 'Validée'],
+            'rejete' => ['badge-inactive', 'Rejetée'],
+            'rembourse' => ['badge-active', 'Remboursée'],
+            'cloture' => ['badge-inactive', 'Clôturée'],
         ];
 
         [$classe, $libelle] = $badges[$statut] ?? ['badge-pending', $statut ? ucfirst($statut) : '—'];

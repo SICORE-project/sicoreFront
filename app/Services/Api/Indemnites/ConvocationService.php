@@ -44,9 +44,9 @@ class ConvocationService
      * menus deroulants des filtres de la liste (voir
      * ConvocationsController::index() cote back, methode optionsFiltres()).
      */
-    public function optionsFiltres(): array
+    public function optionsFiltres(array $filtres = []): array
     {
-        return $this->wrap($this->api->get('convocations/filtres-options'));
+        return $this->wrap($this->api->get('convocations/filtres-options', array_filter($filtres)));
     }
 
     public function trouver(int|string $id): array
@@ -194,11 +194,10 @@ class ConvocationService
      * convocation est choisi dans le formulaire d'import (pas dans le
      * document Word) et transmis ici séparément.
      */
-    public function importer(\Illuminate\Http\UploadedFile $fichier, int|string $utilisateurId, int|string $typeConvocationId): array
+    public function importer(\Illuminate\Http\UploadedFile $fichier, int|string $utilisateurId): array
     {
         return $this->wrap($this->api->postMultipart('convocations/import', [
             'utilisateur_id' => $utilisateurId,
-            'type_convocation_id' => $typeConvocationId,
         ], [
             [
                 'name' => 'fichier',

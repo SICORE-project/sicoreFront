@@ -43,6 +43,29 @@ return [
         'links' => [
             ['label' => 'Convocations', 'route' => 'indemnites.convocations', 'icon' => 'fa-solid fa-calendar-check'],
             ['label' => 'Pièces justificatives', 'route' => 'indemnites.pieces-justificatives', 'icon' => 'fa-solid fa-folder-open'],
+            ['label' => 'Frais de déplacement', 'route' => 'indemnites.frais-deplacement', 'icon' => 'fa-solid fa-route'],
+            [
+                'type' => 'group',
+                'label' => 'Indemnité',
+                'icon' => 'fa-solid fa-hand-holding-dollar',
+                'active' => ['indemnites.calcul*', 'indemnites.calcul-surveillance*'],
+                'links' => [
+                    ['label' => 'Indemnités de correction', 'route' => 'indemnites.calcul', 'icon' => 'fa-solid fa-calculator'],
+                    ['label' => 'Indemnité de surveillance', 'route' => 'indemnites.calcul-surveillance', 'icon' => 'fa-solid fa-user-shield'],
+                ],
+            ],
+            ['label' => 'États de paie', 'route' => 'indemnites.etats-paie', 'icon' => 'fa-solid fa-file-export'],
+        ],
+    ],
+    [
+        'type' => 'group',
+        'label' => 'Bourses et aides',
+        'icon' => 'fa-solid fa-graduation-cap',
+        'active' => 'bourses.*',
+        'links' => [
+            ['label' => 'Enregistrer une demande', 'route' => 'bourses.enregistrer-demande', 'icon' => 'fa-solid fa-file-circle-plus'],
+            ['label' => 'Valider un dossier', 'route' => 'bourses.valider-dossier', 'icon' => 'fa-solid fa-circle-check'],
+            ['label' => 'Attribuer une aide', 'route' => 'bourses.attribuer-aide', 'icon' => 'fa-solid fa-hand-holding-heart'],
         ],
     ],
     [

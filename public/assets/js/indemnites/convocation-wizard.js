@@ -250,6 +250,45 @@
     updateProgressBar();
   }
 
+  /*
+    Apres un rechargement suite a une erreur de validation cote serveur
+    (redirection back()->withErrors()), l'assistant redemarrait toujours a
+    l'etape 1 - si l'erreur portait sur un champ de l'etape 2 (centres,
+    membres), elle restait invisible tant que l'utilisateur ne cliquait pas
+    lui-meme sur l'onglet "2. Centres, jurys et membres". Cette fonction
+    detecte le premier champ marque en erreur par Blade (".is-invalid" sur
+    l'input, ou ".field-error" pour les erreurs de tableau comme "centres")
+    et bascule directement sur son etape, sans passer par goToStep() (qui
+    bloquerait un saut en avant tant que l'etape 1 n'est pas valide cote
+    client).
+  */
+  function jumpToServerErrorStep() {
+    var form = getWizard();
+
+    if (!form) {
+      return;
+    }
+
+    var champErreur = form.querySelector(".is-invalid, .field-error");
+
+    if (!champErreur) {
+      return;
+    }
+
+    var panel = champErreur.closest("[data-wizard-panel]");
+
+    if (!panel) {
+      return;
+    }
+
+    var step = Number(panel.getAttribute("data-wizard-panel"));
+
+    if (step && step !== currentStep) {
+      currentStep = step;
+      updateProgressBar();
+    }
+  }
+
   function previousStep() {
     currentStep = Math.max(currentStep - 1, 1);
 
@@ -687,13 +726,7 @@
             if (enseignant) {
               trouves++;
 
-              var nomComplet = (
-                (enseignant.prenom || "") +
-                " " +
-                (enseignant.nom || "")
-              ).trim();
-
-              if (searchInput) searchInput.value = nomComplet;
+              if (searchInput) searchInput.value = enseignant.prenom || "";
               if (idInput) idInput.value = enseignant.id || "";
               if (nomInput) nomInput.value = enseignant.nom || "";
 
@@ -897,7 +930,11 @@
               return;
             }
 
-            input.value = li.textContent;
+            // La ligne "membre" a un champ Nom separe : la case de
+            // recherche ne doit garder que le prenom. Les cases de
+            // recherche du chef de centre / president du jury n'ont pas
+            // de champ Nom dedie et affichent donc le nom complet.
+            input.value = memberRow ? prenom : li.textContent;
 
             hiddenInput.value = enseignant.id || "";
 
@@ -1120,12 +1157,28 @@
         '[data-field="chef_centre_telephone"]',
       );
 
+      var chefProvenanceInput = centre.querySelector(
+        '[data-field="chef_centre_provenance"]',
+      );
+
+      var chefCategorieInput = centre.querySelector(
+        '[data-field="chef_centre_categorie_personnel"]',
+      );
+
       var presidentInput = centre.querySelector(
         '[data-field="president_jury_id"]',
       );
 
       var presidentTelephoneInput = centre.querySelector(
         '[data-field="president_jury_telephone"]',
+      );
+
+      var presidentProvenanceInput = centre.querySelector(
+        '[data-field="president_jury_provenance"]',
+      );
+
+      var presidentCategorieInput = centre.querySelector(
+        '[data-field="president_jury_categorie_personnel"]',
       );
 
       var metierGroups = Array.prototype.slice.call(
@@ -1162,6 +1215,16 @@
       );
 
       addHidden(
+        "centres[" + centresIndex + "][chef_centre_provenance]",
+        chefProvenanceInput ? chefProvenanceInput.value : "",
+      );
+
+      addHidden(
+        "centres[" + centresIndex + "][chef_centre_categorie_personnel]",
+        chefCategorieInput ? chefCategorieInput.value : "",
+      );
+
+      addHidden(
         "centres[" + centresIndex + "][president_jury_id]",
         presidentInput ? presidentInput.value : "",
       );
@@ -1169,6 +1232,16 @@
       addHidden(
         "centres[" + centresIndex + "][president_jury_telephone]",
         presidentTelephoneInput ? presidentTelephoneInput.value : "",
+      );
+
+      addHidden(
+        "centres[" + centresIndex + "][president_jury_provenance]",
+        presidentProvenanceInput ? presidentProvenanceInput.value : "",
+      );
+
+      addHidden(
+        "centres[" + centresIndex + "][president_jury_categorie_personnel]",
+        presidentCategorieInput ? presidentCategorieInput.value : "",
       );
 
       // N'avance que pour les groupes avec un NOM de métier renseigné — le
@@ -1371,6 +1444,16 @@
       );
       setFieldValue(
         centreCard,
+        '[data-field="chef_centre_provenance"]',
+        centreData.chef_centre_provenance,
+      );
+      setFieldValue(
+        centreCard,
+        '[data-field="chef_centre_categorie_personnel"]',
+        centreData.chef_centre_categorie_personnel,
+      );
+      setFieldValue(
+        centreCard,
         '[data-field="president_jury_id"]',
         centreData.president_jury_id,
       );
@@ -1378,6 +1461,16 @@
         centreCard,
         '[data-field="president_jury_telephone"]',
         centreData.president_jury_telephone,
+      );
+      setFieldValue(
+        centreCard,
+        '[data-field="president_jury_provenance"]',
+        centreData.president_jury_provenance,
+      );
+      setFieldValue(
+        centreCard,
+        '[data-field="president_jury_categorie_personnel"]',
+        centreData.president_jury_categorie_personnel,
       );
 
       // Le champ visible (texte) du widget de recherche n'est pas
@@ -1485,13 +1578,7 @@
             "[data-member-telephone]",
           );
 
-          var nomComplet = (
-            (membre.prenom || "") +
-            " " +
-            (membre.nom || "")
-          ).trim();
-
-          if (searchInput) searchInput.value = nomComplet;
+          if (searchInput) searchInput.value = membre.prenom || "";
           if (idInput) idInput.value = membre.enseignant_id || "";
           if (nomInput) nomInput.value = membre.nom || "";
           if (fonctionInput) fonctionInput.value = membre.fonction || "";
@@ -1568,6 +1655,8 @@
     initCentres();
 
     hydrateFromPrefill();
+
+    jumpToServerErrorStep();
 
     // Verrou explicite (pas seulement "disabled" sur le bouton) : bloque
     // tout second envoi meme si le style "disabled" n'a pas eu le temps de
