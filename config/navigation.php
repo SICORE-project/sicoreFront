@@ -57,17 +57,7 @@ return [
             ['label' => 'États de paie', 'route' => 'indemnites.etats-paie', 'icon' => 'fa-solid fa-file-export'],
         ],
     ],
-    [
-        'type' => 'group',
-        'label' => 'Bourses et aides',
-        'icon' => 'fa-solid fa-graduation-cap',
-        'active' => 'bourses.*',
-        'links' => [
-            ['label' => 'Enregistrer une demande', 'route' => 'bourses.enregistrer-demande', 'icon' => 'fa-solid fa-file-circle-plus'],
-            ['label' => 'Valider un dossier', 'route' => 'bourses.valider-dossier', 'icon' => 'fa-solid fa-circle-check'],
-            ['label' => 'Attribuer une aide', 'route' => 'bourses.attribuer-aide', 'icon' => 'fa-solid fa-hand-holding-heart'],
-        ],
-    ],
+  
     [
         'type' => 'group',
         'label' => 'Paramétrage',
