@@ -43,6 +43,7 @@ return [
             ['label' => 'Édition des engagements', 'route' => 'credits.edition-engagements', 'icon' => 'fa-solid fa-clipboard-check'],
             ['label' => 'Mes projections', 'route' => 'credits.projections', 'icon' => 'fa-solid fa-chart-line'],
             ['label' => 'État des crédits', 'route' => 'credits.etat-credits', 'icon' => 'fa-solid fa-chart-pie'],
+            ['label' => 'Engagements vs paie', 'route' => 'credits.comparaison-engagements-paie', 'icon' => 'fa-solid fa-scale-unbalanced'],
         ],
     ],
     [

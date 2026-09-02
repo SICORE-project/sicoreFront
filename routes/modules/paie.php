@@ -96,4 +96,8 @@ Route::middleware('sicore.auth')
         Route::view('/etat-credits', 'pages.credits.etat-credits')
             ->name('etat-credits');
 
+        // Écran SICORE, hors FINPRONET : rapprochement engagé / payé
+        Route::view('/comparaison-engagements-paie', 'pages.credits.comparaison-engagements-paie')
+            ->name('comparaison-engagements-paie');
+
     });
