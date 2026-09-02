@@ -64,17 +64,38 @@
       </div>
     </div>
 
+    {{-- Axe de recherche FINPRONET : période comptable puis corps / IA / IEF.
+         Corps, IA et IEF sont portés par les ventilations : une délégation
+         ressort dès qu'une de ses lignes correspond. --}}
     <section class="filter-panel" aria-label="Filtres">
       <div class="form-group">
-        <label for="filterStructure">Structure</label>
-        <select class="form-control" id="filterStructure">
+        <label for="filterAnnee">Année académique</label>
+        <select class="form-control" id="filterAnnee">
+          <option value="">Toutes</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="filterPeriode">Période de paie</label>
+        <select class="form-control" id="filterPeriode">
+          <option value="">Toutes</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="filterCorps">Corps d'enseignant</label>
+        <select class="form-control" id="filterCorps">
           <option value="">Tous</option>
         </select>
       </div>
       <div class="form-group">
-        <label for="filterService">Service</label>
-        <select class="form-control" id="filterService">
-          <option value="">Tous</option>
+        <label for="filterIA">IA</label>
+        <select class="form-control" id="filterIA">
+          <option value="">Toutes</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="filterIEF">IEF</label>
+        <select class="form-control" id="filterIEF">
+          <option value="">Toutes</option>
         </select>
       </div>
       <div class="form-group">
@@ -85,6 +106,10 @@
           <option value="Validée">Validée</option>
           <option value="Rejetée">Rejetée</option>
         </select>
+      </div>
+      <div class="form-group">
+        <label for="filterRecherche">Référence ou objet</label>
+        <input class="form-control" id="filterRecherche" type="text" placeholder="ex. 15/10/2025">
       </div>
       <div class="actions-group">
         <button class="btn-secondary" type="button" id="btnFiltrer">Filtrer</button>
@@ -99,8 +124,8 @@
             <tr>
               <th>Référence</th>
               <th>Libellé</th>
-              <th>Structure</th>
-              <th>Service</th>
+              <th>Période</th>
+              <th>Ventilations</th>
               <th>Montant initial</th>
               <th>Disponible</th>
               <th>Engagé</th>
@@ -124,7 +149,7 @@
 <div id="modalDelegation" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:1000; justify-content:center; align-items:center;">
   <div style="background:#fff; border-radius:12px; padding:32px; max-width:600px; width:90%; max-height:90vh; overflow-y:auto; margin:auto; position:relative; top:50%; transform:translateY(-50%);">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
-      <h2 style="margin:0; color:#087f5b; font-size:1.25rem;">Nouvelle délégation de crédit</h2>
+      <h2 id="modalDelegationTitre" style="margin:0; color:#087f5b; font-size:1.25rem;">Nouvelle délégation de crédit</h2>
       <button type="button" id="btnCloseModal" style="background:none; border:none; font-size:1.5rem; cursor:pointer; color:#666;">&times;</button>
     </div>
     <form id="formDelegation">
@@ -527,36 +552,113 @@ var allStructures = [];
 var filteredDelegations = [];
 var currentPage = 1;
 var perPage = 5;
+// id de la délégation en cours de modification, null en création
+var delegationEnEdition = null;
 
 document.addEventListener('DOMContentLoaded', function() {
-  Promise.all([loadStructures(), loadDelegations()]).then(function() {
+  Promise.all([loadStructures(), loadFiltres(), loadDelegations()]).then(function() {
     setupEvents();
   });
 });
 
+// Les structures n'alimentent plus que le formulaire de saisie : l'axe de
+// recherche est désormais celui de FINPRONET (corps / IA / IEF).
 function loadStructures() {
   return fetch(API + '/structures')
     .then(function(res) { return res.json(); })
     .then(function(data) {
       allStructures = data;
-      var filterSelect = document.getElementById('filterStructure');
       var formSelect = document.getElementById('structure_id');
       allStructures.forEach(function(s) {
-        filterSelect.innerHTML += '<option value="' + s.id + '">' + s.nom + '</option>';
         formSelect.innerHTML += '<option value="' + s.id + '">' + s.nom + '</option>';
       });
-      majServicesFiltre();
     })
     .catch(function(e) {
       console.error('Erreur chargement structures:', e);
     });
 }
 
+function loadFiltres() {
+  return fetch(API + '/delegation-credits/filtres')
+    .then(function(res) { return res.json(); })
+    .then(function(data) {
+      remplirSelect('filterAnnee', data.annees_academiques, function(a) {
+        return { value: a, label: a };
+      });
+      remplirSelect('filterPeriode', data.periodes_paie, function(p) {
+        return { value: p, label: p };
+      });
+      remplirSelect('filterCorps', data.corps_enseignants, function(c) {
+        return { value: c.id, label: c.libelle };
+      });
+      remplirSelect('filterIA', data.ias, function(ia) {
+        return { value: ia.id, label: ia.code + ' - ' + ia.libelle };
+      });
+    })
+    .catch(function(e) {
+      console.error('Erreur chargement filtres:', e);
+    });
+}
+
+function remplirSelect(selectId, items, mapper) {
+  var sel = document.getElementById(selectId);
+  if (!sel) return;
+  (items || []).forEach(function(item) {
+    var o = mapper(item);
+    sel.innerHTML += '<option value="' + o.value + '">' + o.label + '</option>';
+  });
+}
+
+function majIefs() {
+  var iaId = document.getElementById('filterIA').value;
+  var select = document.getElementById('filterIEF');
+  select.innerHTML = '<option value="">Toutes</option>';
+  if (!iaId) return Promise.resolve();
+
+  return fetch(API + '/delegation-credits/iefs/' + iaId)
+    .then(function(res) { return res.json(); })
+    .then(function(iefs) {
+      iefs.forEach(function(ief) {
+        select.innerHTML += '<option value="' + ief.id + '">' + ief.libelle + '</option>';
+      });
+    })
+    .catch(function(e) { console.error('Erreur chargement IEF:', e); });
+}
+
+// Le filtrage se fait côté serveur : corps / IA / IEF sont portés par les
+// ventilations, ils ne sont pas filtrables depuis la liste déjà chargée.
+function paramsFiltres() {
+  var params = [];
+  var champs = {
+    annee_academique: valeurDe('filterAnnee'),
+    periode_paie: valeurDe('filterPeriode'),
+    corps_enseignant_id: valeurDe('filterCorps'),
+    ia_id: valeurDe('filterIA'),
+    ief_id: valeurDe('filterIEF'),
+    statut: valeurDe('filterStatut'),
+    search: valeurDe('filterRecherche')
+  };
+
+  Object.keys(champs).forEach(function(cle) {
+    if (champs[cle]) params.push(cle + '=' + encodeURIComponent(champs[cle]));
+  });
+
+  params.push('per_page=200');
+
+  return '?' + params.join('&');
+}
+
+function valeurDe(id) {
+  var el = document.getElementById(id);
+  return el ? el.value.trim() : '';
+}
+
 function loadDelegations() {
-  return fetch(API + '/delegation-credits')
+  return fetch(API + '/delegation-credits' + paramsFiltres())
     .then(function(res) { return res.json(); })
     .then(function(response) {
       allDelegations = response.data || response;
+      currentPage = 1;
       renderTable(allDelegations);
       updateStats(allDelegations);
     })
@@ -617,9 +719,19 @@ function renderTable(data) {
   var pageData = data.slice(start, start + perPage);
 
   tbody.innerHTML = pageData.map(function(d) {
-    var structNom = d.structure ? d.structure.nom : '-';
-    var servNom = d.service ? d.service.nom : '-';
+    // Période comptable FINPRONET et poids réel de la délégation : les montants
+    // vivent dans les ventilations, pas dans l'en-tête.
+    var periode = [d.annee_academique, d.periode_paie].filter(Boolean).join(' · ') || '-';
+    var nbVent = (d.nombre_ventilations !== undefined && d.nombre_ventilations !== null)
+      ? d.nombre_ventilations : 0;
+    var ventile = (d.montant_ventile !== undefined && d.montant_ventile !== null)
+      ? formatMontant(d.montant_ventile) : '-';
+    var cellVentilations = nbVent > 0
+      ? nbVent + ' ligne(s)<br><small style="color:#868e96;">' + ventile + '</small>'
+      : '<span style="color:#868e96;">aucune</span>';
     var actions = '<button class="table-action" type="button" onclick="voirDetail(' + d.id + ')">Voir</button>';
+    // Cycle de saisie de FINPRONET : Ajouter / Modifier / Supprimer
+    actions += '<button class="table-action" type="button" onclick="modifierDelegation(' + d.id + ')">Modifier</button>';
     // Equivalent du bouton "Ventilations" de FINPRONET (frmDelegation.aspx)
     actions += '<button class="table-action primary" type="button" onclick="ouvrirVentilations(' + d.id + ')">Ventilations</button>';
     actions += '<button class="table-action" type="button" onclick="ouvrirMontant(' + d.id + ')">Montant</button>';
@@ -634,6 +746,10 @@ function renderTable(data) {
     if (d.statut === 'En attente') {
       actions += '<button class="table-action primary" type="button" onclick="validerDelegation(' + d.id + ')">Valider</button>';
     }
+    // Suppression en dernier, et refusée côté serveur si la délégation porte
+    // des ventilations ou des engagements.
+    actions += '<button class="table-action danger" type="button" onclick="supprimerDelegation('
+      + d.id + ', \'' + String(d.reference || '').replace(/'/g, "\\'") + '\')">Supprimer</button>';
 
     var solde = parseFloat(d.solde) || 0;
     var dispo = parseFloat(d.montant_disponible) || 0;
@@ -645,8 +761,8 @@ function renderTable(data) {
     return '<tr>' +
       '<td>' + d.reference + '</td>' +
       '<td>' + (d.objet || '-') + '</td>' +
-      '<td>' + structNom + '</td>' +
-      '<td>' + servNom + '</td>' +
+      '<td>' + periode + '</td>' +
+      '<td>' + cellVentilations + '</td>' +
       '<td>' + (d.montant_initial ? formatMontant(d.montant_initial) : '-') + '</td>' +
       '<td>' + formatMontant(d.montant_disponible) + '</td>' +
       '<td style="color:#e67700; font-weight:600;">' + formatMontant(d.montant_engage) + '</td>' +
@@ -685,46 +801,28 @@ function goToPage(page) {
   renderTable(filteredDelegations);
 }
 
-function majServicesFiltre() {
-  var structureId = document.getElementById('filterStructure').value;
-  var select = document.getElementById('filterService');
-  var ancienChoix = select.value;
-  var structures = structureId
-    ? allStructures.filter(function(s) { return s.id == structureId; })
-    : allStructures;
-
-  var html = '<option value="">Tous</option>';
-  structures.forEach(function(s) {
-    var services = s.services || [];
-    if (services.length === 0) return;
-    var options = services.map(function(svc) {
-      return '<option value="' + svc.id + '">' + svc.nom + '</option>';
-    }).join('');
-    html += structureId ? options : '<optgroup label="' + s.nom + '">' + options + '</optgroup>';
-  });
-  select.innerHTML = html;
-
-  var encoreDisponible = Array.from(select.options).some(function(o) { return o.value === ancienChoix; });
-  select.value = encoreDisponible ? ancienChoix : '';
+function appliquerFiltres() {
+  return loadDelegations();
 }
 
-function appliquerFiltres() {
-  var structureId = document.getElementById('filterStructure').value;
-  var serviceId = document.getElementById('filterService').value;
-  var statut = document.getElementById('filterStatut').value;
+// La recherche libre de la topbar reste un affinage local sur la page
+// courante ; le champ « Référence ou objet » du panneau, lui, interroge
+// le serveur.
+function rechercheLocale() {
   var champRecherche = document.getElementById('delegationSearch');
   var recherche = champRecherche ? champRecherche.value.trim().toLowerCase() : '';
 
-  var filtered = allDelegations;
-  if (structureId) filtered = filtered.filter(function(d) { return d.structure_id == structureId; });
-  if (serviceId) filtered = filtered.filter(function(d) { return d.service_id == serviceId; });
-  if (statut) filtered = filtered.filter(function(d) { return d.statut === statut; });
-  if (recherche) {
-    filtered = filtered.filter(function(d) {
-      return [d.reference, d.objet, d.structure ? d.structure.nom : '', d.service ? d.service.nom : '', d.statut]
-        .join(' ').toLowerCase().indexOf(recherche) !== -1;
-    });
+  if (!recherche) {
+    currentPage = 1;
+    renderTable(allDelegations);
+    updateStats(allDelegations);
+    return;
   }
+
+  var filtered = allDelegations.filter(function(d) {
+    return [d.reference, d.objet, d.statut, d.periode_paie, d.annee_academique]
+      .join(' ').toLowerCase().indexOf(recherche) !== -1;
+  });
 
   currentPage = 1;
   renderTable(filtered);
@@ -733,6 +831,10 @@ function appliquerFiltres() {
 
 function setupEvents() {
   document.getElementById('btnNouvelleDelegation').addEventListener('click', function() {
+    // Le formulaire est partagé création / modification : on repart d'un état
+    // propre, sinon on modifierait la dernière délégation ouverte.
+    document.getElementById('formDelegation').reset();
+    quitterModeEdition();
     document.getElementById('modalDelegation').style.display = 'block';
     document.getElementById('formError').style.display = 'none';
     document.getElementById('formSuccess').style.display = 'none';
@@ -757,28 +859,35 @@ function setupEvents() {
     }
   });
 
-  document.getElementById('filterStructure').addEventListener('change', function() {
-    majServicesFiltre();
-    appliquerFiltres();
+  // Cascade IA -> IEF, puis relance du filtrage serveur.
+  document.getElementById('filterIA').addEventListener('change', function() {
+    majIefs().then(appliquerFiltres);
   });
 
-  ['filterService', 'filterStatut'].forEach(function(id) {
+  ['filterAnnee', 'filterPeriode', 'filterCorps', 'filterIEF', 'filterStatut'].forEach(function(id) {
     document.getElementById(id).addEventListener('change', appliquerFiltres);
   });
+
+  document.getElementById('filterRecherche').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') appliquerFiltres();
+  });
+
   document.getElementById('btnFiltrer').addEventListener('click', appliquerFiltres);
 
   document.getElementById('btnReinitialiser').addEventListener('click', function() {
-    document.getElementById('filterStructure').value = '';
-    document.getElementById('filterStatut').value = '';
-    document.getElementById('filterService').value = '';
+    ['filterAnnee', 'filterPeriode', 'filterCorps', 'filterIA', 'filterStatut'].forEach(function(id) {
+      document.getElementById(id).value = '';
+    });
+    document.getElementById('filterRecherche').value = '';
+    document.getElementById('filterIEF').innerHTML = '<option value="">Toutes</option>';
     var recherche = document.getElementById('delegationSearch');
     if (recherche) recherche.value = '';
-    majServicesFiltre();
     appliquerFiltres();
   });
 
+  // Frappe au clavier : affinage local, pas un appel serveur par caractère.
   var champRecherche = document.getElementById('delegationSearch');
-  if (champRecherche) champRecherche.addEventListener('input', appliquerFiltres);
+  if (champRecherche) champRecherche.addEventListener('input', rechercheLocale);
 
   document.getElementById('btnCloseMontant').addEventListener('click', fermerMontant);
   document.getElementById('btnAnnulerMontant').addEventListener('click', fermerMontant);
@@ -831,8 +940,9 @@ function setupEvents() {
   document.getElementById('formDelegation').addEventListener('submit', function(e) {
     e.preventDefault();
     var btn = document.getElementById('btnSubmit');
+    var edition = delegationEnEdition !== null;
     btn.disabled = true;
-    btn.textContent = 'Création en cours...';
+    btn.textContent = edition ? 'Modification en cours...' : 'Création en cours...';
 
     var montantInitial = document.getElementById('montant_initial').value;
     var dateFin = document.getElementById('date_fin').value;
@@ -853,8 +963,12 @@ function setupEvents() {
       date_fin: dateFin || null,
     };
 
-    fetch(API + '/delegation-credits', {
-      method: 'POST',
+    var url = edition
+      ? API + '/delegation-credits/' + delegationEnEdition
+      : API + '/delegation-credits';
+
+    fetch(url, {
+      method: edition ? 'PUT' : 'POST',
       headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
       body: JSON.stringify(formData)
     })
@@ -866,21 +980,23 @@ function setupEvents() {
           document.getElementById('formError').style.display = 'block';
           document.getElementById('formSuccess').style.display = 'none';
         } else {
-          document.getElementById('formSuccess').textContent = 'Délégation créée avec succès !';
+          document.getElementById('formSuccess').textContent = edition
+            ? 'Délégation modifiée avec succès !'
+            : 'Délégation créée avec succès !';
           document.getElementById('formSuccess').style.display = 'block';
           document.getElementById('formError').style.display = 'none';
           document.getElementById('formDelegation').reset();
           setTimeout(function() { closeModal(); loadDelegations(); }, 1000);
         }
         btn.disabled = false;
-        btn.textContent = 'Créer la délégation';
+        btn.textContent = edition ? 'Enregistrer les modifications' : 'Créer la délégation';
       });
     })
     .catch(function(e) {
       document.getElementById('formError').textContent = 'Erreur de connexion au serveur.';
       document.getElementById('formError').style.display = 'block';
       btn.disabled = false;
-      btn.textContent = 'Créer la délégation';
+      btn.textContent = edition ? 'Enregistrer les modifications' : 'Créer la délégation';
     });
   });
 }
@@ -888,6 +1004,96 @@ function setupEvents() {
 function closeModal() {
   document.getElementById('modalDelegation').style.display = 'none';
   document.getElementById('formDelegation').reset();
+  quitterModeEdition();
+}
+
+// === MODIFICATION ===
+// Le formulaire de saisie sert aussi à la modification : même bloc
+// Identification que FINPRONET, on ne duplique pas l'écran.
+function quitterModeEdition() {
+  delegationEnEdition = null;
+  var titre = document.getElementById('modalDelegationTitre');
+  if (titre) titre.textContent = 'Nouvelle délégation de crédit';
+  document.getElementById('btnSubmit').textContent = 'Créer la délégation';
+  document.getElementById('formError').style.display = 'none';
+  document.getElementById('formSuccess').style.display = 'none';
+}
+
+function modifierDelegation(id) {
+  fetch(API + '/delegation-credits/' + id)
+    .then(function(res) { return res.json(); })
+    .then(function(reponse) {
+      var d = reponse.data || reponse;
+
+      delegationEnEdition = id;
+
+      var valeurs = {
+        annee_academique: d.annee_academique || '',
+        periode_paie: d.periode_paie || '',
+        reference: d.reference || '',
+        objet: d.objet || '',
+        montant_initial: d.montant_initial || '',
+        montant_disponible: d.montant_disponible || '',
+        date_delegation: d.date_delegation || '',
+        date_fin: d.date_fin || ''
+      };
+
+      Object.keys(valeurs).forEach(function(champ) {
+        var el = document.getElementById(champ);
+        if (el) el.value = valeurs[champ];
+      });
+
+      var selStructure = document.getElementById('structure_id');
+      selStructure.value = d.structure_id || '';
+      selStructure.dispatchEvent(new Event('change'));
+
+      // Le service dépend de la structure : on attend que la liste soit
+      // reconstruite avant de repositionner la valeur.
+      setTimeout(function() {
+        var selService = document.getElementById('service_id');
+        if (selService) selService.value = d.service_id || '';
+      }, 0);
+
+      var titre = document.getElementById('modalDelegationTitre');
+      if (titre) titre.textContent = 'Modifier la délégation ' + (d.reference || '');
+      document.getElementById('btnSubmit').textContent = 'Enregistrer les modifications';
+      document.getElementById('formError').style.display = 'none';
+      document.getElementById('formSuccess').style.display = 'none';
+      document.getElementById('modalDelegation').style.display = 'block';
+    })
+    .catch(function(e) {
+      console.error('Erreur chargement délégation:', e);
+      alert('Impossible de charger cette délégation.');
+    });
+}
+
+// === SUPPRESSION ===
+// Le backend refuse (409) si la délégation porte des ventilations ou des
+// engagements : on affiche son message plutôt qu'une erreur générique.
+function supprimerDelegation(id, reference) {
+  var confirmation = window.confirm(
+    'Supprimer définitivement la délégation ' + reference + ' ?\n\n' +
+    'Cette action est irréversible.'
+  );
+  if (!confirmation) return;
+
+  fetch(API + '/delegation-credits/' + id, {
+    method: 'DELETE',
+    headers: { 'Accept': 'application/json' }
+  })
+  .then(function(res) {
+    return res.json().then(function(result) {
+      if (!res.ok) {
+        alert(result.message || 'Suppression impossible.');
+        return;
+      }
+      loadDelegations();
+    });
+  })
+  .catch(function(e) {
+    console.error('Erreur suppression:', e);
+    alert('Erreur de connexion au serveur.');
+  });
 }
 
 function exporterCSV() {
