@@ -148,7 +148,7 @@
         <div class="table-responsive">
           <table class="table">
             <thead>
-              <tr><th>IA</th><th style="text-align:right;">Lignes</th><th style="text-align:right;">Engagement</th></tr>
+              <tr><th>IA</th><th style="text-align:right;">Bulletins</th><th style="text-align:right;">Coût chargé</th></tr>
             </thead>
             <tbody id="parIaBody"></tbody>
           </table>
@@ -267,9 +267,14 @@ function afficher(data) {
   document.getElementById('statMois').textContent = c.nombre_mois;
   document.getElementById('statProjection').textContent = court(c.projection_totale);
 
+  // La base est le coût réel de la paie de la période de référence :
+  // salaire brut + charges patronales. Les deux composantes sont affichées
+  // pour que le chiffre de départ reste vérifiable.
   var etapes = [
-    ['Base de référence — crédits engagés', c.base_reference],
-    ['− Salaire sans retenue tabaski', -c.moins_sans_retenue],
+    ['Salaire brut de la période de référence', c.salaire_brut],
+    ['+ Charges patronales (' + data.parametres.taux_charges + ' %)', c.charges_employeur],
+    ['= Base de référence — coût réel de la paie', c.base_reference],
+    ['− Retenue tabaski neutralisée', -c.moins_sans_retenue],
     ['+ Avance tabaski', c.plus_avance_tabaski],
     ['= Base ajustée', c.base_ajustee],
     ['× Majoration de ' + c.taux_applique + ' % → mensuel majoré', c.mensuel_majore],
@@ -285,9 +290,9 @@ function afficher(data) {
 
   document.getElementById('parIaBody').innerHTML = data.source.par_ia.map(function (ia) {
     return '<tr><td>' + ia.ia + '</td>' +
-           '<td style="text-align:right;">' + ia.nombre_lignes + '</td>' +
-           '<td style="text-align:right;">' + montant(ia.engagement) + '</td></tr>';
-  }).join('') || '<tr><td colspan="3">Aucune ventilation sur cette période de référence.</td></tr>';
+           '<td style="text-align:right;">' + ia.nombre_bulletins + '</td>' +
+           '<td style="text-align:right;">' + montant(ia.cout_charge) + '</td></tr>';
+  }).join('') || '<tr><td colspan="3">Aucun bulletin sur cette période de référence.</td></tr>';
 
   document.getElementById('echeancierBody').innerHTML = data.echeancier.map(function (l) {
     return '<tr><td>Mois ' + l.mois + '</td>' +
