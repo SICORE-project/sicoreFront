@@ -41,22 +41,38 @@ class AuthController extends Controller
 
         $data = $result['data'];
 
+        // Le backend renvoie 'token' et 'role.libelle' ; ce contrôleur lisait
+        // 'access_token' et 'role.nom'/'role.slug'. On accepte les deux formes
+        // pour ne pas figer le contrat d'un côté ou de l'autre.
+        $token = $data['access_token'] ?? $data['token'] ?? null;
+
+        if ($token === null) {
+            return back()
+                ->withInput($request->only('email'))
+                ->withErrors([
+                    'email' => "Réponse inattendue du serveur : aucun jeton d'authentification.",
+                ]);
+        }
+
+        $utilisateur = $data['user'] ?? [];
+        $role = $utilisateur['role'] ?? [];
+
         $request->session()->regenerate();
 
-        $request->session()->put('access_token', $data['access_token']);
+        $request->session()->put('access_token', $token);
 
         $request->session()->put('sicore_user', [
-            'id' => $data['user']['id'],
-            'nom' => $data['user']['nom'],
-            'prenom' => $data['user']['prenom'],
-            'email' => $data['user']['email'],
-            'role' => $data['user']['role']['nom'] ?? null,
-            'role_slug' => $data['user']['role']['slug'] ?? null,
+            'id' => $utilisateur['id'] ?? null,
+            'nom' => $utilisateur['nom'] ?? null,
+            'prenom' => $utilisateur['prenom'] ?? null,
+            'email' => $utilisateur['email'] ?? null,
+            'role' => $role['nom'] ?? $role['libelle'] ?? null,
+            'role_slug' => $role['slug'] ?? null,
         ]);
 
         return redirect()
             ->route('dashboard')
-            ->with('success', $data['message']);
+            ->with('success', $data['message'] ?? 'Connexion réussie.');
     }
 
     // public function logout(Request $request): RedirectResponse

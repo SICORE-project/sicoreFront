@@ -37,6 +37,8 @@ return [
     
     'backend' => [
         'url' => env('API_BASE_URL'),
+        // Delai d'attente des appels vers l'API, en secondes.
+        'timeout' => env('API_TIMEOUT', 30),
     ],
 
 ];

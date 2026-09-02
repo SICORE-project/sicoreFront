@@ -16,8 +16,12 @@ class ApiClient
 
     protected function request()
     {
+        // 10 s etait trop juste en developpement : sur Windows, php artisan
+        // serve ne traite qu'une requete a la fois, et le hachage bcrypt de la
+        // connexion prend deja 1 a 3 s. Deux requetes qui se croisent
+        // depassaient le delai, ce qui remontait en erreur 500 cote front.
         $request = Http::acceptJson()
-            ->timeout(10);
+            ->timeout((int) config('services.backend.timeout', 30));
 
 
         if (session()->has('access_token')) {
