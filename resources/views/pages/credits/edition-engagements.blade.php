@@ -4,9 +4,9 @@
 @section('content')
 <main class="main-content">
   <x-topbar
-    title="Édition des engagements"
+    title="Édition des engagements par délégation"
     subtitle="Gestion de la paie > Édition des engagements"
-    icon="fa-solid fa-file-invoice-dollar"
+    icon="fa-solid fa-clipboard-check"
     search-id="engagementSearch"
     search-placeholder="Rechercher…"
     filter-target="#engagementTable"
@@ -16,23 +16,29 @@
     <section class="objective-card">
       <h2>Objectifs métier</h2>
       <ul class="objective-list">
-        <li>Consulter l'état des engagements par exercice, période et structure.</li>
-        <li>Comparer les montants engagés avec la paie calculée.</li>
+        <li>Consulter les engagements pris sur les crédits délégués, ligne par ligne.</li>
+        <li>Suivre, pour chaque N° de carton, le montant délégué, le montant engagé et le reste.</li>
       </ul>
     </section>
 
-    <!-- Filtres -->
+    <!-- Filtres : période comptable de frmEditEngDelegation.aspx -->
     <section class="filter-panel" aria-label="Filtres">
       <div class="form-group">
-        <label for="filtreExercice">Exercice</label>
-        <select class="form-control" id="filtreExercice">
-          <option value="">Tous</option>
+        <label for="filtreAnnee">Année académique</label>
+        <select class="form-control" id="filtreAnnee">
+          <option value="">Toutes</option>
         </select>
       </div>
       <div class="form-group">
-        <label for="filtrePeriode">Période</label>
+        <label for="filtrePeriode">Période de paie</label>
         <select class="form-control" id="filtrePeriode">
           <option value="">Toutes</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="filtreCorps">Corps d'enseignant</label>
+        <select class="form-control" id="filtreCorps">
+          <option value="">Tous</option>
         </select>
       </div>
       <div class="form-group">
@@ -48,13 +54,17 @@
         </select>
       </div>
       <div class="form-group">
-        <label for="filtreEtablissement">Établissement</label>
-        <select class="form-control" id="filtreEtablissement">
+        <label for="filtreCarton">N° Carton</label>
+        <input class="form-control" id="filtreCarton" type="text" placeholder="ex. 25-DC1823">
+      </div>
+      <div class="form-group">
+        <label for="filtreType">Type d'édition</label>
+        <select class="form-control" id="filtreType">
           <option value="">Tous</option>
         </select>
       </div>
       <div class="actions-group">
-        <button class="btn-primary" type="button" id="btnGenerer">Générer l'état</button>
+        <button class="btn-primary" type="button" id="btnConsulter">Consulter</button>
         <button class="btn-secondary" type="button" id="btnResetFiltres">Réinitialiser</button>
       </div>
     </section>
@@ -63,54 +73,37 @@
     <div class="stats-grid four" id="statsPanel" style="display:none;">
       <article class="stat-card">
         <div>
-          <p class="stat-label">Agents</p>
-          <p class="stat-value" id="statAgents">0</p>
-          <p class="stat-note">Nombre d'agents</p>
+          <p class="stat-label">Lignes</p>
+          <p class="stat-value" id="statLignes">0</p>
+          <p class="stat-note" id="statDelegations">0 délégation(s)</p>
         </div>
-        <span class="stat-icon blue"><i class="fa-solid fa-users" aria-hidden="true"></i></span>
+        <span class="stat-icon blue"><i class="fa-solid fa-list" aria-hidden="true"></i></span>
       </article>
       <article class="stat-card">
         <div>
-          <p class="stat-label">Total engagé</p>
-          <p class="stat-value" id="statEngage">0</p>
-          <p class="stat-note">Montants engagés</p>
+          <p class="stat-label">Total délégué</p>
+          <p class="stat-value" id="statMontant">0</p>
+          <p class="stat-note">Crédits mis à disposition</p>
         </div>
         <span class="stat-icon green"><i class="fa-solid fa-coins" aria-hidden="true"></i></span>
       </article>
       <article class="stat-card">
         <div>
-          <p class="stat-label">Total net payé</p>
-          <p class="stat-value" id="statNet">0</p>
-          <p class="stat-note">Paie calculée</p>
+          <p class="stat-label">Total engagé</p>
+          <p class="stat-value" id="statEngagement">0</p>
+          <p class="stat-note" id="statTaux">0 % du délégué</p>
         </div>
-        <span class="stat-icon yellow"><i class="fa-solid fa-money-bill-wave" aria-hidden="true"></i></span>
+        <span class="stat-icon yellow"><i class="fa-solid fa-file-signature" aria-hidden="true"></i></span>
       </article>
       <article class="stat-card">
         <div>
-          <p class="stat-label">Écart</p>
-          <p class="stat-value" id="statEcart">0</p>
-          <p class="stat-note">Engagé − Payé</p>
+          <p class="stat-label">Reste à engager</p>
+          <p class="stat-value" id="statReste">0</p>
+          <p class="stat-note">Délégué − engagé</p>
         </div>
         <span class="stat-icon red"><i class="fa-solid fa-scale-unbalanced" aria-hidden="true"></i></span>
       </article>
     </div>
-
-    <!-- Synthèse engagements vs paie -->
-    <section class="table-card" id="synthesePanel" style="display:none;">
-      <h3 style="margin:0 0 16px 0; color:#087f5b; font-size:1.1rem;">Synthèse engagements vs paie</h3>
-      <div class="table-responsive">
-        <table class="table">
-          <thead>
-            <tr>
-              <th>Indicateur</th>
-              <th>Engagements (délégations)</th>
-              <th>Paie (bulletins)</th>
-            </tr>
-          </thead>
-          <tbody id="syntheseBody"></tbody>
-        </table>
-      </div>
-    </section>
 
     <!-- Actions -->
     <div class="actions-row" id="actionsPanel" style="display:none;">
@@ -121,21 +114,22 @@
       </div>
     </div>
 
-    <!-- Détail par agent -->
+    <!-- Grille des engagements, calquée sur frmDetailDelegation.aspx -->
     <section class="table-card" id="detailPanel" style="display:none;">
-      <h3 style="margin:0 0 16px 0; color:#087f5b; font-size:1.1rem;">Détail par agent</h3>
+      <h3 style="margin:0 0 16px 0; color:#087f5b; font-size:1.1rem;">Engagements par carton</h3>
       <div class="table-responsive">
         <table class="table" id="engagementTable">
           <thead>
             <tr>
-              <th>Matricule</th>
-              <th>Nom</th>
+              <th>N° Carton</th>
+              <th>Montant</th>
+              <th>Engagement</th>
+              <th>Reste</th>
+              <th>Taux</th>
+              <th>N° Autorisation</th>
+              <th>Corps</th>
               <th>IA</th>
-              <th>Période</th>
-              <th>Brut</th>
-              <th>Retenues</th>
-              <th>Net</th>
-              <th>Charges employeur</th>
+              <th>IEF</th>
             </tr>
           </thead>
           <tbody id="detailBody"></tbody>
@@ -144,6 +138,28 @@
       <p class="empty-message" id="emptyMsg" style="display:none;">Aucune donnée trouvée.</p>
       <div class="pagination" id="paginationControls"></div>
     </section>
+
+    <!-- Récapitulatif par délégation : ruptures d'état -->
+    <section class="table-card" id="recapPanel" style="display:none;">
+      <h3 style="margin:0 0 16px 0; color:#087f5b; font-size:1.1rem;">Récapitulatif par délégation</h3>
+      <div class="table-responsive">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Référence</th>
+              <th>Objet</th>
+              <th>Période</th>
+              <th>Lignes</th>
+              <th>Montant</th>
+              <th>Engagement</th>
+              <th>Reste</th>
+              <th>Taux</th>
+            </tr>
+          </thead>
+          <tbody id="recapBody"></tbody>
+        </table>
+      </div>
+    </section>
   </section>
 </main>
 @endsection
@@ -151,9 +167,8 @@
 @push('scripts')
 <script>
 var API = 'http://127.0.0.1:8000/api';
-var allLignes = [];
 var currentPage = 1;
-var perPage = 10;
+var lignesPage = [];
 
 document.addEventListener('DOMContentLoaded', function() {
   chargerFiltres();
@@ -164,19 +179,20 @@ function chargerFiltres() {
   fetch(API + '/edition-engagements/filtres')
     .then(function(r) { return r.json(); })
     .then(function(data) {
-      var selExercice = document.getElementById('filtreExercice');
-      (data.annees_academiques || []).forEach(function(a) {
-        selExercice.innerHTML += '<option value="' + a + '">' + a + '</option>';
+      remplir('filtreAnnee', data.annees_academiques, function(a) {
+        return { value: a, label: a };
       });
-
-      var selPeriode = document.getElementById('filtrePeriode');
-      (data.periodes || []).forEach(function(p) {
-        selPeriode.innerHTML += '<option value="' + p + '">' + p + '</option>';
+      remplir('filtrePeriode', data.periodes_paie, function(p) {
+        return { value: p, label: p };
       });
-
-      var selIA = document.getElementById('filtreIA');
-      (data.ias || []).forEach(function(ia) {
-        selIA.innerHTML += '<option value="' + ia.id + '">' + ia.libelle + '</option>';
+      remplir('filtreCorps', data.corps_enseignants, function(c) {
+        return { value: c.id, label: c.libelle };
+      });
+      remplir('filtreIA', data.ias, function(ia) {
+        return { value: ia.id, label: ia.code + ' - ' + ia.libelle };
+      });
+      remplir('filtreType', data.types, function(t) {
+        return { value: t.value, label: t.label };
       });
     })
     .catch(function(e) {
@@ -184,13 +200,20 @@ function chargerFiltres() {
     });
 }
 
+function remplir(selectId, items, mapper) {
+  var sel = document.getElementById(selectId);
+  (items || []).forEach(function(item) {
+    var o = mapper(item);
+    sel.innerHTML += '<option value="' + o.value + '">' + o.label + '</option>';
+  });
+}
+
 function setupEvents() {
+  // Cascade IA -> IEF
   document.getElementById('filtreIA').addEventListener('change', function() {
     var iaId = this.value;
     var selIEF = document.getElementById('filtreIEF');
-    var selEtab = document.getElementById('filtreEtablissement');
     selIEF.innerHTML = '<option value="">Toutes</option>';
-    selEtab.innerHTML = '<option value="">Tous</option>';
     if (!iaId) return;
 
     fetch(API + '/edition-engagements/iefs/' + iaId)
@@ -202,51 +225,44 @@ function setupEvents() {
       });
   });
 
-  document.getElementById('filtreIEF').addEventListener('change', function() {
-    var iefId = this.value;
-    var selEtab = document.getElementById('filtreEtablissement');
-    selEtab.innerHTML = '<option value="">Tous</option>';
-    if (!iefId) return;
-
-    fetch(API + '/edition-engagements/etablissements/' + iefId)
-      .then(function(r) { return r.json(); })
-      .then(function(etabs) {
-        etabs.forEach(function(e) {
-          selEtab.innerHTML += '<option value="' + e.id + '">' + e.libelle + '</option>';
-        });
-      });
+  document.getElementById('btnConsulter').addEventListener('click', function() {
+    currentPage = 1;
+    consulter();
   });
 
-  document.getElementById('btnGenerer').addEventListener('click', genererEtat);
-
   document.getElementById('btnResetFiltres').addEventListener('click', function() {
-    document.getElementById('filtreExercice').value = '';
-    document.getElementById('filtrePeriode').value = '';
-    document.getElementById('filtreIA').value = '';
+    ['filtreAnnee', 'filtrePeriode', 'filtreCorps', 'filtreIA', 'filtreType'].forEach(function(id) {
+      document.getElementById(id).value = '';
+    });
+    document.getElementById('filtreCarton').value = '';
     document.getElementById('filtreIEF').innerHTML = '<option value="">Toutes</option>';
-    document.getElementById('filtreEtablissement').innerHTML = '<option value="">Tous</option>';
-    ['statsPanel', 'synthesePanel', 'actionsPanel', 'detailPanel'].forEach(function(id) {
+    ['statsPanel', 'actionsPanel', 'detailPanel', 'recapPanel'].forEach(function(id) {
       document.getElementById(id).style.display = 'none';
     });
   });
 
   document.getElementById('btnExporter').addEventListener('click', exporterCSV);
-  document.getElementById('btnImprimer').addEventListener('click', imprimerEtat);
+  document.getElementById('btnImprimer').addEventListener('click', function() { window.print(); });
 }
 
-function buildParams() {
+function buildParams(perPage) {
   var params = [];
-  var exercice = document.getElementById('filtreExercice').value;
-  var periode = document.getElementById('filtrePeriode').value;
-  var iaId = document.getElementById('filtreIA').value;
-  var iefId = document.getElementById('filtreIEF').value;
-  var etabId = document.getElementById('filtreEtablissement').value;
+  var champs = {
+    annee_academique: document.getElementById('filtreAnnee').value,
+    periode_paie: document.getElementById('filtrePeriode').value,
+    corps_enseignant_id: document.getElementById('filtreCorps').value,
+    ia_id: document.getElementById('filtreIA').value,
+    ief_id: document.getElementById('filtreIEF').value,
+    numero_carton: document.getElementById('filtreCarton').value,
+    type: document.getElementById('filtreType').value
+  };
 
-  if (exercice) params.push('annee_academique=' + encodeURIComponent(exercice));
-  if (periode) params.push('periode=' + encodeURIComponent(periode));
-  if (iaId) params.push('ia_id=' + iaId);
-  if (iefId) params.push('ief_id=' + iefId);
-  if (etabId) params.push('etablissement_id=' + etabId);
+  Object.keys(champs).forEach(function(cle) {
+    if (champs[cle]) params.push(cle + '=' + encodeURIComponent(champs[cle]));
+  });
+
+  if (perPage) params.push('per_page=' + perPage);
+  if (currentPage > 1) params.push('page=' + currentPage);
 
   return params.length ? '?' + params.join('&') : '';
 }
@@ -258,84 +274,51 @@ function formatMontant(val) {
 function formatMontantCourt(val) {
   if (val >= 1000000) return (val / 1000000).toFixed(1) + 'M';
   if (val >= 1000) return (val / 1000).toFixed(0) + 'K';
-  return val.toString();
+  return String(val);
 }
 
-function genererEtat() {
-  var btn = document.getElementById('btnGenerer');
+function consulter() {
+  var btn = document.getElementById('btnConsulter');
   btn.disabled = true;
   btn.textContent = 'Chargement...';
-  var params = buildParams();
 
-  Promise.all([
-    fetch(API + '/edition-engagements' + params).then(function(r) { return r.json(); }),
-    fetch(API + '/edition-engagements/details' + params).then(function(r) { return r.json(); })
-  ])
-  .then(function(results) {
-    var synthese = results[0];
-    var details = results[1];
+  fetch(API + '/edition-engagements' + buildParams())
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      afficherStats(data.totaux);
+      afficherLignes(data.lignes, data.pagination);
+      afficherRecap(data.recapitulatif);
 
-    afficherStats(synthese);
-    afficherSynthese(synthese);
-    afficherDetails(details);
+      ['statsPanel', 'actionsPanel', 'detailPanel', 'recapPanel'].forEach(function(id) {
+        document.getElementById(id).style.display = '';
+      });
 
-    ['statsPanel', 'synthesePanel', 'actionsPanel', 'detailPanel'].forEach(function(id) {
-      document.getElementById(id).style.display = '';
+      btn.disabled = false;
+      btn.textContent = 'Consulter';
+    })
+    .catch(function(e) {
+      console.error('Erreur:', e);
+      alert('Erreur lors de la consultation de l\'état.');
+      btn.disabled = false;
+      btn.textContent = 'Consulter';
     });
-
-    btn.disabled = false;
-    btn.textContent = 'Générer l\'état';
-  })
-  .catch(function(e) {
-    console.error('Erreur:', e);
-    alert('Erreur lors de la génération de l\'état.');
-    btn.disabled = false;
-    btn.textContent = 'Générer l\'état';
-  });
 }
 
-function afficherStats(data) {
-  document.getElementById('statAgents').textContent = data.paie.nombre_agents;
-  document.getElementById('statEngage').textContent = formatMontantCourt(data.engagements.total_engage);
-  document.getElementById('statNet').textContent = formatMontantCourt(data.paie.total_net);
-
-  var ecart = data.comparaison.ecart;
-  var elEcart = document.getElementById('statEcart');
-  elEcart.textContent = formatMontantCourt(Math.abs(ecart));
-  elEcart.style.color = ecart >= 0 ? '#087f5b' : '#e03131';
+function afficherStats(t) {
+  document.getElementById('statLignes').textContent = t.nombre_lignes;
+  document.getElementById('statDelegations').textContent = t.nombre_delegations + ' délégation(s)';
+  document.getElementById('statMontant').textContent = formatMontantCourt(t.total_montant);
+  document.getElementById('statEngagement').textContent = formatMontantCourt(t.total_engagement);
+  document.getElementById('statTaux').textContent = t.taux_engagement + ' % du délégué';
+  document.getElementById('statReste').textContent = formatMontantCourt(t.total_reste);
 }
 
-function afficherSynthese(data) {
-  var eng = data.engagements;
-  var paie = data.paie;
-
-  document.getElementById('syntheseBody').innerHTML =
-    '<tr><td>Nombre</td><td>' + eng.nombre_delegations + ' délégation(s)</td><td>' + paie.nombre_agents + ' agent(s)</td></tr>' +
-    '<tr><td>Montant brut</td><td>-</td><td>' + formatMontant(paie.total_brut) + '</td></tr>' +
-    '<tr><td>Retenues</td><td>-</td><td>' + formatMontant(paie.total_retenues) + '</td></tr>' +
-    '<tr><td>Net</td><td>-</td><td>' + formatMontant(paie.total_net) + '</td></tr>' +
-    '<tr><td>Charges employeur</td><td>-</td><td>' + formatMontant(paie.charges_employeur) + '</td></tr>' +
-    '<tr><td>Total engagé</td><td>' + formatMontant(eng.total_engage) + '</td><td>-</td></tr>' +
-    '<tr><td>Total consommé</td><td>' + formatMontant(eng.total_consomme) + '</td><td>-</td></tr>' +
-    '<tr><td>Solde restant</td><td>' + formatMontant(eng.total_solde) + '</td><td>-</td></tr>' +
-    '<tr style="font-weight:bold; background:#f1f3f5;"><td>Écart (Engagé − Net payé)</td><td colspan="2" style="text-align:center; color:' +
-    (data.comparaison.ecart >= 0 ? '#087f5b' : '#e03131') + ';">' +
-    formatMontant(data.comparaison.ecart) + '</td></tr>';
-}
-
-function afficherDetails(data) {
-  allLignes = data.lignes || [];
-  currentPage = 1;
-  renderDetailTable();
-}
-
-function renderDetailTable() {
+function afficherLignes(lignes, pagination) {
+  lignesPage = lignes || [];
   var tbody = document.getElementById('detailBody');
   var empty = document.getElementById('emptyMsg');
-  var totalPages = Math.ceil(allLignes.length / perPage);
-  if (currentPage > totalPages) currentPage = totalPages || 1;
 
-  if (allLignes.length === 0) {
+  if (lignesPage.length === 0) {
     tbody.innerHTML = '';
     empty.style.display = 'block';
     document.getElementById('paginationControls').innerHTML = '';
@@ -343,70 +326,117 @@ function renderDetailTable() {
   }
   empty.style.display = 'none';
 
-  var start = (currentPage - 1) * perPage;
-  var pageData = allLignes.slice(start, start + perPage);
-
-  tbody.innerHTML = pageData.map(function(l) {
+  tbody.innerHTML = lignesPage.map(function(l) {
     return '<tr>' +
-      '<td>' + l.matricule + '</td>' +
-      '<td>' + l.nom + '</td>' +
-      '<td>' + l.ia + '</td>' +
-      '<td>' + (l.periode || '-') + '</td>' +
-      '<td>' + formatMontant(l.brut) + '</td>' +
-      '<td>' + formatMontant(l.retenues) + '</td>' +
-      '<td>' + formatMontant(l.net) + '</td>' +
-      '<td>' + formatMontant(l.charges_employeur) + '</td>' +
+      '<td>' + (l.numero_carton || '-') + '</td>' +
+      '<td>' + formatMontant(l.montant) + '</td>' +
+      '<td>' + formatMontant(l.engagement) + '</td>' +
+      '<td>' + formatMontant(l.reste) + '</td>' +
+      '<td>' + l.taux_engagement + ' %</td>' +
+      '<td>' + (l.numero_autorisation || '-') + '</td>' +
+      '<td>' + (l.corps_enseignant || '-') + '</td>' +
+      '<td>' + (l.ia || '-') + '</td>' +
+      '<td>' + (l.ief || '-') + '</td>' +
       '</tr>';
   }).join('');
 
-  renderPagination(totalPages);
+  renderPagination(pagination);
 }
 
-function renderPagination(totalPages) {
+function afficherRecap(recap) {
+  document.getElementById('recapBody').innerHTML = (recap || []).map(function(r) {
+    return '<tr>' +
+      '<td>' + (r.reference || '-') + '</td>' +
+      '<td>' + (r.objet || '-') + '</td>' +
+      '<td>' + (r.periode_paie || '-') + '</td>' +
+      '<td>' + r.nombre_lignes + '</td>' +
+      '<td>' + formatMontant(r.total_montant) + '</td>' +
+      '<td>' + formatMontant(r.total_engagement) + '</td>' +
+      '<td>' + formatMontant(r.total_reste) + '</td>' +
+      '<td>' + r.taux_engagement + ' %</td>' +
+      '</tr>';
+  }).join('');
+}
+
+// Pagination serveur : chaque page est une requete, les totaux restent
+// calcules sur l'integralite du perimetre filtre.
+function renderPagination(p) {
   var container = document.getElementById('paginationControls');
-  if (totalPages <= 1) { container.innerHTML = ''; return; }
-  var html = '<button class="page-btn" ' + (currentPage === 1 ? 'disabled' : '') +
-    ' onclick="goToPage(' + (currentPage - 1) + ')">&laquo;</button>';
-  for (var i = 1; i <= totalPages; i++) {
-    html += '<button class="page-btn' + (i === currentPage ? ' active' : '') +
-      '" onclick="goToPage(' + i + ')">' + i + '</button>';
+  if (!p || p.last_page <= 1) { container.innerHTML = ''; return; }
+
+  var html = '<button class="page-btn" ' + (p.current_page === 1 ? 'disabled' : '') +
+    ' onclick="allerPage(' + (p.current_page - 1) + ')">&laquo;</button>';
+
+  for (var i = 1; i <= p.last_page; i++) {
+    html += '<button class="page-btn' + (i === p.current_page ? ' active' : '') +
+      '" onclick="allerPage(' + i + ')">' + i + '</button>';
   }
-  html += '<button class="page-btn" ' + (currentPage === totalPages ? 'disabled' : '') +
-    ' onclick="goToPage(' + (currentPage + 1) + ')">&raquo;</button>';
+
+  html += '<button class="page-btn" ' + (p.current_page === p.last_page ? 'disabled' : '') +
+    ' onclick="allerPage(' + (p.current_page + 1) + ')">&raquo;</button>';
+
   container.innerHTML = html;
 }
 
-function goToPage(page) {
+function allerPage(page) {
   currentPage = page;
-  renderDetailTable();
+  consulter();
 }
 
+// L'export porte sur tout le perimetre filtre, pas sur la page affichee :
+// on redemande l'etat complet au serveur.
 function exporterCSV() {
-  if (allLignes.length === 0) { alert('Aucune donnée à exporter.'); return; }
+  var btn = document.getElementById('btnExporter');
+  btn.disabled = true;
+  btn.textContent = 'Export...';
 
-  var entetes = ['Matricule', 'Nom', 'IA', 'Période', 'Brut', 'Retenues', 'Net', 'Charges employeur'];
-  var lignes = allLignes.map(function(l) {
-    return [l.matricule, l.nom, l.ia, l.periode, l.brut, l.retenues, l.net, l.charges_employeur];
-  });
+  var pageAvant = currentPage;
+  currentPage = 1;
+  var url = API + '/edition-engagements' + buildParams(1000);
+  currentPage = pageAvant;
 
-  var echapper = function(v) { return '"' + String(v).replace(/"/g, '""') + '"'; };
-  var csv = [entetes].concat(lignes)
-    .map(function(ligne) { return ligne.map(echapper).join(';'); })
-    .join('\r\n');
+  fetch(url)
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      var lignes = data.lignes || [];
+      if (lignes.length === 0) { alert('Aucune donnée à exporter.'); return; }
 
-  var blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
-  var url = URL.createObjectURL(blob);
-  var lien = document.createElement('a');
-  lien.href = url;
-  lien.download = 'etat-engagements-' + new Date().toISOString().slice(0, 10) + '.csv';
-  document.body.appendChild(lien);
-  lien.click();
-  document.body.removeChild(lien);
-  URL.revokeObjectURL(url);
-}
+      var entetes = ['N° Carton', 'Montant', 'Engagement', 'Reste', 'Taux %',
+                     'N° Autorisation', 'Corps', 'IA', 'IEF', 'Référence', 'Période'];
 
-function imprimerEtat() {
-  window.print();
+      var corps = lignes.map(function(l) {
+        return [l.numero_carton, l.montant, l.engagement, l.reste, l.taux_engagement,
+                l.numero_autorisation, l.corps_enseignant, l.ia, l.ief,
+                l.reference, l.periode_paie];
+      });
+
+      var echapper = function(v) { return '"' + String(v === null ? '' : v).replace(/"/g, '""') + '"'; };
+      var csv = [entetes].concat(corps)
+        .map(function(ligne) { return ligne.map(echapper).join(';'); })
+        .join('\r\n');
+
+      var blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+      var lien = document.createElement('a');
+      lien.href = URL.createObjectURL(blob);
+      lien.download = 'etat-engagements-' + new Date().toISOString().slice(0, 10) + '.csv';
+      document.body.appendChild(lien);
+      lien.click();
+      document.body.removeChild(lien);
+      URL.revokeObjectURL(lien.href);
+
+      if (data.pagination && data.pagination.total > lignes.length) {
+        alert('Export limité à ' + lignes.length + ' lignes sur ' + data.pagination.total +
+              '. Affinez les filtres pour exporter le reste.');
+      }
+    })
+    .catch(function(e) {
+      console.error('Erreur export:', e);
+      alert('Erreur lors de l\'export.');
+    })
+    .finally(function() {
+      btn.disabled = false;
+      btn.textContent = 'Exporter CSV';
+    });
 }
 </script>
 @endpush
