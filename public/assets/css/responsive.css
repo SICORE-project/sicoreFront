@@ -1,3 +1,9 @@
+/*
+ * ADAPTATION RESPONSIVE DU FRONTEND
+ * Chargé après style.css sur toutes les pages. Les règles sont regroupées par
+ * largeur maximale : 1200, 992, 768, 640, 560 et 390 pixels.
+ * Les styles d'impression du bulletin sont définis dans app.css.
+ */
 @media (max-width: 1200px) {
   .stats-grid,
   .stats-grid.four,
@@ -15,6 +21,60 @@
 
   .sidebar-submenu a {
     font-size: 12.4px;
+  }
+}
+
+@media (max-width: 640px) {
+  .payroll-modal-backdrop {
+    align-items: end;
+    padding: 0;
+  }
+
+  .payroll-modal {
+    width: 100%;
+    max-height: 92vh;
+    border-radius: 16px 16px 0 0;
+  }
+
+  .payroll-modal form {
+    padding: 18px;
+  }
+
+  .payroll-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .payroll-field-full,
+  .payroll-field:has(textarea) {
+    grid-column: auto;
+  }
+
+  .payroll-teacher-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .payroll-teacher-summary small {
+    text-align: left;
+  }
+
+  .payroll-modal-actions {
+    position: sticky;
+    bottom: -18px;
+    margin: 0 -18px -18px;
+    padding: 14px 18px 18px;
+    background: #ffffff;
+  }
+
+  .payslip-identity,
+  .payslip-totals {
+    grid-template-columns: 1fr;
+  }
+
+  .payslip-totals .payslip-net {
+    padding-top: 12px;
+    padding-left: 0;
+    border-top: 3px solid var(--primary);
+    border-left: 0;
   }
 }
 
