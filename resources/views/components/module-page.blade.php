@@ -313,26 +313,21 @@
             $filterId = $slug.'-filter-'.$index;
           @endphp
           <div class="form-group">
-            <label for="structure-type-filter">Type de structure</label>
-            <select class="form-control" id="structure-type-filter" name="structure_type">
+            <label for="{{ $filterId }}">{{ $filter }}</label>
+            <select class="form-control" id="{{ $filterId }}">
               <option value="">Tous</option>
-              <option value="national" @selected(request('structure_type') === 'national')>Structure nationale</option>
-              <option value="ia" @selected(request('structure_type') === 'ia')>IA</option>
-              <option value="ief" @selected(request('structure_type') === 'ief')>IEF</option>
+              <option>Juin 2026</option>
+              <option>IA Dakar</option>
+              <option>Validé</option>
             </select>
           </div>
-          <div class="actions-group"><button class="btn-secondary" type="submit">Filtrer</button></div>
-        </form>
-      @else
-        <section class="filter-panel" aria-label="Filtres de la page">
-          @foreach (($page['filters'] ?? []) as $index => $filter)
-            @php $filterId = ($slug ?? 'module') . '-filter-' . $index; @endphp
-            <div class="form-group"><label for="{{ $filterId }}">{{ $filter }}</label><select class="form-control" id="{{ $filterId }}"><option value="">Tous</option><option>Juin 2026</option><option>IA Dakar</option><option>Validé</option></select></div>
-          @endforeach
-          <div class="actions-group"><button class="btn-secondary" type="button">Filtrer</button></div>
-        </section>
-      @endif
+        @endforeach
+        <div class="actions-group">
+          <button class="btn-secondary" type="button">Filtrer</button>
+        </div>
+      </section>
     @endif
+
     @if (! empty($page['helpText']))
       <section class="help-card">
         <h2>{{ $page['helpTitle'] }}</h2>
