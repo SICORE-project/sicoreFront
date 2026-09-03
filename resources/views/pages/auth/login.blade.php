@@ -32,6 +32,9 @@
 
           <form class="form-stack" method="POST" action="{{ route('login.submit') }}" novalidate>
             @csrf
+            @if (old('next', $next ?? null))
+              <input type="hidden" name="next" value="{{ old('next', $next ?? null) }}">
+            @endif
             <div class="field-group">
               <label for="email">Adresse e-mail</label>
               <div class="input-shell">
@@ -80,4 +83,3 @@
     </section>
   </main>
 @endsection
-

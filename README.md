@@ -1,22 +1,28 @@
-# SICORE Frontend — Laravel 12 — Mode test
+# SICORE Frontend — Laravel 12
 
 Frontend Laravel de **SICORE — Système Intégré des COrps Émergents**.
 
-Cette version fonctionne de manière autonome, sans base de données et sans backend API. Elle permet de tester la connexion, le dashboard, le sidebar et toutes les pages fonctionnelles du prototype dans Laravel.
+Cette application utilise le backend SICORE pour l'authentification et les
+données métier, notamment celles de la gestion de la paie.
 
-## Accès au mode test
+## Préparation après un clone ou un changement de branche
 
-```text
-E-mail : admin@sicore.sn
-Mot de passe : Sicore@2026
+```powershell
+git fetch origin --prune
+git switch dev-bayesaliou
+git pull --ff-only origin dev-bayesaliou
+composer install
 ```
 
-Après validation, Laravel crée une session locale et redirige uniquement vers le tableau de bord. L’authentification par API sera intégrée plus tard dans le projet backend SICORE.
+Créer `.env` depuis `.env.example` uniquement s'il n'existe pas. Vérifier que
+`API_BASE_URL` désigne le backend réellement démarré. Les identifiants sont ceux
+créés par les seeders du backend.
 
 ## Prérequis
 
 - PHP 8.4.1 ou supérieur (PHP 8.4.12 est recommandé avec Laragon).
 - Composer 2, seulement si le dossier `vendor` doit être réinstallé.
+- Backend SICORE et MySQL démarrés.
 - Extensions PHP habituelles de Laravel : `mbstring`, `openssl`, `fileinfo`, `tokenizer`, `ctype`, `dom`, `xml` et `xmlwriter`.
 - Aucun lancement npm ou Vite n’est nécessaire : les assets sont déjà présents dans `public/assets`.
 
@@ -111,43 +117,10 @@ php artisan route:list
 php artisan test
 ```
 
-## Connexion API future
+## Connexion API
 
-Aucune authentification API n’est active dans cette version. Lors de la création du backend SICORE, il faudra remplacer uniquement l’authentification locale du fichier `AuthController.php` par l’appel au backend et conserver les layouts, composants et pages Blade déjà en place.
-
-## Workflow Git — se synchroniser avec `module-indemnite-intermedaire`
-
-Récupérer les derniers changements de la branche partagée `module-indemnite-intermedaire` :
-
-```
-git fetch origin module-indemnite-intermedaire
-git merge origin/module-indemnite-intermedaire
-```
-
-S'il y a des modifications locales non committées qui bloquent le merge :
-
-```
-git stash push -u -m "avant fusion module-indemnite-intermedaire"
-git fetch origin module-indemnite-intermedaire
-git merge origin/module-indemnite-intermedaire
-```
-Puis, une fois le merge vérifié, remettre les modifications de côté si besoin (`git stash pop`) ou les jeter si ce n'était pas du vrai travail (`git stash drop`).
-
-Committer et pousser uniquement les fichiers réellement modifiés (jamais `git add .`, pour éviter d'envoyer du bruit type changement de fin de ligne sur des fichiers non concernés) :
-
-```
-git add <fichier1> <fichier2> ...
-git commit -m "message clair"
-git fetch origin module-indemnite-intermedaire
-git merge origin/module-indemnite-intermedaire
-git push origin dev-aminata
-```
-
-Si un `.git/index.lock` bloque toutes les commandes git (message "Unable to create '.git/index.lock': File exists") :
-
-1. Fermer tout logiciel git ouvert (VS Code, GitHub Desktop, etc.).
-2. Supprimer le fichier :
-```
-rm -f .git/index.lock
-```
-3. Relancer la commande git.
+L'authentification et les pages de paie appellent l'URL définie par
+`API_BASE_URL` (par défaut `http://127.0.0.1:8000/api`). Après un `git pull`,
+exécuter `php artisan optimize:clear`, redémarrer le serveur qui écoute sur le
+port `8001`, puis actualiser le navigateur. Les assets locaux portent une
+version calculée automatiquement afin d'éviter l'ancien CSS conservé en cache.
