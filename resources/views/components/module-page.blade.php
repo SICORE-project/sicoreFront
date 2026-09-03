@@ -510,6 +510,6 @@
         'actionUrl' => route('paie.action', ['action' => '__ACTION__']),
       ]) }};
     </script>
-    <script src="{{ asset('assets/js/payroll.js') }}" defer></script>
+    <script src="{{ asset('assets/js/payroll.js') }}?v={{ filemtime(public_path('assets/js/payroll.js')) }}" defer></script>
   @endpush
 @endif
