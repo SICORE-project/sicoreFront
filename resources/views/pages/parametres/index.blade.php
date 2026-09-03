@@ -1,8 +1,15 @@
 @extends('layouts.app')
 
+{{--
+  PAGE : Paramétrage général — URL /parametres dans routes/web.php.
+  Layout/menu : layouts/app.blade.php et components/sidebar.blade.php.
+  Recherche du tableau : public/assets/js/app.js via data-table-filter.
+  Les ancres du menu, dont #periode-paie, sont déclarées dans navigation.php.
+--}}
 @section('title', 'SICORE - Param&eacute;trage')
 @section('content')
 <main class="main-content">
+    {{-- En-tête local de la page de paramétrage. --}}
     <header class="topbar">
       <div class="page-title-wrap">
         <button class="mobile-menu-btn" type="button" data-sidebar-toggle aria-label="Ouvrir le menu">&#9776;</button>
@@ -30,6 +37,7 @@
         </div>
       </div>
 
+      {{-- Tableau des paramètres de présentation du système. --}}
       <section class="table-card">
         <div class="table-responsive">
           <table class="table" id="settingsTable">
@@ -128,4 +136,7 @@
     </section>
   </main>
 @endsection
+<<<<<<< HEAD
 
+=======
+>>>>>>> origin/module-paie

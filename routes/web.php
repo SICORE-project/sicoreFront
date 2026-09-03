@@ -26,8 +26,9 @@ Route::middleware('sicore.auth')->group(function (): void {
 
 });
 
-
 require __DIR__.'/modules/administration.php';
 require __DIR__.'/modules/parametrage.php';
 require __DIR__.'/modules/paie.php';
+require __DIR__.'/modules/bourses.php';
+require __DIR__.'/modules/compatibilite.php';
 require __DIR__.'/modules/indemnites.php';

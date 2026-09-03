@@ -1,5 +1,11 @@
 <?php
 
+/*
+| MENU LATÉRAL DU FRONTEND
+| Lu par resources/views/components/sidebar.blade.php.
+| type=link crée un lien simple ; type=group crée un groupe déroulant.
+| route vient de routes/web.php et active garde le bon lien sélectionné.
+*/
 return [
     [
         'type' => 'link',
@@ -20,23 +26,41 @@ return [
         'icon' => 'fa-solid fa-money-check-dollar',
         'active' => ['paie.*', 'credits.*'],
         'links' => [
-            ['label' => 'États de présence', 'route' => 'paie.etats-presence', 'icon' => 'fa-solid fa-calendar-check'],
-            ['label' => 'Avance Tabaski', 'route' => 'paie.avance-tabaski', 'icon' => 'fa-solid fa-hand-holding-dollar'],
-            ['label' => 'Retenue Tabaski', 'route' => 'paie.retenue-tabaski', 'icon' => 'fa-solid fa-money-bill-transfer'],
-            ['label' => 'Retenues rappel', 'route' => 'paie.retenues-rappel', 'icon' => 'fa-solid fa-clock-rotate-left'],
-            ['label' => 'Exemptions par enseignant', 'route' => 'paie.exemptions', 'icon' => 'fa-solid fa-user-shield'],
+            [
+                'type' => 'group',
+                'label' => 'États de présence',
+                'icon' => 'fa-solid fa-calendar-check',
+                'active' => [
+                    'paie.avance-tabaski',
+                    'paie.retenue-tabaski',
+                    'paie.retenues-rappel',
+                    'paie.etats-presence',
+                    'paie.exemptions',
+                    'paie.fermeture-periode',
+                    'paie.sommes-percues',
+                    'paie.elements-saisie-dashboard',
+                    'paie.non-generee',
+                ],
+                'links' => [
+                    ['label' => 'Avance Tabaski', 'route' => 'paie.avance-tabaski', 'icon' => 'fa-solid fa-hand-holding-dollar'],
+                    ['label' => 'Retenue Tabaski', 'route' => 'paie.retenue-tabaski', 'icon' => 'fa-solid fa-money-bill-transfer'],
+                    ['label' => 'Retenue sur rappel', 'route' => 'paie.retenues-rappel', 'icon' => 'fa-solid fa-clock-rotate-left'],
+                    ['label' => 'Saisir le nombre de jours travaillés', 'route' => 'paie.etats-presence', 'icon' => 'fa-solid fa-calendar-check'],
+                    ['label' => 'Exempter un enseignant d’une avance ou retenue', 'route' => 'paie.exemptions', 'icon' => 'fa-solid fa-user-shield'],
+                    ['label' => 'Clôture de la paie', 'route' => 'paie.fermeture-periode', 'icon' => 'fa-solid fa-lock'],
+                    ['label' => 'Sommes perçues', 'route' => 'paie.sommes-percues', 'icon' => 'fa-solid fa-wallet'],
+                    ['label' => 'Génération du montant des heures supplémentaires', 'route' => 'paie.elements-saisie-dashboard', 'icon' => 'fa-solid fa-clock'],
+                    ['label' => 'Génération individuelle de la paie', 'route' => 'paie.non-generee', 'icon' => 'fa-solid fa-user-check'],
+                ],
+            ],
             ['label' => 'Travaux périodiques', 'route' => 'paie.travaux-periodiques', 'icon' => 'fa-solid fa-list-check'],
             ['label' => 'Récapitulatif par banque', 'route' => 'paie.recap-banque', 'icon' => 'fa-solid fa-building-columns'],
             ['label' => 'Cotisations sociales', 'route' => 'paie.cotisations-sociales', 'icon' => 'fa-solid fa-people-group'],
             ['label' => 'État des salaires', 'route' => 'paie.etat-salaires', 'icon' => 'fa-solid fa-file-invoice-dollar'],
-            ['label' => 'Éléments de saisie', 'route' => 'paie.elements-saisie-dashboard', 'icon' => 'fa-solid fa-chart-line'],
             ['label' => 'Paie générée par IEF', 'route' => 'paie.generee-ief', 'icon' => 'fa-solid fa-sitemap'],
-            ['label' => 'Fermeture de période', 'route' => 'paie.fermeture-periode', 'icon' => 'fa-solid fa-lock'],
             ['label' => 'Salaires par banque', 'route' => 'paie.edition-salaires-banque', 'icon' => 'fa-solid fa-building-columns'],
             ['label' => 'Bulletins des salaires', 'route' => 'paie.bulletins', 'icon' => 'fa-solid fa-file-lines'],
             ['label' => 'Effectifs par corps', 'route' => 'paie.effectifs-corps', 'icon' => 'fa-solid fa-users'],
-            ['label' => 'Paie non générée', 'route' => 'paie.non-generee', 'icon' => 'fa-solid fa-triangle-exclamation'],
-            ['label' => 'Sommes perçues', 'route' => 'paie.sommes-percues', 'icon' => 'fa-solid fa-wallet'],
             ['label' => 'Délégation de crédit', 'route' => 'credits.delegation', 'icon' => 'fa-solid fa-scale-balanced'],
             ['label' => 'Édition des délégations', 'route' => 'credits.edition-delegations', 'icon' => 'fa-solid fa-file-signature'],
             ['label' => 'Édition des engagements', 'route' => 'credits.edition-engagements', 'icon' => 'fa-solid fa-clipboard-check'],
@@ -49,9 +73,7 @@ return [
         'active' => 'indemnites.*',
         'links' => [
             ['label' => 'Convocations', 'route' => 'indemnites.convocations', 'icon' => 'fa-solid fa-calendar-check'],
-            ['label' => 'Services faits', 'route' => 'indemnites.services-faits', 'icon' => 'fa-solid fa-list-check'],
             ['label' => 'Pièces justificatives', 'route' => 'indemnites.pieces-justificatives', 'icon' => 'fa-solid fa-folder-open'],
-            ['label' => 'Accusés de réception', 'route' => 'indemnites.accuses-reception', 'icon' => 'fa-solid fa-receipt'],
             ['label' => 'Calcul des indemnités', 'route' => 'indemnites.calcul', 'icon' => 'fa-solid fa-calculator'],
             ['label' => 'Frais de déplacement', 'route' => 'indemnites.frais-deplacement', 'icon' => 'fa-solid fa-route'],
             ['label' => 'États de paie', 'route' => 'indemnites.etats-paie', 'icon' => 'fa-solid fa-file-export'],

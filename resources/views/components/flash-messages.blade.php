@@ -1,4 +1,10 @@
+{{--
+  COMPOSANT DES MESSAGES SERVEUR
+  Les contrôleurs créent ces messages avec with('success', ...), withErrors(),
+  etc. public/assets/js/notifications.js gère leur disparition visuelle.
+--}}
 @php
+    // Regrouper les niveaux permet une seule boucle d'affichage.
     $messages = [
         'success' => session('success'),
         'warning' => session('warning'),
