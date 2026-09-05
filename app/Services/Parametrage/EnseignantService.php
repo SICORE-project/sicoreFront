@@ -64,7 +64,15 @@ class EnseignantService
             return ['success' => false, 'message' => 'Le service backend est momentanément inaccessible.', 'errors' => []];
         }
 
-        return ['success' => $response->successful(), 'message' => $response->json('message', 'Opération impossible.'), 'errors' => (array) $response->json('errors', [])];
+        $message = match (true) {
+            $response->unauthorized() => 'Votre session a expiré. Reconnectez-vous avant de réessayer.',
+            $response->forbidden() => 'Vous n’avez pas les droits nécessaires pour effectuer cette opération sur un enseignant.',
+            $response->status() === 422 => 'Certaines informations sont invalides. Corrigez les champs indiqués.',
+            $response->serverError() => 'L’opération sur l’enseignant a échoué à cause d’un problème technique du serveur. Si le problème persiste, contactez l’administrateur en précisant l’heure de la tentative.',
+            default => $response->json('message', 'L’opération sur l’enseignant n’a pas pu aboutir.'),
+        };
+
+        return ['success' => $response->successful(), 'message' => $message, 'errors' => $response->status() === 422 ? (array) $response->json('errors', []) : []];
     }
 
     private function emptyResult(string $message): array
