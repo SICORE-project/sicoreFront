@@ -13,11 +13,6 @@
         <p>Administration &gt; Paramétrage &gt; Diplômes</p>
       </div>
     </div>
-    <form class="search-wrap" action="{{ route('parametres.diplomes.index') }}" method="GET" data-diplomes-search>
-      <label class="sr-only" for="diplomesSearch">Rechercher un diplôme</label>
-      <input class="search-input" id="diplomesSearch" name="search" type="search"
-             value="{{ request('search') }}" placeholder="Rechercher par code ou libellé...">
-    </form>
   </header>
 
   <section class="content-area">
@@ -30,6 +25,35 @@
       </div>
     </div>
 
+    <form id="diplomesFilterForm" action="{{ route('parametres.diplomes.index') }}" method="GET" class="filter-panel" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));">
+      <div class="form-group">
+        <label for="diplomeFilter">Diplôme</label>
+        <select class="form-control" id="diplomeFilter" name="libelle" form="diplomesFilterForm" data-diploma-filter>
+          <option value="">Tous les diplômes</option>
+          @foreach(collect($diplomaOptions)->pluck('libelle')->map(fn ($label) => mb_strtoupper(trim((string) $label), 'UTF-8'))->unique()->sort()->values() as $label)
+            <option value="{{ $label }}" @selected(mb_strtoupper(trim((string) request('libelle')), 'UTF-8') === $label)>{{ $label }}</option>
+          @endforeach
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="diplomeCategoryFilter">Catégorie</label>
+        <select class="form-control" id="diplomeCategoryFilter" name="categorie_id" form="diplomesFilterForm" data-diploma-filter>
+          <option value="">Toutes les catégories</option>
+          @foreach($categoryOptions as $category)
+            <option value="{{ data_get($category, 'id') }}" @selected((string) request('categorie_id') === (string) data_get($category, 'id'))>{{ data_get($category, 'libelle') }}</option>
+          @endforeach
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="salaryMinFilter">Salaire brut minimum (FCFA)</label>
+        <input class="form-control" id="salaryMinFilter" name="salaire_min" type="number" min="0" step="0.01" value="{{ request('salaire_min') }}" placeholder="Minimum" data-salary-filter>
+      </div>
+      <div class="form-group">
+        <label for="salaryMaxFilter">Salaire brut maximum (FCFA)</label>
+        <input class="form-control" id="salaryMaxFilter" name="salaire_max" type="number" min="0" step="0.01" value="{{ request('salaire_max') }}" placeholder="Maximum" data-salary-filter>
+      </div>
+    </form>
+
     @if ($error)
       <p class="empty-message">{{ $error }}</p>
     @endif
@@ -39,28 +63,25 @@
         <table class="table" id="diplomesTable">
           <thead>
             <tr>
-              <th>Code</th>
               <th>Libellé</th>
-              <th>Type</th>
-              <th>Date d'obtention</th>
+              <th>Catégorie</th>
+              <th>Salaire brut</th>
               <th class="actions-cell">Actions</th>
             </tr>
           </thead>
           <tbody>
             @forelse ($diplomes as $diplome)
               <tr>
-                <td>{{ $diplome['code'] ?? '—' }}</td>
                 <td>{{ $diplome['libelle'] ?? '—' }}</td>
-                <td>{{ $diplome['type'] ?? '—' }}</td>
-                <td>{{ $diplome['date_obteention'] ?? '—' }}</td>
+                <td>{{ data_get($diplome, 'categorie.libelle', '—') }}</td>
+                <td>{{ number_format((float) ($diplome['salaire_brut'] ?? 0), 0, ',', ' ') }} FCFA</td>
                 <td class="actions-cell">
                   <button class="icon-action" type="button" title="Modifier"
                           data-edit-diplome
                           data-id="{{ $diplome['id'] }}"
-                          data-code="{{ $diplome['code'] ?? '' }}"
                           data-libelle="{{ $diplome['libelle'] ?? '' }}"
-                          data-type="{{ $diplome['type'] ?? '' }}"
-                          data-date="{{ $diplome['date_obteention'] ?? '' }}">
+                          data-categorie-id="{{ $diplome['categorie_id'] ?? data_get($diplome, 'categorie.id') }}"
+                          data-salaire-brut="{{ $diplome['salaire_brut'] ?? 0 }}">
                     <i class="fa-solid fa-pen" aria-hidden="true"></i><span class="sr-only">Modifier</span>
                   </button>
                   <button class="icon-action icon-action-danger" type="button" title="Supprimer ce diplôme"
@@ -71,24 +92,46 @@
               </tr>
             @empty
               <tr>
-                <td colspan="5" class="empty-message">Aucun diplôme trouvé.</td>
+                <td colspan="4" class="empty-message">Aucun diplôme trouvé.</td>
               </tr>
             @endforelse
           </tbody>
         </table>
       </div>
 
-      @if (($meta['last_page'] ?? 1) > 1)
-        <nav class="pagination" aria-label="Pagination des diplômes">
-          @if (($meta['current_page'] ?? 1) > 1)
-            <a class="page-btn" href="{{ route('parametres.diplomes.index', array_filter(['search' => request('search'), 'type' => request('type'), 'page' => $meta['current_page'] - 1])) }}">&#8592;</a>
-          @endif
-          <span class="page-btn active">{{ $meta['current_page'] }} / {{ $meta['last_page'] }}</span>
-          @if (($meta['current_page'] ?? 1) < ($meta['last_page'] ?? 1))
-            <a class="page-btn" href="{{ route('parametres.diplomes.index', array_filter(['search' => request('search'), 'type' => request('type'), 'page' => $meta['current_page'] + 1])) }}">&#8594;</a>
-          @endif
-        </nav>
-      @endif
+      <div class="actions-row diplome-pagination-controls">
+        <p>{{ $meta['total'] ?? 0 }} résultat(s)</p>
+        <div class="form-group">
+          <label for="diplomesPerPage">Résultats par page</label>
+          <select class="form-control" id="diplomesPerPage" name="per_page" form="diplomesFilterForm" data-diploma-filter>
+            @foreach([10, 25, 50, 100] as $limit)
+              <option value="{{ $limit }}" @selected((int) ($meta['per_page'] ?? 10) === $limit)>{{ $limit }}</option>
+            @endforeach
+          </select>
+        </div>
+      </div>
+      @php
+        $currentPage = max(1, (int) ($meta['current_page'] ?? 1));
+        $lastPage = max(1, (int) ($meta['last_page'] ?? 1));
+        $pageFilters = request()->only(['libelle', 'categorie_id', 'salaire_min', 'salaire_max', 'per_page']);
+      @endphp
+      <nav class="pagination" aria-label="Pagination des diplômes">
+        @if ($currentPage > 1)
+          <a class="page-btn" href="{{ route('parametres.diplomes.index', array_merge($pageFilters, ['page' => $currentPage - 1])) }}" aria-label="Page précédente">←</a>
+        @else
+          <button class="page-btn" type="button" aria-label="Page précédente" disabled>←</button>
+        @endif
+        @for ($pageNumber = 1; $pageNumber <= $lastPage; $pageNumber++)
+          <a class="page-btn {{ $pageNumber === $currentPage ? 'active' : '' }}"
+             href="{{ route('parametres.diplomes.index', array_merge($pageFilters, ['page' => $pageNumber])) }}"
+             @if ($pageNumber === $currentPage) aria-current="page" @endif>{{ $pageNumber }}</a>
+        @endfor
+        @if ($currentPage < $lastPage)
+          <a class="page-btn" href="{{ route('parametres.diplomes.index', array_merge($pageFilters, ['page' => $currentPage + 1])) }}" aria-label="Page suivante">→</a>
+        @else
+          <button class="page-btn" type="button" aria-label="Page suivante" disabled>→</button>
+        @endif
+      </nav>
     </section>
   </section>
 </main>
@@ -108,31 +151,24 @@
       @enderror
 
       <div class="form-field">
-        <label for="diplome-code">Code <span aria-hidden="true">*</span></label>
-        <input id="diplome-code" name="code" type="text" value="{{ old('code') }}" maxlength="20" required autofocus>
-        @error('code') <p class="form-error" role="alert">{{ $message }}</p> @enderror
-      </div>
-
-      <div class="form-field">
         <label for="diplome-libelle">Libellé <span aria-hidden="true">*</span></label>
-        <input id="diplome-libelle" name="libelle" type="text" value="{{ old('libelle') }}" maxlength="100" required>
+        <input id="diplome-libelle" name="libelle" type="text" value="{{ old('libelle') }}" maxlength="100" required autofocus>
         @error('libelle') <p class="form-error" role="alert">{{ $message }}</p> @enderror
       </div>
 
       <div class="form-field">
-        <label for="diplome-type">Type</label>
-        <select id="diplome-type" name="type">
-          <option value="">Sélectionner un type</option>
-          <option value="academique" @selected(old('type') === 'academique')>Académique</option>
-          <option value="professionnel" @selected(old('type') === 'professionnel')>Professionnel</option>
+        <label for="diplome-categorie">Catégorie <span aria-hidden="true">*</span></label>
+        <select id="diplome-categorie" name="categorie_id" required>
+          <option value="">Sélectionner une catégorie</option>
+          @foreach($categoryOptions as $categorie)<option value="{{ data_get($categorie, 'id') }}" @selected((string) old('categorie_id') === (string) data_get($categorie, 'id'))>{{ data_get($categorie, 'libelle') }}</option>@endforeach
         </select>
-        @error('type') <p class="form-error" role="alert">{{ $message }}</p> @enderror
+        @error('categorie_id') <p class="form-error" role="alert">{{ $message }}</p> @enderror
       </div>
 
       <div class="form-field">
-        <label for="diplome-date">Date d'obtention <span aria-hidden="true">*</span></label>
-        <input id="diplome-date" name="date_obteention" type="date" value="{{ old('date_obteention') }}" required>
-        @error('date_obteention') <p class="form-error" role="alert">{{ $message }}</p> @enderror
+        <label for="diplome-salaire">Salaire brut <span aria-hidden="true">*</span></label>
+        <input id="diplome-salaire" name="salaire_brut" type="number" min="0" step="1" value="{{ old('salaire_brut') }}" required>
+        @error('salaire_brut') <p class="form-error" role="alert">{{ $message }}</p> @enderror
       </div>
 
       <div class="form-actions">
@@ -154,24 +190,19 @@
       @csrf
       @method('PUT')
       <div class="form-field">
-        <label for="edit-diplome-code">Code <span aria-hidden="true">*</span></label>
-        <input id="edit-diplome-code" name="code" type="text" maxlength="20" required>
-      </div>
-      <div class="form-field">
         <label for="edit-diplome-libelle">Libellé <span aria-hidden="true">*</span></label>
         <input id="edit-diplome-libelle" name="libelle" type="text" maxlength="100" required>
       </div>
       <div class="form-field">
-        <label for="edit-diplome-type">Type</label>
-        <select id="edit-diplome-type" name="type">
-          <option value="">Sélectionner un type</option>
-          <option value="academique">Académique</option>
-          <option value="professionnel">Professionnel</option>
+        <label for="edit-diplome-categorie">Catégorie <span aria-hidden="true">*</span></label>
+        <select id="edit-diplome-categorie" name="categorie_id" required>
+          <option value="">Sélectionner une catégorie</option>
+          @foreach($categoryOptions as $categorie)<option value="{{ data_get($categorie, 'id') }}">{{ data_get($categorie, 'libelle') }}</option>@endforeach
         </select>
       </div>
       <div class="form-field">
-        <label for="edit-diplome-date">Date d'obtention <span aria-hidden="true">*</span></label>
-        <input id="edit-diplome-date" name="date_obteention" type="date" required>
+        <label for="edit-diplome-salaire">Salaire brut <span aria-hidden="true">*</span></label>
+        <input id="edit-diplome-salaire" name="salaire_brut" type="number" min="0" step="1" required>
       </div>
       <div class="form-actions">
         <button class="btn-secondary" type="button" data-modal-close>Annuler</button>
@@ -200,6 +231,9 @@
 
 @push('styles')
 <style>
+  .diplome-pagination-controls { padding: 20px 24px; gap: 24px; flex-wrap: wrap; }
+  .diplome-pagination-controls p { margin: 0; }
+  .diplome-pagination-controls .form-group { gap: 10px; }
   .modal-backdrop { position: fixed; inset: 0; z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 28px; background: rgba(15, 23, 42, .58); }
   .modal-backdrop[hidden] { display: none; }
   .modal-dialog { width: 100%; max-width: 680px; max-height: calc(100vh - 56px); overflow-y: auto; padding: 32px 36px; border: 1px solid #e2e8f0; border-radius: 16px; background: #fff; box-shadow: 0 24px 60px rgba(15, 23, 42, .3); }
@@ -229,6 +263,36 @@
     function openModal(modal) { modal.hidden = false; }
     function closeModal(modal) { modal.hidden = true; }
 
+    var diplomaOptions = @json($diplomaOptions);
+    var editingDiplomaId = '';
+    function filterDiplomaCategories(prefix, excludedId) {
+      var input = document.getElementById(prefix + 'libelle');
+      var start = input.selectionStart;
+      var end = input.selectionEnd;
+      var value = input.value.toUpperCase();
+      if (input.value !== value) {
+        input.value = value;
+        input.setSelectionRange(start, end);
+      }
+      var label = value.trim();
+      var select = document.getElementById(prefix + 'categorie');
+      var used = new Set(diplomaOptions.filter(function (item) {
+        return String(item.id) !== String(excludedId) && String(item.libelle || '').trim().toUpperCase() === label;
+      }).map(function (item) { return String(item.categorie_id || (item.categorie && item.categorie.id) || ''); }));
+      Array.from(select.options).forEach(function (option) {
+        option.hidden = option.value !== '' && used.has(option.value);
+        option.disabled = option.hidden;
+      });
+      if (select.selectedOptions[0] && select.selectedOptions[0].disabled) { select.value = ''; }
+    }
+    document.getElementById('diplome-libelle').addEventListener('input', function () {
+      filterDiplomaCategories('diplome-', '');
+    });
+    document.getElementById('edit-diplome-libelle').addEventListener('input', function () {
+      filterDiplomaCategories('edit-diplome-', editingDiplomaId);
+    });
+    filterDiplomaCategories('diplome-', '');
+
     var createModal = document.getElementById('create-diplome-modal');
     document.querySelectorAll('[data-modal-open="create-diplome-modal"]').forEach(function (button) {
       button.addEventListener('click', function () { openModal(createModal); });
@@ -239,10 +303,11 @@
     document.querySelectorAll('[data-edit-diplome]').forEach(function (button) {
       button.addEventListener('click', function () {
         editForm.action = editForm.dataset.actionTemplate.replace('__diplome__', button.dataset.id);
-        document.getElementById('edit-diplome-code').value = button.dataset.code || '';
         document.getElementById('edit-diplome-libelle').value = button.dataset.libelle || '';
-        document.getElementById('edit-diplome-type').value = button.dataset.type || '';
-        document.getElementById('edit-diplome-date').value = button.dataset.date || '';
+        document.getElementById('edit-diplome-categorie').value = button.dataset.categorieId || '';
+        document.getElementById('edit-diplome-salaire').value = button.dataset.salaireBrut || 0;
+        editingDiplomaId = button.dataset.id;
+        filterDiplomaCategories('edit-diplome-', editingDiplomaId);
         openModal(editModal);
       });
     });
@@ -269,25 +334,39 @@
       if (event.key === 'Escape') document.querySelectorAll('[data-modal]:not([hidden])').forEach(closeModal);
     });
 
-    var searchForm = document.querySelector('[data-diplomes-search]');
-    var searchInput = document.getElementById('diplomesSearch');
-    var searchDelay;
-    if (searchForm && searchInput) {
-      var savedSearch = window.sessionStorage.getItem('diplomesSearchFocus');
-      if (savedSearch !== null) {
-        window.sessionStorage.removeItem('diplomesSearchFocus');
-        searchInput.focus();
-        searchInput.setSelectionRange(savedSearch.length, savedSearch.length);
+    var searchForm = document.getElementById('diplomesFilterForm');
+    var salaryMin = document.getElementById('salaryMinFilter');
+    var salaryMax = document.getElementById('salaryMaxFilter');
+    var salaryTimer;
+    try {
+      var focusedSalary = sessionStorage.getItem('diplomesSalaryFocus');
+      sessionStorage.removeItem('diplomesSalaryFocus');
+      if (focusedSalary === salaryMin.id || focusedSalary === salaryMax.id) {
+        document.getElementById(focusedSalary).focus();
       }
-
-      searchInput.addEventListener('input', function () {
-        window.clearTimeout(searchDelay);
-        searchDelay = window.setTimeout(function () {
-          window.sessionStorage.setItem('diplomesSearchFocus', searchInput.value);
-          searchForm.submit();
-        }, 350);
-      });
+    } catch (error) {}
+    searchForm.addEventListener('submit', function () { clearTimeout(salaryTimer); });
+    function validateSalaryRange() {
+      salaryMax.setCustomValidity(salaryMin.value !== '' && salaryMax.value !== '' && Number(salaryMax.value) < Number(salaryMin.value)
+        ? 'Le maximum doit être supérieur ou égal au minimum.' : '');
     }
+    document.querySelectorAll('[data-salary-filter]').forEach(function (input) {
+      input.addEventListener('input', function () {
+        clearTimeout(salaryTimer);
+        validateSalaryRange();
+        salaryTimer = setTimeout(function () {
+          if (!searchForm.checkValidity()) { searchForm.reportValidity(); return; }
+          try { sessionStorage.setItem('diplomesSalaryFocus', input.id); } catch (error) {}
+          searchForm.requestSubmit();
+        }, 500);
+      });
+    });
+    document.querySelectorAll('[data-diploma-filter]').forEach(function (select) {
+      select.addEventListener('change', function () {
+        validateSalaryRange();
+        searchForm.requestSubmit();
+      });
+    });
   });
 </script>
 @endpush

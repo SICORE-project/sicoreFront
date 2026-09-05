@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Parametrage;
 
 use App\Http\Controllers\Controller;
+use App\Services\Parametrage\CategorieService;
+use App\Services\Parametrage\DiplomeService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
@@ -10,13 +12,15 @@ use Illuminate\View\View;
 
 class DiplomesController extends Controller
 {
-    public function index(Request $request): View
+    public function index(Request $request, CategorieService $categories, DiplomeService $diplomeService): View
     {
         $params = array_filter([
-            'search' => $request->string('search')->trim()->value() ?: null,
-            'type' => $request->string('type')->trim()->value() ?: null,
+            'salaire_min' => $request->filled('salaire_min') ? $request->input('salaire_min') : null,
+            'salaire_max' => $request->filled('salaire_max') ? $request->input('salaire_max') : null,
             'page' => $request->integer('page', 1),
-            'per_page' => 15,
+            'per_page' => in_array($request->integer('per_page', 10), [10, 25, 50, 100], true) ? $request->integer('per_page', 10) : 10,
+            'libelle' => $request->string('libelle')->trim()->value() ?: null,
+            'categorie_id' => $request->integer('categorie_id') ?: null,
         ], static fn ($value) => $value !== null);
 
         $diplomes = [];
@@ -39,7 +43,10 @@ class DiplomesController extends Controller
             $error = 'Le service des diplômes est indisponible pour le moment.';
         }
 
-        return view('pages.parametres.diplomes', compact('diplomes', 'meta', 'error'));
+        $diplomaOptions = $diplomeService->options();
+        $categoryOptions = $categories->getAll(['per_page' => 100])['items'];
+
+        return view('pages.parametres.diplomes', compact('diplomes', 'meta', 'error', 'categoryOptions', 'diplomaOptions'));
     }
 
     public function store(Request $request): RedirectResponse
@@ -113,11 +120,11 @@ class DiplomesController extends Controller
 
     private function validatedData(Request $request): array
     {
+        $request->merge(['libelle' => mb_strtoupper(trim((string) $request->input('libelle')), 'UTF-8')]);
         return $request->validate([
-            'code' => ['required', 'string', 'max:20'],
             'libelle' => ['required', 'string', 'max:100'],
-            'type' => ['nullable', 'in:academique,professionnel'],
-            'date_obteention' => ['required', 'date'],
+            'categorie_id' => ['required', 'integer', 'min:1'],
+            'salaire_brut' => ['required', 'numeric', 'min:0'],
         ]);
     }
 }

@@ -1342,6 +1342,11 @@ body.sidebar-collapsed .logout-btn {
   font-size: 12px;
 }
 
+.wizard-step.active .wizard-step-number {
+  color: var(--primary);
+  font-weight: 900;
+}
+
 .wizard-panel {
   display: grid;
   gap: 16px;

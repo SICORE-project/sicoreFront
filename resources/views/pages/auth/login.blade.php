@@ -44,7 +44,7 @@
               <label for="password">Mot de passe</label>
               <div class="password-field">
                 <span class="input-icon" aria-hidden="true"><i class="fa-solid fa-lock"></i></span>
-                <input class="login-input @error('password') is-invalid @enderror" id="password" type="password" name="password" placeholder="Votre mot de passe" autocomplete="current-password" required>
+                <input class="login-input @error('password') is-invalid @enderror" id="password" type="password" name="password" placeholder="Votre mot de passe" autocomplete="current-password" minlength="8" required>
                 <button class="password-toggle" type="button" data-password-toggle="#password" aria-label="Afficher le mot de passe" aria-pressed="false">
                   <i class="fa-solid fa-eye" aria-hidden="true"></i>
                 </button>

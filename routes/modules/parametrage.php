@@ -6,6 +6,8 @@ use App\Http\Controllers\Parametrage\CorpsController;
 use App\Http\Controllers\Parametrage\DiplomesController;
 use App\Http\Controllers\Parametrage\DisciplineController;
 use App\Http\Controllers\Parametrage\EnseignantDisciplineController;
+use App\Http\Controllers\Parametrage\EnseignantController;
+use App\Http\Controllers\Parametrage\GradeController;
 use App\Http\Controllers\Parametrage\IefController;
 use App\Http\Controllers\Parametrage\InspectionAcademieController;
 use App\Http\Controllers\Parametrage\InstitutionFinanciereController;
@@ -32,7 +34,14 @@ Route::middleware('sicore.auth')
         |--------------------------------------------------------------------------
         */
 
-        Route::get('/enseignants/{enseignant}', [EnseignantDisciplineController::class, 'show'])
+        Route::get('/enseignants', [EnseignantController::class, 'index'])->name('enseignants.index');
+        Route::get('/enseignants/iefs', [EnseignantController::class, 'ieFs'])->name('enseignants.iefs');
+        Route::get('/enseignants/nouveau', [EnseignantController::class, 'create'])->name('enseignants.create');
+        Route::post('/enseignants', [EnseignantController::class, 'store'])->name('enseignants.store');
+        Route::get('/enseignants/{enseignant}/modifier', [EnseignantController::class, 'edit'])->whereNumber('enseignant')->name('enseignants.edit');
+        Route::put('/enseignants/{enseignant}', [EnseignantController::class, 'update'])->whereNumber('enseignant')->name('enseignants.update');
+        Route::delete('/enseignants/{enseignant}', [EnseignantController::class, 'destroy'])->whereNumber('enseignant')->name('enseignants.destroy');
+        Route::get('/enseignants/{enseignant}', [EnseignantDisciplineController::class, 'show'])->whereNumber('enseignant')
             ->name('enseignants.show');
         Route::post('/enseignants/{enseignant}/disciplines', [EnseignantDisciplineController::class, 'store'])
             ->middleware('sicore.permission:enseignants.disciplines.associer')
@@ -48,6 +57,10 @@ Route::middleware('sicore.auth')
         Route::post('/parametres/corps', [CorpsController::class, 'store'])->name('parametres.corps.store');
         Route::put('/parametres/corps/{corps}', [CorpsController::class, 'update'])->whereNumber('corps')->name('parametres.corps.update');
         Route::delete('/parametres/corps/{corps}', [CorpsController::class, 'destroy'])->whereNumber('corps')->name('parametres.corps.destroy');
+        Route::get('/parametres/grades', [GradeController::class, 'index'])->name('parametres.grades.index');
+        Route::post('/parametres/grades', [GradeController::class, 'store'])->name('parametres.grades.store');
+        Route::put('/parametres/grades/{grade}', [GradeController::class, 'update'])->whereNumber('grade')->name('parametres.grades.update');
+        Route::delete('/parametres/grades/{grade}', [GradeController::class, 'destroy'])->whereNumber('grade')->name('parametres.grades.destroy');
 
         Route::get('/parametres/categories', [CategorieController::class, 'index'])->name('parametres.categories.index');
         Route::post('/parametres/categories', [CategorieController::class, 'store'])->name('parametres.categories.store');

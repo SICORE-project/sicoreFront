@@ -57,9 +57,9 @@
             <label for="otp">Code de vérification</label>
             <div class="input-shell">
                 <span class="input-icon" aria-hidden="true"><i class="fa-solid fa-shield-halved"></i></span>
-                <input class="login-input otp-input @error('otp') is-invalid @enderror" id="otp" type="text" name="otp" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" placeholder="000000" autocomplete="one-time-code" required autofocus>
+                <input class="login-input otp-input @error('otp') is-invalid @enderror" id="otp" type="text" name="otp" inputmode="numeric" pattern="[0-9]{6}" minlength="6" maxlength="6" placeholder="000000" autocomplete="one-time-code" required autofocus>
             </div>
-            <p class="reset-hint">Le code expire dans 10 minutes.</p>
+            <p class="reset-hint">Saisissez exactement 6 chiffres. Le code expire dans 10 minutes.</p>
         </div>
         <button class="login-button" type="submit">
             <i class="fa-solid fa-check" aria-hidden="true"></i>

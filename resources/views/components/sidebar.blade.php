@@ -85,12 +85,33 @@
       </div>
     </div>
 
-    <form method="POST" action="{{ route('logout') }}" class="sidebar-logout-form">
-      @csrf
-      <button class="logout-btn" type="submit" data-tooltip="Déconnexion" title="Déconnexion" aria-label="Déconnexion">
+    <button class="logout-btn" type="button" data-modal-open="logout-confirm-modal" data-tooltip="Déconnexion" title="Déconnexion" aria-label="Déconnexion">
         <i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i>
         <span class="logout-label">Déconnexion</span>
-      </button>
-    </form>
+    </button>
   </div>
 </aside>
+
+<x-module-indemnite type="modal" id="logout-confirm-modal" title="Confirmer la déconnexion">
+  @push('styles')
+    <style>
+      #logout-confirm-modal .modal-header h2 { color: #b91c1c; }
+      .logout-confirm-message { display: flex; align-items: center; gap: 12px; color: #7f1d1d; }
+      .logout-confirm-message i { color: #dc2626; font-size: 1.4rem; }
+      #logout-confirm-modal .btn-danger-soft { color: #ffffff; background: #dc2626; }
+      #logout-confirm-modal .btn-danger-soft:hover { background: #b91c1c; }
+    </style>
+  @endpush
+  <div class="logout-confirm-message" role="alert">
+    <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
+    <p>Voulez-vous vraiment vous déconnecter de votre compte&nbsp;?</p>
+  </div>
+  <form method="POST" action="{{ route('logout') }}" class="form-actions">
+    @csrf
+    <button class="btn-secondary" type="button" data-modal-close>Annuler</button>
+    <button class="btn-danger-soft" type="submit">
+      <i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i>
+      Confirmer la déconnexion
+    </button>
+  </form>
+</x-module-indemnite>

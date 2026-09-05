@@ -1,29 +1,20 @@
 @extends('layouts.app')
 
-@section('title', 'SICORE - Institutions financières')
+@section('title', 'SICORE - Banques')
 @section('content')
 <main class="main-content">
   <header class="topbar">
     <div class="page-title-wrap">
       <button class="mobile-menu-btn" type="button" data-sidebar-toggle aria-label="Ouvrir le menu">&#9776;</button>
       <span class="title-icon" aria-hidden="true"><i class="fa-solid fa-building-columns"></i></span>
-      <div><h1>Institutions financières</h1><p>Banques et établissements financiers enregistrés dans SICORE</p></div>
+      <div><h1>Banques</h1><p>Banques enregistrées dans SICORE</p></div>
     </div>
   </header>
 
   <section class="content-area">
-    <section class="objective-card">
-      <h2>Objectifs métier</h2>
-      <ul class="objective-list">
-        <li>Consulter les institutions financières enregistrées dans SICORE.</li>
-        <li>Identifier les banques disponibles pour les coordonnées bancaires des enseignants.</li>
-        <li>Suivre clairement les institutions actives et inactives.</li>
-      </ul>
-    </section>
-
     <div class="stats-grid four">
       <article class="stat-card">
-        <div><p class="stat-label">Institutions</p><p class="stat-value">{{ $pagination['total'] }}</p><p class="stat-note">Toutes catégories</p></div>
+        <div><p class="stat-label">Banques</p><p class="stat-value">{{ $pagination['total'] }}</p><p class="stat-note">Toutes catégories</p></div>
         <span class="stat-icon green"><i class="fa-solid fa-building-columns" aria-hidden="true"></i></span>
       </article>
       <article class="stat-card">
@@ -40,16 +31,16 @@
       </article>
     </div>
     <div class="actions-row">
-      <p class="breadcrumb">Paramétrage &gt; Institutions financières</p>
+      <p class="breadcrumb">Paramétrage &gt; Banques</p>
       <div class="actions-group">
-        <button class="btn-primary" type="button" id="newInstitution" data-modal-open="institution-form-modal">+ Nouvelle institution</button>
+        <button class="btn-primary" type="button" id="newInstitution" data-modal-open="institution-form-modal">+ Nouvelle banque</button>
         <button class="btn-secondary" type="button" data-modal-open="teacher-bank-account-modal">Associer à un enseignant</button>
         <button class="btn-secondary" id="exportInstitutions" type="button"><i class="fa-solid fa-file-export"></i> Exporter</button>
       </div>
     </div>
 
     <form class="filter-panel institution-filters" id="institutionFilterForm" method="GET" action="{{ route('parametres.institutions-financieres') }}">
-      <div class="form-group"><label for="institutionSearch">Rechercher</label><input class="form-control" id="institutionSearch" name="search" type="search" value="{{ request('search') }}" placeholder="Code, libellé ou sigle"></div>
+      <div class="form-group"><label for="institutionSearch">Rechercher</label><input class="form-control" id="institutionSearch" name="search" type="search" value="{{ request('search') }}" placeholder="Libellé ou sigle"></div>
       <div class="form-group"><label for="institutionTypeFilter">Type</label><input class="form-control" id="institutionTypeFilter" name="type_institution" value="{{ request('type_institution') }}" placeholder="Banque, microfinance..."></div>
       <div class="form-group"><label for="institutionStatusFilter">Statut</label><select class="form-control" id="institutionStatusFilter" name="est_actif"><option value="">Tous les statuts</option><option value="1" @selected(request('est_actif') === '1')>Actives</option><option value="0" @selected(request('est_actif') === '0')>Inactives</option></select></div>
       <div class="actions-group"><a class="btn-secondary" href="{{ route('parametres.institutions-financieres') }}">Réinitialiser</a></div>
@@ -62,8 +53,8 @@
     <section class="table-card" aria-labelledby="institutionsTitle">
       <div class="table-card-header">
         <div>
-          <h2 id="institutionsTitle">Liste des institutions financières</h2>
-          <p class="table-card-subtitle">{{ $pagination['total'] }} institution{{ $pagination['total'] > 1 ? 's' : '' }} enregistrée{{ $pagination['total'] > 1 ? 's' : '' }}</p>
+          <h2 id="institutionsTitle">Liste des banques</h2>
+          <p class="table-card-subtitle">{{ $pagination['total'] }} banque{{ $pagination['total'] > 1 ? 's' : '' }} enregistrée{{ $pagination['total'] > 1 ? 's' : '' }}</p>
         </div>
       </div>
       <div class="table-responsive">
@@ -79,7 +70,7 @@
                 $status = data_get($institution, 'statut', data_get($institution, 'status', data_get($institution, 'actif', data_get($institution, 'active', data_get($institution, 'is_active', data_get($institution, 'est_actif'))))));
                 $normalizedStatus = is_string($status) ? mb_strtolower(trim($status)) : $status;
                 $active = in_array($normalizedStatus, [true, 1, '1', 'actif', 'active', 'true', 'oui', 'yes'], true);
-                $institutionId = data_get($institution, 'id', data_get($institution, 'uuid', data_get($institution, 'code')));
+                $institutionId = data_get($institution, 'id', data_get($institution, 'uuid', 0));
               @endphp
               <tr data-institution-status="{{ $active ? 'actif' : 'inactif' }}">
                 <td>{{ data_get($institution, 'nom', data_get($institution, 'libelle', '—')) }}</td>
@@ -95,7 +86,7 @@
                     <input type="hidden" name="est_actif" value="{{ $active ? '0' : '1' }}">
                     <button class="icon-action" type="submit" title="{{ $active ? 'Désactiver' : 'Activer' }}"><i class="fa-solid {{ $active ? 'fa-toggle-on' : 'fa-toggle-off' }}"></i></button>
                   </form>
-                  <form class="inline-form" method="POST" action="{{ route('parametres.institutions-financieres.destroy', ['institution' => $institutionId]) }}" onsubmit="return confirm('Supprimer définitivement cette institution financière ?');">
+                  <form class="inline-form" method="POST" action="{{ route('parametres.institutions-financieres.destroy', ['institution' => $institutionId]) }}" onsubmit="return confirm('Supprimer définitivement cette banque ?');">
                     @csrf
                     @method('DELETE')
                     <button class="icon-action delete" type="submit" title="Supprimer" aria-label="Supprimer {{ data_get($institution, 'nom', data_get($institution, 'libelle', 'cette institution')) }}"><i class="fa-solid fa-trash-can"></i></button>
@@ -106,7 +97,7 @@
           </tbody>
         </table>
       </div>
-      <p class="empty-message {{ empty($items) ? 'show' : '' }}" role="status">Aucune institution financière trouvée.</p>
+      <p class="empty-message {{ empty($items) ? 'show' : '' }}" role="status">Aucune banque trouvée.</p>
 
       <nav class="pagination" aria-label="Pagination">
         <a class="page-btn {{ $pagination['current_page'] <= 1 ? 'disabled' : '' }}"
@@ -123,15 +114,14 @@
   </section>
 </main>
 
-<x-module-indemnite type="modal" id="view-institution-modal" title="Détails de l’institution financière">
+<x-module-indemnite type="modal" id="view-institution-modal" title="Détails de la banque">
   <div class="institution-detail-hero">
     <span class="institution-detail-logo"><i class="fa-solid fa-building-columns"></i></span>
-    <div><span class="institution-detail-kicker">Fiche institution</span><h3 data-view-field="nom">—</h3></div>
+    <div><span class="institution-detail-kicker">Fiche banque</span><h3 data-view-field="nom">—</h3></div>
   </div>
   <div class="form-grid form-grid--balanced institution-details">
-    <div class="institution-detail-item"><span class="detail-icon"><i class="fa-solid fa-barcode"></i></span><div><label>Code</label><p data-view-field="code">—</p></div></div>
     <div class="institution-detail-item"><span class="detail-icon"><i class="fa-solid fa-signature"></i></span><div><label>Sigle</label><p data-view-field="sigle">—</p></div></div>
-    <div class="institution-detail-item"><span class="detail-icon"><i class="fa-solid fa-landmark"></i></span><div><label>Type d’institution</label><p data-view-field="type">—</p></div></div>
+    <div class="institution-detail-item"><span class="detail-icon"><i class="fa-solid fa-landmark"></i></span><div><label>Type de banque</label><p data-view-field="type">—</p></div></div>
     <div class="institution-detail-item"><span class="detail-icon"><i class="fa-solid fa-circle-check"></i></span><div><label>Statut</label><p data-view-field="statut">—</p></div></div>
     <div class="institution-detail-item"><span class="detail-icon"><i class="fa-solid fa-phone"></i></span><div><label>Téléphone</label><p data-view-field="telephone">—</p></div></div>
     <div class="institution-detail-item"><span class="detail-icon"><i class="fa-solid fa-envelope"></i></span><div><label>E-mail</label><p data-view-field="email">—</p></div></div>
@@ -140,7 +130,7 @@
   <div class="form-actions"><button class="btn-secondary" type="button" data-modal-close>Fermer</button></div>
 </x-module-indemnite>
 
-<x-module-indemnite type="modal" id="institution-form-modal" title="Institution financière" :open="$errors->any() || session()->has('institution_form_open')">
+<x-module-indemnite type="modal" id="institution-form-modal" title="Banque" :open="$errors->any() || session()->has('institution_form_open')">
   <form id="institutionForm" class="teacher-form" method="POST" action="{{ route('parametres.institutions-financieres.store') }}" data-create-url="{{ route('parametres.institutions-financieres.store') }}">
     @csrf
     <input id="institutionMethod" type="hidden" name="_method" value="PUT" disabled>
@@ -148,10 +138,9 @@
       <div class="alert alert-error" role="alert"><strong>Veuillez corriger les champs obligatoires.</strong><ul>@foreach ($errors->all() as $message)<li>{{ $message }}</li>@endforeach</ul></div>
     @endif
     <div class="form-grid form-grid--balanced">
-      <div class="form-group"><label for="institutionCode">Code <span class="required" aria-hidden="true">*</span></label><input class="form-control" id="institutionCode" name="code" value="{{ old('code') }}" maxlength="30" required aria-required="true"></div>
       <div class="form-group"><label for="institutionSigle">Sigle <span class="required" aria-hidden="true">*</span></label><input class="form-control" id="institutionSigle" name="sigle" value="{{ old('sigle') }}" maxlength="30" required aria-required="true"></div>
       <div class="form-group full"><label for="institutionNom">Nom ou libellé <span class="required" aria-hidden="true">*</span></label><input class="form-control" id="institutionNom" name="nom" value="{{ old('nom') }}" maxlength="255" required aria-required="true"></div>
-      <div class="form-group"><label for="institutionType">Type d’institution <span class="required" aria-hidden="true">*</span></label><input class="form-control" id="institutionType" name="type_institution" value="{{ old('type_institution') }}" maxlength="100" required aria-required="true"></div>
+      <div class="form-group"><label for="institutionType">Type de banque <span class="required" aria-hidden="true">*</span></label><input class="form-control" id="institutionType" name="type_institution" value="{{ old('type_institution') }}" maxlength="100" required aria-required="true"></div>
       <div class="form-group"><label for="institutionTelephone">Téléphone <span class="form-optional">(facultatif)</span></label><input class="form-control" id="institutionTelephone" name="telephone" type="tel" value="{{ old('telephone') }}" maxlength="30"></div>
       <div class="form-group"><label for="institutionEmail">E-mail <span class="form-optional">(facultatif)</span></label><input class="form-control" id="institutionEmail" name="email" type="email" value="{{ old('email') }}" maxlength="255"></div>
       <div class="form-group" id="institutionStatusField"><label for="institutionStatut">Statut <span class="required" aria-hidden="true">*</span></label><select class="form-control" id="institutionStatut" name="statut" required aria-required="true"><option value="actif" @selected(old('statut', 'actif') === 'actif')>Actif</option><option value="inactif" @selected(old('statut') === 'inactif')>Inactif</option></select></div>
@@ -163,7 +152,7 @@
     </div>
   </form>
 </x-module-indemnite>
-<x-module-indemnite type="modal" id="teacher-bank-account-modal" title="Associer une institution à un enseignant" :open="$errors->bankAccount->any() || session()->has('bank_account_form_open')">
+<x-module-indemnite type="modal" id="teacher-bank-account-modal" title="Associer une banque à un enseignant" :open="$errors->bankAccount->any() || session()->has('bank_account_form_open')">
   <p class="breadcrumb">Créer un compte bancaire distinct rattaché à l’enseignant.</p>
   <form class="teacher-form" method="POST" action="{{ route('parametres.comptes-bancaires-enseignants.store') }}">
     @csrf    @if ($errors->bankAccount->any())
@@ -180,9 +169,9 @@
         </select>
       </div>
       <div class="form-group full">
-        <label for="bankInstitution">Institution financière active <span class="required">*</span></label>
+        <label for="bankInstitution">Banque active <span class="required">*</span></label>
         <select class="form-control" id="bankInstitution" name="institut_financier_id" required>
-          <option value="">Sélectionner une institution</option>
+          <option value="">Sélectionner une banque</option>
           @foreach ($availableInstitutions as $institution)
             @php
               $bankStatus = data_get($institution, 'est_actif', data_get($institution, 'is_active', data_get($institution, 'statut', data_get($institution, 'status'))));
@@ -260,7 +249,6 @@ document.addEventListener('DOMContentLoaded', function () {
     button.addEventListener('click', function () {
       const institution = JSON.parse(button.dataset.institutionView);
       const values = {
-        code: valueOf(institution, 'code'),
         sigle: valueOf(institution, 'sigle'),
         nom: valueOf(institution, 'nom', 'libelle'),
         type: valueOf(institution, 'type.nom', 'type_institution', 'type'),
@@ -290,7 +278,7 @@ document.addEventListener('DOMContentLoaded', function () {
     statusSelect.required = true;
     statusField.hidden = false;
     form.reset();
-    document.getElementById('institution-form-modal-title').textContent = 'Nouvelle institution financière';
+    document.getElementById('institution-form-modal-title').textContent = 'Nouvelle banque';
   });
   document.querySelectorAll('[data-institution-edit]').forEach(function (button) {
     button.addEventListener('click', function () {
@@ -301,8 +289,7 @@ document.addEventListener('DOMContentLoaded', function () {
       statusSelect.required = true;
       statusField.hidden = false;
       const institution = JSON.parse(button.dataset.institutionEdit);
-      document.getElementById('institution-form-modal-title').textContent = 'Modifier l’institution financière';
-      setField('institutionCode', valueOf(institution, 'code'));
+      document.getElementById('institution-form-modal-title').textContent = 'Modifier la banque';
       setField('institutionSigle', valueOf(institution, 'sigle'));
       setField('institutionNom', valueOf(institution, 'nom', 'libelle'));
       setField('institutionType', valueOf(institution, 'type.nom', 'type_institution', 'type'));

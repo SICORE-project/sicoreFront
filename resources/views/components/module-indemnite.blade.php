@@ -80,9 +80,10 @@
             }
 
             .modal-dialog {
-                width: 100%;
-                max-width: 520px;
-                max-height: calc(100vh - 40px);
+                width: min(900px, calc(100vw - 40px)) !important;
+                max-width: 900px !important;
+                height: min(820px, calc(100vh - 40px)) !important;
+                max-height: calc(100vh - 40px) !important;
                 overflow-y: auto;
                 padding: 20px 22px;
                 border-radius: 10px;

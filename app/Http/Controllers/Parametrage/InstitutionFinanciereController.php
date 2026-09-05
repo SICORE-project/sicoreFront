@@ -48,7 +48,6 @@ class InstitutionFinanciereController extends Controller
     public function store(Request $request, InstitutionFinanciereService $service): RedirectResponse
     {
         $data = $request->validate([
-            'code' => ['required', 'string', 'max:20'],
             'nom' => ['required', 'string', 'max:150'],
             'sigle' => ['required', 'string', 'max:30'],
             'type_institution' => ['required', 'string', 'max:100'],
@@ -90,7 +89,6 @@ class InstitutionFinanciereController extends Controller
     public function update(Request $request, string $institution, InstitutionFinanciereService $service): RedirectResponse
     {
         $data = $request->validate([
-            'code' => ['required', 'string', 'max:20'],
             'nom' => ['required', 'string', 'max:150'],
             'sigle' => ['required', 'string', 'max:30'],
             'type_institution' => ['required', 'string', 'max:100'],

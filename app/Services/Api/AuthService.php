@@ -13,9 +13,14 @@ class AuthService
         $response = $this->api->post('login', $credentials);
 
         if (! $response->successful()) {
+            $errors = $response->json('errors', []);
+            $fieldErrors = array_values(array_filter($errors, 'is_array'));
+
             return [
                 'success' => false,
-                'message' => $response->json('message') ?? 'Erreur de connexion.',
+                'message' => $fieldErrors[0][0]
+                    ?? $response->json('message')
+                    ?? 'La connexion a échoué. Veuillez vérifier vos identifiants.',
             ];
         }
 

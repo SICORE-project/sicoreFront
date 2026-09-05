@@ -14,13 +14,23 @@
 
   function getFieldsForStep(stepNumber) {
     var form = getWizard();
-    var panel = form ? form.querySelector('[data-wizard-panel="' + stepNumber + '"]') : null;
-    return panel ? Array.prototype.slice.call(panel.querySelectorAll("input, select, textarea")) : [];
+    var panel = form
+      ? form.querySelector('[data-wizard-panel="' + stepNumber + '"]')
+      : null;
+    return panel
+      ? Array.prototype.slice.call(
+          panel.querySelectorAll("input, select, textarea"),
+        )
+      : [];
   }
 
   function getFieldLabel(field) {
-    var label = field.closest(".form-group") ? field.closest(".form-group").querySelector("label") : null;
-    return label ? label.textContent.replace("*", "").trim().toLowerCase() : "ce champ";
+    var label = field.closest(".form-group")
+      ? field.closest(".form-group").querySelector("label")
+      : null;
+    return label
+      ? label.textContent.replace("*", "").trim().toLowerCase()
+      : "ce champ";
   }
 
   function showFieldError(field, message) {
@@ -66,12 +76,20 @@
       return false;
     }
 
-    if (field.type === "email" && value !== "" && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+    if (
+      field.type === "email" &&
+      value !== "" &&
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
+    ) {
       showFieldError(field, "Adresse email invalide.");
       return false;
     }
 
-    if (field.type === "tel" && value !== "" && !/^[+0-9\s().-]{7,20}$/.test(value)) {
+    if (
+      field.type === "tel" &&
+      value !== "" &&
+      !/^[+0-9\s().-]{7,20}$/.test(value)
+    ) {
       showFieldError(field, "Telephone invalide.");
       return false;
     }
@@ -135,26 +153,90 @@
     return valid;
   }
 
+  /* ==========================================================
+     NOUVEAU : synchronisation des champs conditionnels
+     (ex: "grade" et "corps" visibles seulement si statut = fonctionnaire)
+
+     Adaptez :
+       - le sélecteur du champ "statut" ci-dessous
+       - la valeur testée ("fonctionnaire")
+       - ou utilisez data-show-if="fonctionnaire" sur les .form-group
+         concernés dans votre HTML
+     ========================================================== */
+  function syncConditionalFields() {
+    var form = getWizard();
+    if (!form) {
+      return;
+    }
+
+    var typeField = form.querySelector('[name="categorie_personnel"]');
+    if (typeField) {
+      form.querySelectorAll("[data-enable-if]").forEach(function (group) {
+        var shouldEnable =
+          group.getAttribute("data-enable-if") === typeField.value;
+        var fields = group.matches("input, select, textarea")
+          ? [group]
+          : group.querySelectorAll("input, select, textarea");
+        Array.prototype.forEach.call(fields, function (field) {
+          field.disabled = !shouldEnable;
+          field.required = shouldEnable;
+          if (!shouldEnable) {
+            clearFieldError(field);
+          }
+        });
+      });
+    }
+
+    // Adaptez ce sélecteur au vrai name/id de votre champ statut
+    var statutField = form.querySelector(
+      '[name="statut"], [data-role="statut"]',
+    );
+    if (!statutField) {
+      return;
+    }
+
+    var statutValue = statutField.value;
+
+    form.querySelectorAll("[data-show-if]").forEach(function (group) {
+      var expected = group.getAttribute("data-show-if");
+      var shouldShow = expected === statutValue;
+      group.hidden = !shouldShow;
+
+      var fieldsInGroup = group.querySelectorAll("input, select, textarea");
+      fieldsInGroup.forEach(function (field) {
+        field.disabled = !shouldShow;
+        if (!shouldShow) {
+          clearFieldError(field);
+        }
+      });
+    });
+  }
+
   function updateProgressBar() {
     var form = getWizard();
     if (!form) {
       return;
     }
 
-    form.querySelectorAll("[data-step-indicator]").forEach(function (indicator) {
-      var step = Number(indicator.getAttribute("data-step-indicator"));
-      var marker = indicator.querySelector(".wizard-step-number");
-      indicator.classList.toggle("active", step === currentStep);
-      indicator.classList.toggle("done", step < currentStep);
-      if (marker) {
-        marker.textContent = step < currentStep ? "\u2713" : String(step);
-      }
-    });
+    form
+      .querySelectorAll("[data-step-indicator]")
+      .forEach(function (indicator) {
+        var step = Number(indicator.getAttribute("data-step-indicator"));
+        var marker = indicator.querySelector(".wizard-step-number");
+        indicator.classList.toggle("active", step === currentStep);
+        indicator.classList.toggle("done", step < currentStep);
+        if (marker) {
+          marker.textContent = step < currentStep ? "\u2713" : String(step);
+        }
+      });
 
     form.querySelectorAll("[data-wizard-panel]").forEach(function (panel) {
       var step = Number(panel.getAttribute("data-wizard-panel"));
       panel.hidden = step !== currentStep;
     });
+
+    // Re-synchroniser les champs conditionnels a CHAQUE changement d'etape
+    syncConditionalFields();
 
     var previousButton = form.querySelector("[data-wizard-prev]");
     var nextButton = form.querySelector("[data-wizard-next]");
@@ -215,14 +297,28 @@
     totalSteps = form.querySelectorAll("[data-wizard-panel]").length || 3;
     currentStep = 1;
 
-    form.querySelectorAll("[data-step-indicator]").forEach(function (indicator) {
-      indicator.addEventListener("click", function () {
-        goToStep(Number(indicator.getAttribute("data-step-indicator")));
+    form
+      .querySelectorAll("[data-step-indicator]")
+      .forEach(function (indicator) {
+        indicator.addEventListener("click", function () {
+          goToStep(Number(indicator.getAttribute("data-step-indicator")));
+        });
       });
-    });
 
-    form.querySelector("[data-wizard-next]").addEventListener("click", nextStep);
-    form.querySelector("[data-wizard-prev]").addEventListener("click", previousStep);
+    form
+      .querySelector("[data-wizard-next]")
+      .addEventListener("click", nextStep);
+    form
+      .querySelector("[data-wizard-prev]")
+      .addEventListener("click", previousStep);
+
+    // Ecouter le changement du statut pour re-synchroniser en direct
+    var statutField = form.querySelector(
+      '[name="statut"], [data-role="statut"]',
+    );
+    if (statutField) {
+      statutField.addEventListener("change", syncConditionalFields);
+    }
 
     form.querySelectorAll("input, select, textarea").forEach(function (field) {
       field.addEventListener("input", function () {
@@ -241,43 +337,18 @@
       event.preventDefault();
       if (!validateAllSteps()) {
         if (typeof window.showToast === "function") {
-          window.showToast("error", "Veuillez finaliser les informations obligatoires.");
+          window.showToast(
+            "error",
+            "Veuillez finaliser les informations obligatoires.",
+          );
         }
         return;
       }
 
-      var status = form.querySelector("[data-form-status]");
-      var submitButton = form.querySelector("[data-wizard-submit]");
-      var formData = new FormData(form);
-      var payload = {};
-
-      formData.forEach(function (value, key) {
-        payload[key] = value;
-      });
-
-      if (submitButton) {
-        submitButton.disabled = true;
-        submitButton.setAttribute("aria-busy", "true");
-      }
-      if (status) {
-        status.classList.remove("success");
-        status.textContent = "Validation locale en cours...";
-      }
-
-      window.setTimeout(function () {
-        if (status) {
-          status.classList.add("success");
-          status.textContent = "Dossier valide en mode test. Il sera transmis au backend lorsque l'API sera connectee.";
-        }
-        showSuccessToast("Dossier enseignant valide en mode test.");
-
-        if (submitButton) {
-          submitButton.disabled = false;
-          submitButton.removeAttribute("aria-busy");
-        }
-      }, 350);
+      event.target.submit();
     });
 
+    syncConditionalFields();
     updateProgressBar();
   }
 
@@ -290,6 +361,7 @@
   window.validateCurrentStep = validateCurrentStep;
   window.validateAllSteps = validateAllSteps;
   window.updateProgressBar = updateProgressBar;
+  window.syncConditionalFields = syncConditionalFields;
   window.showFieldError = showFieldError;
   window.clearFieldError = clearFieldError;
   window.showSuccessToast = showSuccessToast;
