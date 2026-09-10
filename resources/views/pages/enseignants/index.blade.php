@@ -244,7 +244,6 @@
         <div><dt>IEF</dt><dd data-teacher-detail="ief.libelle" data-format="text">Non renseigné</dd></div>
         <div><dt>Lieu de service</dt><dd data-teacher-detail="lieu_service.libelle" data-format="text">Non renseigné</dd></div>
         <div><dt>Corps</dt><dd data-teacher-detail="corps.libelle" data-format="text">Non renseigné</dd></div>
-        <div><dt>Grade</dt><dd data-teacher-detail="grade.libelle" data-format="text">Non renseigné</dd></div>
         <div><dt>Diplôme</dt><dd data-teacher-detail="diplome.libelle" data-format="text">Non renseigné</dd></div>
         <div><dt>Catégorie</dt><dd data-teacher-detail="categorie.libelle" data-format="text">Non renseigné</dd></div>
         <div><dt>Discipline</dt><dd data-teacher-detail="discipline.libelle" data-format="text">Non renseigné</dd></div>
