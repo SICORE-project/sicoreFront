@@ -32,6 +32,7 @@
             'brouillon' => ['badge-pending', 'Brouillon'],
             'emise' => ['badge-primary', 'Émise'],
             'envoyee' => ['badge-active', 'Envoyée'],
+            'cloturee' => ['badge-inactive', 'Clôturée'],
         ];
 
         [$classe, $libelle] = $badges[$statut] ?? ['badge-pending', $statut ? ucfirst($statut) : '—'];

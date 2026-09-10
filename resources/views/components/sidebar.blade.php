@@ -164,6 +164,9 @@
   </div>
   <form method="POST" action="{{ route('logout') }}" class="form-actions">
     @csrf
+    @if (request()->is('paie', 'paie/*'))
+      <input type="hidden" name="next" value="{{ request()->getRequestUri() }}">
+    @endif
     <button class="btn-secondary" type="button" data-modal-close>Annuler</button>
     <button class="btn-danger-soft" type="submit">
       <i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i>

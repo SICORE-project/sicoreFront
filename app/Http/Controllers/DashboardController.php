@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Services\Api\ApiClient;
 use App\Services\Organisation\OrganisationContext;
 use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class DashboardController extends Controller
@@ -17,18 +18,19 @@ class DashboardController extends Controller
     public function index(): View
     {
         $metrics = [];
-        try {
-            $response = $this->api->get('pages.dashboard.index');
-            if ($response->successful()) $metrics = $response->json('data', []);
-        } catch (ConnectionException) {
-            // Le tableau reste disponible avec des valeurs neutres.
-        }
+        $role = session('sicore_user.role_slug') ?: session('sicore_user.role', '');
+        $roleSlug = Str::slug(is_string($role) ? $role : '', '_');
+        $isGlobalAdmin = in_array($roleSlug, ['admin', 'super_admin', 'administrateur', 'super_administrateur'], true);
 
-        $roleSlug = (string) session('sicore_user.role_slug', '');
-        $isGlobalAdmin = in_array($roleSlug, ['admin', 'super_admin'], true);
-
-        if ($isGlobalAdmin && $metrics === []) {
+        if ($isGlobalAdmin) {
             $metrics = $this->globalAdministrationMetrics();
+        } else {
+            try {
+                $response = $this->api->get('pages.dashboard.index');
+                if ($response->successful()) $metrics = $response->json('data', []);
+            } catch (ConnectionException) {
+                // Le tableau reste disponible avec des valeurs neutres.
+            }
         }
 
         return view('pages.dashboard.index', [
@@ -50,6 +52,7 @@ class DashboardController extends Controller
                 'utilisateurs' => count($users),
                 'utilisateurs_actifs' => collect($users)->filter(
                     fn (array $user): bool => data_get($user, 'statut') === 'actif'
+                        || filter_var(data_get($user, 'statut'), FILTER_VALIDATE_BOOLEAN)
                 )->count(),
                 'roles' => count($roles),
                 'permissions' => count($permissions),

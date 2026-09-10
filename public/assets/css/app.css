@@ -3529,3 +3529,45 @@ body.sidebar-collapsed .logout-btn {
     page-break-inside: avoid;
   }
 }
+
+/* Formulaires d'administration et de parametrage. */
+.form-grid { align-items: start; }
+
+.form-group { min-width: 0; }
+
+.form-required-note {
+  margin: 16px 22px -6px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.form-grid--balanced {
+  align-items: end;
+}
+
+.form-grid .form-control,
+.form-grid .password-field {
+  width: 100%;
+}
+
+.form-text {
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.invalid-feedback,
+.text-danger {
+  color: var(--red);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.text-success {
+  color: var(--primary);
+}
+
+.password-field .form-control {
+  padding-right: 48px;
+}

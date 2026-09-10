@@ -34,6 +34,7 @@ class AuthController extends Controller
         $validated = $request->validate([
             'email' => ['required', 'email'],
             'password' => ['required', 'string', 'min:8'],
+            'next' => ['nullable', 'string', 'max:2048'],
         ], [
             'email.required' => 'L’adresse e-mail est obligatoire.',
             'email.email' => 'Veuillez saisir une adresse e-mail valide.',

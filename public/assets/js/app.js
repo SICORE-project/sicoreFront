@@ -383,6 +383,7 @@
 
     var query = input.value.trim().toLowerCase();
     var rows = table.querySelectorAll("tbody [data-table-row]");
+    if (!rows.length) rows = table.querySelectorAll("tbody tr");
     var visible = 0;
 
     rows.forEach(function (row) {

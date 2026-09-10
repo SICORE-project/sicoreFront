@@ -674,6 +674,7 @@ textarea.form-control {
 }
 
 .login-errors,
+.demo-credentials,
 .bootstrap-credentials {
   display: flex;
   align-items: flex-start;
@@ -690,6 +691,7 @@ textarea.form-control {
   background: #fef2f2;
 }
 
+.demo-credentials,
 .bootstrap-credentials {
   display: block;
   margin-top: 16px;
