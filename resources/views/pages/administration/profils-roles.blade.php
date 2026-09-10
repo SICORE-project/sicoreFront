@@ -223,7 +223,7 @@
         .role-modal[hidden] { display: none; }
         .role-modal { position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; padding: 1rem; }
         .role-modal__backdrop { position: absolute; inset: 0; background: rgba(17, 24, 39, .55); }
-        .role-modal__dialog { position: relative; width: min(100%, 560px); max-height: calc(100vh - 2rem); overflow: auto; background: #fff; border-radius: 12px; padding: 1.5rem; box-shadow: 0 24px 50px rgba(0, 0, 0, .2); }
+        .role-modal__dialog { position: relative; width: min(900px, calc(100vw - 40px)); height: min(820px, calc(100vh - 40px)); max-width: 900px; max-height: calc(100vh - 40px); overflow: auto; background: #fff; border-radius: 12px; padding: 1.5rem; box-shadow: 0 24px 50px rgba(0, 0, 0, .2); }
         .role-modal__header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; }
         .role-modal__header h2 { margin: 0; font-size: 1.25rem; }
         .role-modal__close { border: 0; background: none; font-size: 2rem; line-height: 1; cursor: pointer; }

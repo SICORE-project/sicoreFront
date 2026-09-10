@@ -7,11 +7,10 @@
   <x-topbar title="Rubriques de paie" subtitle="Paramétrage > Rubriques de paie" icon="fa-solid fa-list-ul" />
 
   <section class="content-area">
-    <div class="stats-grid four">
+    <div class="stats-grid three">
       <article class="stat-card"><div><p class="stat-label">Total</p><p class="stat-value">{{ $statistics['total'] }}</p><p class="stat-note">Rubriques enregistrées</p></div><span class="stat-icon green"><i class="fa-solid fa-list-check"></i></span></article>
       <article class="stat-card"><div><p class="stat-label">Gains</p><p class="stat-value">{{ $statistics['gains'] }}</p><p class="stat-note">Éléments de rémunération</p></div><span class="stat-icon blue"><i class="fa-solid fa-arrow-trend-up"></i></span></article>
       <article class="stat-card"><div><p class="stat-label">Retenues</p><p class="stat-value">{{ $statistics['retenues'] }}</p><p class="stat-note">Éléments déduits</p></div><span class="stat-icon yellow"><i class="fa-solid fa-arrow-trend-down"></i></span></article>
-      <article class="stat-card"><div><p class="stat-label">Actives</p><p class="stat-value">{{ $statistics['actives'] }}</p><p class="stat-note">Disponibles pour la paie</p></div><span class="stat-icon green"><i class="fa-solid fa-circle-check"></i></span></article>
     </div>
 
     <div class="actions-row">
@@ -47,14 +46,6 @@
           <option value="annuelle" @selected(($filters['periodicite'] ?? '') === 'annuelle')>Annuelle</option>
         </select>
       </div>
-      <div class="form-group">
-        <label for="rubriqueStatus">Statut</label>
-        <select class="form-control" id="rubriqueStatus" name="est_actif">
-          <option value="">Tous les statuts</option>
-          <option value="1" @selected(($filters['est_actif'] ?? '') === '1')>Actif</option>
-          <option value="0" @selected(($filters['est_actif'] ?? '') === '0')>Inactif</option>
-        </select>
-      </div>
       <div class="actions-group"><a class="btn-secondary" href="{{ route('parametres.rubriques-paie.index') }}">Réinitialiser</a></div>
       <span class="loading-indicator" role="status" hidden data-filter-loading>Chargement…</span>
     </form>
@@ -63,31 +54,19 @@
       <div class="table-card-header"><div><h2 id="rubriqueListTitle">Liste des rubriques de paie</h2><p class="table-card-subtitle">{{ $pagination['total'] }} résultat{{ $pagination['total'] > 1 ? 's' : '' }}</p></div></div>
       <div class="table-responsive">
         <table class="table">
-          <thead><tr><th>Code</th><th>Libellé</th><th>Type</th><th>Périodicité</th><th>Valeur par défaut</th><th>Statut</th>@if ($canManage)<th class="actions-cell">Actions</th>@endif</tr></thead>
+          <thead><tr><th>Code</th><th>Libellé</th><th>Type</th><th>Périodicité</th><th>Description</th>@if ($canManage)<th class="actions-cell">Actions</th>@endif</tr></thead>
           <tbody>
             @forelse ($items as $rubrique)
               @php
                 $rubriqueId = data_get($rubrique, 'id');
                 $type = data_get($rubrique, 'type');
-                $montant = data_get($rubrique, 'montant_defaut');
-                $taux = data_get($rubrique, 'taux_defaut');
-                $active = (bool) data_get($rubrique, 'est_actif', false);
               @endphp
               <tr>
                 <td><span class="rubrique-code">{{ data_get($rubrique, 'code', '—') }}</span></td>
                 <td><strong>{{ data_get($rubrique, 'libelle', '—') }}</strong></td>
                 <td><span class="rubrique-type rubrique-type--{{ $type === 'gain' ? 'gain' : 'retenue' }}"><i class="fa-solid {{ $type === 'gain' ? 'fa-arrow-up' : 'fa-arrow-down' }}" aria-hidden="true"></i> {{ $type === 'gain' ? 'Gain' : 'Retenue' }}</span></td>
                 <td>{{ ucfirst((string) data_get($rubrique, 'periodicite', '—')) }}</td>
-                <td>
-                  @if ($montant !== null && $montant !== '')
-                    <strong>{{ number_format((float) $montant, 0, ',', ' ') }} FCFA</strong>
-                  @elseif ($taux !== null && $taux !== '')
-                    <strong>{{ number_format((float) $taux, 2, ',', ' ') }} %</strong>
-                  @else
-                    —
-                  @endif
-                </td>
-                <td><span class="badge {{ $active ? 'badge-active' : 'badge-inactive' }}">{{ $active ? 'Actif' : 'Inactif' }}</span></td>
+                <td>{{ data_get($rubrique, 'description') ?: '—' }}</td>
                 @if ($canManage)
                   <td class="actions-cell">
                     <button class="icon-action" type="button" data-modal-open="rubrique-update-modal" data-rubrique-edit='@json($rubrique)' title="Modifier" aria-label="Modifier {{ data_get($rubrique, 'libelle') }}"><i class="fa-solid fa-pen-to-square" aria-hidden="true"></i></button>
@@ -96,7 +75,7 @@
                 @endif
               </tr>
             @empty
-              <tr><td colspan="{{ $canManage ? 7 : 6 }}" class="empty-message show">Aucune rubrique de paie trouvée.</td></tr>
+              <tr><td colspan="{{ $canManage ? 6 : 5 }}" class="empty-message show">Aucune rubrique de paie trouvée.</td></tr>
             @endforelse
           </tbody>
         </table>
@@ -144,13 +123,6 @@
   .rubrique-type--retenue { background: #fee2e2; color: #991b1b; }
   .rubrique-form { padding-inline: 0; padding-bottom: 0; }
   .rubrique-form .form-actions { margin-top: 22px; padding-top: 18px; border-top: 1px solid #e2e8f0; }
-  .rubrique-flags { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
-  .rubrique-flag { display: flex; align-items: flex-start; gap: 10px; min-height: 76px; padding: 14px; border: 1px solid #dce3ec; border-radius: 12px; background: #f8fafc; cursor: pointer; }
-  .rubrique-flag:hover { border-color: #9bbdaf; background: #f3f8f6; }
-  .rubrique-flag input { width: 18px; height: 18px; margin-top: 2px; accent-color: #26775a; }
-  .rubrique-flag strong, .rubrique-flag small { display: block; }
-  .rubrique-flag small { margin-top: 3px; color: #64748b; line-height: 1.35; }
-  @media (max-width: 760px) { .rubrique-flags { grid-template-columns: 1fr; } }
 </style>
 @endpush
 
@@ -167,11 +139,10 @@
       window.clearTimeout(filterTimer);
       filterTimer = window.setTimeout(submitFilters, 400);
     });
-    ['rubriqueType', 'rubriquePeriodicite', 'rubriqueStatus'].forEach(function (id) {
+    ['rubriqueType', 'rubriquePeriodicite'].forEach(function (id) {
       document.getElementById(id)?.addEventListener('change', submitFilters);
     });
 
-    function isTrue(value) { return value === true || value === 1 || value === '1' || value === 'true'; }
     function uppercaseCode(input) {
       input?.addEventListener('input', function () { input.value = input.value.toUpperCase(); });
     }
@@ -185,14 +156,7 @@
       document.getElementById('rubriqueUpdateLibelle').value = item.libelle || '';
       document.getElementById('rubriqueUpdateType').value = item.type || 'gain';
       document.getElementById('rubriqueUpdatePeriodicite').value = item.periodicite || 'mensuelle';
-      document.getElementById('rubriqueUpdateMontant').value = item.montant_defaut ?? '';
-      document.getElementById('rubriqueUpdateTaux').value = item.taux_defaut ?? '';
-      document.getElementById('rubriqueUpdateFormule').value = item.formule_calcul || '';
       document.getElementById('rubriqueUpdateDescription').value = item.description || '';
-      document.getElementById('rubriqueUpdateCotisable').checked = isTrue(item.est_cotisable);
-      document.getElementById('rubriqueUpdateImposable').checked = isTrue(item.est_imposable);
-      document.getElementById('rubriqueUpdateBulletin').checked = isTrue(item.est_afficher_bulletin);
-      document.getElementById('rubriqueUpdateActif').value = isTrue(item.est_actif) ? '1' : '0';
     }
     document.querySelectorAll('[data-rubrique-edit]').forEach(function (button) {
       button.addEventListener('click', function () { fillUpdateForm(JSON.parse(button.dataset.rubriqueEdit)); });
@@ -223,14 +187,7 @@
       document.getElementById('rubriqueUpdateLibelle').value = @json(old('libelle'));
       document.getElementById('rubriqueUpdateType').value = @json(old('type', 'gain'));
       document.getElementById('rubriqueUpdatePeriodicite').value = @json(old('periodicite', 'mensuelle'));
-      document.getElementById('rubriqueUpdateMontant').value = @json(old('montant_defaut'));
-      document.getElementById('rubriqueUpdateTaux').value = @json(old('taux_defaut'));
-      document.getElementById('rubriqueUpdateFormule').value = @json(old('formule_calcul'));
       document.getElementById('rubriqueUpdateDescription').value = @json(old('description'));
-      document.getElementById('rubriqueUpdateCotisable').checked = isTrue(@json(old('est_cotisable')));
-      document.getElementById('rubriqueUpdateImposable').checked = isTrue(@json(old('est_imposable')));
-      document.getElementById('rubriqueUpdateBulletin').checked = isTrue(@json(old('est_afficher_bulletin')));
-      document.getElementById('rubriqueUpdateActif').value = @json(old('est_actif', '1'));
     @endif
   }());
 </script>

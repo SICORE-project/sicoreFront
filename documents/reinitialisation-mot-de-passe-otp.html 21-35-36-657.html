@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<style>
+@page{margin:42px 48px}body{font-family:DejaVu Sans,sans-serif;color:#1f2937;font-size:10.5px;line-height:1.45}h1{color:#0f6b3f;font-size:25px;margin:0 0 5px}.subtitle{color:#64748b;font-size:12px;margin:0 0 22px}h2{color:#0f6b3f;font-size:16px;border-bottom:1px solid #cbd5e1;padding-bottom:5px;margin:21px 0 9px}h3{font-size:13px;margin:14px 0 5px}.flow{background:#ecfdf5;border:1px solid #86efac;border-radius:6px;padding:13px;text-align:center;font-weight:bold;color:#14532d}.box{background:#f8fafc;border-left:4px solid #0f6b3f;padding:9px 11px;margin:9px 0}.warning{background:#fff7ed;border-left-color:#ea580c}pre{background:#111827;color:#f8fafc;padding:9px 11px;border-radius:5px;font-family:DejaVu Sans Mono,monospace;font-size:8.5px;line-height:1.35;white-space:pre-wrap}code{font-family:DejaVu Sans Mono,monospace}ul,ol{padding-left:20px;margin:5px 0}li{margin-bottom:3px}.api{color:#075985;font-weight:bold}.page-break{page-break-before:always}.oral{background:#eff6ff;border:1px solid #93c5fd;border-radius:6px;padding:13px;font-style:italic}table{width:100%;border-collapse:collapse;margin:9px 0;font-size:9.4px}th,td{border:1px solid #cbd5e1;padding:6px;text-align:left;vertical-align:top}th{background:#e2e8f0}.footer{margin-top:24px;font-size:9px;color:#64748b;text-align:center}
+</style>
+</head>
+<body>
+<h1>Réinitialisation du mot de passe avec OTP</h1>
+<p class="subtitle">SICORE — Flow, API JSON, fichiers et rôles</p>
+<div class="flow">E-mail → Envoi de l’OTP → Vérification de l’OTP → Reset token → Nouveau mot de passe</div>
+
+<h2>1. Présentation générale</h2>
+<p>OTP signifie <strong>One-Time Password</strong>, c’est-à-dire un code à usage unique. SICORE divise la réinitialisation en trois étapes. Le front affiche les formulaires, appelle l’API et conserve temporairement l’état en session. Le back effectue les opérations sensibles : génération et vérification du code, envoi de l’e-mail et changement du mot de passe.</p>
+
+<h2>2. Étape 1 — Demande et envoi du code</h2>
+<ol><li>L’utilisateur saisit son adresse e-mail.</li><li>Le front valide son format et appelle <span class="api">POST /api/send-otp</span>.</li><li>Le back recherche le compte et génère un code aléatoire de six chiffres avec <code>random_int</code>.</li><li>Tout ancien code associé à l’e-mail est supprimé.</li><li>Le nouvel OTP est haché, stocké pour 10 minutes puis envoyé par e-mail.</li><li>Le front place l’adresse dans la session <code>reset_email</code> et ouvre l’écran de vérification.</li></ol>
+<h3>Requête JSON</h3><pre>{
+  "email": "utilisateur@example.com"
+}</pre>
+<h3>Réponse HTTP 200</h3><pre>{
+  "message": "Code de verification envoye avec succes. Verifiez votre boite email.",
+  "step": "send-otp"
+}</pre>
+<div class="box warning"><strong>En cas d’échec SMTP :</strong> le back supprime l’OTP créé afin de ne pas conserver un code actif que l’utilisateur n’a pas reçu.</div>
+
+<h2>3. Étape 2 — Vérification de l’OTP</h2>
+<ol><li>L’utilisateur saisit le code reçu.</li><li>Le front impose exactement six chiffres.</li><li>Il appelle <span class="api">POST /api/verify-otp</span> avec le code et l’e-mail conservé en session.</li><li>Le back vérifie l’existence de la demande, l’expiration et la correspondance avec le hash.</li><li>Si le code est valide, le back génère un <code>reset_token</code> aléatoire de 64 caractères.</li><li>Le token est haché en base, valable 15 minutes, et sa version utilisable est conservée dans la session du front.</li></ol>
+<h3>Requête JSON</h3><pre>{
+  "email": "utilisateur@example.com",
+  "otp": "123456"
+}</pre>
+<h3>Réponse HTTP 200</h3><pre>{
+  "message": "Code OTP verifie avec succes. Utilisez le reset_token pour modifier le mot de passe.",
+  "step": "verify-otp",
+  "reset_token": "jeton-temporaire-de-64-caracteres"
+}</pre>
+<div class="box"><strong>Pourquoi un reset token ?</strong> Il constitue la preuve temporaire que l’OTP a été validé. Connaître uniquement l’e-mail ne suffit donc pas pour modifier le mot de passe.</div>
+
+<div class="page-break"></div>
+<h2>4. Étape 3 — Nouveau mot de passe</h2>
+<ol><li>L’utilisateur saisit et confirme le nouveau mot de passe.</li><li>Le front impose au moins huit caractères et une confirmation identique.</li><li>Il appelle <span class="api">POST /api/reset-password-otp</span>.</li><li>Le back exige une vérification OTP préalable, un token correct et non expiré.</li><li>Le nouveau mot de passe est haché puis enregistré.</li><li>La demande OTP est supprimée et les anciens jetons de connexion sont invalidés.</li><li>Le front efface <code>reset_email</code> et <code>reset_token</code>, puis redirige vers la connexion.</li></ol>
+<h3>Requête JSON</h3><pre>{
+  "email": "utilisateur@example.com",
+  "reset_token": "jeton-temporaire-de-64-caracteres",
+  "password": "NouveauMotDePasse@2026",
+  "password_confirmation": "NouveauMotDePasse@2026"
+}</pre>
+<h3>Réponse HTTP 200</h3><pre>{
+  "message": "Mot de passe modifie avec succes. Vous pouvez maintenant vous connecter.",
+  "step": "reset-password-otp"
+}</pre>
+
+<h2>5. Protections mises en place</h2>
+<ul><li>OTP aléatoire à six chiffres, valable 10 minutes.</li><li>OTP et reset token stockés uniquement sous forme hachée.</li><li>Reset token aléatoire de 64 caractères, valable 15 minutes.</li><li>Suppression de l’ancien OTP lors d’un nouvel envoi et après utilisation.</li><li>Mot de passe final haché et confirmation obligatoire.</li><li>Invalidation des anciennes connexions.</li><li>Routes du front réservées aux visiteurs avec <code>guest</code>.</li><li>Limitation des requêtes : 6 par minute pour l’envoi et la vérification, 3 par minute pour le renvoi.</li></ul>
+
+<h2>6. Fichiers du front et leurs rôles</h2>
+<table>
+<tr><th>Fichier</th><th>Rôle</th></tr>
+<tr><td><code>sicoreFront/routes/web.php</code></td><td>Déclare les routes des trois étapes et du renvoi de code. Applique <code>guest</code> et les limites <code>throttle</code>.</td></tr>
+<tr><td><code>sicoreFront/app/Http/Controllers/AuthController.php</code></td><td>Contrôleur principal du flow front : validation, appels HTTP au back, gestion de <code>reset_email</code> et <code>reset_token</code> en session, erreurs et redirections.</td></tr>
+<tr><td><code>resources/views/pages/auth/login.blade.php</code></td><td>Contient le lien « Mot de passe oublié ? » qui démarre le parcours.</td></tr>
+<tr><td><code>resources/views/pages/auth/forgot-password.blade.php</code></td><td>Premier écran : formulaire de saisie de l’e-mail.</td></tr>
+<tr><td><code>resources/views/pages/auth/verify-otp.blade.php</code></td><td>Deuxième écran : saisie du code à six chiffres, indication des 10 minutes et bouton de renvoi.</td></tr>
+<tr><td><code>resources/views/pages/auth/reset-password.blade.php</code></td><td>Troisième écran : saisie et confirmation du nouveau mot de passe.</td></tr>
+<tr><td><code>.env</code> / <code>API_BASE_URL</code></td><td>Indique au front l’URL de base du back, par exemple <code>http://localhost:8000/api</code>.</td></tr>
+</table>
+<div class="box"><strong>Rôle global du front :</strong> il présente le parcours et orchestre les appels. Il ne génère pas le code et ne modifie jamais directement la base de données.</div>
+
+<div class="page-break"></div>
+<h2>7. Fichiers du back et leurs rôles</h2>
+<table>
+<tr><th>Fichier</th><th>Rôle</th></tr>
+<tr><td><code>sicoreBack/routes/api.php</code></td><td>Expose <code>/send-otp</code>, <code>/verify-otp</code> et <code>/reset-password-otp</code>.</td></tr>
+<tr><td><code>app/Http/Controllers/Api/AuthController.php</code></td><td>Reçoit les requêtes validées et délègue chaque action au service d’authentification. Il joue le rôle d’intermédiaire HTTP.</td></tr>
+<tr><td><code>app/Http/Requests/Auth/SendOtpRequest.php</code></td><td>Valide la présence et le format de l’e-mail.</td></tr>
+<tr><td><code>app/Http/Requests/Auth/VerifyOtpRequest.php</code></td><td>Valide l’e-mail et impose un OTP de six chiffres.</td></tr>
+<tr><td><code>app/Http/Requests/Auth/ResetPasswordOtpRequest.php</code></td><td>Valide l’e-mail, le reset token, le minimum de huit caractères et la confirmation du mot de passe.</td></tr>
+<tr><td><code>app/Services/Auth/AuthService.php</code></td><td>Contient toute la logique métier : génération, hachage, expiration et envoi de l’OTP ; vérification du code ; création du reset token ; hachage du nouveau mot de passe ; nettoyage et invalidation des anciennes connexions.</td></tr>
+<tr><td><code>app/Mail/OtpMail.php</code></td><td>Définit le sujet du mail, sélectionne la vue e-mail et lui transmet l’OTP et l’utilisateur.</td></tr>
+<tr><td><code>resources/views/emails/otp.blade.php</code></td><td>Modèle HTML du message reçu : nom de l’utilisateur, code et avertissement d’expiration.</td></tr>
+<tr><td><code>database/migrations/2026_08_17_162420_create_password_reset_otps_table.php</code></td><td>Crée la table contenant l’e-mail, l’OTP haché, le token haché, <code>expires_at</code>, <code>verified_at</code> et <code>created_at</code>.</td></tr>
+<tr><td><code>config/mail.php</code> et <code>.env</code></td><td>Configurent le serveur SMTP utilisé par Laravel pour envoyer le mail.</td></tr>
+</table>
+
+<h2>8. Enchaînement technique des fichiers</h2>
+<pre>Vue Blade du front
+    ↓ soumission
+routes/web.php
+    ↓
+AuthController du front
+    ↓ requête HTTP JSON
+routes/api.php du back
+    ↓
+Form Request de validation
+    ↓
+AuthController API
+    ↓
+AuthService
+    ├── table password_reset_otps
+    ├── OtpMail + vue emails/otp
+    └── modèle User pour le mot de passe</pre>
+<div class="box"><strong>Principe architectural :</strong> les routes dirigent les requêtes, les contrôleurs coordonnent, les Form Requests valident, le service porte la logique métier, la migration définit le stockage et le Mailable gère l’e-mail.</div>
+
+<h2>9. Discours prêt pour la soutenance</h2>
+<div class="oral">« Le flow commence dans la vue forgot-password. La route web transmet le formulaire à l’AuthController du front, qui appelle l’endpoint send-otp du back. La route API utilise un Form Request pour valider l’e-mail, puis l’AuthController API délègue au AuthService. Ce service génère et hache le code, le stocke dans password_reset_otps et utilise OtpMail pour l’envoyer. Lors de la vérification, le même enchaînement contrôle le code et retourne un reset token. Enfin, le troisième appel vérifie ce token, hache le nouveau mot de passe et invalide les anciennes connexions. Cette séparation rend le code plus clair : les vues gèrent l’affichage, les contrôleurs coordonnent, les Form Requests valident et le service applique la logique métier. »</div>
+
+<h2>10. Questions possibles du jury</h2>
+<p><strong>Pourquoi la logique est-elle placée dans un service ?</strong><br>Pour alléger le contrôleur, centraliser les règles métier et rendre le traitement plus facile à maintenir et à tester.</p>
+<p><strong>Pourquoi valider au front et au back ?</strong><br>La validation front améliore l’expérience, mais seule celle du back garantit la sécurité puisque l’API peut être appelée directement.</p>
+<p><strong>Pourquoi hacher l’OTP et le token ?</strong><br>Pour empêcher leur récupération en clair en cas d’accès non autorisé à la base.</p>
+<p><strong>Pourquoi invalider les anciennes connexions ?</strong><br>Parce qu’une réinitialisation peut faire suite à une compromission du compte.</p>
+
+<div class="box warning"><strong>Améliorations possibles :</strong> retourner un message neutre lorsqu’un e-mail n’existe pas et ajouter un nombre maximal d’échecs pour un même OTP en complément du throttle.</div>
+<p class="footer">SICORE — Réinitialisation du mot de passe avec OTP</p>
+</body>
+</html>

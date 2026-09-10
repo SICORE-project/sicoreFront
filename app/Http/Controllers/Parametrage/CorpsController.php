@@ -26,7 +26,7 @@ class CorpsController extends Controller
 
     private function validated(Request $request): array
     {
-        return $request->validate(['code' => ['required', 'string', 'max:20'], 'libelle' => ['required', 'string', 'max:100'], 'description' => ['nullable', 'string', 'max:255']]);
+        return $request->validate(['libelle' => ['required', 'string', 'max:100'], 'description' => ['nullable', 'string', 'max:255']]);
     }
 
     private function redirect(array $result): RedirectResponse

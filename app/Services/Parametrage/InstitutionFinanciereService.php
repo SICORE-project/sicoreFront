@@ -30,7 +30,7 @@ class InstitutionFinanciereService
         }
 
         if (! $response->successful()) {
-            return $this->emptyResult($page, $perPage, $response->json('message', 'Impossible de charger les institutions financières.'));
+            return $this->emptyResult($page, $perPage, $response->json('message', 'Impossible de charger les banques.'));
         }
 
         $payload = $response->json();
@@ -61,7 +61,7 @@ class InstitutionFinanciereService
         if ($response->successful()) {
             return [
                 'success' => true,
-                'message' => $response->json('message', 'Institution financière créée avec succès.'),
+                'message' => $response->json('message', 'Banque créée avec succès.'),
                 'data' => $response->json('data'),
             ];
         }
@@ -69,7 +69,7 @@ class InstitutionFinanciereService
         return [
             'success' => false,
             'unauthorized' => $response->unauthorized(),
-            'message' => $response->json('message', 'Impossible de créer l’institution financière.'),
+            'message' => $response->json('message', 'Impossible de créer la banque.'),
             'errors' => $response->json('errors', []),
         ];
     }
@@ -84,7 +84,7 @@ class InstitutionFinanciereService
         if ($response->successful()) {
             return [
                 'success' => true,
-                'message' => $response->json('message', 'Institution financière modifiée avec succès.'),
+                'message' => $response->json('message', 'Banque modifiée avec succès.'),
                 'data' => $response->json('data'),
             ];
         }
@@ -92,7 +92,7 @@ class InstitutionFinanciereService
         return [
             'success' => false,
             'unauthorized' => $response->unauthorized(),
-            'message' => $response->json('message', 'Impossible de modifier l’institution financière.'),
+            'message' => $response->json('message', 'Impossible de modifier la banque.'),
             'errors' => $response->json('errors', []),
         ];
     }
@@ -109,14 +109,32 @@ class InstitutionFinanciereService
         if ($response->successful()) {
             return [
                 'success' => true,
-                'message' => $response->json('message', $isActive ? 'Institution financière activée.' : 'Institution financière désactivée.'),
+                'message' => $response->json('message', $isActive ? 'Banque activée.' : 'Banque désactivée.'),
             ];
         }
 
         return [
             'success' => false,
             'unauthorized' => $response->unauthorized(),
-            'message' => $response->json('message', 'Impossible de modifier le statut de l’institution financière.'),
+            'message' => $response->json('message', 'Impossible de modifier le statut de la banque.'),
+            'errors' => $response->json('errors', []),
+        ];
+    }
+
+    public function delete(string|int $id): array
+    {
+        try {
+            $response = $this->apiClient->delete("parametrage/institutions-financieres/{$id}");
+        } catch (ConnectionException) {
+            return ['success' => false, 'unauthorized' => false, 'message' => 'Le service backend est momentanément inaccessible.', 'errors' => []];
+        }
+
+        return [
+            'success' => $response->successful(),
+            'unauthorized' => $response->unauthorized(),
+            'message' => $response->json('message', $response->successful()
+                ? 'Banque supprimée avec succès.'
+                : 'Impossible de supprimer la banque.'),
             'errors' => $response->json('errors', []),
         ];
     }

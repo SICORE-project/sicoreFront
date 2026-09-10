@@ -13,9 +13,14 @@ class CategorieController extends Controller
 {
     public function index(Request $request, CategorieService $service, CorpsService $corpsService): View|RedirectResponse
     {
-        $result = $service->getAll(['page' => max(1, $request->integer('page', 1)), 'per_page' => 10, 'search' => $request->string('search')->trim()->toString(), 'corps_id' => $request->integer('corps_id') ?: null]);
+        $result = $service->getAll(['page' => max(1, $request->integer('page', 1)), 'per_page' => 10, 'search' => $request->string('search')->trim()->toString()]);
         if ($result['unauthorized']) { $request->session()->forget(['access_token', 'sicore_user']); return redirect()->route('login')->with('warning', $result['error']); }
         $result['corpsOptions'] = $corpsService->getAll(['per_page' => 100])['items'];
+        $contractuel = collect($result['corpsOptions'])->first(fn ($corps) =>
+            strtolower(trim((string) data_get($corps, 'code'))) === 'contractuel'
+            || strtolower(trim((string) data_get($corps, 'libelle'))) === 'contractuel'
+        );
+        $result['defaultCorpsId'] = data_get($contractuel, 'id', '');
         return view('pages.parametres.categories', $result);
     }
 
@@ -25,7 +30,7 @@ class CategorieController extends Controller
 
     private function validated(Request $request): array
     {
-        return $request->validate(['code' => ['required','string','max:10'], 'libelle' => ['required','string','max:255'], 'corps_id' => ['required','integer'], 'ordre' => ['nullable','integer','min:0'], 'description' => ['nullable','string','max:500']]);
+        return $request->validate(['libelle' => ['required','string','max:255'], 'corps_id' => ['required','integer']]);
     }
 
     private function redirect(array $result): RedirectResponse

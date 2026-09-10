@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\Parametrage\EnseignantController;
 use Illuminate\Support\Facades\Route;
 
 
@@ -53,6 +54,9 @@ Route::middleware('sicore.auth')->group(function (): void {
         ->name('logout');
 
    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+    Route::get('/enseignants', [EnseignantController::class, 'index'])->name('enseignants.legacy.index');
+    Route::get('/enseignants/nouveau', [EnseignantController::class, 'create'])->name('enseignants.legacy.create');
 
 });
 

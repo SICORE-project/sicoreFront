@@ -18,7 +18,6 @@ class RubriquePaieService
                 'search' => $filters['search'] ?? null,
                 'type' => $filters['type'] ?? null,
                 'periodicite' => $filters['periodicite'] ?? null,
-                'est_actif' => $filters['est_actif'] ?? null,
                 'page' => $page,
                 'per_page' => 10,
             ], fn ($value) => $value !== null && $value !== ''));
@@ -50,7 +49,6 @@ class RubriquePaieService
                 'total' => (int) data_get($payload, 'statistics.total', 0),
                 'gains' => (int) data_get($payload, 'statistics.gains', 0),
                 'retenues' => (int) data_get($payload, 'statistics.retenues', 0),
-                'actives' => (int) data_get($payload, 'statistics.actives', 0),
             ],
         ];
     }
@@ -100,7 +98,7 @@ class RubriquePaieService
             'error' => $message,
             'unauthorized' => false,
             'pagination' => ['current_page' => $page, 'last_page' => 1, 'total' => 0],
-            'statistics' => ['total' => 0, 'gains' => 0, 'retenues' => 0, 'actives' => 0],
+            'statistics' => ['total' => 0, 'gains' => 0, 'retenues' => 0],
         ];
     }
 

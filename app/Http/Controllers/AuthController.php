@@ -33,8 +33,13 @@ class AuthController extends Controller
     {
         $validated = $request->validate([
             'email' => ['required', 'email'],
-            'password' => ['required', 'string'],
-            'next' => ['nullable', 'string', 'max:2048'],
+            'password' => ['required', 'string', 'min:8'],
+        ], [
+            'email.required' => 'L’adresse e-mail est obligatoire.',
+            'email.email' => 'Veuillez saisir une adresse e-mail valide.',
+            'password.required' => 'Le mot de passe est obligatoire.',
+            'password.string' => 'Le mot de passe doit être une chaîne de caractères.',
+            'password.min' => 'Le mot de passe doit contenir au moins 8 caractères.',
         ]);
         $returnUrl = PayrollReturnUrl::sanitize($validated['next'] ?? null);
         $credentials = [
@@ -189,6 +194,9 @@ class AuthController extends Controller
     {
         $request->validate([
             'otp' => ['required', 'digits:6'],
+        ], [
+            'otp.required' => 'Veuillez saisir le code de vérification reçu par e-mail.',
+            'otp.digits' => 'Le code de vérification doit contenir exactement 6 chiffres.',
         ]);
 
         $email = session('reset_email');
@@ -210,7 +218,7 @@ class AuthController extends Controller
         {
             return back()
                 ->withErrors([
-                    'otp' => $response->json('message') ?? 'Code invalide ou expiré.'
+                    'otp' => $this->apiErrorMessage($response, 'Le code de vérification est incorrect ou a expiré.')
                 ]);
         }
 
@@ -272,7 +280,19 @@ class AuthController extends Controller
     public function resetPassword(Request $request): RedirectResponse
     {
         $request->validate([
-            'password' => ['required', 'string', 'min:8', 'confirmed'],
+            'password' => [
+                'required',
+                'string',
+                'min:8',
+                'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^\w\s]).+$/',
+                'confirmed',
+            ],
+        ], [
+            'password.required' => 'Le nouveau mot de passe est obligatoire.',
+            'password.string' => 'Le nouveau mot de passe doit être un texte valide.',
+            'password.min' => 'Le nouveau mot de passe doit contenir au moins 8 caractères.',
+            'password.regex' => 'Le nouveau mot de passe doit contenir au moins une majuscule, une minuscule, un chiffre et un caractère spécial.',
+            'password.confirmed' => 'La confirmation du mot de passe ne correspond pas.',
         ]);
 
         $email = session('reset_email');
@@ -296,7 +316,7 @@ class AuthController extends Controller
         if ($response->failed())
         {
             return back()->withErrors([
-                'password' => $response->json('message') ?? 'Impossible de réinitialiser le mot de passe.'
+                'password' => $this->apiErrorMessage($response, 'Impossible de réinitialiser le mot de passe.')
             ]);
         }
 
@@ -305,5 +325,18 @@ class AuthController extends Controller
         return redirect()
             ->route('login')
             ->with('status', 'Votre mot de passe a été réinitialisé avec succès. Connectez-vous.');
+    }
+
+    private function apiErrorMessage($response, string $fallback): string
+    {
+        $errors = $response->json('errors', []);
+
+        foreach ($errors as $messages) {
+            if (is_array($messages) && isset($messages[0])) {
+                return (string) $messages[0];
+            }
+        }
+
+        return (string) ($response->json('message') ?? $fallback);
     }
 }

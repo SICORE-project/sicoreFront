@@ -48,7 +48,6 @@ class InstitutionFinanciereController extends Controller
     public function store(Request $request, InstitutionFinanciereService $service): RedirectResponse
     {
         $data = $request->validate([
-            'code' => ['required', 'string', 'max:20'],
             'nom' => ['required', 'string', 'max:150'],
             'sigle' => ['required', 'string', 'max:30'],
             'type_institution' => ['required', 'string', 'max:100'],
@@ -90,7 +89,6 @@ class InstitutionFinanciereController extends Controller
     public function update(Request $request, string $institution, InstitutionFinanciereService $service): RedirectResponse
     {
         $data = $request->validate([
-            'code' => ['required', 'string', 'max:20'],
             'nom' => ['required', 'string', 'max:150'],
             'sigle' => ['required', 'string', 'max:30'],
             'type_institution' => ['required', 'string', 'max:100'],
@@ -151,6 +149,22 @@ class InstitutionFinanciereController extends Controller
 
         return redirect()->route('parametres.institutions-financieres')
             ->with('success', $result['message']);
+    }
+
+    public function destroy(Request $request, string $institution, InstitutionFinanciereService $service): RedirectResponse
+    {
+        $result = $service->delete($institution);
+
+        if ($result['unauthorized'] ?? false) {
+            $request->session()->forget(['access_token', 'sicore_user']);
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            return redirect()->route('login')->with('warning', 'Votre session backend a expiré. Veuillez vous reconnecter.');
+        }
+
+        return redirect()->route('parametres.institutions-financieres')
+            ->with($result['success'] ? 'success' : 'error', $result['message']);
     }
     public function storeTeacherBankAccount(Request $request, CompteBancaireEnseignantService $service): RedirectResponse
     {
