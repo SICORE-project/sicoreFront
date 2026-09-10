@@ -1,6 +1,12 @@
+/*
+ * STRUCTURES ÉDUCATIVES IA / IEF
+ * Utilisé par les pages Enseignants de présentation. Pour la Gestion de la
+ * paie connectée, les IA et IEF réelles viennent du backend via payroll.js.
+ */
 (function () {
   "use strict";
 
+  // Référentiel frontend de présentation : une IA possède plusieurs IEF.
   var educationStructures = [
     {
       ia: "IA Dakar",
@@ -68,6 +74,7 @@
     }
   ];
 
+  /** Ajoute une option dans une liste <select>. */
   function addOption(select, value, label) {
     var option = document.createElement("option");
     option.value = value;
@@ -75,12 +82,14 @@
     select.appendChild(option);
   }
 
+  /** Retrouve la structure correspondant au nom exact de l'IA choisie. */
   function getStructureByIa(iaName) {
     return educationStructures.find(function (item) {
       return item.ia === iaName;
     });
   }
 
+  /** Remplit la liste des IA sans dupliquer les options déjà présentes. */
   function populateIaSelect(select) {
     var selectedValue = select.value;
     select.innerHTML = "";
@@ -95,6 +104,7 @@
     }
   }
 
+  /** Remplit les IEF appartenant uniquement à l'IA sélectionnée. */
   function populateIefSelect(select, iaName) {
     var selectedValue = select.value;
     var structure = getStructureByIa(iaName);
@@ -117,6 +127,7 @@
     }
   }
 
+  /** Initialise toutes les paires IA/IEF présentes dans une page ou un bloc. */
   function initEducationStructureSelects(root) {
     var scope = root || document;
     scope.querySelectorAll("[data-ia-select]").forEach(function (iaSelect) {

@@ -1,10 +1,17 @@
+/*
+ * ASSISTANT DE CRÉATION D'UN ENSEIGNANT
+ * Vue concernée : resources/views/pages/enseignants/create.blade.php.
+ * Ce script gère les trois étapes, les validations visuelles et le récapitulatif.
+ */
 (function () {
   "use strict";
 
+  // État courant de l'assistant. Les panneaux Blade portent data-wizard-panel.
   var currentStep = 1;
   var totalSteps = 3;
   var wizardForm = null;
 
+  /** Récupère le formulaire une seule fois puis conserve sa référence. */
   function getWizard() {
     if (!wizardForm) {
       wizardForm = document.querySelector("[data-teacher-wizard]");
@@ -33,6 +40,7 @@
       : "ce champ";
   }
 
+  /** Affiche une erreur accessible sous le champ concerné. */
   function showFieldError(field, message) {
     var group = field.closest(".form-group");
     var error = group ? group.querySelector(".field-error") : null;
@@ -50,6 +58,7 @@
     }
   }
 
+  /** Retire l'état d'erreur d'un champ après correction. */
   function clearFieldError(field) {
     var group = field.closest(".form-group");
     var error = group ? group.querySelector(".field-error") : null;
@@ -60,6 +69,7 @@
     }
   }
 
+  /** Valide un champ selon required, type et valeur. */
   function validateField(field) {
     if (field.disabled) {
       clearFieldError(field);
@@ -102,6 +112,7 @@
     return true;
   }
 
+  /** Valide tous les champs de l'étape visible avant d'avancer. */
   function validateCurrentStep() {
     var fields = getFieldsForStep(currentStep);
     var valid = true;
@@ -125,6 +136,7 @@
     return valid;
   }
 
+  /** Contrôle l'ensemble du formulaire avant la confirmation finale. */
   function validateAllSteps() {
     var form = getWizard();
     var valid = true;
@@ -257,6 +269,7 @@
     }
   }
 
+  /** Masque les autres panneaux et affiche l'étape demandée. */
   function goToStep(stepNumber) {
     var next = Math.min(Math.max(stepNumber, 1), totalSteps);
     if (next > currentStep) {
@@ -287,6 +300,7 @@
     }
   }
 
+  /** Branche les boutons, champs et événements lors du chargement de la page. */
   function initTeacherWizard() {
     var form = getWizard();
     if (!form || form.dataset.wizardBound === "true") {

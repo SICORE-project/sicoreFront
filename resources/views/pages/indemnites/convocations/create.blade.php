@@ -18,6 +18,7 @@
 
         <div class="form-card-header">
             <div>
+                <p class="breadcrumb"><a href="{{ route('indemnites.convocations') }}">&larr; Retour à la liste</a></p>
                 <h2>Nouvelle convocation</h2>
                 <p class="breadcrumb">Création d'une convocation pour un examen de certification</p>
             </div>
@@ -110,29 +111,6 @@
                             @error('session')<p class="field-error">{{ $message }}</p>@enderror
                         </div>
 
-                        <div class="form-group full">
-                            <label for="type_convocation_id">Type de convocation</label>
-                            <select
-                                class="form-control @error('type_convocation_id') is-invalid @enderror"
-                                id="type_convocation_id"
-                                name="type_convocation_id"
-                            >
-                                <option value="">Sélectionner</option>
-                                @foreach ($typesConvocation ?? [] as $type)
-                                    <option
-                                        value="{{ $type['id'] }}"
-                                        @selected((string) old('type_convocation_id') === (string) $type['id'])
-                                    >
-                                        {{ $type['libelle'] }}
-                                    </option>
-                                @endforeach
-                            </select>
-                            <p class="section-description" style="margin: 6px 0 0;">
-                                Détermine le modèle utilisé pour le PDF (ex : tableau centre/jury/métier pour un jury d'examen).
-                            </p>
-                            @error('type_convocation_id')<p class="field-error">{{ $message }}</p>@enderror
-                        </div>
-
                         <div class="form-group">
                             <label for="date_emission">Date d'émission <span class="required">*</span></label>
                             <input
@@ -149,7 +127,7 @@
                         <div class="form-group">
                             <label for="statut">Statut</label>
                             <select class="form-control @error('statut') is-invalid @enderror" id="statut" name="statut">
-                                @foreach (['brouillon' => 'Brouillon', 'emise' => 'Émise', 'envoyee' => 'Envoyée', 'cloturee' => 'Clôturée'] as $value => $label)
+                                @foreach (['brouillon' => 'Brouillon', 'emise' => 'Émise', 'envoyee' => 'Envoyée'] as $value => $label)
                                     <option value="{{ $value }}" @selected(old('statut', 'brouillon') === $value)>
                                         {{ $label }}
                                     </option>
@@ -209,15 +187,16 @@
                         </div>
 
                         <div class="form-group">
-                            <label for="lieu_examen">Lieu d'examen</label>
+                            <label for="lieu_affectation">Lieu d'affectation</label>
                             <input
-                                class="form-control @error('lieu_examen') is-invalid @enderror"
-                                id="lieu_examen"
-                                name="lieu_examen"
+                                class="form-control @error('lieu_affectation') is-invalid @enderror"
+                                id="lieu_affectation"
+                                name="lieu_affectation"
                                 type="text"
-                                value="{{ old('lieu_examen') }}"
+                                value="{{ old('lieu_affectation') }}"
+                                placeholder="Ex : Dakar"
                             >
-                            @error('lieu_examen')<p class="field-error">{{ $message }}</p>@enderror
+                            @error('lieu_affectation')<p class="field-error">{{ $message }}</p>@enderror
                         </div>
 
                         
@@ -316,6 +295,22 @@
                         </div>
 
                         <div class="form-group">
+                            <label>Provenance du président du jury</label>
+                            <input class="form-control" type="text" placeholder="Ex : Dakar" data-field="president_jury_provenance">
+                            <p class="section-description" style="margin: 6px 0 0;">Lieu où il exerce habituellement — sert au calcul des frais de déplacement.</p>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Catégorie de personnel du président du jury</label>
+                            <select class="form-control" data-field="president_jury_categorie_personnel">
+                                <option value="">Sélectionner</option>
+                                <option value="fonctionnaire">Fonctionnaire</option>
+                                <option value="contractuel">Contractuelle</option>
+                                <option value="vacataire">Vacataire</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
                             <label>Chef de centre</label>
                             <div class="enseignant-search" data-chef-search>
                                 <input class="form-control" type="text" placeholder="Rechercher le chef de centre..." autocomplete="off" data-chef-search-input>
@@ -327,6 +322,22 @@
                         <div class="form-group">
                             <label>Téléphone du chef de centre</label>
                             <input class="form-control" type="text" placeholder="33 901 10 71" data-chef-telephone-input data-field="chef_centre_telephone">
+                        </div>
+
+                        <div class="form-group">
+                            <label>Provenance du chef de centre</label>
+                            <input class="form-control" type="text" placeholder="Ex : Dakar" data-field="chef_centre_provenance">
+                            <p class="section-description" style="margin: 6px 0 0;">Lieu où il exerce habituellement — sert au calcul des frais de déplacement.</p>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Catégorie de personnel du chef de centre</label>
+                            <select class="form-control" data-field="chef_centre_categorie_personnel">
+                                <option value="">Sélectionner</option>
+                                <option value="fonctionnaire">Fonctionnaire</option>
+                                <option value="contractuel">Contractuelle</option>
+                                <option value="vacataire">Vacataire</option>
+                            </select>
                         </div>
 
                     </div>
@@ -402,7 +413,7 @@
                                 <tr>
                                     <th>Prénom</th>
                                     <th>Nom</th>
-                                    <th>Fonction</th>
+                                    <th>Type de convocation</th>
                                     <th>Statut</th>
                                     <th>Provenance</th>
                                     <th>Téléphone</th>
@@ -453,13 +464,11 @@
                     <td data-label="Nom">
                         <input class="form-control" type="text" placeholder="Nom" data-member-nom>
                     </td>
-                    <td data-label="Fonction">
+                    <td data-label="Type de convocation">
                         <select class="form-control" data-member-fonction>
                             <option value="">Sélectionner</option>
-                            <option value="Président de jury">Président de jury</option>
-                            <option value="Membre du jury">Membre du jury</option>
-                            <option value="Surveillant/correcteur">Surveillant/correcteur</option>
-                            <option value="Chef de centre">Chef de centre</option>
+                            <option value="Correction">Correction</option>
+                            <option value="Surveillant">Surveillant</option>
                         </select>
                     </td>
                     <td data-label="Statut">

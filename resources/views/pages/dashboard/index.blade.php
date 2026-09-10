@@ -79,5 +79,6 @@
 @endsection
 
 @push('scripts')
-<script src="{{ asset('assets/js/charts.js') }}" defer></script>
+  {{-- Script spécifique au dashboard, ajouté après les scripts communs. --}}
+  <script src="{{ asset('assets/js/charts.js') }}" defer></script>
 @endpush

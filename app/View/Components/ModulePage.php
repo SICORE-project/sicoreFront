@@ -3,37 +3,77 @@
 namespace App\View\Components;
 
 use Illuminate\Contracts\View\View;
+use Illuminate\Support\Arr;
 use Illuminate\View\Component;
 
+/**
+ * Prépare les données du composant Blade partagé par les pages fonctionnelles.
+ *
+ * Vue rendue : resources/views/components/module-page.blade.php.
+ * Configuration : config/module-pages.php et config/payroll-forms.php.
+ * Appel depuis : resources/views/pages/[module]/[page].blade.php avec
+ * le composant <x-module-page>.
+ */
 class ModulePage extends Component
 {
-    /** @var array<string, mixed> */
+    /** @var array<string, mixed> Configuration finale utilisée par la vue. */
     public array $page;
 
+    /** Classe Font Awesome de l'icône affichée dans le topbar. */
     public string $pageIcon;
 
-    /** @var array<string, string> */
+    /** @var array<string, string> Association code court → icône Font Awesome. */
     public array $statIconMap;
 
-    public function __construct(public string $slug)
-    {
-        $page = config("module-pages.{$slug}");
+    /** @var array<string, mixed> Données dynamiques reçues du backend. */
+    public array $moduleData;
+
+    /** @var array<string, mixed> Définitions des formulaires de paie. */
+    public array $payrollForms;
+
+    /** Vrai quand une réponse dynamique du backend est disponible. */
+    public bool $connected;
+
+    /**
+     * Construit la page à partir du slug et remplace les données d'exemple par
+     * celles de l'API lorsque le module est connecté au backend.
+     */
+    public function __construct(
+        public string $slug,
+        array $data = [],
+        public array|string|null $error = null,
+    ) {
+        // Exemple : le slug paie-bulletins lit config('module-pages.paie-bulletins').
+        $page = config("module-pages.{$slug}")
+            ?? config("payroll-periodic-pages.{$slug}");
 
         abort_unless(is_array($page), 404, 'Page SICORE introuvable.');
 
-        $this->page = $page;
+        $this->moduleData = $data;
+        $this->connected = $data !== [];
+        $this->payrollForms = (array) config('payroll-forms', []);
+        // Seules ces clés sont remplaçables par l'API ; le titre reste au frontend.
+        $this->page = array_replace(
+            $page,
+            Arr::only($data, ['stats', 'filters', 'actions', 'columns', 'rows'])
+        );
         $this->statIconMap = $this->statIcons();
         $pageIcon = (string) ($this->page['icon'] ?? '');
         $this->pageIcon = $this->pageIcons()[$this->slug]
             ?? (str_contains($pageIcon, 'fa-') ? $pageIcon : ($this->statIconMap[$pageIcon] ?? 'fa-solid fa-circle'));
     }
 
+    /** Indique à Laravel le fichier Blade utilisé par <x-module-page>. */
     public function render(): View
     {
         return view('components.module-page');
     }
 
-    /** @return array<string, string> */
+    /**
+     * Icône principale de chaque page identifiée par son slug.
+     *
+     * @return array<string, string>
+     */
     private function pageIcons(): array
     {
         return [
@@ -54,6 +94,18 @@ class ModulePage extends Component
             'paie-effectifs-corps' => 'fa-solid fa-users',
             'paie-non-generee' => 'fa-solid fa-triangle-exclamation',
             'paie-sommes-percues' => 'fa-solid fa-wallet',
+            'paie-edition-enseignants' => 'fa-solid fa-chalkboard-user',
+            'paie-prime-scolaire' => 'fa-solid fa-graduation-cap',
+            'paie-reliquats' => 'fa-solid fa-clock-rotate-left',
+            'paie-double-flux' => 'fa-solid fa-people-arrows-left-right',
+            'paie-directeurs-interim' => 'fa-solid fa-user-shield',
+            'paie-cumul-enseignants-ief' => 'fa-solid fa-sitemap',
+            'paie-recap-elements-corps' => 'fa-solid fa-layer-group',
+            'paie-edition-fonctionnaires' => 'fa-solid fa-user-tie',
+            'paie-mutuelles-sante' => 'fa-solid fa-heart-pulse',
+            'paie-situation-affectations' => 'fa-solid fa-location-dot',
+            'paie-montants-engages-banque' => 'fa-solid fa-money-bill-transfer',
+            'paie-heures-supplementaires-interim' => 'fa-solid fa-business-time',
             'credit-delegation' => 'fa-solid fa-scale-balanced',
             'credit-edition-delegations' => 'fa-solid fa-file-signature',
             'credit-edition-engagements' => 'fa-solid fa-clipboard-check',
@@ -73,7 +125,11 @@ class ModulePage extends Component
         ];
     }
 
-    /** @return array<string, string> */
+    /**
+     * Icônes des cartes statistiques, indexées par les codes courts du projet.
+     *
+     * @return array<string, string>
+     */
     private function statIcons(): array
     {
         return [

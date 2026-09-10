@@ -1,6 +1,13 @@
+/*
+ * GRAPHIQUES DU TABLEAU DE BORD
+ * Chargé uniquement par resources/views/pages/dashboard/index.blade.php.
+ * Les graphiques sont dessinés directement dans des éléments <canvas>, sans
+ * bibliothèque externe. Les valeurs sont actuellement de présentation.
+ */
 (function () {
   "use strict";
 
+  // Palette commune garantissant la cohérence avec le thème SICORE.
   var palette = {
     primary: "#166534",
     blue: "#2563eb",
@@ -11,6 +18,7 @@
     card: "#ffffff"
   };
 
+  /** Adapte la résolution du canvas à sa taille CSS et à la densité de l'écran. */
   function sizeCanvas(canvas, fallbackHeight) {
     var parent = canvas.parentElement;
     var rect = parent.getBoundingClientRect();
@@ -30,6 +38,7 @@
     };
   }
 
+  /** Dessine les lignes horizontales servant de repères aux graphiques. */
   function drawGrid(ctx, width, height, padding) {
     ctx.strokeStyle = palette.grid;
     ctx.lineWidth = 1;
@@ -45,6 +54,7 @@
     }
   }
 
+  /** Prépare un rectangle à coins arrondis dans le contexte Canvas. */
   function roundRect(ctx, x, y, width, height, radius) {
     var r = Math.min(radius, Math.abs(height) / 2, width / 2);
     ctx.beginPath();
@@ -56,6 +66,7 @@
     ctx.closePath();
   }
 
+  /** Dessine plusieurs séries de barres regroupées par libellé. */
   function drawGroupedBars(canvas, labels, series) {
     var sized = sizeCanvas(canvas, 260);
     var ctx = sized.ctx;
@@ -91,6 +102,7 @@
     });
   }
 
+  /** Dessine un graphique simple avec une seule série de barres. */
   function drawSimpleBars(canvas, labels, values, color) {
     var sized = sizeCanvas(canvas, 260);
     var ctx = sized.ctx;
@@ -119,7 +131,8 @@
     });
   }
 
-  function drawDonut(canvas, percentage) {
+  /** Dessine le graphique circulaire de répartition. */
+  function drawDonut(canvas) {
     var sized = sizeCanvas(canvas, 260);
     var ctx = sized.ctx;
     var width = sized.width;
@@ -162,6 +175,7 @@
     ctx.fillText("comptes actifs", centerX, centerY + 27);
   }
 
+  /** Recherche les canvas attendus dans la page et lance tous les dessins. */
   function renderCharts() {
     document.querySelectorAll("[data-chart]").forEach(function (canvas) {
       var chart = canvas.getAttribute("data-chart");

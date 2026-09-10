@@ -1,5 +1,12 @@
 @extends('layouts.app')
 
+{{--
+  PAGE : Liste des enseignants — URL /enseignants dans routes/web.php.
+  En-tête et recherche : components/topbar.blade.php + public/assets/js/app.js.
+  Filtre IA/IEF : public/assets/js/education-structures.js.
+  Les lignes sont actuellement écrites dans cette vue ; l'équipe Enseignants
+  pourra les remplacer par des données de son contrôleur ou de son API.
+--}}
 @section('title', 'SICORE - Dashboard Enseignant')
 @section('content')
 <main class="main-content">
@@ -432,6 +439,7 @@
 @endpush
 
 @push('scripts')
+  {{-- Gestion de la dépendance IA → IEF sur cette page. --}}
 <script src="{{ asset('assets/js/charts.js') }}" defer></script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {

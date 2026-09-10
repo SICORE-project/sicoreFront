@@ -2,6 +2,11 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Indemnites\ConvocationsController;
+use App\Http\Controllers\Indemnites\EtatPaieIndemnitesController;
+use App\Http\Controllers\Indemnites\FraisDeplacementController;
+use App\Http\Controllers\Indemnites\IndemniteCorrectionController;
+use App\Http\Controllers\Indemnites\IndemniteSurveillanceController;
+use App\Http\Controllers\Indemnites\NotificationController;
 use App\Http\Controllers\Indemnites\PiecesJustificativesController;
 
 /*
@@ -14,6 +19,22 @@ Route::middleware('sicore.auth')
     ->prefix('indemnites')
     ->name('indemnites.')
     ->group(function (): void {
+
+        // AJAX partagee par les panneaux de filtres Session/Objet/Metier/
+        // Centre de Convocations, Frais de deplacement, Calcul,
+        // Calcul-surveillance et Pieces justificatives (demande
+        // utilisatrice : "quand je selectionne un objet le select suivant
+        // doit etre relatif", instantane sans recharger la page, meme
+        // principe que indemnites.etats-paie.centres) — doit rester avant
+        // /convocations pour ne pas dependre de son groupe de routes.
+        Route::get('/filtres-options', [ConvocationsController::class, 'filtresOptionsJson'])
+            ->name('filtres-options');
+    Route::get('/notifications/', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount'])->name('notifications.unread-count');
+    Route::get('/notifications/{id}', [NotificationController::class, 'show'])->name('notifications.show');
+    Route::patch('/notifications/{id}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
+    Route::patch('/notifications/read-all', [NotificationController::class, 'markAllAsRead'])->name('notifications.read-all');
+    
 
         Route::get('/convocations', [ConvocationsController::class, 'index'])
             ->name('convocations');
@@ -107,14 +128,157 @@ Route::middleware('sicore.auth')
         Route::get('/convocations/{id}', [ConvocationsController::class, 'show'])
             ->name('convocations.show');
 
+        Route::view('/services-faits', 'pages.indemnites.services-faits')
+            ->name('services-faits');
+
+        // Doivent rester avant /pieces-justificatives (route sans wildcard,
+        // pas de conflit ici) mais AVANT le GET ci-dessous quand meme, par
+        // coherence avec les autres blocs de ce fichier (fixe avant {id}).
+        Route::post('/pieces-justificatives/deposer', [PiecesJustificativesController::class, 'deposer'])
+            ->name('pieces-justificatives.deposer');
+
+        // Bouton "Modifier" du tableau — meme formulaire complet que
+        // "Ajouter une pièce" (demande utilisatrice), mais les 5 fichiers
+        // sont optionnels : seuls ceux fournis remplacent la piece
+        // existante.
+        Route::post('/pieces-justificatives/modifier', [PiecesJustificativesController::class, 'modifier'])
+            ->name('pieces-justificatives.modifier');
+
+        Route::get('/pieces-justificatives/{id}/telecharger', [PiecesJustificativesController::class, 'telecharger'])
+            ->name('pieces-justificatives.telecharger');
+
+        // Boutons "Valider"/"Rejeter" de la modale "Voir le dossier" —
+        // appelés en AJAX (fetch), réponse JSON, pas de rechargement de
+        // page (voir remplirDossier() côté vue).
+        Route::post('/pieces-justificatives/{id}/valider', [PiecesJustificativesController::class, 'valider'])
+            ->name('pieces-justificatives.valider');
+
+        Route::post('/pieces-justificatives/{id}/rejeter', [PiecesJustificativesController::class, 'rejeter'])
+            ->name('pieces-justificatives.rejeter');
+
+        // Remplace l'ancien Route::view() (page statique sans donnees) qui
+        // provoquait "Undefined variable $filtreActif" : la vue existante
+        // (~40 Ko, ecrite par un coequipier) attendait deja $filtreActif,
+        // $optionsFiltres, $membres, $stats, $convocations, mais aucun
+        // controleur ne les fournissait encore.
         Route::get('/pieces-justificatives', [PiecesJustificativesController::class, 'index'])
             ->name('pieces-justificatives');
 
-        Route::post('/pieces-justificatives/deposer', [PiecesJustificativesController::class, 'deposerPieces'])
-            ->name('pieces-justificatives.deposer');
+        Route::view('/accuses-reception', 'pages.indemnites.accuses-reception')
+            ->name('accuses-reception');
 
-        Route::get('/pieces-justificatives/{id}/telecharger', [PiecesJustificativesController::class, 'download'])
-            ->name('pieces-justificatives.telecharger');
+        // "Calcul des indemnités" = indemnités de correction (copies
+        // corrigées x taux par copie) — demande utilisatrice : integrer la
+        // maquette dans cette vue plutôt que de créer un module séparé.
+        // /groupe doit rester avant /calcul (segment fixe, pas de wildcard,
+        // aucun risque de conflit ici, mais coherence avec le reste du fichier).
+        Route::get('/calcul/groupe', [IndemniteCorrectionController::class, 'calculGroupe'])
+            ->name('calcul.groupe');
+
+        Route::post('/calcul/groupe', [IndemniteCorrectionController::class, 'storeGroupe'])
+            ->name('calcul.groupe.store');
+
+        Route::get('/calcul', [IndemniteCorrectionController::class, 'index'])
+            ->name('calcul');
+
+        // "Indemnité de surveillance" = heures surveillées x tarif horaire,
+        // meme plan que "Calcul des indemnités" (indemnite de correction)
+        // juste au-dessus. /groupe avant /calcul-surveillance meme raison.
+        Route::get('/calcul-surveillance/groupe', [IndemniteSurveillanceController::class, 'calculGroupe'])
+            ->name('calcul-surveillance.groupe');
+
+        Route::post('/calcul-surveillance/groupe', [IndemniteSurveillanceController::class, 'storeGroupe'])
+            ->name('calcul-surveillance.groupe.store');
+
+        Route::get('/calcul-surveillance', [IndemniteSurveillanceController::class, 'index'])
+            ->name('calcul-surveillance');
+
+        Route::get('/frais-deplacement', [FraisDeplacementController::class, 'index'])
+            ->name('frais-deplacement');
+
+        Route::get('/frais-deplacement/nouvelle', [FraisDeplacementController::class, 'create'])
+            ->name('frais-deplacement.create');
+
+        // Calcul du montant pour tous les membres éligibles d'une même
+        // convocation en une seule page (au lieu d'une fiche à la fois) —
+        // doit rester avant /frais-deplacement/{id} (segment fixe).
+        Route::get('/frais-deplacement/calcul-groupe', [FraisDeplacementController::class, 'calculGroupe'])
+            ->name('frais-deplacement.calcul-groupe');
+
+        Route::post('/frais-deplacement/calcul-groupe', [FraisDeplacementController::class, 'storeGroupe'])
+            ->name('frais-deplacement.calcul-groupe.store');
+
+        Route::post('/frais-deplacement', [FraisDeplacementController::class, 'store'])
+            ->name('frais-deplacement.store');
+
+        Route::get('/frais-deplacement/{id}', [FraisDeplacementController::class, 'show'])
+            ->name('frais-deplacement.show');
+
+        // CRUD de la fiche elle-même (demande utilisatrice : "le CRUD de la
+        // fiche") — doivent rester avant aucune autre route wildcard
+        // conflictuelle : /modifier a un segment de plus, pas de conflit
+        // avec /frais-deplacement/{id} ci-dessus.
+        Route::get('/frais-deplacement/{id}/modifier', [FraisDeplacementController::class, 'edit'])
+            ->name('frais-deplacement.edit');
+
+        Route::put('/frais-deplacement/{id}', [FraisDeplacementController::class, 'update'])
+            ->name('frais-deplacement.update');
+
+        Route::delete('/frais-deplacement/{id}', [FraisDeplacementController::class, 'destroy'])
+            ->name('frais-deplacement.destroy');
+
+        // Téléchargement de la fiche en PDF.
+        Route::get('/frais-deplacement/{id}/telecharger', [FraisDeplacementController::class, 'telechargerPdf'])
+            ->name('frais-deplacement.pdf');
+
+        // Étape "Calcul" directement depuis la fiche (demande utilisatrice :
+        // "gère-moi juste le show du fiche") — pas de page de liste séparée
+        // pour l'instant, le formulaire de lignes de frais vit sur le show.
+        Route::post('/frais-deplacement/{id}/calculer', [FraisDeplacementController::class, 'calculer'])
+            ->name('frais-deplacement.calculer');
+
+        // Téléchargement d'une pièce jointe (recto ou verso) de la fiche.
+        Route::get('/frais-deplacement/{id}/justificatifs/{justificatifId}/telecharger', [FraisDeplacementController::class, 'telechargerJustificatif'])
+            ->name('frais-deplacement.justificatifs.telecharger');
+
+        // Ajout/remplacement et suppression d'une pièce jointe depuis le
+        // détail de la fiche (demande utilisatrice : "télécharger,
+        // modifier, supprimer").
+        Route::post('/frais-deplacement/{id}/justificatifs/remplacer', [FraisDeplacementController::class, 'remplacerJustificatif'])
+            ->name('frais-deplacement.justificatifs.remplacer');
+
+        Route::delete('/frais-deplacement/{id}/justificatifs/{justificatifId}', [FraisDeplacementController::class, 'supprimerJustificatif'])
+            ->name('frais-deplacement.justificatifs.destroy');
+
+        // AJAX : centres des convocations correspondant a l'objet/session
+        // choisis sur le formulaire — doit rester avant /etats-paie
+        // ci-dessous par coherence avec le reste du fichier (segment fixe
+        // avant route racine), meme si aucun risque reel de conflit ici.
+        Route::get('/etats-paie/centres', [EtatPaieIndemnitesController::class, 'centresPourObjetSession'])
+            ->name('etats-paie.centres');
+
+        // AJAX : membres associes au type d'indemnite choisi.
+        Route::get('/etats-paie/membres', [EtatPaieIndemnitesController::class, 'membresPourFiltre'])
+            ->name('etats-paie.membres');
+
+        // AJAX : coordonnees bancaires d'un membre (pre-remplissage de la
+        // modale "Ajouter etat de paie").
+        Route::get('/etats-paie/membres/{id}/rib', [EtatPaieIndemnitesController::class, 'ribMembre'])
+            ->name('etats-paie.membres.rib');
+
+        // AJAX : etats de paie deja crees pour le filtre courant ("Voir etat").
+        Route::get('/etats-paie/existants', [EtatPaieIndemnitesController::class, 'etatsExistants'])
+            ->name('etats-paie.existants');
+
+        // Genere/telecharge la fiche PDF officielle a partir du filtre courant.
+        Route::get('/etats-paie/fiche-pdf', [EtatPaieIndemnitesController::class, 'genererFichePdf'])
+            ->name('etats-paie.fiche-pdf');
+
+        Route::get('/etats-paie', [EtatPaieIndemnitesController::class, 'index'])
+            ->name('etats-paie');
+
+        Route::post('/etats-paie', [EtatPaieIndemnitesController::class, 'storeEtatPaie'])
+            ->name('etats-paie.store');
 
     });
 

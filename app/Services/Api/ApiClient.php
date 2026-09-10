@@ -53,13 +53,7 @@ class ApiClient
         );
     }
 
-    public function patch(string $uri, array $data = [])
-    {
-        return $this->request()->patch(
-            $this->baseUrl . '/' . $uri,
-            $data
-        );
-    }
+    
     public function delete(string $uri)
     {
         return $this->request()->delete(
@@ -89,5 +83,13 @@ class ApiClient
         }
 
         return $request->post($this->baseUrl.'/'.$uri, $data);
+    }
+
+
+
+    public function patch(string $uri, array $data = [])
+    {
+        return $this->request()
+            ->patch($this->baseUrl.'/'.$uri, $data);
     }
 }
