@@ -54,15 +54,14 @@ class InstitutionFinanciereController extends Controller
             'adresse' => ['nullable', 'string', 'max:255'],
             'telephone' => ['nullable', 'string', 'max:20'],
             'email' => ['nullable', 'email', 'max:100'],
-            'statut' => ['required', 'in:actif,inactif'],
         ], [
             'required' => 'Le champ :attribute est obligatoire.',
             'email' => 'L’adresse e-mail doit être valide.',
         ]);
 
         $data['libelle'] = $data['nom'];
-        $data['est_actif'] = $data['statut'] === 'actif';
-        unset($data['nom'], $data['statut']);
+        $data['est_actif'] = true;
+        unset($data['nom']);
 
         $result = $service->create($data);
 
@@ -95,15 +94,13 @@ class InstitutionFinanciereController extends Controller
             'adresse' => ['nullable', 'string', 'max:255'],
             'telephone' => ['nullable', 'string', 'max:20'],
             'email' => ['nullable', 'email', 'max:100'],
-            'statut' => ['required', 'in:actif,inactif'],
         ], [
             'required' => 'Le champ :attribute est obligatoire.',
             'email' => 'L’adresse e-mail doit être valide.',
         ]);
 
         $data['libelle'] = $data['nom'];
-        $data['est_actif'] = $data['statut'] === 'actif';
-        unset($data['nom'], $data['statut']);
+        unset($data['nom']);
 
         $result = $service->update($institution, $data);
 

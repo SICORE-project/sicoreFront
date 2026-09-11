@@ -82,7 +82,7 @@
               </tr>
               <tr id="discipline">
                 <td>DIS</td>
-                <td>Discipline</td>
+                <td>Spécialité</td>
                 <td><span class="badge badge-active">Actif</span></td>
                 <td class="actions-cell"><button class="icon-action" title="Voir">&#128065;</button><button class="icon-action" title="Modifier">&#9998;</button><button class="icon-action" title="Supprimer">&#128465;</button></td>
               </tr>
@@ -118,14 +118,14 @@
               </tr>
               <tr id="lieu-service">
                 <td>LS</td>
-                <td>Lieu de service</td>
+                <td>Établissement</td>
                 <td><span class="badge badge-active">Actif</span></td>
                 <td class="actions-cell"><button class="icon-action" title="Voir">&#128065;</button><button class="icon-action" title="Modifier">&#9998;</button><button class="icon-action" title="Supprimer">&#128465;</button></td>
               </tr>
             </tbody>
           </table>
         </div>
-        <p class="empty-message">Aucun param&egrave;tre trouv&eacute;.</p>
+        <p class="empty-message"><x-table-empty-state>Aucun param&egrave;tre trouv&eacute;.</x-table-empty-state></p>
         <div class="pagination">
           <button class="page-btn" type="button">&#8592;</button>
           <button class="page-btn active" type="button" data-page-number>1</button>

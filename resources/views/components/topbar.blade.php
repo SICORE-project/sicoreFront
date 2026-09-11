@@ -28,11 +28,6 @@
     </div>
   </div>
   
-  {{-- Cloche de notification --}}
-  @if(session()->has('sicore_user'))
-    <x-notification-bell />
-  @endif
-
   @if ($searchId)
     {{-- Recherche affichée uniquement lorsqu'un searchId est fourni. --}}
     <div class="search-wrap">

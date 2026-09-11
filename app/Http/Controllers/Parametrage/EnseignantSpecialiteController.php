@@ -4,15 +4,15 @@ namespace App\Http\Controllers\Parametrage;
 
 use App\Http\Controllers\Controller;
 use App\Http\Middleware\EnsureSicorePermission;
-use App\Services\Parametrage\DisciplineService;
-use App\Services\Parametrage\EnseignantDisciplineService;
+use App\Services\Parametrage\SpecialiteService;
+use App\Services\Parametrage\EnseignantSpecialiteService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
-class EnseignantDisciplineController extends Controller
+class EnseignantSpecialiteController extends Controller
 {
-    public function show(Request $request, string $enseignant, EnseignantDisciplineService $service, DisciplineService $disciplines): View|RedirectResponse
+    public function show(Request $request, string $enseignant, EnseignantSpecialiteService $service, SpecialiteService $disciplines): View|RedirectResponse
     {
         $result = $service->getTeacher($enseignant);
         if (! $result['success'] || ! is_array($result['data'])) {
@@ -28,15 +28,15 @@ class EnseignantDisciplineController extends Controller
 
         return view('pages.enseignants.show', [
             'teacher' => $teacher,
-            'associatedDisciplines' => $associated,
-            'availableDisciplines' => $available,
-            'canAssociateDiscipline' => app(EnsureSicorePermission::class)->allows($request, 'enseignants.disciplines.associer'),
+            'associatedSpecialites' => $associated,
+            'availableSpecialites' => $available,
+            'canAssociateSpecialite' => app(EnsureSicorePermission::class)->allows($request, 'enseignants.disciplines.associer'),
         ]);
     }
 
-    public function store(Request $request, string $enseignant, EnseignantDisciplineService $service): RedirectResponse
+    public function store(Request $request, string $enseignant, EnseignantSpecialiteService $service): RedirectResponse
     {
-        $data = $request->validateWithBag('associateDiscipline', [
+        $data = $request->validateWithBag('associateSpecialite', [
             'discipline_id' => ['required', 'integer', 'min:1'],
             'est_principale' => ['nullable', 'boolean'],
         ]);
@@ -48,6 +48,6 @@ class EnseignantDisciplineController extends Controller
 
         return back()->withInput()
             ->with('discipline_association_form_open', true)
-            ->withErrors($result['errors'] ?: ['api' => $result['message']], 'associateDiscipline');
+            ->withErrors($result['errors'] ?: ['api' => $result['message']], 'associateSpecialite');
     }
 }

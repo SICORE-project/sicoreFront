@@ -5,7 +5,7 @@ namespace App\Services\Parametrage;
 use App\Services\Api\ApiClient;
 use Illuminate\Http\Client\ConnectionException;
 
-class EnseignantDisciplineService
+class EnseignantSpecialiteService
 {
     public function __construct(private readonly ApiClient $apiClient) {}
 
@@ -34,7 +34,7 @@ class EnseignantDisciplineService
 
         return [
             'success' => $response->successful(),
-            'message' => $response->json('message', $response->successful() ? 'Discipline associée à l’enseignant.' : 'Impossible d’associer la discipline.'),
+            'message' => $response->json('message', $response->successful() ? 'Spécialité associée à l’enseignant.' : 'Impossible d’associer la spécialité.'),
             'errors' => (array) $response->json('errors', []),
             'data' => $response->json('data'),
             'audit' => $response->json('audit'),

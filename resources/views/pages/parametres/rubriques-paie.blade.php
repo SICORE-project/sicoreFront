@@ -24,7 +24,7 @@
     @if (session('error'))<div class="alert alert-error" role="alert">{{ session('error') }}</div>@endif
     @if ($error)<div class="alert alert-error" role="alert">{{ $error }}</div>@endif
 
-    <form class="filter-panel rubrique-filters" method="GET" action="{{ route('parametres.rubriques-paie.index') }}" data-rubrique-filters>
+    <form class="filter-panel parametrage-filters rubrique-filters" method="GET" action="{{ route('parametres.rubriques-paie.index') }}" data-rubrique-filters>
       <div class="form-group rubrique-search">
         <label for="rubriqueSearch">Rechercher</label>
         <input class="form-control" id="rubriqueSearch" name="search" type="search" value="{{ $filters['search'] ?? '' }}" placeholder="Code, libellé ou description…" autocomplete="off">
@@ -75,7 +75,7 @@
                 @endif
               </tr>
             @empty
-              <tr><td colspan="{{ $canManage ? 6 : 5 }}" class="empty-message show">Aucune rubrique de paie trouvée.</td></tr>
+              <tr><td colspan="{{ $canManage ? 6 : 5 }}" class="empty-message show"><x-table-empty-state>Aucune rubrique de paie trouvée.</x-table-empty-state></td></tr>
             @endforelse
           </tbody>
         </table>

@@ -2,12 +2,12 @@
 
 namespace Tests\Feature;
 
-use App\Services\Parametrage\DisciplineService;
+use App\Services\Parametrage\SpecialiteService;
 use Illuminate\Support\Facades\Http;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
-class DisciplineTest extends TestCase
+class SpecialiteTest extends TestCase
 {
     private function userSession(array $permissions = ['parametrage.disciplines.consulter']): array
     {
@@ -67,7 +67,7 @@ class DisciplineTest extends TestCase
     public function test_a_discipline_can_be_added(): void
     {
         Http::fake(['*/parametrage/disciplines' => Http::response([
-            'message' => 'Discipline créée.',
+            'message' => 'Specialite créée.',
             'data' => ['id' => 12, 'code' => 'PHY', 'libelle' => 'Physique', 'statut' => 'actif'],
             'audit' => ['id' => 91, 'action' => 'creation'],
         ], 201)]);
@@ -77,7 +77,7 @@ class DisciplineTest extends TestCase
             'libelle' => 'Physique',
             'description' => 'Sciences physiques',
             'statut' => 'actif',
-        ])->assertRedirect(route('parametres.disciplines.index'))->assertSessionHas('success', 'Discipline créée.');
+        ])->assertRedirect(route('parametres.disciplines.index'))->assertSessionHas('success', 'Specialite créée.');
 
         Http::assertSent(fn ($request) => $request->method() === 'POST'
             && $request['code'] === 'PHY'
@@ -180,7 +180,7 @@ class DisciplineTest extends TestCase
     {
         Http::fake([
             '*/parametrage/disciplines/7' => Http::response([
-                'message' => 'Discipline modifiée.',
+                'message' => 'Specialite modifiée.',
                 'data' => ['id' => 7, 'code' => 'MATH', 'libelle' => 'Mathématiques générales', 'description' => 'Nouveau', 'statut' => 'actif'],
                 'audit' => ['id' => 92, 'action' => 'modification', 'subject_id' => 7],
             ]),
@@ -190,7 +190,7 @@ class DisciplineTest extends TestCase
             ->put('/parametrage/parametres/disciplines/7', [
                 'code' => 'MATH', 'libelle' => 'Mathématiques générales', 'description' => 'Nouveau', 'statut' => 'actif',
             ])->assertRedirect(route('parametres.disciplines.index'))
-            ->assertSessionHas('success', 'Discipline modifiée.');
+            ->assertSessionHas('success', 'Specialite modifiée.');
 
         Http::assertSent(fn ($request) => $request->method() === 'PUT'
             && str_ends_with($request->url(), '/parametrage/disciplines/7')
@@ -200,10 +200,10 @@ class DisciplineTest extends TestCase
 
     public function test_updating_an_unknown_discipline_displays_api_error(): void
     {
-        Http::fake(['*/parametrage/disciplines/999' => Http::response(['message' => 'Discipline introuvable.'], 404)]);
+        Http::fake(['*/parametrage/disciplines/999' => Http::response(['message' => 'Specialite introuvable.'], 404)]);
         $this->withSession($this->userSession(['parametrage.disciplines.modifier']))
             ->put('/parametrage/parametres/disciplines/999', ['code' => 'MAT', 'libelle' => 'Mathématiques', 'statut' => 'actif'])
-            ->assertSessionHasErrors(['api' => 'Discipline introuvable.'], null, 'updateDiscipline')
+            ->assertSessionHasErrors(['api' => 'Specialite introuvable.'], null, 'updateSpecialite')
             ->assertSessionHas('discipline_update_form_open', true);
     }
 
@@ -212,7 +212,7 @@ class DisciplineTest extends TestCase
         Http::fake();
         $this->withSession($this->userSession(['parametrage.disciplines.modifier']))
             ->put('/parametrage/parametres/disciplines/7', [])
-            ->assertSessionHasErrors(['code', 'libelle', 'statut'], null, 'updateDiscipline');
+            ->assertSessionHasErrors(['code', 'libelle', 'statut'], null, 'updateSpecialite');
         Http::assertNothingSent();
     }
 
@@ -222,7 +222,7 @@ class DisciplineTest extends TestCase
         Http::fake(['*/parametrage/disciplines/7' => Http::response(['errors' => [$field => [$message]]], 422)]);
         $this->withSession($this->userSession(['parametrage.disciplines.modifier']))
             ->put('/parametrage/parametres/disciplines/7', ['code' => 'MAT', 'libelle' => 'Mathématiques', 'statut' => 'actif'])
-            ->assertSessionHasErrors([$field => $message], null, 'updateDiscipline');
+            ->assertSessionHasErrors([$field => $message], null, 'updateSpecialite');
     }
 
     public static function updateUniquenessProvider(): array
@@ -250,17 +250,16 @@ class DisciplineTest extends TestCase
         ])->assertForbidden();
         Http::assertNothingSent();
     }
-
     public function test_update_service_preserves_api_response_and_audit_structure(): void
     {
         Http::fake(['*/parametrage/disciplines/7' => Http::response([
-            'message' => 'Discipline modifiée.',
+            'message' => 'Specialite modifiée.',
             'data' => ['id' => 7, 'code' => 'MAT', 'libelle' => 'Mathématiques', 'statut' => 'actif'],
             'audit' => ['id' => 92, 'action' => 'modification', 'subject_id' => 7],
         ])]);
 
         $result = $this->withSession($this->userSession(['parametrage.disciplines.modifier']))
-            ->app->make(DisciplineService::class)
+            ->app->make(SpecialiteService::class)
             ->update(7, ['code' => 'MAT', 'libelle' => 'Mathématiques', 'statut' => 'actif']);
 
         $this->assertTrue($result['success']);
@@ -272,7 +271,7 @@ class DisciplineTest extends TestCase
     public function test_active_discipline_can_be_deactivated_without_removing_associations(): void
     {
         Http::fake(['*/parametrage/disciplines/7/statut' => Http::response([
-            'message' => 'Discipline désactivée.',
+            'message' => 'Specialite désactivée.',
             'data' => ['id' => 7, 'statut' => 'inactif', 'associations_count' => 4],
             'audit' => ['id' => 101, 'action' => 'desactivation', 'subject_id' => 7],
         ])]);
@@ -280,7 +279,7 @@ class DisciplineTest extends TestCase
         $this->withSession($this->userSession(['parametrage.disciplines.changer-statut']))
             ->patch('/parametrage/parametres/disciplines/7/statut', ['statut' => 'inactif'])
             ->assertRedirect(route('parametres.disciplines.index'))
-            ->assertSessionHas('success', 'Discipline désactivée.');
+            ->assertSessionHas('success', 'Specialite désactivée.');
 
         Http::assertSent(fn ($request) => $request->method() === 'PATCH'
             && $request->data() === ['statut' => 'inactif']);
@@ -288,10 +287,10 @@ class DisciplineTest extends TestCase
 
     public function test_inactive_discipline_can_be_reactivated(): void
     {
-        Http::fake(['*/parametrage/disciplines/7/statut' => Http::response(['message' => 'Discipline réactivée.'])]);
+        Http::fake(['*/parametrage/disciplines/7/statut' => Http::response(['message' => 'Specialite réactivée.'])]);
         $this->withSession($this->userSession(['parametrage.disciplines.changer-statut']))
             ->patch('/parametrage/parametres/disciplines/7/statut', ['statut' => 'actif'])
-            ->assertSessionHas('success', 'Discipline réactivée.');
+            ->assertSessionHas('success', 'Specialite réactivée.');
         Http::assertSent(fn ($request) => $request['statut'] === 'actif');
     }
 
@@ -306,10 +305,10 @@ class DisciplineTest extends TestCase
 
     public function test_status_change_for_unknown_discipline_displays_api_error(): void
     {
-        Http::fake(['*/parametrage/disciplines/999/statut' => Http::response(['message' => 'Discipline introuvable.'], 404)]);
+        Http::fake(['*/parametrage/disciplines/999/statut' => Http::response(['message' => 'Specialite introuvable.'], 404)]);
         $this->withSession($this->userSession(['parametrage.disciplines.changer-statut']))
             ->patch('/parametrage/parametres/disciplines/999/statut', ['statut' => 'inactif'])
-            ->assertSessionHas('error', 'Discipline introuvable.');
+            ->assertSessionHas('error', 'Specialite introuvable.');
     }
 
     public function test_status_change_is_refused_without_permission(): void
@@ -353,7 +352,7 @@ class DisciplineTest extends TestCase
             ['id' => 7, 'code' => 'MAT', 'libelle' => 'Mathématiques', 'statut' => 'actif'],
         ]]])]);
 
-        $items = $this->app->make(DisciplineService::class)->getActiveForSelection();
+        $items = $this->app->make(SpecialiteService::class)->getActiveForSelection();
 
         $this->assertCount(1, $items);
         $this->assertSame('MAT', $items[0]['code']);
@@ -367,7 +366,7 @@ class DisciplineTest extends TestCase
             'audit' => ['id' => 101, 'action' => 'desactivation', 'subject_id' => 7],
         ])]);
 
-        $result = $this->app->make(DisciplineService::class)->updateStatus(7, 'inactif');
+        $result = $this->app->make(SpecialiteService::class)->updateStatus(7, 'inactif');
 
         $this->assertTrue($result['success']);
         $this->assertSame(4, $result['data']['associations_count']);

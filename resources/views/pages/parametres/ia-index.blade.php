@@ -41,7 +41,7 @@
       </div>
     </div>
 
-    <form class="filter-panel" id="iaFilterForm" method="GET" action="{{ route('parametres.ia.index') }}">
+    <form class="filter-panel parametrage-filters" id="iaFilterForm" method="GET" action="{{ route('parametres.ia.index') }}">
       <div class="form-group"><label for="iaSearch">Rechercher</label><input class="form-control" id="iaSearch" name="search" type="search" value="{{ request('search') }}" placeholder="Code ou libellé"></div>
       <div class="form-group"><label for="iaRegionFilter">Région</label><select class="form-control" id="iaRegionFilter" name="region_id"><option value="">Toutes les régions</option>@foreach ($regions as $region)<option value="{{ data_get($region, 'id') }}" @selected((string) request('region_id') === (string) data_get($region, 'id'))>{{ data_get($region, 'nom') }}</option>@endforeach</select></div>
       <div class="actions-group"><a class="btn-secondary" href="{{ route('parametres.ia.index') }}">Réinitialiser</a></div>
@@ -78,7 +78,7 @@
                     <i class="fa-solid fa-pen-to-square" aria-hidden="true"></i>
                   </button>
                   @if ($iaId && in_array(session('sicore_user.role_slug'), ['admin', 'super_admin'], true))
-                    <form method="POST" action="{{ route('parametres.ia.destroy', ['ia' => $iaId]) }}" class="inline-form" onsubmit="return confirm('Supprimer définitivement cette IA ? Cette action est irréversible.');">
+                    <form method="POST" action="{{ route('parametres.ia.destroy', ['ia' => $iaId]) }}" class="inline-form">
                       @csrf
                       @method('DELETE')
                       <button class="icon-action delete" type="submit" title="Supprimer" aria-label="Supprimer {{ data_get($ia, 'code') }}">
@@ -92,7 +92,7 @@
           </tbody>
         </table>
       </div>
-      <p class="empty-message {{ empty($items) ? 'show' : '' }}" role="status">Aucune inspection d’académie trouvée.</p>
+      <p class="empty-message {{ empty($items) ? 'show' : '' }}" role="status"><x-table-empty-state>Aucune inspection d’académie trouvée.</x-table-empty-state></p>
 
       <nav class="pagination" aria-label="Pagination">
         @for ($page = 1; $page <= $pagination['last_page']; $page++)

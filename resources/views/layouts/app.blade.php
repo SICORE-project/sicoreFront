@@ -24,6 +24,10 @@ class="app-body" @yield('page_attributes')
   {{-- Chaque fichier resources/views/pages/... fournit cette section. --}}
   @yield('content')
 
+  @if (request()->routeIs('parametres.*', 'enseignants.*'))
+    <x-delete-confirmation />
+  @endif
+
   {{-- Calque utilisé par app.js pour fermer le menu sur mobile. --}}
   <div class="mobile-overlay" data-sidebar-close aria-hidden="true"></div>
 @endsection

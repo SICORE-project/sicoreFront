@@ -260,7 +260,7 @@ class PiecesJustificativesController extends Controller
             // sous 'provenance_override' — ces deux rôles n'ont pas de
             // ligne pivot) > provenance saisie pour CETTE convocation
             // (pivot convocation_enseignant.provenance, ex: import Word,
-            // pour un membre du jury ordinaire) > lieu de service permanent
+            // pour un membre du jury ordinaire) > établissement permanent
             // de l'enseignant (souvent vide en pratique) — même priorité
             // que FraisDeplacementController::provenanceEnseignant() côté back.
             'provenance' => $enseignant['provenance_override'] ?? $enseignant['pivot']['provenance'] ?? $enseignant['lieu_service']['libelle'] ?? null,

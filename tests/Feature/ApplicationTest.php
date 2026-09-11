@@ -612,17 +612,18 @@ class ApplicationTest extends TestCase
             'access_token' => 'valid-token',
         ])->get('/parametrage/parametres/lieux-service')
             ->assertOk()
-            ->assertSee('Lieux de service')
+            ->assertSee('Établissements')
             ->assertSee('École élémentaire Liberté')
             ->assertSee('IA de Dakar')
             ->assertSee('IEF Grand Dakar')
-            ->assertSee('Conforme')
+            ->assertDontSee('<th>Code</th>', false)
+            ->assertDontSee('<th>Type</th>', false)
+            ->assertSee('<th>Téléphone</th>', false)
             ->assertSee('data-lieu-edit', false)
-            ->assertSee('data-lieu-status', false)
-            ->assertSee('Désactiver')
-            ->assertSee('data-lieu-affectation', false)
-            ->assertSee('Affecter')
-            ->assertSee('Modifier un lieu de service');
+            ->assertDontSee('data-lieu-status', false)
+            ->assertDontSee('data-lieu-affectation', false)
+            ->assertDontSee('Affecter un enseignant')
+            ->assertSee('Modifier un établissement');
 
         Http::assertSent(fn ($request): bool => $request->method() === 'GET'
             && str_contains($request->url(), '/api/parametrage/lieux-service')
@@ -630,7 +631,7 @@ class ApplicationTest extends TestCase
             && $request['per_page'] === 10);
     }
 
-    public function test_service_location_page_flags_an_ia_ief_mismatch(): void
+    public function test_service_location_page_shows_only_the_requested_details(): void
     {
         Http::fake(['*/parametrage/lieux-service*' => Http::response(['data' => [[
             'code' => 'LS-002', 'libelle' => 'Lycée Test', 'ia' => ['id' => 2, 'libelle' => 'IA Dakar'],
@@ -640,15 +641,15 @@ class ApplicationTest extends TestCase
         $this->withSession(['sicore_user' => ['name' => 'Gestionnaire']])
             ->get('/parametrage/parametres/lieux-service')
             ->assertOk()
-            ->assertSee('À vérifier')
-            ->assertSee('une incohérence entre l’IA et l’IEF');
+            ->assertSee('IA Dakar')->assertSee('IEF Thiès')
+            ->assertDontSee('<th>Cohérence</th>', false)->assertDontSee('id="lieuCode"', false);
     }
 
     public function test_service_location_can_be_created(): void
     {
         Http::fake([
             '*/parametrage/lieux-service' => Http::response([
-                'message' => 'Lieu de service créé avec succès.',
+                    'message' => 'Établissement créé avec succès.',
                 'data' => ['id' => 21],
             ], 201),
         ]);
@@ -659,15 +660,17 @@ class ApplicationTest extends TestCase
         ])->post('/parametrage/parametres/lieux-service', [
             'code' => 'LS-021',
             'libelle' => 'École Liberté',
+            'telephone' => '771234567',
             'ia_id' => 2,
             'ief_id' => 7,
         ])->assertRedirect(route('parametres.lieux-service.index'))
-            ->assertSessionHas('success', 'Lieu de service créé avec succès.');
+            ->assertSessionHas('success', 'Établissement créé avec succès.');
 
         Http::assertSent(fn ($request): bool => $request->method() === 'POST'
             && str_ends_with($request->url(), '/api/parametrage/lieux-service')
-            && $request['code'] === 'LS-021'
+            && ! isset($request['code'])
             && $request['libelle'] === 'École Liberté'
+            && $request['telephone'] === '771234567'
             && $request['ia_id'] === 2
             && $request['ief_id'] === 7);
     }
@@ -676,14 +679,14 @@ class ApplicationTest extends TestCase
     {
         $this->withSession(['sicore_user' => ['name' => 'Gestionnaire']])
             ->post('/parametrage/parametres/lieux-service', [])
-            ->assertSessionHasErrors(['code', 'libelle', 'ia_id', 'ief_id']);
+            ->assertSessionHasErrors(['libelle', 'ia_id', 'ief_id']);
     }
 
     public function test_service_location_can_be_updated(): void
     {
         Http::fake([
             '*/parametrage/lieux-service/9' => Http::response([
-                'message' => 'Lieu de service modifié avec succès.',
+                    'message' => 'Établissement modifié avec succès.',
             ]),
         ]);
 
@@ -693,25 +696,27 @@ class ApplicationTest extends TestCase
         ])->put('/parametrage/parametres/lieux-service/9', [
             'code' => 'LS-009',
             'libelle' => 'Lycée de Dakar',
+            'telephone' => null,
             'ia_id' => 2,
             'ief_id' => 7,
         ])->assertRedirect(route('parametres.lieux-service.index'))
-            ->assertSessionHas('success', 'Lieu de service modifié avec succès.');
+            ->assertSessionHas('success', 'Établissement modifié avec succès.');
 
         Http::assertSent(fn ($request): bool => $request->method() === 'PUT'
             && str_ends_with($request->url(), '/api/parametrage/lieux-service/9')
-            && $request['code'] === 'LS-009'
+            && ! isset($request['code'])
             && $request['libelle'] === 'Lycée de Dakar'
+            && $request['telephone'] === null
             && $request['ia_id'] === 2
             && $request['ief_id'] === 7);
     }
 
-    public function test_service_location_update_preserves_backend_uniqueness_errors(): void
+    public function test_service_location_update_preserves_backend_hierarchy_errors(): void
     {
         Http::fake([
             '*/parametrage/lieux-service/9' => Http::response([
                 'message' => 'Les données sont invalides.',
-                'errors' => ['code' => ['Ce code est déjà utilisé.']],
+                'errors' => ['ief_id' => ['Cette IEF n’appartient pas à cette IA.']],
             ], 422),
         ]);
 
@@ -719,7 +724,7 @@ class ApplicationTest extends TestCase
             ->put('/parametrage/parametres/lieux-service/9', [
                 'code' => 'LS-001', 'libelle' => 'Lycée', 'ia_id' => 2, 'ief_id' => 7,
             ])->assertRedirect()
-            ->assertSessionHasErrors(['code' => 'Ce code est déjà utilisé.'], null, 'updateLieu')
+            ->assertSessionHasErrors(['ief_id' => 'Cette IEF n’appartient pas à cette IA.'], null, 'updateLieu')
             ->assertSessionHas('lieu_edit_form_open', true)
             ->assertSessionHas('lieu_edit_id', '9');
     }
@@ -728,7 +733,7 @@ class ApplicationTest extends TestCase
     {
         $this->withSession(['sicore_user' => ['name' => 'Gestionnaire']])
             ->put('/parametrage/parametres/lieux-service/9', [])
-            ->assertSessionHasErrors(['code', 'libelle', 'ia_id', 'ief_id'], null, 'updateLieu')
+            ->assertSessionHasErrors(['libelle', 'ia_id', 'ief_id'], null, 'updateLieu')
             ->assertSessionHas('lieu_edit_form_open', true);
     }
 
@@ -736,7 +741,7 @@ class ApplicationTest extends TestCase
     {
         Http::fake([
             '*/parametrage/lieux-service/9/statut' => Http::response([
-                'message' => 'Lieu de service désactivé.',
+                    'message' => 'Établissement désactivé.',
             ]),
         ]);
 
@@ -745,7 +750,7 @@ class ApplicationTest extends TestCase
             'access_token' => 'valid-token',
         ])->patch('/parametrage/parametres/lieux-service/9/statut', ['actif' => '0'])
             ->assertRedirect(route('parametres.lieux-service.index'))
-            ->assertSessionHas('success', 'Lieu de service désactivé.');
+            ->assertSessionHas('success', 'Établissement désactivé.');
 
         Http::assertSent(fn ($request): bool => $request->method() === 'PATCH'
             && str_ends_with($request->url(), '/api/parametrage/lieux-service/9/statut')
@@ -761,7 +766,7 @@ class ApplicationTest extends TestCase
         $this->withSession(['sicore_user' => ['name' => 'Gestionnaire']])
             ->patch('/parametrage/parametres/lieux-service/9/statut', ['actif' => '1'])
             ->assertRedirect(route('parametres.lieux-service.index'))
-            ->assertSessionHas('success', 'Lieu de service activé.');
+            ->assertSessionHas('success', 'Établissement activé.');
 
         Http::assertSent(fn ($request): bool => $request['actif'] === true);
     }
@@ -781,7 +786,7 @@ class ApplicationTest extends TestCase
     {
         Http::fake([
             '*/enseignants/8/affectations' => Http::response([
-                'message' => 'Enseignant affecté au lieu de service avec succès.',
+                    'message' => 'Enseignant affecté à l’établissement avec succès.',
                 'data' => ['id' => 31, 'actif' => true],
             ], 201),
         ]);
@@ -793,7 +798,7 @@ class ApplicationTest extends TestCase
             'enseignant_id' => 8,
             'date_debut' => '2026-08-22',
         ])->assertRedirect(route('parametres.lieux-service.index'))
-            ->assertSessionHas('success', 'Enseignant affecté au lieu de service avec succès.');
+            ->assertSessionHas('success', 'Enseignant affecté à l’établissement avec succès.');
 
         Http::assertSent(fn ($request): bool => $request->method() === 'POST'
             && str_ends_with($request->url(), '/api/enseignants/8/affectations')
@@ -821,15 +826,15 @@ class ApplicationTest extends TestCase
     {
         Http::fake([
             '*/enseignants/8/affectations' => Http::response([
-                'message' => 'Affectation impossible.',
-                'errors' => ['lieu_service_id' => ['Ce lieu de service est inactif.']],
+                    'message' => 'Affectation impossible.',
+                'errors' => ['lieu_service_id' => ['Cet établissement est inactif.']],
             ], 422),
         ]);
 
         $this->withSession(['sicore_user' => ['name' => 'Gestionnaire']])
             ->post('/parametrage/parametres/lieux-service/9/affectations', [
                 'enseignant_id' => 8, 'date_debut' => '2026-08-22',
-            ])->assertSessionHasErrors(['lieu_service_id' => 'Ce lieu de service est inactif.'], null, 'affectationLieu')
+            ])->assertSessionHasErrors(['lieu_service_id' => 'Cet établissement est inactif.'], null, 'affectationLieu')
             ->assertSessionHas('affectation_form_open', true);
     }
 
@@ -850,11 +855,11 @@ class ApplicationTest extends TestCase
             ->get('/parametrage/parametres/lieux-service?search=Dakar&ia_id=1&ief_id=2&statut=actif&sort=code&direction=desc')
             ->assertOk()->assertSee('École Dakar')->assertSee('Réinitialiser')
             ->assertSee('id="lieuxLoading"', false)->assertSee('data-lieu-detail', false)
-            ->assertSee('Fiche du lieu de service');
+            ->assertSee('Fiche de l’établissement');
 
         Http::assertSent(fn ($request): bool => str_contains($request->url(), '/api/parametrage/lieux-service')
             && $request['search'] === 'Dakar' && $request['ia_id'] === '1' && $request['ief_id'] === '2'
-            && $request['statut'] === 'actif' && $request['sort'] === 'code' && $request['direction'] === 'desc');
+            && ! isset($request['statut']) && ! isset($request['sort']) && ! isset($request['direction']));
     }
 
     public function test_central_service_location_coherence_is_not_applicable(): void
@@ -867,6 +872,6 @@ class ApplicationTest extends TestCase
 
         $this->withSession(['sicore_user' => ['name' => 'Gestionnaire']])
             ->get('/parametrage/parametres/lieux-service')
-            ->assertOk()->assertSee('Non applicable')->assertDontSee('À vérifier');
+            ->assertOk()->assertSee('DAGE')->assertDontSee('<th>Cohérence</th>', false);
     }
 }

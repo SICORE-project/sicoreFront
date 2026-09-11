@@ -34,7 +34,7 @@ class LieuServiceService
         }
 
         if (! $response->successful()) {
-            return $this->emptyResult($page, $perPage, $response->json('message', 'Impossible de charger les lieux de service.'));
+            return $this->emptyResult($page, $perPage, $response->json('message', 'Impossible de charger les établissements.'));
         }
 
         $payload = $response->json();
@@ -65,13 +65,13 @@ class LieuServiceService
         }
 
         if ($response->successful()) {
-            return ['success' => true, 'message' => $response->json('message', 'Lieu de service créé avec succès.'), 'data' => $response->json('data')];
+            return ['success' => true, 'message' => $response->json('message', 'Établissement créé avec succès.'), 'data' => $response->json('data')];
         }
 
         return [
             'success' => false,
             'unauthorized' => $response->unauthorized(),
-            'message' => $response->json('message', 'Impossible de créer le lieu de service.'),
+            'message' => $response->json('message', 'Impossible de créer l’établissement.'),
             'errors' => $response->json('errors', []),
         ];
     }
@@ -85,14 +85,29 @@ class LieuServiceService
         }
 
         if ($response->successful()) {
-            return ['success' => true, 'message' => $response->json('message', 'Lieu de service modifié avec succès.'), 'data' => $response->json('data')];
+            return ['success' => true, 'message' => $response->json('message', 'Établissement modifié avec succès.'), 'data' => $response->json('data')];
         }
 
         return [
             'success' => false,
             'unauthorized' => $response->unauthorized(),
-            'message' => $response->json('message', 'Impossible de modifier le lieu de service.'),
+            'message' => $response->json('message', 'Impossible de modifier l’établissement.'),
             'errors' => $response->json('errors', []),
+        ];
+    }
+
+    public function delete(string|int $id): array
+    {
+        try {
+            $response = $this->apiClient->delete("parametrage/lieux-service/{$id}");
+        } catch (ConnectionException) {
+            return ['success' => false, 'unauthorized' => false, 'message' => 'Le service backend est momentanément inaccessible.'];
+        }
+
+        return [
+            'success' => $response->successful(),
+            'unauthorized' => $response->unauthorized(),
+            'message' => $response->json('message', 'Impossible de supprimer l’établissement.'),
         ];
     }
 
@@ -107,14 +122,14 @@ class LieuServiceService
         if ($response->successful()) {
             return [
                 'success' => true,
-                'message' => $response->json('message', $active ? 'Lieu de service activé.' : 'Lieu de service désactivé.'),
+                'message' => $response->json('message', $active ? 'Établissement activé.' : 'Établissement désactivé.'),
             ];
         }
 
         return [
             'success' => false,
             'unauthorized' => $response->unauthorized(),
-            'message' => $response->json('message', 'Impossible de modifier le statut du lieu de service.'),
+            'message' => $response->json('message', 'Impossible de modifier le statut de l’établissement.'),
             'errors' => $response->json('errors', []),
         ];
     }
@@ -134,7 +149,7 @@ class LieuServiceService
         if ($response->successful()) {
             return [
                 'success' => true,
-                'message' => $response->json('message', 'Enseignant affecté au lieu de service avec succès.'),
+                'message' => $response->json('message', 'Enseignant affecté à l’établissement avec succès.'),
                 'data' => $response->json('data'),
             ];
         }
@@ -142,7 +157,7 @@ class LieuServiceService
         return [
             'success' => false,
             'unauthorized' => $response->unauthorized(),
-            'message' => $response->json('message', 'Impossible d’affecter cet enseignant au lieu de service.'),
+            'message' => $response->json('message', 'Impossible d’affecter cet enseignant à l’établissement.'),
             'errors' => $response->json('errors', []),
         ];
     }

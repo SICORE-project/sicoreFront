@@ -5,7 +5,7 @@ namespace App\Services\Parametrage;
 use App\Services\Api\ApiClient;
 use Illuminate\Http\Client\ConnectionException;
 
-class DisciplineService
+class SpecialiteService
 {
     public function __construct(private readonly ApiClient $apiClient) {}
 
@@ -29,7 +29,7 @@ class DisciplineService
             return [...$this->empty($page, 'Votre session backend a expiré. Veuillez vous reconnecter.'), 'unauthorized' => true];
         }
         if (! $response->successful()) {
-            return $this->empty($page, $response->json('message', 'Impossible de charger les disciplines.'));
+            return $this->empty($page, $response->json('message', 'Impossible de charger les spécialités.'));
         }
 
         $payload = $response->json();
@@ -59,7 +59,7 @@ class DisciplineService
         return [
             'success' => $response->successful(),
             'unauthorized' => $response->unauthorized(),
-            'message' => $response->json('message', $response->successful() ? 'Discipline ajoutée.' : 'Impossible d’ajouter la discipline.'),
+            'message' => $response->json('message', $response->successful() ? 'Spécialité ajoutée.' : 'Impossible d’ajouter la spécialité.'),
             'errors' => (array) $response->json('errors', []),
             'data' => $response->json('data'),
             'audit' => $response->json('audit'),
@@ -77,7 +77,7 @@ class DisciplineService
         return [
             'success' => $response->successful(),
             'unauthorized' => $response->unauthorized(),
-            'message' => $response->json('message', $response->successful() ? 'Discipline modifiée.' : 'Impossible de modifier la discipline.'),
+            'message' => $response->json('message', $response->successful() ? 'Spécialité modifiée.' : 'Impossible de modifier la spécialité.'),
             'errors' => (array) $response->json('errors', []),
             'data' => $response->json('data'),
             'audit' => $response->json('audit'),
@@ -94,7 +94,7 @@ class DisciplineService
 
         return [
             'success' => $response->successful(),
-            'message' => $response->json('message', $response->successful() ? 'Statut de la discipline mis à jour.' : 'Impossible de modifier le statut de la discipline.'),
+            'message' => $response->json('message', $response->successful() ? 'Statut de la spécialité mis à jour.' : 'Impossible de modifier le statut de la spécialité.'),
             'data' => $response->json('data'),
             'audit' => $response->json('audit'),
         ];
@@ -110,7 +110,7 @@ class DisciplineService
 
         return [
             'success' => $response->successful(),
-            'message' => $response->json('message', $response->successful() ? 'Discipline supprimée.' : 'Impossible de supprimer la discipline.'),
+            'message' => $response->json('message', $response->successful() ? 'Spécialité supprimée.' : 'Impossible de supprimer la spécialité.'),
         ];
     }
 
