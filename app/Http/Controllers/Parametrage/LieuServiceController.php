@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Parametrage;
 
 use App\Http\Controllers\Controller;
-use App\Services\Parametrage\CompteBancaireEnseignantService;
 use App\Services\Parametrage\InspectionAcademieService;
 use App\Services\Parametrage\LieuServiceService;
 use Illuminate\Http\RedirectResponse;
@@ -13,17 +12,19 @@ use Illuminate\View\View;
 
 class LieuServiceController extends Controller
 {
-    public function index(Request $request, LieuServiceService $service, InspectionAcademieService $academieService, CompteBancaireEnseignantService $enseignantService): View|RedirectResponse
+    public function index(Request $request, LieuServiceService $service, InspectionAcademieService $academieService): View|RedirectResponse
     {
         $filters = $request->validate([
             'search' => ['nullable', 'string', 'max:100'],
             'ia_id' => ['nullable', 'integer'],
             'ief_id' => ['nullable', 'integer'],
-            'statut' => ['nullable', 'in:actif,inactif'],
-            'sort' => ['nullable', 'in:code,libelle'],
-            'direction' => ['nullable', 'in:asc,desc'],
         ]);
-        $result = $service->getAll(max(1, $request->integer('page', 1)), 10, $filters);
+        $pageOptions = $request->validate([
+            'page' => ['nullable', 'integer', 'min:1'],
+            'per_page' => ['nullable', 'integer', 'in:10,20,50'],
+        ]);
+        $perPage = (int) ($pageOptions['per_page'] ?? 10);
+        $result = $service->getAll((int) ($pageOptions['page'] ?? 1), $perPage, $filters);
 
         if ($result['unauthorized']) {
             $request->session()->forget(['access_token', 'sicore_user']);
@@ -33,31 +34,13 @@ class LieuServiceController extends Controller
             return redirect()->route('login')->with('warning', $result['error']);
         }
 
-        $items = collect($result['items']);
-        $isActive = static function (array $item): bool {
-            $status = data_get($item, 'statut', data_get($item, 'status', data_get($item, 'est_actif', data_get($item, 'actif', true))));
-            $status = is_string($status) ? mb_strtolower(trim($status)) : $status;
+        if (! $result['error'] && $result['pagination']['current_page'] > $result['pagination']['last_page']) {
+            return redirect()->route('parametres.lieux-service.index', array_merge($filters, [
+                'page' => $result['pagination']['last_page'],
+                'per_page' => $perPage,
+            ]));
+        }
 
-            return in_array($status, [true, 1, '1', 'actif', 'active', 'true', 'oui', 'yes'], true);
-        };
-        $isConsistent = static function (array $item): bool {
-            $iaId = data_get($item, 'ia.id', data_get($item, 'inspection_academie.id', data_get($item, 'inspection_academie_id')));
-            $iefIaId = data_get($item, 'ief.inspection_academie_id', data_get($item, 'ief.ia_id', data_get($item, 'ief.ia.id')));
-
-            if ($iaId === null && $iefIaId === null) {
-                return true;
-            }
-            if ($iaId === null || $iefIaId === null) {
-                return false;
-            }
-
-            return (string) $iaId === (string) $iefIaId;
-        };
-
-        $result['activeCount'] = $items->filter($isActive)->count();
-        $result['inactiveCount'] = $items->count() - $result['activeCount'];
-        $result['inconsistentCount'] = $items->reject($isConsistent)->count();
-        $result['teachers'] = $enseignantService->getTeachers();
         $result['filters'] = $filters;
 
         $academiesResult = $academieService->getAll(1, 100);
@@ -80,12 +63,12 @@ class LieuServiceController extends Controller
     public function store(Request $request, LieuServiceService $service): RedirectResponse
     {
         $data = $request->validate([
-            'code' => ['required', 'string', 'max:30'],
-            'libelle' => ['required', 'string', 'max:255'],
-            'ia_id' => ['required'],
-            'ief_id' => ['required'],
+            'libelle' => ['required', 'string', 'max:100'],
+            'ia_id' => ['required', 'integer', 'min:1'],
+            'ief_id' => ['required', 'integer', 'min:1'],
+            'telephone' => ['nullable', 'string', 'max:20'],
         ], ['required' => 'Le champ :attribute est obligatoire.'], [
-            'code' => 'code', 'libelle' => 'libellé', 'ia_id' => 'IA', 'ief_id' => 'IEF',
+            'libelle' => 'nom de l’établissement', 'ia_id' => 'IA', 'ief_id' => 'IEF',
         ]);
 
         $result = $service->create($data);
@@ -109,12 +92,12 @@ class LieuServiceController extends Controller
     public function update(Request $request, string $lieu, LieuServiceService $service): RedirectResponse
     {
         $validator = Validator::make($request->all(), [
-            'code' => ['required', 'string', 'max:30'],
-            'libelle' => ['required', 'string', 'max:255'],
-            'ia_id' => ['required'],
-            'ief_id' => ['required'],
+            'libelle' => ['required', 'string', 'max:100'],
+            'ia_id' => ['required', 'integer', 'min:1'],
+            'ief_id' => ['required', 'integer', 'min:1'],
+            'telephone' => ['nullable', 'string', 'max:20'],
         ], ['required' => 'Le champ :attribute est obligatoire.'], [
-            'code' => 'code', 'libelle' => 'libellé', 'ia_id' => 'IA', 'ief_id' => 'IEF',
+            'libelle' => 'nom de l’établissement', 'ia_id' => 'IA', 'ief_id' => 'IEF',
         ]);
         if ($validator->fails()) {
             return back()->withInput()->withErrors($validator, 'updateLieu')
@@ -139,6 +122,22 @@ class LieuServiceController extends Controller
         }
 
         return redirect()->route('parametres.lieux-service.index')->with('success', $result['message']);
+    }
+
+    public function destroy(Request $request, string $lieu, LieuServiceService $service): RedirectResponse
+    {
+        $result = $service->delete($lieu);
+
+        if ($result['unauthorized'] ?? false) {
+            $request->session()->forget(['access_token', 'sicore_user']);
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            return redirect()->route('login')->with('warning', 'Votre session backend a expiré. Veuillez vous reconnecter.');
+        }
+
+        return redirect()->route('parametres.lieux-service.index')
+            ->with($result['success'] ? 'success' : 'error', $result['message']);
     }
 
     public function updateStatus(Request $request, string $lieu, LieuServiceService $service): RedirectResponse

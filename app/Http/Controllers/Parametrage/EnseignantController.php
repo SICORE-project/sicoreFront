@@ -5,15 +5,17 @@ namespace App\Http\Controllers\Parametrage;
 use App\Http\Controllers\Controller;
 use App\Services\Parametrage\EnseignantService;
 use App\Services\Parametrage\InspectionAcademieService;
+use App\Services\Parametrage\IefService;
 use App\Services\Parametrage\CorpsService;
 use App\Services\Parametrage\CategorieService;
 use App\Services\Parametrage\DiplomeService;
-use App\Services\Parametrage\DisciplineService;
+use App\Services\Parametrage\SpecialiteService;
 use App\Services\Parametrage\LieuServiceService;
 use App\Services\Parametrage\InstitutionFinanciereService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
+use Illuminate\Http\JsonResponse;
 
 class EnseignantController extends Controller
 {
@@ -22,28 +24,39 @@ class EnseignantController extends Controller
         EnseignantService $service,
         InspectionAcademieService $academies,
         CorpsService $corps,
+        IefService $iefs,
         CategorieService $categories,
         DiplomeService $diplomes,
-        DisciplineService $disciplines,
-        LieuServiceService $lieuxService,
+        SpecialiteService $disciplines,
         InstitutionFinanciereService $institutions,
     ): View|RedirectResponse
     {
-        $result = $service->getAll([
+        $filters = $request->validate([
+            'search' => ['nullable', 'string', 'max:100'],
+            'prenom' => ['nullable', 'string', 'max:50'],
+            'nom' => ['nullable', 'string', 'max:50'],
+            'corps_id' => ['nullable', 'integer', 'min:1'],
+            'diplome_id' => ['nullable', 'integer', 'min:1'],
+            'ia_id' => ['nullable', 'integer', 'min:1'],
+            'ief_id' => ['nullable', 'integer', 'min:1'],
+        ]);
+        $result = $service->getAll(array_merge($filters, [
             'page' => max(1, $request->integer('page', 1)),
             'per_page' => 20,
-        ]);
+        ]));
         if ($result['unauthorized']) {
             $request->session()->forget(['access_token', 'sicore_user']);
             return redirect()->route('login')->with('warning', $result['error']);
         }
         $iaResult = $academies->getAll(1, 100);
         $result['academies'] = $iaResult['items'];
+        $result['filterIefs'] = $request->filled('ia_id') ? $academies->getIefs($request->integer('ia_id'))['items'] : [];
+        $result['regionOptions'] = $academies->regions();
+        $result['iefOptions'] = $iefs->getAll(['per_page' => 100])['items'];
         $result['corpsOptions'] = $corps->getAll(['per_page' => 100])['items'];
         $result['categorieOptions'] = $categories->getAll(['per_page' => 100])['items'];
         $result['diplomeOptions'] = $diplomes->options();
         $result['disciplineOptions'] = $disciplines->getActiveForSelection();
-        $result['lieuServiceOptions'] = $lieuxService->getAll(1, 100, ['statut' => 'actif'])['items'];
         $result['institutionOptions'] = $institutions->getAll(1, 100, ['statut' => 'actif'])['items'];
         return view('pages.enseignants.index', $result);
     }
@@ -52,6 +65,23 @@ class EnseignantController extends Controller
     {
         $result = $academies->getIefs($request->integer('ia_id'));
         return response()->json(['items' => $result['items'], 'error' => $result['error']]);
+    }
+
+    public function etablissements(Request $request, LieuServiceService $lieux): JsonResponse
+    {
+        $filters = $request->validate(['ief_id' => ['required', 'integer', 'min:1']]);
+        $items = [];
+        $page = 1;
+        do {
+            $result = $lieux->getAll($page, 100, $filters);
+            if ($result['error']) {
+                return response()->json(['items' => [], 'error' => $result['error']], $result['unauthorized'] ? 401 : 502);
+            }
+            $items = array_merge($items, $result['items']);
+            $page++;
+        } while ($page <= $result['pagination']['last_page']);
+
+        return response()->json(['items' => $items, 'error' => null]);
     }
 
     public function create(): View
@@ -63,6 +93,39 @@ class EnseignantController extends Controller
     {
         $result = $service->create($this->validated($request));
         return $this->redirect($result);
+    }
+
+    public function storeReferentiel(
+        Request $request,
+        CorpsService $corps,
+        InspectionAcademieService $academies,
+        IefService $iefs,
+        CategorieService $categories,
+        SpecialiteService $disciplines,
+        DiplomeService $diplomes,
+        LieuServiceService $lieux,
+        InstitutionFinanciereService $institutions,
+    ): JsonResponse {
+        $type = $request->string('type')->toString();
+        $rules = config('teacher_referentiels')[$type] ?? null;
+        abort_if($rules === null, 422, 'Type de référentiel inconnu.');
+        $data = $request->validate($rules);
+        $result = match ($type) {
+            'corps' => $corps->create($data),
+            'categorie' => $categories->create($data),
+            'discipline' => $disciplines->create($data),
+            'lieu_service' => $lieux->create($data),
+            'banque' => $institutions->create($data),
+            'diplome' => $diplomes->create($data),
+            'ia' => $academies->create($data),
+            'ief' => $iefs->create($data),
+        };
+
+        if (! ($result['success'] ?? false)) {
+            return response()->json(['message' => $result['message'] ?? 'Création impossible.', 'errors' => $result['errors'] ?? []], 422);
+        }
+
+        return response()->json(['message' => $result['message'] ?? 'Référentiel créé.', 'data' => $result['data'] ?? null]);
     }
 
     public function edit(int $enseignant, EnseignantService $service): View|RedirectResponse
@@ -86,16 +149,22 @@ class EnseignantController extends Controller
 
     private function validated(Request $request): array
     {
+        $married = $request->boolean('est_en_couple');
+        $request->merge([
+            'nombre_enfants' => $married ? ($request->input('nombre_enfants') ?? 0) : 0,
+            'nombre_femmes' => $married ? ($request->input('nombre_femmes') ?? 0) : 0,
+            'conjoint_travaille' => $married ? ($request->input('conjoint_travaille') ?? false) : false,
+        ]);
         return $request->validate([
-            'matricule' => ['required', 'string', 'max:30'],
+            'matricule' => ['required', 'string', 'max:9', 'regex:/\A[A-Za-z0-9]+\z/'],
             'nom' => ['required', 'string', 'max:50'],
             'prenom' => ['required', 'string', 'max:50'],
-            'date_naissance' => ['nullable', 'date', 'before:today'],
+            'date_naissance' => ['required', 'date', 'before_or_equal:'.now()->subYears(18)->format('Y-m-d')],
             'telephone' => ['nullable', 'string', 'max:20'],
             'email' => ['nullable', 'email', 'max:100'],
             'adresse' => ['nullable', 'string', 'max:255'],
             'lieu_naissance' => ['nullable', 'string', 'max:100'],
-            'cni' => ['nullable', 'string', 'max:50'],
+            'cni' => ['nullable', 'string', 'regex:/\A[0-9]{13,15}\z/'],
             'genre' => ['nullable', 'in:M,F'],
             'diplome_id' => ['nullable', 'integer', 'min:1'],
             'discipline_id' => ['nullable', 'integer', 'min:1'],
@@ -107,7 +176,7 @@ class EnseignantController extends Controller
             'nombre_enfants' => ['nullable', 'integer', 'min:0'],
             'nombre_femmes' => ['nullable', 'integer', 'min:0'],
             'nombre_parts_fiscales' => ['required', 'numeric', 'min:1', 'max:5'],
-            'conjoint_travaille' => ['required', 'boolean'],
+            'conjoint_travaille' => ['nullable', 'boolean'],
             'observations' => ['nullable', 'string'],
             'compte_bancaire' => ['nullable', 'array'],
             'compte_bancaire.institut_financier_id' => ['nullable', 'integer', 'min:1'],
@@ -128,9 +197,12 @@ class EnseignantController extends Controller
             'statut' => ['required', 'in:en_activite,retraite,suspension_provisoire,abandon,decede,integre,radie,cessation_paiement'],
             'est_actif' => ['required', 'boolean'],
         ], [
-            'date_naissance.before' => 'La date de naissance doit être antérieure à aujourd’hui.',
+            'date_naissance.before_or_equal' => 'L’enseignant doit avoir au moins 18 ans.',
             'date_naissance.date' => 'Veuillez saisir une date de naissance valide.',
             'email.email' => 'Veuillez saisir une adresse e-mail valide.',
+            'matricule.max' => 'Le matricule ne doit pas dépasser 9 caractères.',
+            'matricule.regex' => 'Le matricule doit contenir uniquement des lettres et des chiffres.',
+            'cni.regex' => 'Le numéro de carte d’identité doit contenir entre 13 et 15 chiffres.',
             'matricule.required' => 'Le matricule est obligatoire.',
             'matricule.unique' => 'Ce matricule existe déjà.',
             'nom.required' => 'Le nom est obligatoire.',

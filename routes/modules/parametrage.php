@@ -4,8 +4,8 @@ use App\Http\Controllers\Parametrage\AnneeAcademiqueController;
 use App\Http\Controllers\Parametrage\CategorieController;
 use App\Http\Controllers\Parametrage\CorpsController;
 use App\Http\Controllers\Parametrage\DiplomesController;
-use App\Http\Controllers\Parametrage\DisciplineController;
-use App\Http\Controllers\Parametrage\EnseignantDisciplineController;
+use App\Http\Controllers\Parametrage\SpecialiteController;
+use App\Http\Controllers\Parametrage\EnseignantSpecialiteController;
 use App\Http\Controllers\Parametrage\EnseignantController;
 use App\Http\Controllers\Parametrage\GradeController;
 use App\Http\Controllers\Parametrage\IefController;
@@ -36,14 +36,16 @@ Route::middleware('sicore.auth')
 
         Route::get('/enseignants', [EnseignantController::class, 'index'])->name('enseignants.index');
         Route::get('/enseignants/iefs', [EnseignantController::class, 'ieFs'])->name('enseignants.iefs');
+        Route::get('/enseignants/etablissements', [EnseignantController::class, 'etablissements'])->name('enseignants.etablissements');
         Route::get('/enseignants/nouveau', [EnseignantController::class, 'create'])->name('enseignants.create');
         Route::post('/enseignants', [EnseignantController::class, 'store'])->name('enseignants.store');
+        Route::post('/enseignants/referentiels', [EnseignantController::class, 'storeReferentiel'])->name('enseignants.referentiels.store');
         Route::get('/enseignants/{enseignant}/modifier', [EnseignantController::class, 'edit'])->whereNumber('enseignant')->name('enseignants.edit');
         Route::put('/enseignants/{enseignant}', [EnseignantController::class, 'update'])->whereNumber('enseignant')->name('enseignants.update');
         Route::delete('/enseignants/{enseignant}', [EnseignantController::class, 'destroy'])->whereNumber('enseignant')->name('enseignants.destroy');
-        Route::get('/enseignants/{enseignant}', [EnseignantDisciplineController::class, 'show'])->whereNumber('enseignant')
+        Route::get('/enseignants/{enseignant}', [EnseignantSpecialiteController::class, 'show'])->whereNumber('enseignant')
             ->name('enseignants.show');
-        Route::post('/enseignants/{enseignant}/disciplines', [EnseignantDisciplineController::class, 'store'])
+        Route::post('/enseignants/{enseignant}/disciplines', [EnseignantSpecialiteController::class, 'store'])
             ->middleware('sicore.permission:enseignants.disciplines.associer')
             ->name('enseignants.disciplines.store');
 
@@ -76,15 +78,15 @@ Route::middleware('sicore.auth')
         Route::delete('/parametres/ief/{ief}', [IefController::class, 'destroy'])
             ->whereNumber('ief')->name('parametres.ief.destroy');
 
-        Route::get('/parametres/disciplines', [DisciplineController::class, 'index'])
+        Route::get('/parametres/disciplines', [SpecialiteController::class, 'index'])
             ->name('parametres.disciplines.index');
-        Route::post('/parametres/disciplines', [DisciplineController::class, 'store'])
+        Route::post('/parametres/disciplines', [SpecialiteController::class, 'store'])
             ->name('parametres.disciplines.store');
-        Route::put('/parametres/disciplines/{discipline}', [DisciplineController::class, 'update'])
+        Route::put('/parametres/disciplines/{discipline}', [SpecialiteController::class, 'update'])
             ->whereNumber('discipline')->name('parametres.disciplines.update');
-        Route::patch('/parametres/disciplines/{discipline}/statut', [DisciplineController::class, 'updateStatus'])
+        Route::patch('/parametres/disciplines/{discipline}/statut', [SpecialiteController::class, 'updateStatus'])
             ->whereNumber('discipline')->name('parametres.disciplines.status');
-        Route::delete('/parametres/disciplines/{discipline}', [DisciplineController::class, 'destroy'])
+        Route::delete('/parametres/disciplines/{discipline}', [SpecialiteController::class, 'destroy'])
             ->whereNumber('discipline')->name('parametres.disciplines.destroy');
 
         Route::get('/parametres/annees-academiques', [AnneeAcademiqueController::class, 'index'])
@@ -135,16 +137,26 @@ Route::middleware('sicore.auth')
         Route::get('/parametres/ia/nouvelle', [InspectionAcademieController::class, 'create'])
             ->name('parametres.ia.create');
 
-        Route::get('/parametres/lieux-service', [LieuServiceController::class, 'index'])
+        Route::get('/parametres/etablissements', [LieuServiceController::class, 'index'])
             ->name('parametres.lieux-service.index');
-        Route::post('/parametres/lieux-service', [LieuServiceController::class, 'store'])
+        Route::post('/parametres/etablissements', [LieuServiceController::class, 'store'])
             ->name('parametres.lieux-service.store');
-        Route::put('/parametres/lieux-service/{lieu}', [LieuServiceController::class, 'update'])
+        Route::put('/parametres/etablissements/{lieu}', [LieuServiceController::class, 'update'])
             ->name('parametres.lieux-service.update');
-        Route::patch('/parametres/lieux-service/{lieu}/statut', [LieuServiceController::class, 'updateStatus'])
+        Route::delete('/parametres/etablissements/{lieu}', [LieuServiceController::class, 'destroy'])
+            ->whereNumber('lieu')->name('parametres.lieux-service.destroy');
+        Route::patch('/parametres/etablissements/{lieu}/statut', [LieuServiceController::class, 'updateStatus'])
             ->name('parametres.lieux-service.status');
-        Route::post('/parametres/lieux-service/{lieu}/affectations', [LieuServiceController::class, 'storeAssignment'])
+        Route::post('/parametres/etablissements/{lieu}/affectations', [LieuServiceController::class, 'storeAssignment'])
             ->name('parametres.lieux-service.affectations.store');
+
+        // Compatibilité avec les anciennes URL.
+        Route::get('/parametres/lieux-service', [LieuServiceController::class, 'index']);
+        Route::post('/parametres/lieux-service', [LieuServiceController::class, 'store']);
+        Route::put('/parametres/lieux-service/{lieu}', [LieuServiceController::class, 'update']);
+        Route::delete('/parametres/lieux-service/{lieu}', [LieuServiceController::class, 'destroy'])->whereNumber('lieu');
+        Route::patch('/parametres/lieux-service/{lieu}/statut', [LieuServiceController::class, 'updateStatus']);
+        Route::post('/parametres/lieux-service/{lieu}/affectations', [LieuServiceController::class, 'storeAssignment']);
 
         Route::get('/parametres/institutions-financieres', [InstitutionFinanciereController::class, 'index'])
             ->name('parametres.institutions-financieres');

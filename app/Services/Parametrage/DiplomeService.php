@@ -35,4 +35,20 @@ class DiplomeService
 
         return $options;
     }
+
+    public function create(array $data): array
+    {
+        try {
+            $response = $this->apiClient->post('diplomes', $data);
+        } catch (ConnectionException) {
+            return ['success' => false, 'message' => 'Le service backend est momentanément inaccessible.', 'errors' => []];
+        }
+
+        return [
+            'success' => $response->successful(),
+            'message' => $response->json('message', 'Opération impossible.'),
+            'errors' => (array) $response->json('errors', []),
+            'data' => $response->json('data'),
+        ];
+    }
 }

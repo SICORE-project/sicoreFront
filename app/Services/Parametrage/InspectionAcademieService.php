@@ -87,6 +87,7 @@ class InspectionAcademieService
             'success' => $response->successful(),
             'message' => $response->json('message', $response->successful() ? 'Opération réussie.' : 'Enregistrement impossible.'),
             'errors' => $response->json('errors', []),
+            'data' => $response->json('data'),
         ];
     }
 

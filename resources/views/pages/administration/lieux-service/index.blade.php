@@ -1,22 +1,22 @@
 @extends('layouts.app')
 
-@section('title', 'SICORE - Lieux de service')
+@section('title', 'SICORE - Établissements')
 
 @section('content')
 <main class="main-content">
-    <x-topbar title="Lieux de service" subtitle="Paramétrage > Lieux de service" icon="fa-solid fa-location-dot" />
+    <x-topbar title="Établissements" subtitle="Paramétrage > Établissements" icon="fa-solid fa-location-dot" />
     <section class="content-area">
-        <section class="objective-card"><h2>Gestion des lieux de service</h2><p>Créez les lieux de service nationaux, les IA et les IEF utilisés pour le rattachement des utilisateurs.</p></section>
+        <section class="objective-card"><h2>Gestion des établissements</h2><p>Créez les établissements nationaux, les IA et les IEF utilisés pour le rattachement des utilisateurs.</p></section>
         @if(session('success')) <div class="alert alert-success">{{ session('success') }}</div> @endif
         @if(session('error')) <div class="alert alert-danger">{{ session('error') }}</div> @endif
-        <div class="actions-row"><a href="{{ route('utilisateurs.index') }}" class="btn-secondary">Utilisateurs</a><button class="btn-primary" type="button" data-structure-create><i class="fa-solid fa-plus"></i> Ajouter un lieu de service</button></div>
+        <div class="actions-row"><a href="{{ route('utilisateurs.index') }}" class="btn-secondary">Utilisateurs</a><button class="btn-primary" type="button" data-structure-create><i class="fa-solid fa-plus"></i> Ajouter un établissement</button></div>
         <section class="table-card"><div class="table-responsive"><table class="table"><thead><tr><th>Code</th><th>Libellé</th><th>Type</th><th>Périmètre</th><th>Statut</th><th>Actions</th></tr></thead><tbody>
         @forelse($structures as $structure)
-            <tr><td>{{ $structure['code'] }}</td><td>{{ $structure['libelle'] }}</td><td>{{ $structure['type'] }}</td><td>{{ ucfirst($structure['perimetre']) }}</td><td><span class="badge {{ ($structure['est_actif'] ?? true) ? 'badge-active' : 'badge-suspended' }}">{{ ($structure['est_actif'] ?? true) ? 'Actif' : 'Inactif' }}</span></td><td><div class="table-actions-inline"><button type="button" class="table-action" data-structure-edit data-structure='@json($structure)'>Modifier</button><form method="POST" action="{{ route('parametres.lieux-service.destroy', $structure['id']) }}" style="display:inline">@csrf @method('DELETE')<button class="table-action delete" onclick="return confirm('Supprimer ce lieu de service ? Cette action est impossible s’il est lié à un utilisateur.')">Supprimer</button></form></div></td></tr>
-        @empty <tr><td colspan="6" class="text-center">Aucun lieu de service.</td></tr>@endforelse
+            <tr><td>{{ $structure['code'] }}</td><td>{{ $structure['libelle'] }}</td><td>{{ $structure['type'] }}</td><td>{{ ucfirst($structure['perimetre']) }}</td><td><span class="badge {{ ($structure['est_actif'] ?? true) ? 'badge-active' : 'badge-suspended' }}">{{ ($structure['est_actif'] ?? true) ? 'Actif' : 'Inactif' }}</span></td><td><div class="table-actions-inline"><button type="button" class="table-action" data-structure-edit data-structure='@json($structure)'>Modifier</button><form method="POST" action="{{ route('parametres.lieux-service.destroy', $structure['id']) }}" style="display:inline">@csrf @method('DELETE')<button class="table-action delete" onclick="return confirm('Supprimer cet établissement ? Cette action est impossible s’il est lié à un utilisateur.')">Supprimer</button></form></div></td></tr>
+        @empty <tr><td colspan="6" class="text-center">Aucun établissement.</td></tr>@endforelse
         </tbody></table></div></section>
     </section>
-    <x-module-indemnite type="modal" id="structure-modal" title="Lieu de service" :open="$errors->any()">
+    <x-module-indemnite type="modal" id="structure-modal" title="Établissement" :open="$errors->any()">
         <form id="structure-form" method="POST">@csrf <input id="structure-method" name="_method" type="hidden">
             <div class="form-grid form-grid--balanced">
                 <div class="form-group"><label for="structure-code">Code *</label><input id="structure-code" class="form-control" name="code" maxlength="20" required></div>

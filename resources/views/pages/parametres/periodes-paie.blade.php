@@ -18,7 +18,7 @@
     @if (session('error'))<div class="alert alert-error" role="alert">{{ session('error') }}</div>@endif
     @if ($error)<div class="alert alert-error" role="alert">{{ $error }}</div>@endif
 
-    <form class="filter-panel periode-filters" method="GET" action="{{ route('parametres.periodes-paie.index') }}" data-periode-filters>
+    <form class="filter-panel parametrage-filters periode-filters" method="GET" action="{{ route('parametres.periodes-paie.index') }}" data-periode-filters>
       <div class="form-group periode-search">
         <label for="periodeSearch">Rechercher</label>
         <input class="form-control" id="periodeSearch" name="search" type="search" value="{{ $filters['search'] ?? '' }}" placeholder="Code ou libellé…" autocomplete="off">
@@ -45,7 +45,7 @@
                 @endif
               </tr>
             @empty
-              <tr><td colspan="{{ $canManage ? 3 : 2 }}" class="empty-message show">Aucune période de paie trouvée.</td></tr>
+              <tr><td colspan="{{ $canManage ? 3 : 2 }}" class="empty-message show"><x-table-empty-state>Aucune période de paie trouvée.</x-table-empty-state></td></tr>
             @endforelse
           </tbody>
         </table>

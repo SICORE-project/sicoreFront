@@ -7,21 +7,6 @@
   <x-topbar title="Syndicats" subtitle="Paramétrage > Syndicats > Consultation" icon="fa-solid fa-people-group" />
 
   <section class="content-area">
-    <div class="stats-grid four">
-      <article class="stat-card">
-        <div><p class="stat-label">Total syndicats</p><p class="stat-value">{{ $stats['total'] }}</p></div>
-        <span class="stat-icon green"><i class="fa-solid fa-people-group"></i></span>
-      </article>
-      <article class="stat-card">
-        <div><p class="stat-label">Syndicats actifs</p><p class="stat-value">{{ $stats['actifs'] }}</p></div>
-        <span class="stat-icon blue"><i class="fa-solid fa-check"></i></span>
-      </article>
-      <article class="stat-card">
-        <div><p class="stat-label">Syndicats inactifs</p><p class="stat-value">{{ $stats['inactifs'] }}</p></div>
-        <span class="stat-icon yellow"><i class="fa-solid fa-pause"></i></span>
-      </article>
-    </div>
-
     <form class="filter-panel syndicats-filters" method="GET" action="{{ route('parametres.syndicats.index') }}" data-syndicats-filters>
       <div class="form-group">
         <label for="syndicatSearch">Rechercher</label>
@@ -70,7 +55,7 @@
           </thead>
           <tbody>
             @if ($apiError)
-              <tr><td colspan="6" class="empty-message">Les données n’ont pas pu être chargées. Veuillez réessayer.</td></tr>
+              <tr><td colspan="6" class="empty-message"><x-table-empty-state :error="true">Les données n’ont pas pu être chargées.</x-table-empty-state></td></tr>
             @else
             @forelse ($syndicats as $syndicat)
               <tr>
@@ -90,13 +75,13 @@
                     <form class="inline-action-form" action="{{ route('parametres.syndicats.destroy', $syndicat['id']) }}" method="POST">
                       @csrf
                       @method('DELETE')
-                      <button class="icon-action delete" type="submit" title="Supprimer" aria-label="Supprimer {{ $syndicat['libelle'] ?? '' }}" data-confirm="Voulez-vous vraiment supprimer le syndicat « {{ $syndicat['libelle'] ?? '' }} » ?" data-confirm-submit><i class="fa-solid fa-trash-can" aria-hidden="true"></i></button>
+                      <button class="icon-action delete" type="submit" title="Supprimer" aria-label="Supprimer {{ $syndicat['libelle'] ?? '' }}"><i class="fa-solid fa-trash-can" aria-hidden="true"></i></button>
                     </form>
                   @endif
                 </td>
               </tr>
             @empty
-              <tr><td colspan="6" class="empty-message">Aucun syndicat trouvé.</td></tr>
+              <tr><td colspan="6" class="empty-message"><x-table-empty-state>Aucun syndicat trouvé.</x-table-empty-state></td></tr>
             @endforelse
             @endif
           </tbody>
@@ -211,7 +196,9 @@
   [id^="show-syndicat-"] .form-actions { margin-top: 4px; padding-top: 18px; border-top: 1px solid #e2e8f0; }
   .syndicat-status-field { grid-column: 1 / -1; max-width: 320px; }
   .form-alert { margin: 12px 0; padding: 12px 16px; border-radius: 8px; background: #fef2f2; color: #b91c1c; }
-  .syndicats-filters { margin-bottom: 20px; }
+  .syndicats-filters { width: 100%; margin-bottom: 20px; }
+  .syndicats-filters > .form-group:first-child { flex: 1 1 auto; min-width: 280px; }
+  .syndicats-filters > .form-group:first-child .form-control { width: 100%; }
   .syndicats-filter-actions { align-self: end; }
   .pagination .page-btn[aria-disabled="true"] { cursor: not-allowed; opacity: .5; }
   .syndicat-detail-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-top: 20px; }

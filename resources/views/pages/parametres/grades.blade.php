@@ -7,7 +7,7 @@
     @if(session('success')) <div class="alert alert-success">{{ session('success') }}</div> @endif
     @if(session('error')) <div class="alert alert-error">{{ session('error') }}</div> @endif
     <div class="actions-row"><p class="breadcrumb">Paramétrage &gt; Grades</p><div class="actions-group"><button class="btn-primary" type="button" data-modal-open="grade-create-modal">+ Nouveau grade</button></div></div>
-    <form class="filter-panel" id="gradeFilterForm" method="GET" action="{{ route('parametres.grades.index') }}">
+    <form class="filter-panel parametrage-filters" id="gradeFilterForm" method="GET" action="{{ route('parametres.grades.index') }}">
       <div class="form-group"><label for="gradeSearch">Rechercher</label><input class="form-control" id="gradeSearch" name="search" type="search" value="{{ request('search') }}" placeholder="Libellé ou description"></div>
       @if(request('search'))<div class="actions-group"><a class="btn-secondary" href="{{ route('parametres.grades.index') }}">Réinitialiser</a></div>@endif
     </form>
@@ -16,9 +16,9 @@
       <div class="table-card-header"><div><h2>Liste des grades</h2><p class="table-card-subtitle">{{ $pagination['total'] }} enregistrement{{ $pagination['total'] > 1 ? 's' : '' }}</p></div></div>
       <div class="table-responsive"><table class="table"><thead><tr><th>Libellé</th><th>Description</th><th class="actions-cell">Actions</th></tr></thead><tbody>
         @forelse($items as $item)
-          <tr><td>{{ data_get($item, 'libelle', '—') }}</td><td>{{ data_get($item, 'description') ?: '—' }}</td><td class="actions-cell"><button class="icon-action" type="button" data-modal-open="grade-edit-modal" data-grade-edit='@json($item)' title="Modifier"><i class="fa-solid fa-pen-to-square"></i></button><form class="inline-form" method="POST" action="{{ route('parametres.grades.destroy', data_get($item, 'id')) }}" onsubmit="return confirm('Supprimer ce grade ?');">@csrf @method('DELETE')<button class="icon-action delete" type="submit" title="Supprimer"><i class="fa-solid fa-trash-can"></i></button></form></td></tr>
+          <tr><td>{{ data_get($item, 'libelle', '—') }}</td><td>{{ data_get($item, 'description') ?: '—' }}</td><td class="actions-cell"><button class="icon-action" type="button" data-modal-open="grade-edit-modal" data-grade-edit='@json($item)' title="Modifier"><i class="fa-solid fa-pen-to-square"></i></button><form class="inline-form" method="POST" action="{{ route('parametres.grades.destroy', data_get($item, 'id')) }}">@csrf @method('DELETE')<button class="icon-action delete" type="submit" title="Supprimer"><i class="fa-solid fa-trash-can"></i></button></form></td></tr>
         @empty
-          <tr><td colspan="3" class="empty-message">Aucun grade trouvé.</td></tr>
+          <tr><td colspan="3" class="empty-message"><x-table-empty-state>Aucun grade trouvé.</x-table-empty-state></td></tr>
         @endforelse
       </tbody></table></div>
       @if($pagination['last_page'] > 1)<nav class="pagination">@for($page = 1; $page <= $pagination['last_page']; $page++)<a class="page-btn {{ $page === $pagination['current_page'] ? 'active' : '' }}" href="{{ route('parametres.grades.index', array_merge(request()->except('page'), ['page' => $page])) }}">{{ $page }}</a>@endfor</nav>@endif

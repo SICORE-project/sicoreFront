@@ -72,7 +72,7 @@
         </div>
 
         <div class="form-group" id="national-structure-group" @if(old('perimetre', 'national') !== 'national') hidden @endif>
-          <label for="lieu_service_id">Lieu de service <span class="required">*</span></label>
+          <label for="lieu_service_id">Établissement <span class="required">*</span></label>
           <select class="form-control @error('lieu_service_id') is-invalid @enderror" id="lieu_service_id" name="lieu_service_id">
             <option value="">Sélectionner une direction</option>
             @foreach(($organisation['national'] ?? []) as $structure)
@@ -85,7 +85,7 @@
         </div>
 
         <div class="form-group" id="ia-group" hidden>
-          <label for="ia_id">Lieu de service (IA) <span class="required">*</span></label>
+          <label for="ia_id">Établissement (IA) <span class="required">*</span></label>
           <select class="form-control @error('ia_id') is-invalid @enderror" id="ia_id" name="ia_id">
             <option value="">Sélectionner une IA</option>
           </select>
@@ -174,7 +174,7 @@
           </select>
         </div>
         <div class="form-group">
-          <label for="edit-user-structure" id="edit-user-structure-label">Lieu de service (Direction) <span class="required">*</span></label>
+          <label for="edit-user-structure" id="edit-user-structure-label">Établissement (Direction) <span class="required">*</span></label>
           <select class="form-control" id="edit-user-structure" name="lieu_service_id" required>
             <option value="">Sélectionner une direction</option>
           </select>
@@ -471,8 +471,8 @@
 
         editPerimeter.value = isGestionnaireIa ? 'regional' : 'national';
         editStructureLabel.innerHTML = isGestionnaireIa
-          ? 'Lieu de service (IA) <span class="required">*</span>'
-          : 'Lieu de service (Direction) <span class="required">*</span>';
+          ? 'Établissement (IA) <span class="required">*</span>'
+          : 'Établissement (Direction) <span class="required">*</span>';
         editStructure.replaceChildren(new Option(
           isGestionnaireIa ? 'Sélectionner une IA' : 'Sélectionner une direction',
           ''

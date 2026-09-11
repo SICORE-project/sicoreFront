@@ -94,8 +94,10 @@ canvas {
 .role-modal__dialog {
   width: min(900px, calc(100vw - 40px)) !important;
   max-width: 900px !important;
-  height: min(820px, calc(100vh - 40px)) !important;
+  height: auto !important;
+  min-height: 0 !important;
   max-height: calc(100vh - 40px) !important;
+  max-height: calc(100dvh - 40px) !important;
   overflow: auto;
 }
 

@@ -71,6 +71,7 @@ class IefService
             'success' => $response->successful(),
             'message' => $response->json('message', $response->successful() ? 'Opération réussie.' : 'Opération impossible.'),
             'errors' => $response->json('errors', []),
+            'data' => $response->json('data'),
         ];
     }
 

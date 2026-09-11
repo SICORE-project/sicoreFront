@@ -21,6 +21,7 @@
     'statut' => null,
     'id' => null,
     'title' => null,
+    'icon' => null,
     'open' => false,
 ])
 
@@ -101,8 +102,10 @@
             .modal-dialog {
                 width: min(900px, calc(100vw - 40px)) !important;
                 max-width: 900px !important;
-                height: min(820px, calc(100vh - 40px)) !important;
+                height: auto !important;
+                min-height: 0 !important;
                 max-height: calc(100vh - 40px) !important;
+                max-height: calc(100dvh - 40px) !important;
                 overflow-y: auto;
                 padding: 20px 22px;
                 border-radius: 10px;
@@ -120,7 +123,18 @@
 
             .modal-header h2 {
                 margin: 0;
-                font-size: 1.1rem;
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                color: var(--primary, #166534);
+                font-size: clamp(1.25rem, 2.5vw, 1.5rem);
+                font-weight: 700;
+                line-height: 1.3;
+            }
+
+            .modal-header h2 > i {
+                flex-shrink: 0;
+                font-size: 1.2em;
             }
 
             .modal-close {
@@ -190,7 +204,24 @@
         <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="{{ $id }}-title">
 
             <div class="modal-header">
-                <h2 id="{{ $id }}-title">{{ $title }}</h2>
+                @php
+                    $heading = mb_strtolower($title ?? '');
+                    $headingIcon = $icon ?? match (true) {
+                        str_contains($heading, 'enseignant') => 'fa-chalkboard-user',
+                        str_contains($heading, 'spécialité') => 'fa-book-open',
+                        str_contains($heading, 'diplôme') => 'fa-graduation-cap',
+                        str_contains($heading, 'banque') => 'fa-building-columns',
+                        str_contains($heading, 'catégorie') => 'fa-layer-group',
+                        str_contains($heading, 'corps') => 'fa-users',
+                        str_contains($heading, 'lieu') => 'fa-location-dot',
+                        str_contains($heading, 'convocation') => 'fa-envelope-open-text',
+                        str_contains($heading, 'paiement'), str_contains($heading, 'paie') => 'fa-money-bill-wave',
+                        str_contains($heading, 'rôle') => 'fa-user-shield',
+                        str_contains($heading, 'supprimer') => 'fa-trash-can',
+                        default => 'fa-pen-to-square',
+                    };
+                @endphp
+                <h2 id="{{ $id }}-title"><i class="fa-solid {{ $headingIcon }}" data-modal-title-icon aria-hidden="true"></i><span data-modal-title-text>{{ $title }}</span></h2>
                 <button class="modal-close" type="button" data-modal-close aria-label="Fermer">&times;</button>
             </div>
 

@@ -25,7 +25,7 @@
       </div>
     </div>
 
-    <form id="diplomesFilterForm" action="{{ route('parametres.diplomes.index') }}" method="GET" class="filter-panel" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));">
+    <form id="diplomesFilterForm" action="{{ route('parametres.diplomes.index') }}" method="GET" class="filter-panel parametrage-filters">
       <div class="form-group">
         <label for="diplomeFilter">Diplôme</label>
         <select class="form-control" id="diplomeFilter" name="libelle" form="diplomesFilterForm" data-diploma-filter>
@@ -55,7 +55,7 @@
     </form>
 
     @if ($error)
-      <p class="empty-message">{{ $error }}</p>
+      <p class="empty-message show"><x-table-empty-state :error="true">{{ $error }}</x-table-empty-state></p>
     @endif
 
     <section class="table-card">
@@ -92,7 +92,7 @@
               </tr>
             @empty
               <tr>
-                <td colspan="4" class="empty-message">Aucun diplôme trouvé.</td>
+                <td colspan="4" class="empty-message"><x-table-empty-state>Aucun diplôme trouvé.</x-table-empty-state></td>
               </tr>
             @endforelse
           </tbody>
@@ -212,21 +212,9 @@
   </div>
 </div>
 
-<div class="modal-backdrop" id="delete-diplome-modal" data-modal hidden>
-  <div class="modal-dialog modal-confirm" role="dialog" aria-modal="true" aria-labelledby="delete-diplome-title">
-    <div class="modal-header">
-      <h2 id="delete-diplome-title">Supprimer le diplôme</h2>
-      <button class="modal-close" type="button" data-modal-close aria-label="Fermer">&times;</button>
-    </div>
-    <p>Voulez-vous vraiment supprimer <strong id="delete-diplome-label"></strong> ? Cette action est irréversible.</p>
-    <form id="delete-diplome-form" method="POST" class="form-actions" data-action-template="{{ route('parametres.diplomes.destroy', ['diplome' => '__diplome__']) }}">
-      @csrf
-      @method('DELETE')
-      <button class="btn-secondary" type="button" data-modal-close>Annuler</button>
-      <button class="btn-danger-soft" type="submit">Supprimer</button>
-    </form>
-  </div>
-</div>
+<form id="delete-diplome-form" method="POST" hidden data-action-template="{{ route('parametres.diplomes.destroy', ['diplome' => '__diplome__']) }}">
+  @csrf @method('DELETE')
+</form>
 @endsection
 
 @push('styles')
@@ -312,13 +300,12 @@
       });
     });
 
-    var deleteModal = document.getElementById('delete-diplome-modal');
     var deleteForm = document.getElementById('delete-diplome-form');
     document.querySelectorAll('[data-delete-diplome]').forEach(function (button) {
       button.addEventListener('click', function () {
         deleteForm.action = deleteForm.dataset.actionTemplate.replace('__diplome__', button.dataset.id);
-        document.getElementById('delete-diplome-label').textContent = button.dataset.libelle || 'ce diplôme';
-        openModal(deleteModal);
+        deleteForm.dataset.deleteLabel = button.dataset.libelle || 'ce diplôme';
+        deleteForm.requestSubmit();
       });
     });
 

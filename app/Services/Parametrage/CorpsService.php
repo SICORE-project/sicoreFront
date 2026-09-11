@@ -53,7 +53,7 @@ class CorpsService
             return ['success' => false, 'message' => 'Le service backend est momentanément inaccessible.', 'errors' => []];
         }
 
-        return ['success' => $response->successful(), 'message' => $response->json('message', 'Opération impossible.'), 'errors' => $response->json('errors', [])];
+        return ['success' => $response->successful(), 'message' => $response->json('message', 'Opération impossible.'), 'errors' => $response->json('errors', []), 'data' => $response->json('data')];
     }
 
     private function emptyResult(string $message): array

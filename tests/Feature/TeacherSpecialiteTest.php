@@ -2,12 +2,12 @@
 
 namespace Tests\Feature;
 
-use App\Services\Parametrage\EnseignantDisciplineService;
+use App\Services\Parametrage\EnseignantSpecialiteService;
 use Illuminate\Support\Facades\Http;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
-class TeacherDisciplineTest extends TestCase
+class TeacherSpecialiteTest extends TestCase
 {
     private function userSession(array $permissions = ['enseignants.disciplines.associer']): array
     {
@@ -38,21 +38,21 @@ class TeacherDisciplineTest extends TestCase
         $this->withSession($this->userSession())->get('/parametrage/enseignants/8')->assertOk()
             ->assertSee('Mathématiques')->assertSee('Physique')->assertSee('Principale')
             ->assertSee('CHI')->assertDontSee('<option value="1"', false)->assertDontSee('<option value="2"', false)
-            ->assertSee('id="associateDisciplineForm"', false)
+            ->assertSee('id="associateSpecialiteForm"', false)
             ->assertSee('data-associate-submit', false);
     }
 
     public function test_valid_discipline_association_updates_teacher_dossier(): void
     {
         Http::fake(['*/enseignants/8/disciplines' => Http::response([
-            'message' => 'Discipline associée.',
+            'message' => 'Specialite associée.',
             'data' => ['enseignant_id' => 8, 'discipline_id' => 3, 'est_principale' => false],
             'audit' => ['id' => 110, 'action' => 'association'],
         ], 201)]);
 
         $this->withSession($this->userSession())->post('/parametrage/enseignants/8/disciplines', [
             'discipline_id' => 3,
-        ])->assertRedirect(route('enseignants.show', 8))->assertSessionHas('success', 'Discipline associée.');
+        ])->assertRedirect(route('enseignants.show', 8))->assertSessionHas('success', 'Specialite associée.');
 
         Http::assertSent(fn ($request) => $request['discipline_id'] === 3 && $request['est_principale'] === false);
     }
@@ -88,14 +88,14 @@ class TeacherDisciplineTest extends TestCase
     {
         Http::fake(['*/enseignants/8/disciplines' => Http::response(['message' => $message, 'errors' => ['discipline_id' => [$message]]], $status)]);
         $this->withSession($this->userSession())->post('/parametrage/enseignants/8/disciplines', ['discipline_id' => 3])
-            ->assertSessionHasErrors(['discipline_id' => $message], null, 'associateDiscipline')
+            ->assertSessionHasErrors(['discipline_id' => $message], null, 'associateSpecialite')
             ->assertSessionHas('discipline_association_form_open', true);
     }
 
     public static function associationErrorsProvider(): array
     {
         return [
-            'discipline inexistante' => [404, 'Discipline introuvable.'],
+            'discipline inexistante' => [404, 'Specialite introuvable.'],
             'discipline inactive' => [422, 'Cette discipline est inactive.'],
             'association en doublon' => [422, 'Cette discipline est déjà associée.'],
         ];
@@ -113,7 +113,7 @@ class TeacherDisciplineTest extends TestCase
     {
         $this->fakeDossier([], [['id' => 3, 'code' => 'CHI', 'libelle' => 'Chimie', 'statut' => 'actif']]);
         $this->withSession($this->userSession([]))->get('/parametrage/enseignants/8')->assertOk()
-            ->assertDontSee('<form class="teacher-form" id="associateDisciplineForm"', false)
+            ->assertDontSee('<form class="teacher-form" id="associateSpecialiteForm"', false)
             ->assertDontSee('+ Associer une discipline');
     }
 
@@ -121,7 +121,7 @@ class TeacherDisciplineTest extends TestCase
     {
         Http::fake();
         $this->withSession($this->userSession())->post('/parametrage/enseignants/8/disciplines', [])
-            ->assertSessionHasErrors('discipline_id', null, 'associateDiscipline');
+            ->assertSessionHasErrors('discipline_id', null, 'associateSpecialite');
         Http::assertNothingSent();
     }
 
@@ -132,7 +132,7 @@ class TeacherDisciplineTest extends TestCase
             'audit' => ['id' => 110, 'action' => 'association_discipline', 'subject_id' => 8],
         ], 201)]);
 
-        $result = $this->app->make(EnseignantDisciplineService::class)->associate(8, ['discipline_id' => 3, 'est_principale' => false]);
+        $result = $this->app->make(EnseignantSpecialiteService::class)->associate(8, ['discipline_id' => 3, 'est_principale' => false]);
 
         $this->assertTrue($result['success']);
         $this->assertSame(2, $result['data']['disciplines_count']);

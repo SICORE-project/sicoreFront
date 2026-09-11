@@ -32,7 +32,7 @@ class CategorieService
     {
         try { $response = $request(); }
         catch (ConnectionException) { return ['success' => false, 'message' => 'Le service backend est momentanément inaccessible.', 'errors' => []]; }
-        return ['success' => $response->successful(), 'message' => $response->json('message', 'Opération impossible.'), 'errors' => $response->json('errors', [])];
+        return ['success' => $response->successful(), 'message' => $response->json('message', 'Opération impossible.'), 'errors' => $response->json('errors', []), 'data' => $response->json('data')];
     }
 
     private function emptyResult(string $message): array { return ['items' => [], 'pagination' => ['current_page' => 1, 'last_page' => 1, 'total' => 0], 'error' => $message, 'unauthorized' => false]; }

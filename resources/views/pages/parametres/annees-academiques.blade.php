@@ -22,7 +22,7 @@
     @if (session('error'))<div class="alert alert-error" role="alert">{{ session('error') }}</div>@endif
     @if ($error)<div class="alert alert-error" role="alert">{{ $error }}</div>@endif
 
-    <form class="filter-panel" method="GET" action="{{ route('parametres.annees-academiques.index') }}" data-annee-filters>
+    <form class="filter-panel parametrage-filters" method="GET" action="{{ route('parametres.annees-academiques.index') }}" data-annee-filters>
       <div class="form-group">
         <label for="anneeSearch">Rechercher</label>
         <input class="form-control" id="anneeSearch" name="search" type="search" value="{{ $filters['search'] ?? '' }}" placeholder="Rechercher par libellé…" autocomplete="off">
@@ -78,7 +78,7 @@
                 </td>
               </tr>
             @empty
-              <tr><td colspan="5" class="empty-message show">Aucune année académique trouvée.</td></tr>
+              <tr><td colspan="5" class="empty-message show"><x-table-empty-state>Aucune année académique trouvée.</x-table-empty-state></td></tr>
             @endforelse
           </tbody>
         </table>

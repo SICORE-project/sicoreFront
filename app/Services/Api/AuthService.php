@@ -19,6 +19,7 @@ class AuthService
             return [
                 'success' => false,
                 'message' => $fieldErrors[0][0]
+                    ?? $response->json('detail')
                     ?? $response->json('message')
                     ?? 'La connexion a échoué. Veuillez vérifier vos identifiants.',
             ];

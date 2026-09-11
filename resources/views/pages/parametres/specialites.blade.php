@@ -1,17 +1,17 @@
 @extends('layouts.app')
 
-@section('title', 'SICORE - Disciplines')
+@section('title', 'SICORE - Spécialités')
 
 @section('content')
 <main class="main-content">
   <header class="topbar">
-    <div class="page-title-wrap"><span class="title-icon"><i class="fa-solid fa-book"></i></span><div><h1>Gestion des disciplines</h1><p>Référentiel des disciplines d’enseignement</p></div></div>
+    <div class="page-title-wrap"><span class="title-icon"><i class="fa-solid fa-book"></i></span><div><h1>Gestion des spécialités</h1><p>Référentiel des spécialités d’enseignement</p></div></div>
   </header>
   <section class="content-area">
     <div class="actions-row">
-      <p class="breadcrumb">Paramétrage &gt; Disciplines</p>
+      <p class="breadcrumb">Paramétrage &gt; Spécialités</p>
       @if ($canCreate)
-        <button class="btn-primary" type="button" data-modal-open="discipline-create-modal">+ Ajouter une discipline</button>
+        <button class="btn-primary" type="button" data-modal-open="discipline-create-modal">+ Ajouter une spécialité</button>
       @endif
     </div>
 
@@ -20,17 +20,16 @@
     @if ($error)<div class="alert alert-error" role="alert">{{ $error }}</div>@endif
     @if ($errors->has('api'))<div class="alert alert-error" role="alert">{{ $errors->first('api') }}</div>@endif
 
-    <form class="filter-panel" method="GET" action="{{ route('parametres.disciplines.index') }}" data-discipline-filter>
-      <div class="form-group"><label for="disciplineSearch">Rechercher</label><input class="form-control" id="disciplineSearch" name="search" type="search" value="{{ $filters['search'] ?? '' }}" placeholder="Code ou libellé" autocomplete="off"></div>
+    <form class="filter-panel parametrage-filters" method="GET" action="{{ route('parametres.disciplines.index') }}" data-discipline-filter>
+      <div class="form-group"><label for="disciplineSearch">Rechercher</label><input class="form-control" id="disciplineSearch" name="search" type="search" value="{{ $filters['search'] ?? '' }}" placeholder="Libellé" autocomplete="off"></div>
       <div class="form-group"><label for="disciplineStatus">Statut</label><select class="form-control" id="disciplineStatus" name="statut"><option value="">Tous les statuts</option><option value="actif" @selected(($filters['statut'] ?? '') === 'actif')>Actif</option><option value="inactif" @selected(($filters['statut'] ?? '') === 'inactif')>Inactif</option></select></div>
-      <div class="actions-group"><a class="btn-secondary" href="{{ route('parametres.disciplines.index') }}">Réinitialiser</a></div>
       <span class="loading-indicator" role="status" hidden data-loading>Chargement…</span>
     </form>
 
     <section class="table-card" aria-labelledby="disciplineListTitle">
-      <div class="table-card-header"><div><h2 id="disciplineListTitle">Liste des disciplines</h2><p class="table-card-subtitle">{{ $pagination['total'] }} résultat{{ $pagination['total'] > 1 ? 's' : '' }}</p></div></div>
+      <div class="table-card-header"><div><h2 id="disciplineListTitle">Liste des spécialités</h2><p class="table-card-subtitle">{{ $pagination['total'] }} résultat{{ $pagination['total'] > 1 ? 's' : '' }}</p></div></div>
       <div class="table-responsive"><table class="table"><thead><tr>
-        @foreach (['code' => 'Code', 'libelle' => 'Libellé', 'description' => 'Description', 'statut' => 'Statut'] as $field => $label)
+        @foreach (['libelle' => 'Libellé', 'description' => 'Description', 'statut' => 'Statut'] as $field => $label)
           @php
             $nextDirection = (($filters['sort'] ?? '') === $field && ($filters['direction'] ?? 'asc') === 'asc') ? 'desc' : 'asc';
           @endphp
@@ -45,7 +44,6 @@
           @endphp
           @php($disciplineId = data_get($discipline, 'id', data_get($discipline, 'uuid')))
           <tr>
-            <td><strong>{{ data_get($discipline, 'code', '—') }}</strong></td>
             <td>{{ data_get($discipline, 'libelle', data_get($discipline, 'nom', '—')) }}</td>
             <td>{{ data_get($discipline, 'description', '—') ?: '—' }}</td>
             <td><span class="badge {{ $active ? 'badge-active' : 'badge-suspended' }}">{{ $active ? 'Actif' : 'Inactif' }}</span></td>
@@ -55,7 +53,7 @@
                   <button class="icon-action" type="button" data-modal-open="discipline-update-modal" data-discipline-edit='@json($discipline)' title="Modifier" aria-label="Modifier {{ data_get($discipline, 'libelle') }}"><i class="fa-solid fa-pen-to-square" aria-hidden="true"></i></button>
                 @endif
                 @if ($canDelete && $disciplineId)
-                  <form method="POST" action="{{ route('parametres.disciplines.destroy', ['discipline' => $disciplineId]) }}" class="inline-form" data-delete-form data-confirm-message="Supprimer définitivement la discipline « {{ data_get($discipline, 'libelle') }} » ?">
+                  <form method="POST" action="{{ route('parametres.disciplines.destroy', ['discipline' => $disciplineId]) }}" class="inline-form" data-delete-form data-confirm-message="Supprimer définitivement la spécialité « {{ data_get($discipline, 'libelle') }} » ?">
                     @csrf @method('DELETE')
                     <button class="icon-action delete" type="submit" data-delete-submit title="Supprimer" aria-label="Supprimer {{ data_get($discipline, 'libelle') }}"><i class="fa-solid fa-trash-can" aria-hidden="true"></i></button>
                   </form>
@@ -64,7 +62,7 @@
             @endif
           </tr>
         @empty
-          <tr><td colspan="{{ ($canUpdate || $canDelete) ? 5 : 4 }}" class="empty-message show">Aucune discipline trouvée.</td></tr>
+          <tr><td colspan="{{ ($canUpdate || $canDelete) ? 4 : 3 }}" class="empty-message show"><x-table-empty-state>Aucune spécialité trouvée.</x-table-empty-state></td></tr>
         @endforelse
       </tbody></table></div>
       @if ($pagination['last_page'] > 1)<nav class="pagination" aria-label="Pagination">
@@ -77,34 +75,21 @@
 </main>
 
 @if ($canCreate)
-<x-module-indemnite type="modal" id="discipline-create-modal" title="Ajouter une discipline">
+<x-module-indemnite type="modal" id="discipline-create-modal" title="Ajouter une spécialité">
   <form class="teacher-form" id="disciplineCreateForm" method="POST" action="{{ route('parametres.disciplines.store') }}">
     @csrf
     <div class="form-grid form-grid--balanced">
-      <div class="form-group">
-        <label for="disciplineCode">Code <span class="required">*</span></label>
-        <input class="form-control" id="disciplineCode" name="code" type="text" value="{{ old('code') }}" required maxlength="30" pattern="[A-Z0-9]+(?:[-_][A-Z0-9]+)*" placeholder="Ex. MATH" autocomplete="off">
-        @error('code')<span class="field-error" role="alert">{{ $message }}</span>@enderror
-      </div>
-
-      <div class="form-group">
+<div class="form-group">
         <label for="disciplineLibelle">Libellé <span class="required">*</span></label>
         <input class="form-control" id="disciplineLibelle" name="libelle" type="text" value="{{ old('libelle') }}" required maxlength="150" placeholder="Ex. Mathématiques" autocomplete="off">
         @error('libelle')<span class="field-error" role="alert">{{ $message }}</span>@enderror
       </div>
 
-      <div class="form-group">
-        <label for="disciplineCreateStatus">Statut <span class="required">*</span></label>
-        <select class="form-control" id="disciplineCreateStatus" name="statut" required>
-          <option value="actif" @selected(old('statut', 'actif') === 'actif')>Actif</option>
-          <option value="inactif" @selected(old('statut') === 'inactif')>Inactif</option>
-        </select>
-        @error('statut')<span class="field-error" role="alert">{{ $message }}</span>@enderror
-      </div>
+
 
       <div class="form-group full">
         <label for="disciplineDescription">Description</label>
-        <textarea class="form-control" id="disciplineDescription" name="description" rows="4" maxlength="500" placeholder="Ajoutez une courte description de la discipline…">{{ old('description') }}</textarea>
+        <textarea class="form-control" id="disciplineDescription" name="description" rows="4" maxlength="500" placeholder="Ajoutez une courte description de la spécialité…">{{ old('description') }}</textarea>
         @error('description')<span class="field-error" role="alert">{{ $message }}</span>@enderror
       </div>
     </div>
@@ -117,14 +102,12 @@
 </x-module-indemnite>
 @endif
 @if ($canUpdate)
-<x-module-indemnite type="modal" id="discipline-update-modal" title="Modifier une discipline">
+<x-module-indemnite type="modal" id="discipline-update-modal" title="Modifier une spécialité">
   <form class="teacher-form" id="disciplineUpdateForm" method="POST" data-update-url="{{ route('parametres.disciplines.update', ['discipline' => '__ID__']) }}">@csrf @method('PUT')
     <p class="form-required-note"><span class="required">*</span> Champs obligatoires</p>
     <div class="form-grid form-grid--balanced">
-      <div class="form-group"><label for="disciplineUpdateCode">Code <span class="required">*</span></label><input class="form-control" id="disciplineUpdateCode" name="code" required maxlength="30" pattern="[A-Z0-9]+(?:[-_][A-Z0-9]+)*">@error('code', 'updateDiscipline')<span class="field-error">{{ $message }}</span>@enderror</div>
-      <div class="form-group"><label for="disciplineUpdateLibelle">Libellé <span class="required">*</span></label><input class="form-control" id="disciplineUpdateLibelle" name="libelle" required maxlength="150">@error('libelle', 'updateDiscipline')<span class="field-error">{{ $message }}</span>@enderror</div>
-      <div class="form-group"><label for="disciplineUpdateDescription">Description</label><textarea class="form-control" id="disciplineUpdateDescription" name="description" maxlength="500"></textarea>@error('description', 'updateDiscipline')<span class="field-error">{{ $message }}</span>@enderror</div>
-      <div class="form-group"><label for="disciplineUpdateStatut">Statut <span class="required">*</span></label><select class="form-control" id="disciplineUpdateStatut" name="statut" required><option value="actif">Actif</option><option value="inactif">Inactif</option></select>@error('statut', 'updateDiscipline')<span class="field-error">{{ $message }}</span>@enderror</div>
+      <div class="form-group"><label for="disciplineUpdateLibelle">Libellé <span class="required">*</span></label><input class="form-control" id="disciplineUpdateLibelle" name="libelle" required maxlength="150">@error('libelle', 'updateSpecialite')<span class="field-error">{{ $message }}</span>@enderror</div>
+      <div class="form-group"><label for="disciplineUpdateDescription">Description</label><textarea class="form-control" id="disciplineUpdateDescription" name="description" maxlength="500"></textarea>@error('description', 'updateSpecialite')<span class="field-error">{{ $message }}</span>@enderror</div>
     </div>
     <div class="form-actions"><button class="btn-secondary" type="button" data-modal-close>Annuler</button><button class="btn-primary" type="submit" data-update-submit><span data-update-label>Enregistrer</span></button></div>
   </form>
@@ -155,9 +138,6 @@
   statusInput?.addEventListener('change', submitFilters);
   var createForm = document.getElementById('disciplineCreateForm');
   if (createForm) {
-    var createCode = document.getElementById('disciplineCode');
-    createCode.addEventListener('input', function () { createCode.value = createCode.value.toUpperCase(); });
-    createCode.value = createCode.value.toUpperCase();
     createForm.addEventListener('submit', function () {
       if (!createForm.checkValidity()) return;
       var submit = createForm.querySelector('[data-discipline-submit]');
@@ -170,11 +150,8 @@
   function fillUpdateForm(discipline) {
     var id = discipline.id ?? discipline.uuid;
     updateForm.action = updateForm.dataset.updateUrl.replace('__ID__', encodeURIComponent(id));
-    document.getElementById('disciplineUpdateCode').value = discipline.code ?? '';
     document.getElementById('disciplineUpdateLibelle').value = discipline.libelle ?? discipline.nom ?? '';
     document.getElementById('disciplineUpdateDescription').value = discipline.description ?? '';
-    var status = String(discipline.statut ?? discipline.est_actif ?? discipline.actif ?? '').toLowerCase();
-    document.getElementById('disciplineUpdateStatut').value = ['actif', 'active', '1', 'true'].includes(status) ? 'actif' : 'inactif';
   }
   document.querySelectorAll('[data-discipline-edit]').forEach(function (button) {
     button.addEventListener('click', function () { fillUpdateForm(JSON.parse(button.dataset.disciplineEdit)); });
@@ -205,10 +182,8 @@
   @if (session('discipline_update_form_open'))
     document.querySelector('[data-modal-open="discipline-update-modal"]')?.click();
     updateForm.action = updateForm.dataset.updateUrl.replace('__ID__', @json(session('discipline_update_id')));
-    document.getElementById('disciplineUpdateCode').value = @json(old('code'));
     document.getElementById('disciplineUpdateLibelle').value = @json(old('libelle'));
     document.getElementById('disciplineUpdateDescription').value = @json(old('description'));
-    document.getElementById('disciplineUpdateStatut').value = @json(old('statut'));
   @endif
 </script>
 @endpush
