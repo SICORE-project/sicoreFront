@@ -26,6 +26,7 @@ return [
         'dage' => ['national'],
         'decpc' => ['national'],
         'drh' => ['national'],
+        'agent_drh' => ['national'],
         'gestionnaire_paie' => ['national'],
         'gestionnaire_budget' => ['national'],
     ],

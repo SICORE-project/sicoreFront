@@ -17,6 +17,18 @@ class DashboardController extends Controller
 
     public function index(): View
     {
+        if (app(\App\Services\Organisation\DrhAccess::class)->isDrh()) {
+            return $this->drhDashboard();
+        }
+
+        $access = app(\App\Services\Organisation\InterfaceAccess::class);
+        if ($access->usesPermissions()) {
+            return view('pages.dashboard.workspace', [
+                'navigation' => $access->navigation(config('navigation', [])),
+                'scopeLabel' => $this->organisation->label(),
+            ]);
+        }
+
         $metrics = [];
         $role = session('sicore_user.role_slug') ?: session('sicore_user.role', '');
         $roleSlug = Str::slug(is_string($role) ? $role : '', '_');
@@ -38,6 +50,36 @@ class DashboardController extends Controller
             'scopeLabel' => $this->organisation->label(),
             'isScoped' => $this->organisation->isScoped(),
             'isGlobalAdmin' => $isGlobalAdmin,
+        ]);
+    }
+
+    private function drhDashboard(): View
+    {
+        $metrics = [];
+        $error = null;
+        $canConsult = app(\App\Services\Organisation\DrhAccess::class)->allowsRoute('enseignants.index');
+        if (! $this->organisation->isScoped()) {
+            $error = 'Votre périmètre organisationnel doit être défini pour accéder aux dossiers.';
+        } elseif (! $canConsult) {
+            $error = 'La consultation du personnel ne vous est pas autorisée.';
+        } else {
+            try {
+                $response = $this->api->get('pages.dashboard.index');
+                if ($response->successful() && is_array($response->json('data'))) {
+                    $metrics = $response->json('data');
+                } else {
+                    $error = 'Les indicateurs sont indisponibles pour le moment.';
+                }
+            } catch (ConnectionException) {
+                $error = 'Le service est momentanément inaccessible.';
+            }
+        }
+
+        return view('pages.dashboard.drh', [
+            'metrics' => $metrics,
+            'error' => $error,
+            'canConsult' => $canConsult,
+            'scopeLabel' => $this->organisation->isScoped() ? $this->organisation->label() : 'Périmètre non défini',
         ]);
     }
 

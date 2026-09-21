@@ -46,6 +46,7 @@
             @endforelse
           </select>
           @error('role_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
+          <p class="form-help">Le compte reçoit automatiquement les modules et les droits du rôle choisi. Configurez-les dans Profils / Rôles &gt; Permissions.</p>
         </div>
 
         <div class="form-group">

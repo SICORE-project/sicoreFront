@@ -31,6 +31,17 @@ class EnseignantController extends Controller
         InstitutionFinanciereService $institutions,
     ): View|RedirectResponse
     {
+        $access = app(\App\Services\Organisation\InterfaceAccess::class);
+        if ($access->isDrh() && ! app(\App\Services\Organisation\OrganisationContext::class)->isScoped()) {
+            return view('pages.enseignants.index', array_merge(array_fill_keys([
+                'items', 'academies', 'filterIefs', 'regionOptions', 'iefOptions', 'corpsOptions',
+                'categorieOptions', 'diplomeOptions', 'disciplineOptions', 'institutionOptions',
+            ], []), [
+                'pagination' => ['current_page' => 1, 'last_page' => 1, 'total' => 0],
+                'error' => 'Aucun périmètre organisationnel n’est encore associé à votre compte. Les dossiers seront disponibles après son attribution.',
+            ]));
+        }
+
         $filters = $request->validate([
             'search' => ['nullable', 'string', 'max:100'],
             'prenom' => ['nullable', 'string', 'max:50'],

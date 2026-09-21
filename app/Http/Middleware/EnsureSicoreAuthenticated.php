@@ -27,6 +27,14 @@ class EnsureSicoreAuthenticated
                 ->with('warning', 'Veuillez vous connecter pour accéder à SICORE.');
         }
 
+        $allowed = app(\App\Services\Organisation\DrhAccess::class)->allowsRoute(
+            (string) $request->route()?->getName()
+        );
+        if (! $allowed && $request->isMethod('GET') && ! $request->expectsJson()) {
+            return redirect()->route('dashboard');
+        }
+        abort_unless($allowed, 403, 'Vous ne disposez pas des droits ou du périmètre requis.');
+
         return $next($request);
     }
 }

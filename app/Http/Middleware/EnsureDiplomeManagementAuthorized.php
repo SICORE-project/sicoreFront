@@ -12,7 +12,9 @@ class EnsureDiplomeManagementAuthorized
     {
         $role = $request->session()->get('sicore_user.role_slug');
 
-        if (! in_array($role, ['admin', 'super_admin'], true)) {
+        $access = app(\App\Services\Organisation\InterfaceAccess::class);
+        $hasPermission = $access->usesPermissions() && $access->allowsRoute((string) $request->route()?->getName());
+        if (! $access->isAdmin() && ! $hasPermission) {
             abort(403, 'Seuls les Administrateurs et Super Administrateurs peuvent gérer les diplômes.');
         }
 

@@ -11,6 +11,7 @@
 
             <form action="{{ route('admin.roles.store') }}" method="POST">
                 @csrf
+                <x-interface-preview :permissions="$permissions" />
 
                 <div class="filter-panel" aria-label="Informations du rôle" style="margin-bottom: 20px;">
                     <div class="form-group">

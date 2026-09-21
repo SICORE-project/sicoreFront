@@ -12,6 +12,11 @@ class OrganisationContext
 
     public function query(): array
     {
+        $scope = session('sicore_user.drh.perimetre', []);
+        if (($scope['type'] ?? null) === 'national') return [];
+        if (in_array($scope['type'] ?? null, ['ia_id', 'ief_id', 'lieu_service_id'], true) && ! empty($scope['id'])) {
+            return [$scope['type'] => $scope['id']];
+        }
         $access = $this->access();
         $iefId = data_get($access, 'ief_id', data_get($access, 'ief.id'));
         $iaId = data_get($access, 'ia_id', data_get($access, 'ia.id'));
@@ -25,15 +30,16 @@ class OrganisationContext
 
     public function label(): string
     {
+        if (session('sicore_user.drh.perimetre.type') === 'national') return 'Périmètre national';
         $access = $this->access();
         $structure = data_get($access, 'ief', data_get($access, 'ia', data_get($access, 'structure')));
-        if (! is_array($structure)) return 'Périmètre global';
+        if (! is_array($structure)) return $this->isScoped() ? 'Périmètre organisationnel' : 'Périmètre global';
         $parts = [data_get($structure, 'code'), data_get($structure, 'libelle'), data_get($structure, 'nom')];
         return collect($parts)->filter()->unique()->join(' — ') ?: 'Périmètre organisationnel';
     }
 
     public function isScoped(): bool
     {
-        return $this->query() !== [];
+        return session('sicore_user.drh.perimetre.type') === 'national' || $this->query() !== [];
     }
 }
