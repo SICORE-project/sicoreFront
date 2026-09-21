@@ -18,8 +18,10 @@ return [
         'type' => 'group',
         'label' => 'Gestion du personnel',
         'icon' => 'fa-solid fa-users',
-        'active' => ['enseignants.*', 'personnel.*', 'recruitment.*'],
+        'active' => ['enseignants.*', 'personnel.*', 'recruitment.*', 'parametres.ia.*', 'parametres.ief.*', 'ia.structure', 'ia.iefs'],
         'links' => [
+            ['label' => 'IA', 'route' => 'parametres.ia.index', 'icon' => 'fa-solid fa-building-columns'],
+            ['label' => 'IEF', 'route' => 'parametres.ief.index', 'icon' => 'fa-solid fa-sitemap'],
             ['label' => 'Nouveau recrus', 'route' => 'recruitment.index', 'active' => 'recruitment.*', 'icon' => 'fa-solid fa-user-plus'],
             ['label' => 'Enseignants', 'route' => 'enseignants.index', 'active' => 'enseignants.*', 'icon' => 'fa-solid fa-chalkboard-user'],
             ['label' => 'Reclassement', 'route' => 'personnel.reclassement', 'icon' => 'fa-solid fa-ranking-star'],
@@ -104,8 +106,6 @@ return [
         'icon' => 'fa-solid fa-gears',
         'active' => ['parametres.*'],
         'links' => [
-            ['label' => 'IA', 'route' => 'parametres.ia.index', 'icon' => 'fa-solid fa-building-columns'],
-            ['label' => 'IEF', 'route' => 'parametres.ief.index', 'icon' => 'fa-solid fa-sitemap'],
             ['label' => 'Diplômes', 'route' => 'parametres.diplomes.index', 'icon' => 'fa-solid fa-graduation-cap'],
             ['label' => 'Corps', 'route' => 'parametres.corps.index', 'icon' => 'fa-solid fa-users-line'],
             ['label' => 'Catégories', 'route' => 'parametres.categories.index', 'icon' => 'fa-solid fa-layer-group'],

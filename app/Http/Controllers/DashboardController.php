@@ -17,6 +17,11 @@ class DashboardController extends Controller
 
     public function index(): View
     {
+        $role = session('sicore_user.role_slug') ?: session('sicore_user.role', '');
+        if (Str::slug(is_string($role) ? $role : '', '_') === 'gestionnaire_ia') {
+            return $this->iaDashboard();
+        }
+
         if (app(\App\Services\Organisation\DrhAccess::class)->isDrh()) {
             return $this->drhDashboard();
         }
@@ -50,6 +55,39 @@ class DashboardController extends Controller
             'scopeLabel' => $this->organisation->label(),
             'isScoped' => $this->organisation->isScoped(),
             'isGlobalAdmin' => $isGlobalAdmin,
+        ]);
+    }
+
+    private function iaDashboard(): View
+    {
+        $access = app(\App\Services\Organisation\InterfaceAccess::class);
+        $metrics = [];
+        $error = null;
+
+        try {
+            $response = $this->api->get('ia/dashboard');
+            if ($response->successful() && is_array($response->json('data'))) {
+                $metrics = $response->json('data');
+            } else {
+                $error = match ($response->status()) {
+                    401 => 'Votre session a expiré. Veuillez vous reconnecter.',
+                    403 => 'Votre accès ou votre rattachement à une IA ne permet pas de consulter ces indicateurs.',
+                    default => 'Les indicateurs sont indisponibles pour le moment.',
+                };
+            }
+        } catch (ConnectionException) {
+            $error = 'Le service est momentanément inaccessible. Veuillez réessayer.';
+        }
+
+        return view('pages.dashboard.ia', [
+            'metrics' => $metrics,
+            'error' => $error,
+            'scopeLabel' => ($name = data_get($metrics, 'ia.libelle'))
+                ? (preg_match('/^IA\b/iu', $name) ? $name : 'IA de '.$name) : 'IA non disponible',
+            'canConsultPersonnel' => $access->allows('enseignants.read'),
+            'canConsultPayroll' => $access->allows('paie.bulletins.read'),
+            'canConsultSalaryMass' => $access->allows('paie.masse_salariale.read'),
+            'navigation' => $access->navigation(config('navigation', [])),
         ]);
     }
 

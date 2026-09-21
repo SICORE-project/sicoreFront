@@ -32,6 +32,9 @@ class EnseignantController extends Controller
     ): View|RedirectResponse
     {
         $access = app(\App\Services\Organisation\InterfaceAccess::class);
+        if ($access->isIa()) {
+            return app(\App\Http\Controllers\IaWorkspaceController::class)->teachers($request);
+        }
         if ($access->isDrh() && ! app(\App\Services\Organisation\OrganisationContext::class)->isScoped()) {
             return view('pages.enseignants.index', array_merge(array_fill_keys([
                 'items', 'academies', 'filterIefs', 'regionOptions', 'iefOptions', 'corpsOptions',

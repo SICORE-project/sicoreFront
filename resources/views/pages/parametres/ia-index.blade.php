@@ -3,6 +3,8 @@
 @section('title', 'SICORE - Inspections d’académie')
 
 @section('content')
+@php($scopedReadOnly = $scopedReadOnly ?? false)
+@php($listRoute = $listRoute ?? 'parametres.ia.index')
 <main class="main-content">
   <header class="topbar">
     <div class="page-title-wrap">
@@ -25,7 +27,7 @@
 
     <div class="stats-grid">
       <article class="stat-card">
-        <div><p class="stat-label">Inspections d’académie</p><p class="stat-value">{{ $pagination['total'] }}</p><p class="stat-note">Toutes les IA</p></div>
+        <div><p class="stat-label">Inspections d’académie</p><p class="stat-value">{{ $pagination['total'] }}</p><p class="stat-note">{{ $scopedReadOnly ? $scopeLabel : 'Toutes les IA' }}</p></div>
         <span class="stat-icon green"><i class="fa-solid fa-building-columns" aria-hidden="true"></i></span>
       </article>
       <article class="stat-card">
@@ -35,16 +37,16 @@
     </div>
 
     <div class="actions-row">
-      <p class="breadcrumb">Paramétrage &gt; Inspections d’académie</p>
+      <p class="breadcrumb">Gestion du personnel &gt; Inspections d’académie</p>
       <div class="actions-group">
-        <button class="btn-primary" type="button" data-modal-open="ia-create-modal">+ Nouvelle IA</button>
+        @if (! $scopedReadOnly)<button class="btn-primary" type="button" data-modal-open="ia-create-modal">+ Nouvelle IA</button>@endif
       </div>
     </div>
 
-    <form class="filter-panel parametrage-filters" id="iaFilterForm" method="GET" action="{{ route('parametres.ia.index') }}">
+    <form class="filter-panel parametrage-filters" id="iaFilterForm" method="GET" action="{{ route($listRoute) }}">
       <div class="form-group"><label for="iaSearch">Rechercher</label><input class="form-control" id="iaSearch" name="search" type="search" value="{{ request('search') }}" placeholder="Code ou libellé"></div>
       <div class="form-group"><label for="iaRegionFilter">Région</label><select class="form-control" id="iaRegionFilter" name="region_id"><option value="">Toutes les régions</option>@foreach ($regions as $region)<option value="{{ data_get($region, 'id') }}" @selected((string) request('region_id') === (string) data_get($region, 'id'))>{{ data_get($region, 'nom') }}</option>@endforeach</select></div>
-      <div class="actions-group"><a class="btn-secondary" href="{{ route('parametres.ia.index') }}">Réinitialiser</a></div>
+      <div class="actions-group"><a class="btn-secondary" href="{{ route($listRoute) }}">Réinitialiser</a></div>
     </form>
 
     @if ($error)
@@ -64,7 +66,7 @@
       <div class="table-responsive">
         <table class="table" id="iaTable">
           <thead><tr>
-            <th>Code</th><th>Libellé</th><th>Région</th><th class="actions-cell">Actions</th>
+            <th>Code</th><th>Libellé</th><th>Région</th>@if (! $scopedReadOnly)<th class="actions-cell">Actions</th>@endif
           </tr></thead>
           <tbody>
             @foreach ($items as $ia)
@@ -72,7 +74,7 @@
                 <td>{{ data_get($ia, 'code', '—') }}</td>
                 <td>{{ data_get($ia, 'libelle', data_get($ia, 'nom', '—')) }}</td>
                 <td>{{ data_get($ia, 'region.libelle', data_get($ia, 'region.nom', data_get($ia, 'region', '—'))) }}</td>
-                <td class="actions-cell">
+                @if (! $scopedReadOnly)<td class="actions-cell">
                   @php($iaId = data_get($ia, 'id', data_get($ia, 'uuid')))
                   <button class="icon-action" type="button" data-modal-open="ia-edit-modal" data-ia-edit='@json($ia)' title="Modifier" aria-label="Modifier {{ data_get($ia, 'code') }}">
                     <i class="fa-solid fa-pen-to-square" aria-hidden="true"></i>
@@ -86,7 +88,7 @@
                       </button>
                     </form>
                   @endif
-                </td>
+                </td>@endif
               </tr>
             @endforeach
           </tbody>
@@ -96,13 +98,14 @@
 
       <nav class="pagination" aria-label="Pagination">
         @for ($page = 1; $page <= $pagination['last_page']; $page++)
-          <a class="page-btn {{ $page === $pagination['current_page'] ? 'active' : '' }}" href="{{ route('parametres.ia.index', array_merge(request()->except('page'), ['page' => $page])) }}" @if ($page === $pagination['current_page']) aria-current="page" @endif>{{ $page }}</a>
+          <a class="page-btn {{ $page === $pagination['current_page'] ? 'active' : '' }}" href="{{ route($listRoute, array_merge(request()->except('page'), ['page' => $page])) }}" @if ($page === $pagination['current_page']) aria-current="page" @endif>{{ $page }}</a>
         @endfor
       </nav>
     </section>
   </section>
 </main>
 
+@if (! $scopedReadOnly)
 <x-module-indemnite type="modal" id="ia-create-modal" title="Créer une inspection d’académie">
   <form class="teacher-form" id="iaCreateModalForm" method="POST" action="{{ route('parametres.ia.store') }}">
     @csrf
@@ -166,6 +169,7 @@
     </div>
   </form>
 </x-module-indemnite>
+@endif
 
 @push('styles')
 <style>

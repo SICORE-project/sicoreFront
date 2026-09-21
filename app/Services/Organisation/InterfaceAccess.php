@@ -7,6 +7,11 @@ use Illuminate\Support\Str;
 
 class InterfaceAccess
 {
+    public function isIa(): bool
+    {
+        return $this->role() === 'gestionnaire_ia';
+    }
+
     public function isDrh(): bool
     {
         return in_array($this->role(), ['agent_drh', 'drh', 'directeur_des_ressources_humaines'], true);
@@ -25,7 +30,7 @@ class InterfaceAccess
     public function usesPermissions(): bool
     {
         // Les anciennes sessions sans catalogue conservent leur fonctionnement jusqu'à reconnexion.
-        return ! $this->isAdmin() && ($this->isDrh() || session()->has('sicore_user.permissions') || session()->has('sicore_permissions'));
+        return ! $this->isAdmin() && ($this->isIa() || $this->isDrh() || session()->has('sicore_user.permissions') || session()->has('sicore_permissions'));
     }
 
     public function allows(string $permission): bool
@@ -76,6 +81,23 @@ class InterfaceAccess
 
     public function allowsRoute(string $route): bool
     {
+        if ($this->isIa()) {
+            if (in_array($route, ['dashboard', 'logout'], true)) return true;
+            $permission = match ($route) {
+                'enseignants.index', 'enseignants.legacy.index', 'ia.teachers.show', 'ia.structure', 'ia.iefs' => 'enseignants.read',
+                'paie.montants-engages-banque', 'paie.edition-salaires-banque', 'paie.elements-saisie-dashboard', 'paie.recap-elements-corps', 'paie.cumul-enseignants-ief', 'paie.effectifs-corps', 'paie.non-generee', 'paie.edition-enseignants', 'paie.edition-fonctionnaires', 'paie.mutuelles-sante', 'paie.situation-affectations', 'paie.prime-scolaire', 'paie.reliquats', 'paie.double-flux', 'paie.directeurs-interim', 'paie.heures-supplementaires-interim',
+                'paie.bulletins', 'paie.travaux-periodiques', 'ia.payroll.show' => 'paie.bulletins.read',
+                'paie.sommes-percues' => 'paie.sommes_percues.read',
+                'paie.etat-salaires' => 'paie.etat_salaires.read',
+                'paie.cotisations-sociales' => 'paie.cotisations.read',
+                'paie.generee-ief' => 'paie.effectifs_ief.read',
+                'paie.recap-banque' => 'paie.recap_banque.read',
+                'ia.payroll.export' => 'paie.bulletins.export',
+                default => null,
+            };
+            if ($permission) return $this->allows($permission);
+            if (! str_starts_with($route, 'recruitment.')) return false;
+        }
         if (! $this->usesPermissions() || in_array($route, ['dashboard', 'logout'], true)) return true;
 
         if (str_starts_with($route, 'enseignants.')) {
@@ -94,6 +116,10 @@ class InterfaceAccess
 
         $visible = [];
         foreach ($items as $item) {
+            if ($this->isIa() && in_array($item['route'] ?? '', ['parametres.ia.index', 'parametres.ief.index'], true)) {
+                $item['route'] = $item['route'] === 'parametres.ia.index' ? 'ia.structure' : 'ia.iefs';
+                $item['active'] = $item['route'];
+            }
             if ($this->isDrh() && ($item['route'] ?? '') === 'enseignants.index') continue;
             if (isset($item['links'])) {
                 $item['links'] = $this->navigation($item['links']);

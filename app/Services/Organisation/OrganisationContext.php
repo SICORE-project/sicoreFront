@@ -12,6 +12,10 @@ class OrganisationContext
 
     public function query(): array
     {
+        if (app(InterfaceAccess::class)->isIa()) {
+            $id = session('sicore_user.ia_id') ?: session('sicore_user.ia.id') ?: data_get($this->access(), 'ia_id', data_get($this->access(), 'ia.id'));
+            return $id ? ['ia_id' => $id] : [];
+        }
         $scope = session('sicore_user.drh.perimetre', []);
         if (($scope['type'] ?? null) === 'national') return [];
         if (in_array($scope['type'] ?? null, ['ia_id', 'ief_id', 'lieu_service_id'], true) && ! empty($scope['id'])) {
@@ -30,6 +34,10 @@ class OrganisationContext
 
     public function label(): string
     {
+        if (app(InterfaceAccess::class)->isIa()) {
+            $name = session('sicore_user.ia.libelle') ?: data_get($this->access(), 'ia.libelle');
+            return $name ? (preg_match('/^IA\b/iu', $name) ? $name : 'IA de '.$name) : 'IA non disponible';
+        }
         if (session('sicore_user.drh.perimetre.type') === 'national') return 'Périmètre national';
         $access = $this->access();
         $structure = data_get($access, 'ief', data_get($access, 'ia', data_get($access, 'structure')));

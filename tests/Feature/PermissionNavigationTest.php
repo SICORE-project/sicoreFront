@@ -34,6 +34,31 @@ class PermissionNavigationTest extends TestCase
         $this->assertFalse($access->allowsRoute('utilisateurs.store'));
     }
 
+    public function test_ia_manager_with_payroll_permission_sees_payroll_navigation(): void
+    {
+        Http::preventStrayRequests();
+        Http::fake(['*/ia/dashboard*' => Http::response(['data' => ['ia' => ['libelle' => 'Dakar']]])]);
+        $this->withSession(['access_token' => 'test', 'sicore_user' => [
+            'role_slug' => 'gestionnaire_ia',
+            'permissions' => ['enseignants.read', 'paie.bulletins.read'],
+            'acces_organisationnel' => [
+                'ia_id' => 4,
+                'ia' => ['id' => 4, 'libelle' => 'Dakar'],
+            ],
+        ]])->get('/dashboard')->assertOk()
+            ->assertSee('Gestion du personnel')
+            ->assertSee('Gestion de la paie')
+            ->assertSee('Travaux périodiques')
+            ->assertDontSee('État des salaires')
+            ->assertSee('Bulletins des salaires')
+            ->assertDontSee('Sommes perçues');
+
+        $access = app(DrhAccess::class);
+        $this->assertTrue($access->allowsRoute('paie.bulletins'));
+        $this->assertFalse($access->allowsRoute('parametres.ia.index'));
+        $this->assertFalse($access->allowsRoute('utilisateurs.index'));
+    }
+
     public function test_no_scope_still_displays_empty_list_and_backend_enforces_scope(): void
     {
         Http::fake(['*' => Http::response(['data' => []])]);

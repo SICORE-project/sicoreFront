@@ -55,6 +55,11 @@ Route::middleware('sicore.auth')->group(function (): void {
             ->name('logout');
 
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/ia/structure', [\App\Http\Controllers\IaWorkspaceController::class, 'references'])->name('ia.structure');
+    Route::get('/ia/iefs', [\App\Http\Controllers\IaWorkspaceController::class, 'references'])->name('ia.iefs');
+    Route::get('/ia/enseignants/{id}', [\App\Http\Controllers\IaWorkspaceController::class, 'teacher'])->whereNumber('id')->name('ia.teachers.show');
+    Route::get('/ia/paie/export', [\App\Http\Controllers\IaWorkspaceController::class, 'export'])->name('ia.payroll.export');
+    Route::get('/ia/paie/{id}', [\App\Http\Controllers\IaWorkspaceController::class, 'payslip'])->whereNumber('id')->name('ia.payroll.show');
 
     Route::get('/enseignants', [EnseignantController::class, 'index'])->name('enseignants.legacy.index');
     Route::get('/enseignants/nouveau', [EnseignantController::class, 'create'])->name('enseignants.legacy.create');
