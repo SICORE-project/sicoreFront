@@ -64,9 +64,9 @@ class DashboardController extends Controller
             $error = 'La consultation du personnel ne vous est pas autorisée.';
         } else {
             try {
-                $response = $this->api->get('pages.dashboard.index');
+                $response = $this->api->get('drh/dashboard');
                 if ($response->successful() && is_array($response->json('data'))) {
-                    $metrics = $response->json('data');
+                    $metrics = array_merge($response->json('data.indicateurs', []), $response->json('data', []));
                 } else {
                     $error = 'Les indicateurs sont indisponibles pour le moment.';
                 }

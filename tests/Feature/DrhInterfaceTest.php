@@ -19,9 +19,9 @@ class DrhInterfaceTest extends TestCase
 
     public function test_dashboard_displays_scoped_metrics_and_filters_navigation(): void
     {
-        Http::fake(['*/pages.dashboard.index*' => Http::response(['data' => ['agents_total' => 42]])]);
+        Http::fake(['*/drh/dashboard*' => Http::response(['data' => ['indicateurs' => ['total_agents' => 42]]])]);
         $this->drh()->get('/dashboard')->assertOk()
-            ->assertSee('Tableau de bord DRH')->assertSee('IEF Dakar')->assertSee('42')
+            ->assertSee('Tableau de bord DRH')->assertDontSee('IEF Dakar')->assertSee('situation=total_agents')->assertSee('situation=prise_service_enregistree')->assertSee('situation=enseignants_abandon')->assertSee('42')
             ->assertSee('Gestion du personnel')->assertSee('Indicateur indisponible')
             ->assertDontSee('Gestion de la paie')->assertDontSee('Gestion des indemnités')
             ->assertDontSee('Gestion des utilisateurs')->assertDontSee('Paramétrage');
@@ -31,7 +31,7 @@ class DrhInterfaceTest extends TestCase
 
     public function test_drh_alias_only_sees_relevant_modules_and_old_links_return_to_dashboard(): void
     {
-        Http::fake(['*/pages.dashboard.index*' => Http::response(['data' => []])]);
+        Http::fake(['*/drh/dashboard*' => Http::response(['data' => []])]);
         $this->drh()->withSession(['sicore_user.role_slug' => 'drh'])
             ->get('/dashboard')->assertOk()
             ->assertSee('Gestion du personnel')->assertDontSee('Gestion de la paie')

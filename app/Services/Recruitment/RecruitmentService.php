@@ -10,9 +10,9 @@ class RecruitmentService
 {
     public function __construct(private ApiClient $api) {}
 
-    public function get(string $path): Response
+    public function get(string $path, array $query = []): Response
     {
-        return $this->api->get('recruitment/'.$path);
+        return $this->api->get('recruitment/'.$path, $query);
     }
 
     public function post(string $path, array $data = [], ?UploadedFile $file = null, string $field = 'document'): Response

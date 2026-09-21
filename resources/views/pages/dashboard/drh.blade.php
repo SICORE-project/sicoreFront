@@ -10,21 +10,22 @@
         @endif
         <div class="stats-grid">
             @foreach ([
-                'agents_total' => 'Nombre total d’enseignants',
-                'enseignants_fonctionnaires' => 'Enseignants fonctionnaires',
-                'enseignants_non_fonctionnaires' => 'Enseignants non-fonctionnaires',
-                'dossiers_actifs' => 'Dossiers actifs',
-                'dossiers_incomplets' => 'Dossiers incomplets',
+                'total_agents' => 'Nombre total d’enseignants',
+                'prise_service_enregistree' => 'Enseignants ayant pris service',
+                'enseignants_abandon' => 'Enseignants en abandon',
             ] as $key => $label)
-                <article class="stat-card">
+                <a class="stat-card" style="text-decoration: none; color: inherit;" href="{{ route('recruitment.index', ['situation' => $key]) }}#teacher-results">
                     <div><p class="stat-label">{{ $label }}</p>
                         <p class="stat-value">{{ isset($metrics[$key]) && is_numeric($metrics[$key]) ? number_format($metrics[$key], 0, ',', ' ') : '—' }}</p>
-                        <p class="stat-note">{{ isset($metrics[$key]) ? $scopeLabel : 'Indicateur indisponible' }}</p>
+                        @if (!isset($metrics[$key]))
+                            <p class="stat-note">Indicateur indisponible</p>
+                        @endif
                     </div>
                     <span class="stat-icon green"><i class="fa-solid fa-users" aria-hidden="true"></i></span>
-                </article>
+                </a>
             @endforeach
         </div>
+        <p>Prise de service : date enregistrée, hors abandons. Abandon : uniquement les dossiers déclarés en abandon.</p>
         <div class="dashboard-grid">
             <section class="table-card">
                 <div class="panel-header"><h2>Agents par lieu de service</h2></div>

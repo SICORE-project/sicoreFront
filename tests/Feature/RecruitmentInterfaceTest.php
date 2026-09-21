@@ -15,6 +15,18 @@ class RecruitmentInterfaceTest extends TestCase
             'drh'=>['perimetre'=>['type'=>'national','id'=>null]],
         ]]);
     }
+    public function test_dashboard_filter_opens_teacher_results_without_search_text(): void
+    {
+        Http::fake([
+            '*/recruitment/search*'=>Http::response(['data'=>[], 'total'=>0, 'current_page'=>1, 'last_page'=>1]),
+            '*'=>Http::response(['data'=>[]]),
+        ]);
+        $this->login(['recruitment.read','enseignants.read'])
+            ->get(route('recruitment.index',['situation'=>'enseignants_abandon']))
+            ->assertOk()->assertSee('Enseignants en abandon')->assertSee('0 enseignant');
+        Http::assertSent(fn ($request) => str_contains($request->url(), 'recruitment/search')
+            && $request['situation'] === 'enseignants_abandon');
+    }
     public function test_import_screen_has_template_and_hides_teacher_menu(): void
     {
         Http::fake(['*'=>Http::response(['data'=>[]])]);

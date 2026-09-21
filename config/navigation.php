@@ -20,7 +20,7 @@ return [
         'icon' => 'fa-solid fa-users',
         'active' => ['enseignants.*', 'personnel.*', 'recruitment.*'],
         'links' => [
-            ['label' => 'Nouveau recru', 'route' => 'recruitment.index', 'active' => 'recruitment.*', 'icon' => 'fa-solid fa-user-plus'],
+            ['label' => 'Nouveau recrus', 'route' => 'recruitment.index', 'active' => 'recruitment.*', 'icon' => 'fa-solid fa-user-plus'],
             ['label' => 'Enseignants', 'route' => 'enseignants.index', 'active' => 'enseignants.*', 'icon' => 'fa-solid fa-chalkboard-user'],
             ['label' => 'Reclassement', 'route' => 'personnel.reclassement', 'icon' => 'fa-solid fa-ranking-star'],
             ['label' => 'Impôt sur le revenu', 'route' => 'personnel.impot-sur-le-revenu', 'icon' => 'fa-solid fa-file-invoice-dollar'],

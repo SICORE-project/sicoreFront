@@ -15,12 +15,13 @@ class RecruitmentController extends Controller
 {
     public function __construct(private RecruitmentService $api) {}
 
-    public function index()
+    public function index(Request $request)
     {
+        $batchFilters = $request->validate(['year'=>['nullable','integer','between:1900,2100'], 'reference'=>['nullable','string','max:100']]);
         $batches = $notices = [];
         $error = null;
         try {
-            $response = $this->api->get('batches');
+            $response = $this->api->get('batches', $batchFilters);
             if ($response->successful()) $batches = $response->json('data', []);
             else $error = $this->message($response);
             if (! $error) {
@@ -30,7 +31,20 @@ class RecruitmentController extends Controller
         } catch (ConnectionException) {
             $error = 'Le service des recrutements est momentanément inaccessible.';
         }
-        return view('pages.recruitment.index', compact('batches', 'notices', 'error'));
+        $searchResults = null;
+        $searchError = null;
+        $filters = $request->validate(['search'=>['nullable','string','max:100'], 'situation'=>['nullable','in:total_agents,prise_service_enregistree,enseignants_abandon'], 'page'=>['nullable','integer','min:1']]);
+        $access = app(\App\Services\Organisation\InterfaceAccess::class);
+        if (($request->filled('search') || $request->filled('situation')) && $access->isDrh() && $access->allows('enseignants.read')) {
+            try {
+                $response = $this->api->get('search',$filters);
+                if ($response->successful()) $searchResults = $response->json();
+                else $searchError = $this->message($response);
+            } catch (ConnectionException) {
+                $searchError = 'La recherche est momentanément indisponible.';
+            }
+        }
+        return view('pages.recruitment.index', compact('batches', 'notices', 'error', 'searchResults', 'searchError'));
     }
 
     public function create()
