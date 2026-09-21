@@ -40,6 +40,17 @@ $walk = function (array $items) use (&$walk, &$routes): void {
     }
 };
 $walk(require __DIR__.'/navigation.php');
+// Consultation des détails et des filtres : aucune permission d'écriture implicite.
+foreach ([
+    'filtres-options', 'convocations.show', 'convocations.centres.show',
+    'convocations.suivi', 'convocations.pdf', 'convocations.enseignants.rechercher',
+    'pieces-justificatives.telecharger', 'calcul.groupe', 'calcul-surveillance.groupe',
+    'frais-deplacement.show', 'frais-deplacement.calcul-groupe', 'frais-deplacement.pdf',
+    'frais-deplacement.justificatifs.telecharger', 'etats-paie.centres',
+    'etats-paie.membres', 'etats-paie.membres.rib', 'etats-paie.existants',
+] as $route) {
+    $routes['indemnites.'.$route] = 'indemnites.read';
+}
 return ['routes' => $routes, 'resources' => [
     'utilisateurs' => 'administration.users',
     'admin.roles' => 'administration.roles',

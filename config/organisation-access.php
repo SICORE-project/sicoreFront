@@ -25,6 +25,7 @@ return [
         'ief' => ['ief'],
         'dage' => ['national'],
         'decpc' => ['national'],
+        'agent_decpc' => ['national'],
         'drh' => ['national'],
         'agent_drh' => ['national'],
         'gestionnaire_paie' => ['national'],

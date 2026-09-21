@@ -7,6 +7,11 @@ use Illuminate\Support\Str;
 
 class InterfaceAccess
 {
+    public function isDecpc(): bool
+    {
+        return in_array($this->role(), ['agent_decpc', 'decpc'], true);
+    }
+
     public function isIa(): bool
     {
         return $this->role() === 'gestionnaire_ia';
@@ -30,7 +35,7 @@ class InterfaceAccess
     public function usesPermissions(): bool
     {
         // Les anciennes sessions sans catalogue conservent leur fonctionnement jusqu'à reconnexion.
-        return ! $this->isAdmin() && ($this->isIa() || $this->isDrh() || session()->has('sicore_user.permissions') || session()->has('sicore_permissions'));
+        return ! $this->isAdmin() && ($this->isIa() || $this->isDrh() || $this->isDecpc() || session()->has('sicore_user.permissions') || session()->has('sicore_permissions'));
     }
 
     public function allows(string $permission): bool
@@ -81,6 +86,9 @@ class InterfaceAccess
 
     public function allowsRoute(string $route): bool
     {
+        if ($this->isDecpc() && ! in_array($route, ['dashboard', 'logout'], true)
+            && ! app(OrganisationContext::class)->isScoped()) return false;
+
         if ($this->isIa()) {
             if (in_array($route, ['dashboard', 'logout'], true)) return true;
             $permission = match ($route) {

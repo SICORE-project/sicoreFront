@@ -60,7 +60,7 @@
 
         <div class="form-group full organisation-section">
           <strong>Accès organisationnel</strong>
-          <small>Choisissez une structure nationale ou une IA et son IEF.</small>
+          <small>Choisissez votre direction de rattachement ou votre IA selon le périmètre du compte.</small>
         </div>
 
         <div class="form-group">
@@ -73,7 +73,7 @@
         </div>
 
         <div class="form-group" id="national-structure-group" @if(old('perimetre', 'national') !== 'national') hidden @endif>
-          <label for="lieu_service_id">Établissement <span class="required">*</span></label>
+          <label for="lieu_service_id">Direction de rattachement <span class="required">*</span></label>
           <select class="form-control @error('lieu_service_id') is-invalid @enderror" id="lieu_service_id" name="lieu_service_id">
             <option value="">Sélectionner une direction</option>
             @foreach(($organisation['national'] ?? []) as $structure)
@@ -86,7 +86,7 @@
         </div>
 
         <div class="form-group" id="ia-group" hidden>
-          <label for="ia_id">Établissement (IA) <span class="required">*</span></label>
+          <label for="ia_id">IA <span class="required">*</span></label>
           <select class="form-control @error('ia_id') is-invalid @enderror" id="ia_id" name="ia_id">
             <option value="">Sélectionner une IA</option>
           </select>
@@ -175,7 +175,7 @@
           </select>
         </div>
         <div class="form-group">
-          <label for="edit-user-structure" id="edit-user-structure-label">Établissement (Direction) <span class="required">*</span></label>
+          <label for="edit-user-structure" id="edit-user-structure-label">Direction de rattachement <span class="required">*</span></label>
           <select class="form-control" id="edit-user-structure" name="lieu_service_id" required>
             <option value="">Sélectionner une direction</option>
           </select>
@@ -236,6 +236,14 @@
       const email = document.getElementById('email');
       const emailError = document.getElementById('email-error');
       const hierarchy = @json($organisation['regional'] ?? []);
+      const nationalStructures = @json($organisation['national'] ?? []);
+      function compatibleNationalStructure(item, slug) {
+        const type = String(item.type || item.code || '').toUpperCase();
+        if (slug === 'agent_decpc') return type === 'DECPC';
+        if (slug === 'agent_drh') return type === 'DRH';
+        return true;
+      }
+
       const iaOptionsUrl = @json(route('utilisateurs.ia-options'));
       const role = document.getElementById('role_id');
       const perimeter = document.getElementById('perimetre');
@@ -323,6 +331,12 @@
     function applyRoleStructureRules() {
   const selectedRole = role.options[role.selectedIndex];
   const allowedTypes = JSON.parse(selectedRole?.dataset.structureTypes || '[]');
+  const previousStructure = national.value;
+  national.replaceChildren(new Option('Sélectionner une direction', ''));
+  nationalStructures
+    .filter(item => compatibleNationalStructure(item, selectedRole?.dataset.roleSlug))
+    .forEach(item => national.add(new Option(optionLabel(item), item.id)));
+  national.value = previousStructure;
   const hasSelectedRole = Boolean(role.value);
   const isGestionnaireIa = selectedRole?.dataset.roleSlug === 'gestionnaire_ia';
   const allowsIa = isGestionnaireIa || allowedTypes.includes('ia');
@@ -472,14 +486,15 @@
 
         editPerimeter.value = isGestionnaireIa ? 'regional' : 'national';
         editStructureLabel.innerHTML = isGestionnaireIa
-          ? 'Établissement (IA) <span class="required">*</span>'
-          : 'Établissement (Direction) <span class="required">*</span>';
+          ? 'IA <span class="required">*</span>'
+          : 'Direction de rattachement <span class="required">*</span>';
         editStructure.replaceChildren(new Option(
           isGestionnaireIa ? 'Sélectionner une IA' : 'Sélectionner une direction',
           ''
         ));
 
         editStructures
+          .filter(item => compatibleNationalStructure(item, selectedRole?.dataset.roleSlug))
           .filter(item => isGestionnaireIa
             ? String(item.type).toUpperCase() === expectedType
             : String(item.perimetre).toLowerCase() === 'national')

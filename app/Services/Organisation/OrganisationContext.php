@@ -12,6 +12,16 @@ class OrganisationContext
 
     public function query(): array
     {
+        if (app(InterfaceAccess::class)->isDecpc()) {
+            $scope = session('sicore_user.decpc.perimetre', []);
+            if (($scope['type'] ?? null) === 'national') return [];
+            if (in_array($scope['type'] ?? null, ['ia_id', 'ief_id', 'lieu_service_id'], true)) {
+                $id = $scope['id'] ?? null;
+                return filter_var($id, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]])
+                    ? [$scope['type'] => (int) $id] : [];
+            }
+            return [];
+        }
         if (app(InterfaceAccess::class)->isIa()) {
             $id = session('sicore_user.ia_id') ?: session('sicore_user.ia.id') ?: data_get($this->access(), 'ia_id', data_get($this->access(), 'ia.id'));
             return $id ? ['ia_id' => $id] : [];
@@ -34,6 +44,9 @@ class OrganisationContext
 
     public function label(): string
     {
+        if (app(InterfaceAccess::class)->isDecpc()) {
+            return $this->isScoped() ? 'Périmètre DECPC' : 'Périmètre DECPC non défini';
+        }
         if (app(InterfaceAccess::class)->isIa()) {
             $name = session('sicore_user.ia.libelle') ?: data_get($this->access(), 'ia.libelle');
             return $name ? (preg_match('/^IA\b/iu', $name) ? $name : 'IA de '.$name) : 'IA non disponible';
@@ -48,6 +61,8 @@ class OrganisationContext
 
     public function isScoped(): bool
     {
+        if (app(InterfaceAccess::class)->isDecpc()) return session('sicore_user.decpc.perimetre.type') === 'national' || $this->query() !== [];
+
         return session('sicore_user.drh.perimetre.type') === 'national' || $this->query() !== [];
     }
 }

@@ -75,6 +75,7 @@ class AuthController extends Controller
             'role' => $data['user']['role']['nom'] ?? null,
             'role_slug' => $data['user']['role']['slug'] ?? null,
             'drh' => $data['drh'] ?? $data['user']['drh'] ?? [],
+            'decpc' => $data['decpc'] ?? $data['user']['decpc'] ?? [],
             'name' => trim(($data['user']['prenom'] ?? '').' '.($data['user']['nom'] ?? '')),
             'permissions' => $data['user']['permissions'] ?? $data['user']['role']['permissions'] ?? [],
             'ia_id' => $data['user']['ia_id'] ?? $data['user']['ia']['id'] ?? null,
@@ -84,6 +85,7 @@ class AuthController extends Controller
 
         $redirect = $returnUrl && ! app(\App\Services\Organisation\DrhAccess::class)->isDrh()
             && ! app(\App\Services\Organisation\InterfaceAccess::class)->isIa()
+            && ! app(\App\Services\Organisation\InterfaceAccess::class)->isDecpc()
             ? redirect()->to($returnUrl)
             : redirect()->route('dashboard');
 

@@ -17,6 +17,9 @@ class DashboardController extends Controller
 
     public function index(): View
     {
+        if (app(\App\Services\Organisation\InterfaceAccess::class)->isDecpc()) {
+            return $this->decpcDashboard();
+        }
         $role = session('sicore_user.role_slug') ?: session('sicore_user.role', '');
         if (Str::slug(is_string($role) ? $role : '', '_') === 'gestionnaire_ia') {
             return $this->iaDashboard();
@@ -55,6 +58,51 @@ class DashboardController extends Controller
             'scopeLabel' => $this->organisation->label(),
             'isScoped' => $this->organisation->isScoped(),
             'isGlobalAdmin' => $isGlobalAdmin,
+        ]);
+    }
+
+    private function decpcDashboard(): View
+    {
+        $access = app(\App\Services\Organisation\InterfaceAccess::class);
+        $metrics = [];
+        $error = null;
+        $canConsultPersonnel = $access->allowsRoute('enseignants.index');
+        $canConsultIndemnites = $access->allows('indemnites.read') && $this->organisation->isScoped();
+
+        if (! $this->organisation->isScoped()) {
+            $error = 'Votre périmètre DECPC doit être défini pour accéder aux dossiers.';
+        } elseif ($canConsultPersonnel || $canConsultIndemnites) {
+            try {
+                $response = $this->api->get('decpc/dashboard');
+                if ($response->successful() && is_array($response->json('data'))) {
+                    $metrics = $response->json('data');
+                    foreach ([
+                        'total_agents' => 'total_agents',
+                        'dossiers_en_attente' => 'indemnites_en_attente',
+                        'dossiers_valides' => 'indemnites_validees',
+                        'dossiers_rejetes_retournes' => 'indemnites_rejetees',
+                        'montant_en_cours' => 'montant_indemnites_en_cours',
+                    ] as $displayKey => $apiKey) {
+                        $metrics[$displayKey] = data_get($metrics, 'indicateurs.'.$apiKey, $metrics[$displayKey] ?? null);
+                    }
+
+                } else {
+                    $error = 'Les indicateurs sont indisponibles pour le moment.';
+                }
+            } catch (ConnectionException) {
+                $error = 'Le service est momentanément inaccessible.';
+            }
+        } else {
+            $error = 'Aucune permission de consultation ne vous est attribuée.';
+        }
+
+        return view('pages.dashboard.decpc', [
+            'metrics' => $metrics,
+            'error' => $error,
+            'canConsultPersonnel' => $canConsultPersonnel,
+            'canConsultIndemnites' => $canConsultIndemnites,
+            'scopeLabel' => $this->organisation->label(),
+            'navigation' => $access->navigation(config('navigation', [])),
         ]);
     }
 
