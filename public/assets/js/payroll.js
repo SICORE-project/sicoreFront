@@ -213,7 +213,10 @@
     }
     if (isCollectiveTabaskiAction() && defaults.annee_academique_id == null) {
       var academicYears = page.data.academic_years || [];
-      if (academicYears.length) defaults.annee_academique_id = academicYears[0].id;
+      var activeYear = academicYears.find(function (year) { return year.is_active; });
+      if (activeYear || academicYears.length) {
+        defaults.annee_academique_id = (activeYear || academicYears[0]).id;
+      }
     }
     if (selectedPeriod && defaults.expected_version == null && currentAction === "close-period") {
       defaults.expected_version = selectedPeriod.version;
@@ -617,8 +620,8 @@
       var ia = String(iaField.value || "");
       var ief = String(iefField.value || "");
       var teachers = (page.data.teachers || []).filter(function (teacher) {
-        return String(teacher.ia_id || "") === ia &&
-          String(teacher.ief_id || "") === ief &&
+        return (!ia || String(teacher.ia_id || "") === ia) &&
+          (!ief || String(teacher.ief_id || "") === ief) &&
           teacher.matricule;
       });
 
@@ -626,10 +629,10 @@
         return '<option value="' + escapeHtml(teacher.matricule) + '">' +
           escapeHtml(teacher.name || "") + "</option>";
       }).join("");
-      matriculeField.disabled = !ief || teachers.length === 0;
+      matriculeField.disabled = false;
       matriculeField.placeholder = teachers.length
         ? "Saisir un matricule"
-        : "Aucun matricule pour cette IEF";
+        : "Aucun matricule disponible";
     }
 
     function populateIefs() {
@@ -646,8 +649,7 @@
       );
       iefField.disabled = !ia || inspections.length === 0;
       matriculeField.value = "";
-      matriculeField.disabled = true;
-      suggestions.innerHTML = "";
+      populateMatricules();
       applyFilter();
     }
 
@@ -669,6 +671,7 @@
       iaField.focus();
     });
 
+    populateMatricules();
     applyFilter();
   }
 
