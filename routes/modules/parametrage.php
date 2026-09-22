@@ -16,6 +16,7 @@ use App\Http\Controllers\Parametrage\PeriodePaieController;
 use App\Http\Controllers\Parametrage\RubriquePaieController;
 use App\Http\Controllers\Parametrage\SyndicatController;
 use App\Http\Controllers\Parametrage\RegionController;
+use App\Http\Controllers\Parametrage\DepartementController;
 use Illuminate\Support\Facades\Route;
 //use App\Http\Controllers\Admin\LieuServiceController;
 
@@ -136,6 +137,11 @@ Route::middleware('sicore.auth')
         Route::patch('/parametres/regions/{region}/statut', [RegionController::class, 'changeStatus'])->whereNumber('region')->name('parametres.regions.status');
         Route::delete('/parametres/regions/{region}', [RegionController::class, 'destroy'])->whereNumber('region')->name('parametres.regions.destroy');
 
+        Route::get('/parametres/departements',[DepartementController::class, 'index'])->name('parametres.departements.index');
+        Route::post('/parametres/departements',[DepartementController::class, 'store'])->name('parametres.departements.store');
+        Route::put('/parametres/departements/{departement}',[DepartementController::class, 'update'])->whereNumber('departement')->name('parametres.departements.update');
+        Route::patch('/parametres/departements/{departement}/statut',[DepartementController::class, 'changeStatus'])->whereNumber('departement')->name('parametres.departements.status');
+        Route::delete('/parametres/departements/{departement}',[DepartementController::class, 'destroy'])->whereNumber('departement')->name('parametres.departements.destroy');
 
         Route::get('/parametres/etablissements', [LieuServiceController::class, 'index'])
             ->name('parametres.lieux-service.index');
