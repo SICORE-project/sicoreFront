@@ -86,6 +86,7 @@ class AuthController extends Controller
         $redirect = $returnUrl && ! app(\App\Services\Organisation\DrhAccess::class)->isDrh()
             && ! app(\App\Services\Organisation\InterfaceAccess::class)->isIa()
             && ! app(\App\Services\Organisation\InterfaceAccess::class)->isDecpc()
+            && ! app(\App\Services\Organisation\InterfaceAccess::class)->isTeacher()
             ? redirect()->to($returnUrl)
             : redirect()->route('dashboard');
 
