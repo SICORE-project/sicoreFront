@@ -23,23 +23,11 @@
                         {{ $role['nom'] ?? '-' }}
                     </p>
                 </div>
-                <div>
-                    <label style="font-weight: 600; color: #374151; font-size: 14px;">Slug</label>
-                    <p style="padding: 8px 12px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px; margin-top: 4px;">
-                        <code>{{ $role['slug'] ?? '-' }}</code>
-                    </p>
-                </div>
+                
             </div>
 
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px;">
-                <div>
-                    <label style="font-weight: 600; color: #374151; font-size: 14px;">Type de rôle</label>
-                    <p style="padding: 8px 12px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px; margin-top: 4px;">
-                        <span class="badge badge-secondary">
-                            {{ data_get($role, 'type_role.libelle', '-') }}
-                        </span>
-                    </p>
-                </div>
+             
                 <div>
                     <label style="font-weight: 600; color: #374151; font-size: 14px;">Statut</label>
                     <p style="padding: 8px 12px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px; margin-top: 4px;">

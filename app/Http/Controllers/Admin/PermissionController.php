@@ -4,12 +4,14 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Str;
 
 class PermissionController extends Controller
 {
+    /**
+     * Liste des permissions (sans pagination, pour permettre
+     * une recherche côté client sur l'ensemble des résultats)
+     */
     public function index(Request $request)
     {
         $response = Http::withToken(session('access_token'))
@@ -18,16 +20,10 @@ class PermissionController extends Controller
         $payload = $response->json();
         $items = $response->successful() ? data_get($payload, 'data', []) : [];
         $items = is_array($items) ? array_values($items) : [];
-        $perPage = 10;
-        $page = max(1, $request->integer('page', 1));
-        $paginator = new LengthAwarePaginator(
-            array_slice($items, ($page - 1) * $perPage, $perPage),
-            count($items),
-            $perPage,
-            $page,
-            ['path' => $request->url(), 'query' => $request->query()]
-        );
-        $permissions = $paginator->toArray();
+
+        $permissions = [
+            'data' => $items,
+        ];
 
         $permissionsError = $response->successful()
             ? null
@@ -53,17 +49,16 @@ class PermissionController extends Controller
         return view('pages.administration.permissions-show', compact('permission'));
     }
 
+    /**
+     * Créer une permission
+     */
     public function store(Request $request)
     {
         $response = Http::withToken(session('access_token'))
             ->post(config('services.backend.url') . '/admin/permissions', [
                 'nom' => $request->nom,
-                'slug' => $this->permissionSlug($request),
-                'groupe' => $request->groupe,
-                'module' => $request->module,
-                'action' => $request->action,
                 'description' => $request->description,
-                'est_actif' => $request->est_actif ?? true,
+                'est_actif' => $request->boolean('est_actif'),
             ]);
 
         if ($response->successful()) {
@@ -99,17 +94,16 @@ class PermissionController extends Controller
         );
     }
 
+    /**
+     * Mettre à jour une permission
+     */
     public function update(Request $request, $id)
     {
         $response = Http::withToken(session('access_token'))
             ->put(config('services.backend.url') . '/admin/permissions/' . $id, [
                 'nom' => $request->nom,
-                'slug' => $this->permissionSlug($request),
-                'groupe' => $request->groupe,
-                'module' => $request->module,
-                'action' => $request->action,
                 'description' => $request->description,
-                'est_actif' => $request->est_actif ?? true,
+                'est_actif' => $request->boolean('est_actif'),
             ]);
 
         if ($response->successful()) {
@@ -131,31 +125,5 @@ class PermissionController extends Controller
         }
 
         return back()->with('error', $response->json()['message'] ?? 'Erreur lors de la suppression');
-    }
-
-    private function permissionSlug(Request $request): string
-    {
-        return collect([$request->groupe, $request->module, $request->action])
-            ->map(fn ($part): string => Str::of((string) $part)
-                ->ascii()
-                ->lower()
-                ->replaceMatches('/[^a-z0-9]+/', '_')
-                ->trim('_')
-                ->toString())
-            ->filter()
-            ->implode('.');
-    }
-
-    public function sync()
-    {
-        $response = Http::withToken(session('access_token'))
-            ->post(config('services.backend.url') . '/admin/permissions/sync');
-
-        if ($response->successful()) {
-            return redirect()->route('admin.permissions.index')
-                ->with('success', $response->json()['message'] ?? 'Permissions synchronisées avec succès.');
-        }
-
-        return back()->with('error', 'Erreur lors de la synchronisation');
     }
 }
