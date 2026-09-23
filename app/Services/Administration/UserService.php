@@ -38,7 +38,7 @@ class UserService
     /**
      * Récupérer la liste des utilisateurs depuis le backend.
      */
-    public function getUsers(int $page = 1, int $perPage = 10, ?string $structureType = null): array
+    public function getUsers(int $page = 1, int $perPage = 10, ?string $structureType = null, array $filters = []): array
     {
         try {
             $response = $this->apiClient->get('admin/users/all');
@@ -74,6 +74,17 @@ class UserService
         if ($structureType) {
             $allItems = array_values(array_filter($allItems, fn (array $user): bool => $this->organisationType($user) === $structureType));
         }
+        $allItems = array_values(array_filter($allItems, function (array $user) use ($filters): bool {
+            if (! empty($filters['role_id']) && (string) data_get($user, 'role.id', $user['role_id'] ?? '') !== (string) $filters['role_id']) {
+                return false;
+            }
+            if (! empty($filters['statut'])) {
+                $status = $user['statut'] ?? $user['status'] ?? false;
+                $active = $status === 'actif' || filter_var($status, FILTER_VALIDATE_BOOLEAN);
+                if ($active !== ($filters['statut'] === 'actif')) return false;
+            }
+            return true;
+        }));
         $total = count($allItems);
         $lastPage = max(1, (int) ceil($total / $perPage));
         $page = min($page, $lastPage);
@@ -235,7 +246,30 @@ class UserService
 
         return [
             'national' => collect($structures)->where('perimetre', 'national')->values()->all(),
-            'regional' => collect($structures)->where('perimetre', 'regional')->values()->all(),
+            'regional' => collect($this->ias())->flatMap(function (array $ia) {
+                $items = [[
+                    'id' => $ia['lieu_service_id'],
+                    'ia_id' => $ia['id'],
+                    'ief_id' => null,
+                    'code' => $ia['code'],
+                    'libelle' => $ia['libelle'],
+                    'type' => 'IA',
+                    'perimetre' => 'regional',
+                ]];
+                foreach ($ia['iefs'] ?? [] as $ief) {
+                    if (! ($ief['lieu_service_id'] ?? null)) continue;
+                    $items[] = [
+                        'id' => $ief['lieu_service_id'],
+                        'ia_id' => $ia['id'],
+                        'ief_id' => $ief['id'],
+                        'code' => $ief['code'],
+                        'libelle' => $ief['libelle'],
+                        'type' => 'IEF',
+                        'perimetre' => 'regional',
+                    ];
+                }
+                return $items;
+            })->values()->all(),
         ];
     }
 

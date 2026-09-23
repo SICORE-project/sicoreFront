@@ -27,16 +27,13 @@
             </div>
         @endif
 
-        @if ($canConsultPayroll)
+        @if ($canConsultPayroll && (app(\App\Services\Organisation\InterfaceAccess::class)->allows('paie.sommes_percues.read') || ($canConsultSalaryMass && isset($metrics['indicateurs']['masse_salariale']))))
             <section class="panel">
                 <div class="panel-header"><div><h2>Suivi de la paie</h2><p>{{ data_get($metrics, 'periode.code') ?: 'Aucune période disponible' }}</p></div></div>
                 <div class="ia-payroll">
-                    @foreach (['bulletins_generes' => 'Bulletins générés', 'bulletins_restants' => 'Bulletins restants'] as $key => $label)
-                        <div><p class="stat-label">{{ $label }}</p><p class="stat-value">{{ is_numeric(data_get($metrics, 'indicateurs.'.$key)) ? number_format(data_get($metrics, 'indicateurs.'.$key), 0, ',', ' ') : '—' }}</p></div>
-                    @endforeach
-                    @foreach (['bulletins_payes' => 'Bulletins payés', 'sommes_percues' => 'Sommes perçues'] as $key => $label)
+                    @foreach (['sommes_percues' => 'Sommes perçues'] as $key => $label)
                         @if (app(\App\Services\Organisation\InterfaceAccess::class)->allows('paie.sommes_percues.read'))
-                            <div><p class="stat-label">{{ $label }}</p><p class="stat-value">{{ isset($metrics['indicateurs'][$key]) ? number_format($metrics['indicateurs'][$key], 0, ',', ' ') : '—' }}{{ $key === 'sommes_percues' ? ' FCFA' : '' }}</p></div>
+                            <div><p class="stat-label">{{ $label }}</p><p class="stat-value">{{ number_format($metrics['indicateurs'][$key] ?? 0, 0, ',', ' ') }}{{ $key === 'sommes_percues' ? ' FCFA' : '' }}</p></div>
                         @endif
                     @endforeach
                     @if ($canConsultSalaryMass && isset($metrics['indicateurs']['masse_salariale']))
@@ -51,16 +48,35 @@
                 @foreach (['iefs' => 'Enseignants par IEF', 'lieu_de_services' => 'Enseignants par lieu de service'] as $key => $title)
                     <section class="panel">
                         <div class="panel-header"><h2>{{ $title }}</h2></div>
-                        <div class="table-responsive ia-distribution"><table class="table">
-                            <thead><tr><th scope="col">{{ $key === 'iefs' ? 'IEF' : 'Lieu de service' }}</th><th scope="col">Effectif</th></tr></thead>
-                            <tbody>
-                                @forelse (($metrics[$key] ?? []) as $item)
-                                    <tr><td>{{ $item['libelle'] ?: 'Non renseigné' }}</td><td>{{ number_format($item['total'], 0, ',', ' ') }}</td></tr>
-                                @empty
-                                    <tr><td colspan="2">Aucune répartition disponible.</td></tr>
-                                @endforelse
-                            </tbody>
-                        </table></div>
+                        @php
+                            $distribution = collect($metrics[$key] ?? [])->sortByDesc('total')->values();
+                            $maximum = max(1, (int) $distribution->max('total'));
+                        @endphp
+                        <div class="ia-distribution">
+                            @if ($distribution->isNotEmpty())
+                                <p class="ia-chart-caption">Effectif des enseignants</p>
+                                <ul class="ia-bar-chart" aria-label="{{ $title }}">
+                                    @foreach ($distribution as $item)
+                                        @php($effectif = max(0, (int) $item['total']))
+                                        <li class="ia-bar-row">
+                                            <div class="ia-bar-label">
+                                                <span>{{ $item['libelle'] ?: 'Non renseigné' }}</span>
+                                                <strong>{{ number_format($effectif, 0, ',', ' ') }}</strong>
+                                            </div>
+                                            <div class="ia-bar-track" aria-hidden="true">
+                                                <span class="ia-bar-fill {{ $key === 'iefs' ? '' : 'ia-bar-fill-teal' }}" style="width: {{ round($effectif / $maximum * 100, 2) }}%"></span>
+                                            </div>
+                                        </li>
+                                    @endforeach
+                                </ul>
+                            @else
+                                <div class="ia-chart-empty">
+                                    <i class="fa-solid fa-chart-bar" aria-hidden="true"></i>
+                                    <p>Aucune répartition disponible.</p>
+                                    <small>Le diagramme apparaîtra dès que des enseignants seront rattachés.</small>
+                                </div>
+                            @endif
+                        </div>
                     </section>
                 @endforeach
             </div>
@@ -103,7 +119,19 @@
     .ia-dashboard .ia-alert a { color: inherit; font-weight: 700; }
     .ia-dashboard .ia-payroll { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: 24px; padding: 24px; }
     .ia-dashboard .ia-payroll small { font-size: 14px; font-weight: 500; }
-    .ia-dashboard .ia-distribution { max-height: 360px; overflow: auto; }
+    .ia-dashboard .ia-distribution { max-height: 420px; overflow-y: auto; padding: 24px; }
+    .ia-dashboard .ia-chart-caption { margin: 0 0 20px; color: #64748b; font-size: 13px; }
+    .ia-dashboard .ia-bar-chart { list-style: none; margin: 0; padding: 0; display: grid; gap: 22px; }
+    .ia-dashboard .ia-bar-label { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; margin-bottom: 8px; font-size: 14px; }
+    .ia-dashboard .ia-bar-label span { min-width: 0; overflow-wrap: anywhere; }
+    .ia-dashboard .ia-bar-label strong { color: #176637; flex-shrink: 0; font-variant-numeric: tabular-nums; }
+    .ia-dashboard .ia-bar-track { height: 16px; border-radius: 6px; background: #eef4f1; overflow: hidden; }
+    .ia-dashboard .ia-bar-fill { display: block; height: 100%; background: #176637; border-radius: inherit; }
+    .ia-dashboard .ia-bar-fill-teal { background: #168477; }
+    .ia-dashboard .ia-chart-empty { min-height: 170px; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; color: #64748b; gap: 12px; }
+    .ia-dashboard .ia-chart-empty i { font-size: 32px; color: #176637; }
+    .ia-dashboard .ia-chart-empty p { margin: 0; color: #334155; }
+    .ia-dashboard .ia-chart-empty small { max-width: 320px; }
     .ia-dashboard .dashboard-grid > *, .ia-dashboard .stat-card > div { min-width: 0; }
     .ia-dashboard .stat-value { overflow-wrap: anywhere; }
     @media (max-width: 900px) { .ia-dashboard .stats-grid, .ia-dashboard .dashboard-grid { grid-template-columns: 1fr; } }

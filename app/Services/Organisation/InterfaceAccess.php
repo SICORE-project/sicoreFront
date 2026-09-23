@@ -124,10 +124,6 @@ class InterfaceAccess
 
         $visible = [];
         foreach ($items as $item) {
-            if ($this->isIa() && in_array($item['route'] ?? '', ['parametres.ia.index', 'parametres.ief.index'], true)) {
-                $item['route'] = $item['route'] === 'parametres.ia.index' ? 'ia.structure' : 'ia.iefs';
-                $item['active'] = $item['route'];
-            }
             if ($this->isDrh() && ($item['route'] ?? '') === 'enseignants.index') continue;
             if (isset($item['links'])) {
                 $item['links'] = $this->navigation($item['links']);

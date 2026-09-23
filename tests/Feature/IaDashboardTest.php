@@ -33,7 +33,7 @@ class IaDashboardTest extends TestCase
 
         $this->get('/dashboard')->assertOk()->assertViewIs('pages.dashboard.ia')
             ->assertSee('Fatou Fall')->assertSee('IA de Dakar')->assertSee('1 250')
-            ->assertSee('1 100')->assertSee('150')->assertSee('2026-09')
+            ->assertDontSee('Bulletins g'.chr(233).'n'.chr(233).'r'.chr(233).'s')->assertDontSee('Bulletins restants')
             ->assertSee('IEF de Rufisque')->assertSee('Lycée de Rufisque')
             ->assertSee('Awa Diop')->assertSee('Payé')->assertSee('21/09/2026 à 09:30')
             ->assertDontSee('Périmètre global');
@@ -89,7 +89,7 @@ class IaDashboardTest extends TestCase
     {
         $this->manager();
         Http::fake(['*/ia/dashboard' => Http::response(['data' => ['periode' => null, 'indicateurs' => []]])]);
-        $this->get('/dashboard')->assertOk()->assertSee('Aucune période disponible')
+        $this->get('/dashboard')->assertOk()->assertDontSee('Suivi de la paie')
             ->assertSee('Aucune opération disponible.')->assertSee('—');
     }
 }

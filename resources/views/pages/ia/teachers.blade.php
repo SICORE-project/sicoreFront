@@ -22,7 +22,7 @@
                 </select></label>
                 <button class="btn btn-primary" type="submit">Filtrer</button><a href="{{ route('enseignants.index') }}">Réinitialiser</a>
             </form>
-            <div class="table-responsive"><table class="table"><thead><tr><th>Matricule</th><th>Enseignant</th><th>Engagement</th><th>Statut</th><th>Dossier</th></tr></thead><tbody>
+            <div class="table-responsive"><table class="table"><thead><tr><th>Matricule</th><th>Enseignant</th><th>Engagement</th><th>Statut</th><th>Action</th></tr></thead><tbody>
                 @forelse (($data['data'] ?? []) as $teacher)
                     <tr><td>{{ $teacher['matricule'] }}</td><td>{{ $teacher['prenom'] }} {{ $teacher['nom'] }}</td><td>{{ ucfirst(str_replace('_', ' ', $teacher['type_engagement'])) }}</td><td>{{ ucfirst(str_replace('_', ' ', $teacher['statut'])) }}</td><td><a href="{{ route('ia.teachers.show', $teacher['id']) }}">Consulter</a></td></tr>
                 @empty<tr><td colspan="5">{{ $error ? 'Liste indisponible.' : 'Aucun enseignant trouvé dans votre IA.' }}</td></tr>@endforelse

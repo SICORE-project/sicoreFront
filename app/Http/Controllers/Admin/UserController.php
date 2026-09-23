@@ -17,7 +17,11 @@ class UserController extends Controller
         $page = max(1, (int) $request->query('page', 1));
         $perPage = 10;
 
-        $response = $this->userService->getUsers($page, $perPage);
+        $filters = $request->validate([
+            'role_id' => ['nullable', 'integer', 'min:1'],
+            'statut' => ['nullable', 'in:actif,inactif'],
+        ]);
+        $response = $this->userService->getUsers($page, $perPage, null, $filters);
         $users = $response['items'] ?? [];
         $pagination = $response['pagination'] ?? [
             'current_page' => $page,
@@ -42,13 +46,28 @@ class UserController extends Controller
                 $fullName !== '' ? $fullName : (string) data_get($user, 'email', '—'),
                 data_get($user, 'email', '—'),
                 is_string($role) ? $role : '—',
-                $isActive
-                    ? '<span class="badge badge-active">Actif</span>'
-                    : '<span class="badge badge-suspended">Suspendu</span>',
+                '<button type="button" class="badge user-status-toggle ' . ($isActive ? 'badge-active' : 'badge-suspended')
+                    . '" data-user-action="toggle" data-user-id="' . (int) $user['id']
+                    . '" data-user-name="' . e($fullName !== '' ? $fullName : (string) ($user['email'] ?? ''))
+                    . '" data-current-status="' . ($isActive ? 'actif' : 'inactif')
+                    . '" title="' . ($isActive ? 'Désactiver' : 'Activer') . ' cet utilisateur'
+                    . '" aria-label="' . e(($isActive ? 'Désactiver ' : 'Activer ') . $fullName) . '">'
+                    . ($isActive ? 'Actif' : 'Suspendu') . '</button>',
                 $this->actions($user, $isActive),
             ];
         }, $users);
 
+        $filterRoles = $this->userService->getRoles();
+        config()->set('module-pages.utilisateurs.filter_roles', collect($filterRoles)
+            ->whereNotIn('slug', [
+                'gestionnaire_ief',
+                'gestionnaire_budget',
+                'consultant',
+                'drh',
+                'decpc',
+            ])
+            ->values()
+            ->all());
         config()->set('module-pages.utilisateurs.rows', $rows);
         config()->set('module-pages.utilisateurs.pagination', $pagination);
         config()->set('module-pages.utilisateurs.actions', [
@@ -56,7 +75,17 @@ class UserController extends Controller
             'Exporter',
         ]);
 
-        $roles = $this->userService->getRoles();
+        $roles = collect($filterRoles ?? $this->userService->getRoles())
+            ->whereNotIn('slug', [
+               'gestionnaire_ief',
+                'gestionnaire_budget',
+                'gestionnaire_paie',
+               'consultant',
+                'decpc',
+                'drh',
+            ])
+            ->values()
+            ->all();
         $organisation = $this->userService->getOrganisationOptions();
         $structures = array_merge($organisation['national'] ?? [], $organisation['regional'] ?? []);
 
@@ -65,7 +94,17 @@ class UserController extends Controller
 
     public function create()
     {
-        $roles = $this->userService->getRoles();
+        $roles = collect($filterRoles ?? $this->userService->getRoles())
+            ->whereNotIn('slug', [
+                'gestionnaire_ief',
+                'gestionnaire_budget',
+                'gestionnaire_paie',
+                'consultant',
+                'decpc',
+                'drh',
+            ])
+            ->values()
+            ->all();
 
         return view(
             'pages.administration.utilisateurs.create',
@@ -76,6 +115,11 @@ class UserController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
+            'telephone' => ['required', 'string', 'max:20'],
+            'date_naiss' => ['required', 'date_format:Y-m-d', 'before_or_equal:today'],
+            'lieu_naissance' => ['sometimes', 'nullable', 'string', 'max:100'],
+            'adresse' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'genre' => ['required', 'in:masculin,feminin'],
             'nom' => ['required', 'string', 'max:100'],
             'prenom' => ['required', 'string', 'max:100'],
             'email' => ['required', 'email', 'max:255'],
@@ -138,6 +182,11 @@ class UserController extends Controller
     public function update(Request $request, $id)
     {
         $data = $request->validate([
+            'telephone' => ['required', 'string', 'max:20'],
+            'date_naiss' => ['required', 'date_format:Y-m-d', 'before_or_equal:today'],
+            'lieu_naissance' => ['sometimes', 'nullable', 'string', 'max:100'],
+            'adresse' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'genre' => ['required', 'in:masculin,feminin'],
             'nom' => ['required', 'string', 'max:100'],
             'prenom' => ['required', 'string', 'max:100'],
             'email' => ['required', 'email', 'max:255'],
