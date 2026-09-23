@@ -3652,3 +3652,19 @@ body.sidebar-collapsed .logout-btn {
 .password-field .form-control {
   padding-right: 48px;
 }
+
+
+/* Pagination commune aux modules, serveur et tableaux locaux. */
+.pagination { flex-wrap: wrap; border-radius: 0 0 16px 16px; }
+.pagination .pagination-controls { flex-wrap: wrap; }
+.pagination .page-btn { text-decoration: none; flex-shrink: 0; }
+.pagination .page-btn.active { color: #176637; background: #e9f7ee; cursor: default; }
+.pagination .page-btn:not(:disabled):not(.active):hover { color: #176637; background: #eff7f2; }
+.pagination .page-btn-direction { padding: 0 14px; border: 1px solid #e2e8f0; border-radius: 10px; color: #334155; font: inherit; font-size: 13px; font-weight: 700; }
+.pagination .page-btn:focus-visible { outline: 3px solid #86efac; outline-offset: 3px; }
+.pagination .page-numbers { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+@media (max-width: 600px) {
+  .pagination { padding: 14px 12px; gap: 12px; }
+  .pagination .pagination-controls { justify-content: flex-start; gap: 5px; }
+  .pagination .page-btn { min-width: 36px; height: 38px; }
+}

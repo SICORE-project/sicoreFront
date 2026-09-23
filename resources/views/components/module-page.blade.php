@@ -479,19 +479,9 @@
       >
         <p class="pagination-summary" data-pagination-summary aria-live="polite"></p>
         <div class="pagination-controls">
-          <button class="page-btn page-btn-direction" type="button" data-page-action="first" aria-label="Première page">
-            <i class="fa-solid fa-angles-left" aria-hidden="true"></i>
-          </button>
-          <button class="page-btn page-btn-direction" type="button" data-page-action="previous" aria-label="Page précédente">
-            <i class="fa-solid fa-angle-left" aria-hidden="true"></i>
-          </button>
-          <button class="page-btn page-number active" type="button" data-current-page-number aria-current="page" tabindex="-1">1</button>
-          <button class="page-btn page-btn-direction" type="button" data-page-action="next" aria-label="Page suivante">
-            <i class="fa-solid fa-angle-right" aria-hidden="true"></i>
-          </button>
-          <button class="page-btn page-btn-direction" type="button" data-page-action="last" aria-label="Dernière page">
-            <i class="fa-solid fa-angles-right" aria-hidden="true"></i>
-          </button>
+          <button class="page-btn page-btn-direction" type="button" data-page-action="previous" aria-label="Page précédente">Précédent</button>
+          <span class="page-numbers" data-page-numbers></span>
+          <button class="page-btn page-btn-direction" type="button" data-page-action="next" aria-label="Page suivante">Suivant</button>
           <label class="visually-hidden" for="{{ $slug }}-page-size">Nombre de lignes par page</label>
           <select class="page-size-select" id="{{ $slug }}-page-size" data-page-size aria-label="Nombre de lignes par page">
             <option value="10" selected>10</option>

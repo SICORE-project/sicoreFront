@@ -36,7 +36,7 @@
           </td>@endif</tr>
         @empty <tr><td colspan="{{ $scopedReadOnly ? 3 : 4 }}" class="empty-message"><x-table-empty-state>Aucune IEF trouvée.</x-table-empty-state></td></tr> @endforelse
       </tbody></table></div>
-      <nav class="pagination">@for ($page = 1; $page <= $pagination['last_page']; $page++)<a class="page-btn {{ $page === $pagination['current_page'] ? 'active' : '' }}" href="{{ route($listRoute, array_merge(request()->except('page'), ['page' => $page])) }}">{{ $page }}</a>@endfor</nav>
+      @include('components.pagination', ['pagination' => $pagination])
     </section>
   </section>
 </main>

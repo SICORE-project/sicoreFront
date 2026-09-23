@@ -21,7 +21,7 @@
           <tr><td colspan="3" class="empty-message"><x-table-empty-state>Aucun grade trouvé.</x-table-empty-state></td></tr>
         @endforelse
       </tbody></table></div>
-      @if($pagination['last_page'] > 1)<nav class="pagination">@for($page = 1; $page <= $pagination['last_page']; $page++)<a class="page-btn {{ $page === $pagination['current_page'] ? 'active' : '' }}" href="{{ route('parametres.grades.index', array_merge(request()->except('page'), ['page' => $page])) }}">{{ $page }}</a>@endfor</nav>@endif
+      @if($pagination['last_page'] > 1)@include('components.pagination', ['pagination' => $pagination])@endif
     </section>
   </section>
 </main>

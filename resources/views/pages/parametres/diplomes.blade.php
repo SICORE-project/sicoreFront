@@ -115,23 +115,7 @@
         $lastPage = max(1, (int) ($meta['last_page'] ?? 1));
         $pageFilters = request()->only(['libelle', 'categorie_id', 'salaire_min', 'salaire_max', 'per_page']);
       @endphp
-      <nav class="pagination" aria-label="Pagination des diplômes">
-        @if ($currentPage > 1)
-          <a class="page-btn" href="{{ route('parametres.diplomes.index', array_merge($pageFilters, ['page' => $currentPage - 1])) }}" aria-label="Page précédente">←</a>
-        @else
-          <button class="page-btn" type="button" aria-label="Page précédente" disabled>←</button>
-        @endif
-        @for ($pageNumber = 1; $pageNumber <= $lastPage; $pageNumber++)
-          <a class="page-btn {{ $pageNumber === $currentPage ? 'active' : '' }}"
-             href="{{ route('parametres.diplomes.index', array_merge($pageFilters, ['page' => $pageNumber])) }}"
-             @if ($pageNumber === $currentPage) aria-current="page" @endif>{{ $pageNumber }}</a>
-        @endfor
-        @if ($currentPage < $lastPage)
-          <a class="page-btn" href="{{ route('parametres.diplomes.index', array_merge($pageFilters, ['page' => $currentPage + 1])) }}" aria-label="Page suivante">→</a>
-        @else
-          <button class="page-btn" type="button" aria-label="Page suivante" disabled>→</button>
-        @endif
-      </nav>
+      @include('components.pagination', ['pagination' => $meta])
     </section>
   </section>
 </main>

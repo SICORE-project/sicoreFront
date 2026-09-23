@@ -84,11 +84,7 @@
           </table>
         </div>
         @if ($pagination['last_page'] > 1)
-          <nav class="pagination" aria-label="Pagination des enseignants">
-            @if ($pagination['current_page'] > 1)<a class="page-btn" href="{{ route('enseignants.index', array_merge(request()->only(['search', 'corps_id', 'diplome_id', 'ia_id', 'ief_id']), ['page' => $pagination['current_page'] - 1])) }}">&#8592;</a>@endif
-            <span class="page-btn active">{{ $pagination['current_page'] }} / {{ $pagination['last_page'] }}</span>
-            @if ($pagination['current_page'] < $pagination['last_page'])<a class="page-btn" href="{{ route('enseignants.index', array_merge(request()->only(['search', 'corps_id', 'diplome_id', 'ia_id', 'ief_id']), ['page' => $pagination['current_page'] + 1])) }}">&#8594;</a>@endif
-          </nav>
+          @include('components.pagination', ['pagination' => $pagination])
         @endif
       </section>
     </section>
