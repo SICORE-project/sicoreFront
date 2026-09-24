@@ -63,18 +63,8 @@
 
             <!-- Informations supplémentaires -->
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px;">
-                <div>
-                    <label style="font-weight: 600; color: #374151; font-size: 14px;">Créé le</label>
-                    <p style="padding: 8px 12px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px; margin-top: 4px;">
-                        {{ isset($role['created_at']) ? date('d/m/Y à H:i', strtotime($role['created_at'])) : '-' }}
-                    </p>
-                </div>
-                <div>
-                    <label style="font-weight: 600; color: #374151; font-size: 14px;">Dernière modification</label>
-                    <p style="padding: 8px 12px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px; margin-top: 4px;">
-                        {{ isset($role['updated_at']) ? date('d/m/Y à H:i', strtotime($role['updated_at'])) : '-' }}
-                    </p>
-                </div>
+               
+                
             </div>
 
             <!-- Boutons -->
