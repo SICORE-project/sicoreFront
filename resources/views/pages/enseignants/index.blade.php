@@ -23,6 +23,10 @@
       <div class="actions-row">
         <p class="breadcrumb">Paramétrage &gt; Enseignants</p>
         <div class="actions-group">
+          <a class="btn-secondary" href="{{ route('enseignants.export', request()->only(['search', 'prenom', 'nom', 'corps_id', 'diplome_id', 'ia_id', 'ief_id'])) }}" title="Exporter tous les enseignants correspondant aux filtres appliqués">
+            <i class="fa-solid fa-file-excel" aria-hidden="true"></i>
+            Exporter Excel
+          </a>
           <button class="btn-primary" type="button" data-modal-open="teacher-create-modal">
             <i class="fa-solid fa-user-plus" aria-hidden="true"></i>
             Ajouter un enseignant
@@ -86,7 +90,7 @@
     </section>
   </main>
 
-<x-module-indemnite type="modal" id="teacher-create-modal" title="Ajouter un enseignant" :open="$errors->any()">
+<x-module-indemnite type="modal" id="teacher-create-modal" title="Ajouter un enseignant" :open="$errors->getBag('default')->any()">
   <form class="teacher-form" method="POST" action="{{ route('enseignants.store') }}" novalidate>
     @csrf
     <div class="wizard-progress" aria-label="Progression de la création">
@@ -96,9 +100,14 @@
       <button class="wizard-step" type="button" data-create-step="4"><span class="wizard-step-number">4</span><i class="fa-solid fa-building-columns wizard-step-icon" aria-hidden="true"></i><span>Coordonnées &amp; banque</span></button>
     </div>
     <div class="form-grid">
+      <div class="form-group" data-teacher-indice-field hidden>
+        <label for="teacher-indice">Indice <span class="required">*</span></label>
+        <input class="form-control" id="teacher-indice" name="indice" type="text" inputmode="numeric" minlength="4" maxlength="6" pattern="[0-9]{4,6}" value="{{ old('indice') }}" disabled aria-describedby="teacher-indice-error">
+        <span class="teacher-identity-error" id="teacher-indice-error" role="alert" hidden></span>
+      </div>
       <div class="form-group">
         <label for="teacher-matricule">Matricule <span class="required">*</span></label>
-        <input class="form-control" id="teacher-matricule" name="matricule" value="{{ old('matricule') }}" maxlength="9" pattern="[A-Za-z0-9]+" title="9 caractères maximum : lettres et chiffres uniquement" required>
+        <input class="form-control" id="teacher-matricule" name="matricule" value="{{ old('matricule') }}" maxlength="11" pattern="[0-9]{6}/[A-Z]|[0-9]{9}/[A-Z]" title="Exemples : 543678/F pour un fonctionnaire, 202409675/H pour un vacataire ou contractuel" required aria-describedby="teacher-matricule-error"><span class="teacher-identity-error" id="teacher-matricule-error" role="alert" hidden></span>
       </div>
       <div class="form-group">
         <label for="teacher-nom">Nom <span class="required">*</span></label>
@@ -247,6 +256,7 @@
     <div class="teacher-profile-grid">
       <section class="teacher-detail-card"><div class="teacher-detail-title"><h4>Identité</h4></div><dl class="teacher-detail-list">
         <div><dt>Nom</dt><dd data-teacher-detail="nom" data-format="text">Non renseigné</dd></div>
+        <div data-view-indice hidden><dt>Indice</dt><dd data-teacher-detail="indice">Non renseigné</dd></div>
         <div><dt>Prénom</dt><dd data-teacher-detail="prenom" data-format="text">Non renseigné</dd></div>
         <div><dt>Carte d’identité</dt><dd data-teacher-detail="cni" data-format="text">Non renseigné</dd></div>
         <div><dt>Genre</dt><dd data-teacher-detail="genre" data-format="text">Non renseigné</dd></div>
@@ -330,7 +340,12 @@
     </div>
     <section class="wizard-panel" data-edit-panel="1">
       <div class="form-section"><h3>Informations de l’enseignant</h3><div class="form-grid">
-        <div class="form-group"><label for="edit-teacher-matricule">Matricule <span class="required">*</span></label><input class="form-control" id="edit-teacher-matricule" name="matricule" maxlength="9" pattern="[A-Za-z0-9]+" title="9 caractères maximum : lettres et chiffres uniquement" required></div>
+      <div class="form-group" data-teacher-indice-field hidden>
+        <label for="edit-teacher-indice">Indice <span class="required">*</span></label>
+        <input class="form-control" id="edit-teacher-indice" name="indice" type="text" inputmode="numeric" minlength="4" maxlength="6" pattern="[0-9]{4,6}" value="" disabled aria-describedby="edit-teacher-indice-error">
+        <span class="teacher-identity-error" id="edit-teacher-indice-error" role="alert" hidden></span>
+      </div>
+        <div class="form-group"><label for="edit-teacher-matricule">Matricule <span class="required">*</span></label><input class="form-control" id="edit-teacher-matricule" name="matricule" maxlength="11" pattern="[0-9]{6}/[A-Z]|[0-9]{9}/[A-Z]" title="Exemples : 543678/F pour un fonctionnaire, 202409675/H pour un vacataire ou contractuel" required aria-describedby="edit-teacher-matricule-error"><span class="teacher-identity-error" id="edit-teacher-matricule-error" role="alert" hidden></span></div>
         <div class="form-group"><label for="edit-teacher-nom">Nom <span class="required">*</span></label><input class="form-control" id="edit-teacher-nom" name="nom" maxlength="50" required></div>
         <div class="form-group"><label for="edit-teacher-prenom">Prénom <span class="required">*</span></label><input class="form-control" id="edit-teacher-prenom" name="prenom" maxlength="50" required></div>
         <div class="form-group"><label for="edit-teacher-lieu-naissance">Lieu de naissance</label><input class="form-control" id="edit-teacher-lieu-naissance" name="lieu_naissance" maxlength="100"></div>
@@ -382,8 +397,9 @@
 
 @push('styles')
 <style>
-  input[name="date_naissance"].is-invalid { border-color: #dc2626; background-color: #fff5f5; box-shadow: 0 0 0 2px #dc26261a; }
-  .teacher-birth-error { color: #b91c1c; font-size: .875rem; line-height: 1.4; }
+  [data-teacher-indice-field][hidden], [data-view-indice][hidden] { display: none !important; }
+  .teacher-form .is-invalid, input[name="date_naissance"].is-invalid { border-color: #dc2626; background-color: #fff5f5; box-shadow: 0 0 0 2px #dc26261a; }
+  .teacher-identity-error, .teacher-birth-error { color: #b91c1c; font-size: .875rem; line-height: 1.4; }
 
   .filter-panel.teacher-filters { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
   .teacher-filters .actions-group { grid-column: 1 / -1; }
@@ -469,6 +485,77 @@
 <script src="{{ asset('assets/js/charts.js') }}" defer></script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+  function isFonctionnaireCorpsValue(corps) {
+    if (!corps) { return false; }
+    var label = String(corps.libelle || '').trim().toLowerCase();
+    var code = String(corps.code || '').trim().toLowerCase();
+    return ['fonctionnaire', 'fonctionnaires'].includes(label) || ['fonctionnaire', 'fonc'].includes(code);
+  }
+
+  function isFonctionnaireCorps(select) {
+    var option = select && select.options[select.selectedIndex];
+    return !!(option && option.value && isFonctionnaireCorpsValue({ libelle: option.textContent, code: option.dataset.corpsCode }));
+  }
+
+  function updateTeacherIdentity(prefix, visible) {
+    var corps = document.getElementById(prefix + 'corps');
+    if (!corps || !document.getElementById(prefix + 'matricule')) { return; }
+    var matricule = document.getElementById(prefix + 'matricule');
+    var indice = document.getElementById(prefix + 'indice');
+    var fonctionnaire = isFonctionnaireCorps(corps);
+    var length = fonctionnaire ? 6 : 9;
+    matricule.pattern = corps.value ? '[0-9]{' + length + '}/[A-Z]' : '[0-9]{6}/[A-Z]|[0-9]{9}/[A-Z]';
+    matricule.minLength = corps.value ? length + 2 : 8;
+    matricule.maxLength = corps.value ? length + 2 : 11;
+    matricule.title = 'Le matricule doit contenir ' + length + ' chiffres suivis de / et d’une lettre majuscule, sans espaces.';
+    indice.required = fonctionnaire;
+    indice.disabled = !fonctionnaire;
+    indice.closest('.form-group').hidden = !fonctionnaire || !visible;
+    indice.closest('.form-group').style.display = fonctionnaire && visible ? '' : 'none';
+    if (!fonctionnaire) { indice.value = ''; indice.setCustomValidity(''); }
+  }
+
+  function validateTeacherIdentity(prefix, showRequired) {
+    var corps = document.getElementById(prefix + 'corps');
+    if (!corps || !document.getElementById(prefix + 'matricule')) { return; }
+    var matricule = document.getElementById(prefix + 'matricule');
+    var indice = document.getElementById(prefix + 'indice');
+    var fonctionnaire = isFonctionnaireCorps(corps);
+    var length = fonctionnaire ? 6 : 9;
+    var messages = {};
+    messages.matricule = !matricule.value
+      ? (showRequired ? 'Le matricule est obligatoire.' : '')
+      : (!(corps.value ? new RegExp('^[0-9]{' + length + '}/[A-Z]$') : /^(?:[0-9]{6}|[0-9]{9})\/[A-Z]$/).test(matricule.value) || /\s/.test(matricule.value)
+        ? 'Le matricule doit contenir ' + length + ' chiffres suivis de / et d’une lettre majuscule (exemple : ' + (fonctionnaire ? '543678/F' : '202409675/H') + '), sans espaces.' : '');
+    messages.indice = fonctionnaire && !indice.value && showRequired
+      ? 'L’indice est obligatoire pour le corps Fonctionnaire.' : '';
+    if (fonctionnaire && indice.value && (!/^[0-9]{4,6}$/.test(indice.value) || /\s/.test(indice.value))) {
+      messages.indice = 'L’indice doit contenir entre 4 et 6 chiffres, sans lettres ni espaces.';
+    }
+    Object.keys(messages).forEach(function (name) {
+      var field = document.getElementById(prefix + name);
+      var error = document.getElementById(prefix + name + '-error');
+      field.setCustomValidity(messages[name]);
+      field.classList.toggle('is-invalid', !!messages[name]);
+      field.setAttribute('aria-invalid', messages[name] ? 'true' : 'false');
+      error.textContent = messages[name];
+      error.hidden = !messages[name];
+    });
+  }
+
+  ['teacher-', 'edit-teacher-'].forEach(function (prefix) {
+    ['corps', 'matricule', 'indice'].forEach(function (name) {
+      var field = document.getElementById(prefix + name);
+      field.addEventListener('input', function () { validateTeacherIdentity(prefix, false); });
+      field.addEventListener('change', function () {
+        if (name === 'corps') { updateTeacherIdentity(prefix, true); }
+        validateTeacherIdentity(prefix, true);
+      });
+      field.addEventListener('blur', function () { validateTeacherIdentity(prefix, true); });
+    });
+    updateTeacherIdentity(prefix, true);
+  });
+
   function validateTeacherBirthDate(input, showRequired) {
     var message = '';
     if (input.value && input.value > input.max) {
@@ -762,6 +849,7 @@ document.addEventListener('DOMContentLoaded', function () {
       modal.querySelector('[data-view-full-name]').textContent = fullName;
       modal.querySelector('[data-view-matricule]').textContent = 'Matricule : ' + teacherValue(teacher, 'matricule');
       modal.querySelector('[data-view-status]').textContent = statuses[teacher.statut] || teacherValue(teacher, 'statut');
+      modal.querySelector('[data-view-indice]').hidden = !isFonctionnaireCorpsValue(teacher.corps);
       modal.querySelectorAll('[data-teacher-detail]').forEach(function (field) {
         var value = teacherValue(teacher, field.dataset.teacherDetail, 'Non renseigné');
         if (value !== 'Non renseigné') {
@@ -863,8 +951,8 @@ document.addEventListener('DOMContentLoaded', function () {
   var createCategorieField = document.querySelector('[data-create-categorie-field]');
   var createStep = 1;
   var createGroups = [
-    ['teacher-matricule', 'teacher-cni', 'teacher-nom', 'teacher-prenom', 'teacher-date-naissance', 'teacher-lieu-naissance', 'teacher-genre'],
-    ['teacher-ia', 'teacher-ief', 'teacher-lieu-service', 'teacher-corps', 'teacher-diplome', 'teacher-categorie', 'teacher-salaire', 'teacher-discipline', 'teacher-date-recrutement', 'teacher-date-fin-contrat', 'teacher-generation', 'teacher-statut', 'teacher-observations'],
+    ['teacher-corps', 'teacher-matricule', 'teacher-indice', 'teacher-cni', 'teacher-nom', 'teacher-prenom', 'teacher-date-naissance', 'teacher-lieu-naissance', 'teacher-genre'],
+    ['teacher-ia', 'teacher-ief', 'teacher-lieu-service', 'teacher-diplome', 'teacher-categorie', 'teacher-salaire', 'teacher-discipline', 'teacher-date-recrutement', 'teacher-date-fin-contrat', 'teacher-generation', 'teacher-statut', 'teacher-observations'],
     ['teacher-couple', 'teacher-conjoint-travaille', 'teacher-enfants', 'teacher-femmes', 'teacher-parts'],
     ['teacher-email', 'teacher-telephone', 'teacher-adresse', 'teacher-banque', 'teacher-type-virement', 'teacher-code-banque', 'teacher-code-guichet', 'teacher-numero-compte', 'teacher-cle-rib']
   ];
@@ -882,8 +970,8 @@ document.addEventListener('DOMContentLoaded', function () {
   createGroups.forEach(function (ids) { reorderFormGroups(createGrid, ids); });
 
   var editFieldGroups = {
-    1: ['edit-teacher-matricule', 'edit-teacher-cni', 'edit-teacher-nom', 'edit-teacher-prenom', 'edit-teacher-date-naissance', 'edit-teacher-lieu-naissance', 'edit-teacher-genre'],
-    2: ['edit-teacher-ia', 'edit-teacher-ief', 'edit-teacher-lieu-service', 'edit-teacher-corps', 'edit-teacher-diplome', 'edit-teacher-categorie', 'edit-teacher-salaire', 'edit-teacher-discipline', 'edit-teacher-date-recrutement', 'edit-teacher-date-fin-contrat', 'edit-teacher-generation', 'edit-teacher-statut', 'edit-teacher-observations'],
+    1: ['edit-teacher-corps', 'edit-teacher-matricule', 'edit-teacher-indice', 'edit-teacher-cni', 'edit-teacher-nom', 'edit-teacher-prenom', 'edit-teacher-date-naissance', 'edit-teacher-lieu-naissance', 'edit-teacher-genre'],
+    2: ['edit-teacher-ia', 'edit-teacher-ief', 'edit-teacher-lieu-service', 'edit-teacher-diplome', 'edit-teacher-categorie', 'edit-teacher-salaire', 'edit-teacher-discipline', 'edit-teacher-date-recrutement', 'edit-teacher-date-fin-contrat', 'edit-teacher-generation', 'edit-teacher-statut', 'edit-teacher-observations'],
     3: ['edit-teacher-couple', 'edit-teacher-conjoint-travaille', 'edit-teacher-enfants', 'edit-teacher-femmes', 'edit-teacher-parts'],
     4: ['edit-teacher-email', 'edit-teacher-telephone', 'edit-teacher-adresse', 'edit-teacher-banque', 'edit-teacher-type-virement', 'edit-teacher-code-banque', 'edit-teacher-code-guichet', 'edit-teacher-numero-compte', 'edit-teacher-cle-rib']
   };
@@ -1003,6 +1091,7 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   function validateCreateStep(step) {
+    if (step === 1) { validateTeacherIdentity('teacher-', true); }
     var valid = true;
     createGroups[step - 1].forEach(function (id) {
       var field = document.getElementById(id);
@@ -1050,6 +1139,7 @@ document.addEventListener('DOMContentLoaded', function () {
     createForm.querySelector('[data-create-next]').hidden = createStep === 4;
     createForm.querySelector('[data-create-submit]').hidden = createStep !== 4;
     updateCreateCategorieVisibility();
+    updateTeacherIdentity('teacher-', createStep === 1);
   }
 
   if (createForm) {
@@ -1091,6 +1181,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
       });
       updateCreateCategorieVisibility();
+      updateTeacherIdentity('teacher-', createStep === 1);
       applyDiplomeSalary(document.getElementById('teacher-diplome'), createCorps, createCategorie, document.getElementById('teacher-salaire'));
       for (var step = 1; step <= 4; step += 1) {
         if (!validateCreateStep(step)) { event.preventDefault(); showCreateStep(step); return; }
@@ -1158,6 +1249,7 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   function validateEditStep() {
+    if (editStep === 1) { validateTeacherIdentity('edit-teacher-', true); }
     var panel = editForm.querySelector('[data-edit-panel="' + editStep + '"]');
     var valid = true;
     panel.querySelectorAll('input, select, textarea').forEach(function (field) {
@@ -1191,6 +1283,7 @@ document.addEventListener('DOMContentLoaded', function () {
     button.addEventListener('click', function () {
       var teacher = JSON.parse(button.dataset.editTeacher);
       editForm.action = editForm.dataset.actionTemplate.replace('__id__', teacher.id);
+      document.getElementById('edit-teacher-indice').value = teacher.indice ?? '';
       document.getElementById('edit-teacher-matricule').value = teacher.matricule || '';
       document.getElementById('edit-teacher-nom').value = teacher.nom || '';
       document.getElementById('edit-teacher-prenom').value = teacher.prenom || '';
@@ -1204,6 +1297,8 @@ document.addEventListener('DOMContentLoaded', function () {
       document.getElementById('edit-teacher-telephone').value = teacher.telephone || '';
       editIa.value = teacher.ia ? teacher.ia.id : '';
       editCorps.value = teacher.corps ? teacher.corps.id : '';
+      updateTeacherIdentity('edit-teacher-', true);
+      validateTeacherIdentity('edit-teacher-', false);
       hideDuplicateDiplomas(document.getElementById('edit-teacher-diplome'), teacher.diplome ? teacher.diplome.id : '');
       editCategorie.value = teacher.categorie ? teacher.categorie.id : '';
       updateEditCategorieVisibility();
