@@ -5,7 +5,7 @@ const vm = require('node:vm');
 
 const source = fs.readFileSync('resources/views/pages/enseignants/index.blade.php', 'utf8');
 const functions = [
-  'isContractuelCorps', 'isVacataireCorps', 'diplomaLabel', 'hideDuplicateDiplomas',
+  'isFonctionnaireCorpsValue', 'isFonctionnaireCorps', 'updateTeacherIdentity', 'validateTeacherIdentity', 'isContractuelCorps', 'isVacataireCorps', 'diplomaLabel', 'hideDuplicateDiplomas',
   'applyDiplomeSalary', 'filterCategories', 'updateCreateCategorieVisibility',
   'showCreateStep', 'validateCreateStep', 'updateEditCategorieVisibility',
 ].map(name => {
