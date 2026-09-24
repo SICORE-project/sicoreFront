@@ -152,24 +152,7 @@
             </div>
             <p class="empty-message" id="empty-message-filtre" style="display: none;">Aucun résultat pour ce filtre.</p>
             <p class="empty-message">Aucune donnée trouvée.</p>
-            <div class="pagination" aria-label="Pagination">
-                @if (!empty($permissions['links']))
-                    @foreach ($permissions['links'] as $link)
-                        @if ($link['url'])
-                            <a href="{{ $link['url'] }}" class="page-btn {{ $link['active'] ? 'active' : '' }}">
-                                {{ $loop->first ? '←' : ($loop->last ? '→' : $link['label']) }}
-                            </a>
-                        @else
-                            <span class="page-btn disabled">{{ $loop->first ? '←' : ($loop->last ? '→' : $link['label']) }}</span>
-                        @endif
-                    @endforeach
-                @else
-                    <button class="page-btn" type="button">←</button>
-                    <button class="page-btn active" type="button">1</button>
-                    <button class="page-btn" type="button">2</button>
-                    <button class="page-btn" type="button">→</button>
-                @endif
-            </div>
+            @include('components.pagination', ['pagination' => $permissions])
         </section>
     </section>
 

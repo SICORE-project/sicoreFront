@@ -15,8 +15,9 @@ class DashboardController extends Controller
         protected OrganisationContext $organisation,
     ) {}
 
-    public function index(): View
+    public function index(): View|\Symfony\Component\HttpFoundation\Response
     {
+        if (app(\App\Services\Organisation\InterfaceAccess::class)->isTeacher()) return app(TeacherPersonalController::class)->page(request());
         if (app(\App\Services\Organisation\InterfaceAccess::class)->isDecpc()) {
             return $this->decpcDashboard();
         }

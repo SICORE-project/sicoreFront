@@ -73,17 +73,7 @@
       </div>
       <p class="empty-message {{ empty($items) ? 'show' : '' }}" role="status"><x-table-empty-state>Aucune banque trouvée.</x-table-empty-state></p>
 
-      <nav class="pagination" aria-label="Pagination">
-        <a class="page-btn {{ $pagination['current_page'] <= 1 ? 'disabled' : '' }}"
-           href="{{ $pagination['current_page'] > 1 ? route('parametres.institutions-financieres', ['page' => $pagination['current_page'] - 1]) : '#' }}"
-           aria-label="Page précédente" @if ($pagination['current_page'] <= 1) aria-disabled="true" tabindex="-1" @endif>&larr;</a>
-        @for ($page = 1; $page <= $pagination['last_page']; $page++)
-          <a class="page-btn {{ $page === $pagination['current_page'] ? 'active' : '' }}" href="{{ route('parametres.institutions-financieres', array_merge(request()->except('page'), ['page' => $page])) }}" @if ($page === $pagination['current_page']) aria-current="page" @endif>{{ $page }}</a>
-        @endfor
-        <a class="page-btn {{ $pagination['current_page'] >= $pagination['last_page'] ? 'disabled' : '' }}"
-           href="{{ $pagination['current_page'] < $pagination['last_page'] ? route('parametres.institutions-financieres', ['page' => $pagination['current_page'] + 1]) : '#' }}"
-           aria-label="Page suivante" @if ($pagination['current_page'] >= $pagination['last_page']) aria-disabled="true" tabindex="-1" @endif>&rarr;</a>
-      </nav>
+      @include('components.pagination', ['pagination' => $pagination])
     </section>
   </section>
 </main>

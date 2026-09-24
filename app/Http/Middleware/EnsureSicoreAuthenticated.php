@@ -27,6 +27,12 @@ class EnsureSicoreAuthenticated
                 ->with('warning', 'Veuillez vous connecter pour accéder à SICORE.');
         }
 
+        $access = app(\App\Services\Organisation\InterfaceAccess::class);
+        if ($access->isTeacher()) {
+            abort_unless($access->allowsRoute((string) $request->route()?->getName()), 403);
+            return $next($request);
+        }
+
         $allowed = app(\App\Services\Organisation\DrhAccess::class)->allowsRoute(
             (string) $request->route()?->getName()
         );

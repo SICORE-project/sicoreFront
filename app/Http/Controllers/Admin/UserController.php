@@ -115,6 +115,7 @@ class UserController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
+            'matricule_enseignant' => ['nullable', 'string', 'max:100'],
             'telephone' => ['required', 'string', 'max:20'],
             'date_naiss' => ['required', 'date_format:Y-m-d', 'before_or_equal:today'],
             'lieu_naissance' => ['sometimes', 'nullable', 'string', 'max:100'],
@@ -182,6 +183,7 @@ class UserController extends Controller
     public function update(Request $request, $id)
     {
         $data = $request->validate([
+            'matricule_enseignant' => ['nullable', 'string', 'max:100'],
             'telephone' => ['required', 'string', 'max:20'],
             'date_naiss' => ['required', 'date_format:Y-m-d', 'before_or_equal:today'],
             'lieu_naissance' => ['sometimes', 'nullable', 'string', 'max:100'],

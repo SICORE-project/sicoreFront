@@ -22,6 +22,11 @@ class InterfaceAccess
         return in_array($this->role(), ['agent_drh', 'drh', 'directeur_des_ressources_humaines'], true);
     }
 
+    public function isTeacher(): bool
+    {
+        return $this->role() === 'enseignant';
+    }
+
     public function isAdmin(): bool
     {
         return in_array($this->role(), ['admin', 'administrateur', 'super_admin', 'super_administrateur'], true);
@@ -86,6 +91,7 @@ class InterfaceAccess
 
     public function allowsRoute(string $route): bool
     {
+        if ($this->isTeacher()) return in_array($route, ['dashboard', 'logout', 'teacher.profile', 'teacher.payslips', 'teacher.pdf'], true);
         if ($this->isDecpc() && ! in_array($route, ['dashboard', 'logout'], true)
             && ! app(OrganisationContext::class)->isScoped()) return false;
 
@@ -120,6 +126,11 @@ class InterfaceAccess
 
     public function navigation(array $items): array
     {
+        if ($this->isTeacher()) return [
+            ['type'=>'link', 'label'=>'Tableau de bord', 'icon'=>'fa-solid fa-gauge-high', 'route'=>'dashboard'],
+            ['type'=>'link', 'label'=>'Mes informations', 'icon'=>'fa-solid fa-user', 'route'=>'teacher.profile'],
+            ['type'=>'link', 'label'=>'Mes bulletins de salaire', 'icon'=>'fa-solid fa-file-invoice', 'route'=>'teacher.payslips'],
+        ];
         if (! $this->usesPermissions()) return $items;
 
         $visible = [];

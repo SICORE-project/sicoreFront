@@ -84,11 +84,7 @@
         </table>
       </div>
       @if ($annees->hasPages())
-        <nav class="pagination" aria-label="Pagination des années académiques">
-          @foreach ($annees->getUrlRange(1, $annees->lastPage()) as $page => $url)
-            <a class="page-btn {{ $page === $annees->currentPage() ? 'active' : '' }}" href="{{ $url }}" @if($page === $annees->currentPage()) aria-current="page" @endif>{{ $page }}</a>
-          @endforeach
-        </nav>
+        @include('components.pagination', ['pagination' => $annees])
       @endif
     </section>
   </section>

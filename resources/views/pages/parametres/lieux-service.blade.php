@@ -79,37 +79,7 @@
           $lastResult = min($pagination['total'], $firstResult + count($items) - 1);
           $pageUrl = fn ($page) => route('parametres.lieux-service.index', array_merge($filters, ['per_page' => $pagination['per_page'], 'page' => $page]));
         @endphp
-        <nav class="pagination" aria-label="Pagination des établissements">
-          <p class="pagination-summary" aria-live="polite">{{ $firstResult }}–{{ $lastResult }} sur {{ $pagination['total'] }}</p>
-          <div class="pagination-controls">
-            @foreach ([['Première page', 'angles-left', 1], ['Page précédente', 'angle-left', $currentPage - 1]] as [$label, $icon, $targetPage])
-              @if ($currentPage <= 1)
-                <button class="page-btn page-btn-direction" type="button" disabled aria-label="{{ $label }}"><i class="fa-solid fa-{{ $icon }}" aria-hidden="true"></i></button>
-              @else
-                <a class="page-btn page-btn-direction" href="{{ $pageUrl($targetPage) }}" aria-label="{{ $label }}"><i class="fa-solid fa-{{ $icon }}" aria-hidden="true"></i></a>
-              @endif
-            @endforeach
-            <span class="page-btn page-number active" aria-current="page" aria-label="Page {{ $currentPage }} sur {{ $lastPage }}">{{ $currentPage }}</span>
-            @foreach ([['Page suivante', 'angle-right', $currentPage + 1], ['Dernière page', 'angles-right', $lastPage]] as [$label, $icon, $targetPage])
-              @if ($currentPage >= $lastPage)
-                <button class="page-btn page-btn-direction" type="button" disabled aria-label="{{ $label }}"><i class="fa-solid fa-{{ $icon }}" aria-hidden="true"></i></button>
-              @else
-                <a class="page-btn page-btn-direction" href="{{ $pageUrl($targetPage) }}" aria-label="{{ $label }}"><i class="fa-solid fa-{{ $icon }}" aria-hidden="true"></i></a>
-              @endif
-            @endforeach
-            <form method="GET" action="{{ route('parametres.lieux-service.index') }}" id="lieuPageSizeForm">
-              @foreach ($filters as $name => $value)
-                @if ($value !== null)<input type="hidden" name="{{ $name }}" value="{{ $value }}">@endif
-              @endforeach
-              <input type="hidden" name="page" value="1">
-              <label class="visually-hidden" for="lieuPageSize">Nombre de lignes par page</label>
-              <select class="page-size-select" id="lieuPageSize" name="per_page" aria-label="Nombre de lignes par page">
-                @foreach ([10, 20, 50] as $size)<option value="{{ $size }}" @selected($pagination['per_page'] === $size)>{{ $size }}</option>@endforeach
-              </select>
-              <noscript><button class="btn-secondary" type="submit">Appliquer</button></noscript>
-            </form>
-          </div>
-        </nav>
+        @include('components.pagination', ['pagination' => $pagination, 'pageSizeControl' => true])
       @endif
     </section>
   </section>

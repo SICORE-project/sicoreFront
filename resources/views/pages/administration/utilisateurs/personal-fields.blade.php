@@ -41,3 +41,10 @@
 </style>
 @endpush
 @endonce
+
+<div class="form-group full">
+    <label for="{{ $fieldPrefix }}matricule_enseignant">Matricule du dossier enseignant</label>
+    <input class="form-control" id="{{ $fieldPrefix }}matricule_enseignant" name="matricule_enseignant" value="{{ old('matricule_enseignant', data_get($personalUser, 'matricule_enseignant')) }}" maxlength="100">
+    <small>Pour un compte enseignant, indiquez le matricule exact de son dossier existant.</small>
+    @error('matricule_enseignant')<div class="invalid-feedback">{{ $message }}</div>@enderror
+</div>

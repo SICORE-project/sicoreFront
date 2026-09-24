@@ -65,11 +65,7 @@
           <tr><td colspan="{{ ($canUpdate || $canDelete) ? 4 : 3 }}" class="empty-message show"><x-table-empty-state>Aucune spécialité trouvée.</x-table-empty-state></td></tr>
         @endforelse
       </tbody></table></div>
-      @if ($pagination['last_page'] > 1)<nav class="pagination" aria-label="Pagination">
-        @for ($page = 1; $page <= $pagination['last_page']; $page++)
-          <a class="page-btn {{ $page === $pagination['current_page'] ? 'active' : '' }}" href="{{ route('parametres.disciplines.index', array_merge(request()->except('page'), ['page' => $page])) }}" @if($page === $pagination['current_page']) aria-current="page" @endif>{{ $page }}</a>
-        @endfor
-      </nav>@endif
+      @if ($pagination['last_page'] > 1)@include('components.pagination', ['pagination' => $pagination])@endif
     </section>
   </section>
 </main>

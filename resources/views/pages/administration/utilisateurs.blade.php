@@ -373,6 +373,8 @@
   const hasSelectedRole = Boolean(role.value);
   const isGestionnaireIa = selectedRole?.dataset.roleSlug === 'gestionnaire_ia';
   const isTeacher = selectedRole?.dataset.roleSlug === 'enseignant';
+  document.getElementById('matricule_enseignant').required = isTeacher;
+  document.getElementById('matricule_enseignant').closest('.form-group').hidden = !isTeacher;
   const regionalOnly = isGestionnaireIa || isTeacher;
   const allowsIa = isGestionnaireIa || (!isTeacher && allowedTypes.includes('ia'));
   const allowsIef = isGestionnaireIa || isTeacher || allowedTypes.includes('ief');
@@ -591,6 +593,8 @@
         const selectedRole = editRole.options[editRole.selectedIndex];
         const isGestionnaireIa = selectedRole?.dataset.roleSlug === 'gestionnaire_ia';
         const isTeacher = selectedRole?.dataset.roleSlug === 'enseignant';
+  document.getElementById('edit-user-matricule_enseignant').required = isTeacher;
+  document.getElementById('edit-user-matricule_enseignant').closest('.form-group').hidden = !isTeacher;
         editIaGroup.hidden = !isTeacher;
         editIaGroup.style.display = isTeacher ? '' : 'none';
         editIa.disabled = !isTeacher;
@@ -674,6 +678,7 @@
             const birthDate = user.date_naiss_iso || (user.date_naiss?.includes('/') ? user.date_naiss.split('/').reverse().join('-') : user.date_naiss?.slice(0, 10)) || '';
             document.getElementById('edit-user-date_naiss').value = birthDate;
 
+            document.getElementById('edit-user-matricule_enseignant').value = user.matricule_enseignant || '';
             editRole.value = user.role?.id || '';
             configureEditOrganisation(user.lieu_service?.id || '');
             document.getElementById('edit-user-status').value = user.statut || 'actif';
@@ -704,7 +709,7 @@
 
         editButton?.click();
 
-        ['nom', 'prenom', 'email', 'role_id', 'telephone', 'date_naiss', 'lieu_naissance', 'adresse', 'genre'].forEach(field => {
+        ['matricule_enseignant', 'nom', 'prenom', 'email', 'role_id', 'telephone', 'date_naiss', 'lieu_naissance', 'adresse', 'genre'].forEach(field => {
           const value = failedEditValues?.[field];
           if (value !== undefined && value !== null) {
             document.getElementById(`edit-user-${field === 'role_id' ? 'role' : field}`).value = value;

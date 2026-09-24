@@ -55,6 +55,9 @@ Route::middleware('sicore.auth')->group(function (): void {
             ->name('logout');
 
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/mon-espace/informations', [\App\Http\Controllers\TeacherPersonalController::class, 'page'])->name('teacher.profile');
+    Route::get('/mon-espace/bulletins', [\App\Http\Controllers\TeacherPersonalController::class, 'page'])->name('teacher.payslips');
+    Route::get('/mon-espace/bulletins/{id}/pdf', [\App\Http\Controllers\TeacherPersonalController::class, 'pdf'])->whereNumber('id')->name('teacher.pdf');
     Route::get('/ia/structure', [\App\Http\Controllers\IaWorkspaceController::class, 'references'])->name('ia.structure');
     Route::get('/ia/iefs', [\App\Http\Controllers\IaWorkspaceController::class, 'references'])->name('ia.iefs');
     Route::get('/ia/enseignants/{id}', [\App\Http\Controllers\IaWorkspaceController::class, 'teacher'])->whereNumber('id')->name('ia.teachers.show');
