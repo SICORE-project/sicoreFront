@@ -50,9 +50,9 @@ class TeacherContractuelTest extends TestCase
     public function test_contract_fields_are_forwarded_to_the_backend(string $method, ?int $id): void
     {
         $endpoint = '/admin/personnel/enseignants'.($id ? '/'.$id : '');
-        Http::fake(['*'.$endpoint => Http::response(['message' => 'Enseignant enregistré.'], 200)]);
+        Http::fake(['*/corps/1*' => Http::response(['data' => ['id' => 1, 'code' => 'CTR', 'libelle' => 'Contractuel']]), '*'.$endpoint => Http::response(['message' => 'Enseignant enregistré.'], 200)]);
         $payload = [
-            'matricule' => 'ENS008', 'nom' => 'Diop', 'prenom' => 'Awa',
+            'matricule' => '000000008/H', 'nom' => 'Diop', 'prenom' => 'Awa',
             'date_naissance' => '1990-01-01', 'ia_id' => 1, 'ief_id' => 1,
             'corps_id' => 1, 'diplome_id' => 2, 'categorie_id' => 2,
             'salaire_brut' => 250000, 'date_recrutement' => '2026-09-01',

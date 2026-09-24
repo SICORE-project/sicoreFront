@@ -41,6 +41,20 @@ class CorpsService
         ];
     }
 
+    public function find(int $id): array
+    {
+        try {
+            $response = $this->apiClient->get('corps/'.$id);
+        } catch (ConnectionException) {
+            return ['success' => false, 'data' => null, 'message' => 'Impossible de vérifier le corps : le service backend est inaccessible.'];
+        }
+        return [
+            'success' => $response->successful(),
+            'data' => $response->json('data'),
+            'message' => $response->json('message', 'Impossible de vérifier le corps sélectionné.'),
+        ];
+    }
+
     public function create(array $data): array { return $this->save(fn () => $this->apiClient->post('corps', $data)); }
     public function update(int $id, array $data): array { return $this->save(fn () => $this->apiClient->put("corps/{$id}", $data)); }
     public function delete(int $id): array { return $this->save(fn () => $this->apiClient->delete("corps/{$id}")); }

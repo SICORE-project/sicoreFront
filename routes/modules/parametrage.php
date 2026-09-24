@@ -35,6 +35,7 @@ Route::middleware('sicore.auth')
         */
 
         Route::get('/enseignants', [EnseignantController::class, 'index'])->name('enseignants.index');
+        Route::get('/enseignants/export', [EnseignantController::class, 'export'])->name('enseignants.export');
         Route::get('/enseignants/iefs', [EnseignantController::class, 'ieFs'])->name('enseignants.iefs');
         Route::get('/enseignants/etablissements', [EnseignantController::class, 'etablissements'])->name('enseignants.etablissements');
         Route::get('/enseignants/nouveau', [EnseignantController::class, 'create'])->name('enseignants.create');

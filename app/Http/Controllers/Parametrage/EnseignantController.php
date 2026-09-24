@@ -75,6 +75,56 @@ class EnseignantController extends Controller
         return view('pages.enseignants.index', $result);
     }
 
+    public function export(Request $request, EnseignantService $service): \Symfony\Component\HttpFoundation\BinaryFileResponse|RedirectResponse
+    {
+        $filters = $this->listFilters($request);
+        $rows = (function () use ($service, $filters) {
+            $page = 1;
+            do {
+                $result = $service->getAll(array_merge($filters, ['page' => $page, 'per_page' => 100]));
+                if ($result['error']) {
+                    throw new \RuntimeException($result['error'], $result['unauthorized'] ? 401 : 502);
+                }
+                foreach ($result['items'] as $teacher) {
+                    yield [
+                        $teacher['matricule'] ?? '', $teacher['nom'] ?? '', $teacher['prenom'] ?? '',
+                        data_get($teacher, 'ia.libelle', data_get($teacher, 'ia.nom', '')),
+                        data_get($teacher, 'corps.libelle', ''), $teacher['statut'] ?? '',
+                    ];
+                }
+                $page++;
+            } while ($page <= $result['pagination']['last_page']);
+        })();
+
+        try {
+            $path = (new \App\Services\Exports\TeacherExcelExport)->create($rows);
+        } catch (\RuntimeException $exception) {
+            if ($exception->getCode() === 401) {
+                $request->session()->forget(['access_token', 'sicore_user']);
+                return redirect()->route('login')->with('warning', $exception->getMessage());
+            }
+            return redirect()->route('enseignants.index', $filters)->with('error', $exception->getMessage());
+        }
+
+        return response()->download($path, 'enseignants_'.now()->format('Y-m-d_His').'.xlsx', [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Cache-Control' => 'private, no-store',
+        ])->deleteFileAfterSend(true);
+    }
+
+    private function listFilters(Request $request): array
+    {
+        return $request->validate([
+            'search' => ['nullable', 'string', 'max:100'],
+            'prenom' => ['nullable', 'string', 'max:50'],
+            'nom' => ['nullable', 'string', 'max:50'],
+            'corps_id' => ['nullable', 'integer', 'min:1'],
+            'diplome_id' => ['nullable', 'integer', 'min:1'],
+            'ia_id' => ['nullable', 'integer', 'min:1'],
+            'ief_id' => ['nullable', 'integer', 'min:1'],
+        ]);
+    }
+
     public function ieFs(Request $request, InspectionAcademieService $academies): \Illuminate\Http\JsonResponse
     {
         $result = $academies->getIefs($request->integer('ia_id'));
@@ -163,6 +213,17 @@ class EnseignantController extends Controller
 
     private function validated(Request $request): array
     {
+        $request->validate(['corps_id' => ['required', 'integer', 'min:1']]);
+        $result = app(CorpsService::class)->find($request->integer('corps_id'));
+        if (! $result['success'] || ! is_array($result['data'])) {
+            throw \Illuminate\Validation\ValidationException::withMessages(['corps_id' => $result['message']]);
+        }
+        $corps = $result['data'];
+        $fonctionnaire = in_array(mb_strtolower(trim($corps['libelle'] ?? '')), ['fonctionnaire', 'fonctionnaires'], true)
+            || in_array(mb_strtolower(trim($corps['code'] ?? '')), ['fonctionnaire', 'fonc'], true);
+        if (! $fonctionnaire) {
+            $request->merge(['indice' => null]);
+        }
         $married = $request->boolean('est_en_couple');
         $request->merge([
             'nombre_enfants' => $married ? ($request->input('nombre_enfants') ?? 0) : 0,
@@ -170,7 +231,8 @@ class EnseignantController extends Controller
             'conjoint_travaille' => $married ? ($request->input('conjoint_travaille') ?? false) : false,
         ]);
         return $request->validate([
-            'matricule' => ['required', 'string', 'max:9', 'regex:/\A[A-Za-z0-9]+\z/'],
+            'matricule' => ['bail', 'required', 'string', $fonctionnaire ? 'regex:~\A[0-9]{6}/[A-Z]\z~' : 'regex:~\A[0-9]{9}/[A-Z]\z~'],
+            'indice' => [\Illuminate\Validation\Rule::requiredIf($fonctionnaire), 'nullable', 'regex:/\A[0-9]{4,6}\z/'],
             'nom' => ['required', 'string', 'max:50'],
             'prenom' => ['required', 'string', 'max:50'],
             'date_naissance' => ['required', 'date', 'before_or_equal:'.now()->subYears(18)->format('Y-m-d')],
@@ -214,8 +276,12 @@ class EnseignantController extends Controller
             'date_naissance.before_or_equal' => 'L’enseignant doit avoir au moins 18 ans.',
             'date_naissance.date' => 'Veuillez saisir une date de naissance valide.',
             'email.email' => 'Veuillez saisir une adresse e-mail valide.',
-            'matricule.max' => 'Le matricule ne doit pas dépasser 9 caractères.',
-            'matricule.regex' => 'Le matricule doit contenir uniquement des lettres et des chiffres.',
+            'matricule.string' => 'Le matricule doit être saisi au format chiffres/lettre majuscule.',
+            'matricule.regex' => $fonctionnaire
+                ? 'Le matricule d’un fonctionnaire doit contenir 6 chiffres suivis de / et d’une lettre majuscule (exemple : 543678/F), sans espaces.'
+                : 'Le matricule doit contenir 9 chiffres suivis de / et d’une lettre majuscule (exemple : 202409675/H), sans espaces.',
+            'indice.required' => 'L’indice est obligatoire pour le corps Fonctionnaire.',
+            'indice.regex' => 'L’indice doit contenir entre 4 et 6 chiffres, sans lettres ni espaces.',
             'cni.regex' => 'Le numéro de carte d’identité doit contenir entre 13 et 15 chiffres.',
             'matricule.required' => 'Le matricule est obligatoire.',
             'matricule.unique' => 'Ce matricule existe déjà.',

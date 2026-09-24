@@ -37,9 +37,9 @@ class ApiClient
         );
     }
 
-    public function post(string $uri, array $data = [])
+    public function post(string $uri, array $data = [], int $timeout = 10)
     {
-        return $this->request()->post(
+        return $this->request()->timeout($timeout)->post(
             $this->baseUrl . '/' . $uri,
             $data
         );
