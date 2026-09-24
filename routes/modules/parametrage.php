@@ -15,6 +15,7 @@ use App\Http\Controllers\Parametrage\LieuServiceController;
 use App\Http\Controllers\Parametrage\PeriodePaieController;
 use App\Http\Controllers\Parametrage\RubriquePaieController;
 use App\Http\Controllers\Parametrage\SyndicatController;
+use App\Http\Controllers\Parametrage\RegionController;
 use Illuminate\Support\Facades\Route;
 //use App\Http\Controllers\Admin\LieuServiceController;
 
@@ -123,20 +124,19 @@ Route::middleware('sicore.auth')
         Route::delete('/parametres/periodes-paie/{periode}', [PeriodePaieController::class, 'destroy'])
             ->whereNumber('periode')->name('parametres.periodes-paie.destroy');
 
-        Route::get('/parametres/ia', [InspectionAcademieController::class, 'index'])
-            ->name('parametres.ia.index');
+        Route::get('/parametres/ia', [InspectionAcademieController::class, 'index'])->name('parametres.ia.index');
+        Route::post('/parametres/ia', [InspectionAcademieController::class, 'store']) ->name('parametres.ia.store');
+        Route::put('/parametres/ia/{ia}', [InspectionAcademieController::class, 'update'])->whereNumber('ia')->name('parametres.ia.update');
+        Route::delete('/parametres/ia/{ia}', [InspectionAcademieController::class, 'destroy'])->whereNumber('ia')->name('parametres.ia.destroy');
+        Route::get('/parametres/ia/nouvelle', [InspectionAcademieController::class, 'create'])->name('parametres.ia.create');
 
-        Route::post('/parametres/ia', [InspectionAcademieController::class, 'store'])
-            ->name('parametres.ia.store');
+        
+        Route::get('/parametres/regions', [RegionController::class, 'index'])->name('parametres.regions.index');
+        Route::post('/parametres/regions', [RegionController::class, 'store'])->name('parametres.regions.store');
+        Route::put('/parametres/regions/{region}', [RegionController::class, 'update'])->whereNumber('region')->name('parametres.regions.update');
+        Route::patch('/parametres/regions/{region}/statut', [RegionController::class, 'changeStatus'])->whereNumber('region')->name('parametres.regions.status');
+        Route::delete('/parametres/regions/{region}', [RegionController::class, 'destroy'])->whereNumber('region')->name('parametres.regions.destroy');
 
-        Route::put('/parametres/ia/{ia}', [InspectionAcademieController::class, 'update'])
-            ->whereNumber('ia')->name('parametres.ia.update');
-
-        Route::delete('/parametres/ia/{ia}', [InspectionAcademieController::class, 'destroy'])
-            ->whereNumber('ia')->name('parametres.ia.destroy');
-
-        Route::get('/parametres/ia/nouvelle', [InspectionAcademieController::class, 'create'])
-            ->name('parametres.ia.create');
 
         Route::get('/parametres/etablissements', [LieuServiceController::class, 'index'])
             ->name('parametres.lieux-service.index');
@@ -171,42 +171,18 @@ Route::middleware('sicore.auth')
             ->name('parametres.institutions-financieres.destroy');
         Route::post('/parametres/comptes-bancaires-enseignants', [InstitutionFinanciereController::class, 'storeTeacherBankAccount'])
             ->name('parametres.comptes-bancaires-enseignants.store');
+
         Route::middleware('diplomes.manage')->group(function (): void {
-            Route::get('/parametres/diplomes', [DiplomesController::class, 'index'])
-                ->name('parametres.diplomes.index');
-
-            Route::post('/parametres/diplomes', [DiplomesController::class, 'store'])
-                ->name('parametres.diplomes.store');
-
-            Route::put('/parametres/diplomes/{diplome}', [DiplomesController::class, 'update'])
-                ->name('parametres.diplomes.update');
-
-            Route::delete('/parametres/diplomes/{diplome}', [DiplomesController::class, 'destroy'])
-                ->name('parametres.diplomes.destroy');
+            Route::get('/parametres/diplomes', [DiplomesController::class, 'index'])->name('parametres.diplomes.index');
+            Route::post('/parametres/diplomes', [DiplomesController::class, 'store'])->name('parametres.diplomes.store');
+            Route::put('/parametres/diplomes/{diplome}', [DiplomesController::class, 'update'])->name('parametres.diplomes.update');
+            Route::delete('/parametres/diplomes/{diplome}', [DiplomesController::class, 'destroy'])->name('parametres.diplomes.destroy');
         });
-        Route::post('/parametres/syndicats', [SyndicatController::class, 'store'])
-            ->middleware('sicore.permission:parametrage.syndicats.manage')
-            ->name('parametres.syndicats.store');
-
-        Route::get('/parametres/syndicats', [SyndicatController::class, 'index'])
-            ->middleware('sicore.permission:parametrage.syndicats.read')
-            ->name('parametres.syndicats.index');
-
-        Route::get('/parametres/syndicats/verifier-unicite', [SyndicatController::class, 'checkUniqueness'])
-            ->middleware('sicore.permission:parametrage.syndicats.manage')
-            ->name('parametres.syndicats.check-uniqueness');
-
-        Route::get('/parametres/syndicats/options-association', [SyndicatController::class, 'associationOptions'])
-            ->name('parametres.syndicats.association-options');
-
-        Route::put('/parametres/syndicats/{id}', [SyndicatController::class, 'update'])
-            ->whereNumber('id')
-            ->middleware('sicore.permission:parametrage.syndicats.manage')
-            ->name('parametres.syndicats.update');
-
-        Route::delete('/parametres/syndicats/{id}', [SyndicatController::class, 'destroy'])
-            ->whereNumber('id')
-            ->middleware('sicore.permission:parametrage.syndicats.manage')
-            ->name('parametres.syndicats.destroy');
+        Route::post('/parametres/syndicats', [SyndicatController::class, 'store'])->middleware('sicore.permission:parametrage.syndicats.manage')->name('parametres.syndicats.store');
+        Route::get('/parametres/syndicats', [SyndicatController::class, 'index'])->middleware('sicore.permission:parametrage.syndicats.read')->name('parametres.syndicats.index');
+        Route::get('/parametres/syndicats/verifier-unicite', [SyndicatController::class, 'checkUniqueness'])->middleware('sicore.permission:parametrage.syndicats.manage')->name('parametres.syndicats.check-uniqueness');
+        Route::get('/parametres/syndicats/options-association', [SyndicatController::class, 'associationOptions'])->name('parametres.syndicats.association-options');
+        Route::put('/parametres/syndicats/{id}', [SyndicatController::class, 'update'])->whereNumber('id')->middleware('sicore.permission:parametrage.syndicats.manage')->name('parametres.syndicats.update');
+        Route::delete('/parametres/syndicats/{id}', [SyndicatController::class, 'destroy'])->whereNumber('id')->middleware('sicore.permission:parametrage.syndicats.manage')->name('parametres.syndicats.destroy');
 
     });
