@@ -17,6 +17,7 @@
       @csrf
 
       <div class="form-grid form-grid--balanced">
+<div class="user-form-heading"><span>1</span><h3>Identité</h3></div>
         <div class="form-group">
           <label for="nom">Nom <span class="required">*</span></label>
           <input class="form-control @error('nom') is-invalid @enderror" id="nom" name="nom" type="text" value="{{ old('nom') }}" maxlength="100" required autocomplete="family-name">
@@ -29,13 +30,15 @@
           @error('prenom')<div class="invalid-feedback">{{ $message }}</div>@enderror
         </div>
 
-        <div class="form-group full">
+        @include('pages.administration.utilisateurs.personal-fields')
+<div class="form-group full">
           <label for="email">Adresse e-mail <span class="required">*</span></label>
           <input class="form-control @error('email') is-invalid @enderror" id="email" name="email" type="email" value="{{ old('email') }}" maxlength="255" required autocomplete="email" placeholder="nom@exemple.sn" data-check-url="{{ route('utilisateurs.check-email') }}" aria-describedby="email-error">
           <div class="invalid-feedback" id="email-error" aria-live="polite">@error('email'){{ $message }}@enderror</div>
         </div>
 
-        <div class="form-group">
+        <div class="user-form-heading"><span>3</span><h3>Accès et rattachement</h3></div>
+<div class="form-group">
           <label for="role_id">Rôle <span class="required">*</span></label>
           <select class="form-control @error('role_id') is-invalid @enderror" id="role_id" name="role_id" required>
             <option value="">Sélectionner un rôle</option>
@@ -57,22 +60,18 @@
           @error('statut')<div class="invalid-feedback">{{ $message }}</div>@enderror
         </div>
 
-        <div class="form-group full organisation-section">
-          <strong>Accès organisationnel</strong>
-          <small>Choisissez une structure nationale ou une IA et son IEF.</small>
-        </div>
-
         <div class="form-group">
           <label for="perimetre">Périmètre <span class="required">*</span></label>
-          <select class="form-control @error('perimetre') is-invalid @enderror" id="perimetre" name="perimetre" required>
-            <option value="national" @selected(old('perimetre', 'national') === 'national')>National</option>
-            <option value="regional" @selected(old('perimetre') === 'regional')>Régional</option>
+          <select class="form-control @error('perimetre') is-invalid @enderror" id="perimetre" name="perimetre" required @disabled(!old('role_id'))>
+            <option value="" @selected(!old('role_id'))>Choisissez un rôle en premier</option>
+            <option value="national" @selected(old('role_id') && old('perimetre', 'national') === 'national')>Central</option>
+            <option value="regional" @selected(old('role_id') && old('perimetre') === 'regional')>Régional</option>
           </select>
           @error('perimetre')<div class="invalid-feedback">{{ $message }}</div>@enderror
         </div>
 
-        <div class="form-group" id="national-structure-group" @if(old('perimetre', 'national') !== 'national') hidden @endif>
-          <label for="lieu_service_id">Établissement <span class="required">*</span></label>
+        <div class="form-group" id="national-structure-group" @if(!old('role_id') || old('perimetre', 'national') !== 'national') hidden @endif>
+          <label for="lieu_service_id">Direction de rattachement <span class="required">*</span></label>
           <select class="form-control @error('lieu_service_id') is-invalid @enderror" id="lieu_service_id" name="lieu_service_id">
             <option value="">Sélectionner une direction</option>
             @foreach(($organisation['national'] ?? []) as $structure)
@@ -85,7 +84,7 @@
         </div>
 
         <div class="form-group" id="ia-group" hidden>
-          <label for="ia_id">Établissement (IA) <span class="required">*</span></label>
+          <label for="ia_id">IA <span class="required">*</span></label>
           <select class="form-control @error('ia_id') is-invalid @enderror" id="ia_id" name="ia_id">
             <option value="">Sélectionner une IA</option>
           </select>
@@ -93,7 +92,7 @@
         </div>
 
         <div class="form-group" id="ief-group" hidden>
-          <label for="ief_id">IEF</label>
+          <label for="ief_id">IEF de rattachement</label>
           <select class="form-control @error('ief_id') is-invalid @enderror" id="ief_id" name="ief_id" disabled>
             <option value="">Toutes les IEF de l'IA</option>
           </select>
@@ -131,7 +130,6 @@
       <div><dt>Date de naissance</dt><dd id="view-user-birth-date">—</dd></div>
       <div><dt>Lieu de naissance</dt><dd id="view-user-birth-place">—</dd></div>
       <div><dt>Adresse</dt><dd id="view-user-address">—</dd></div>
-      <div><dt>Fonction</dt><dd id="view-user-function">—</dd></div>
       <div><dt>Rôle</dt><dd id="view-user-role">—</dd></div>
       <div><dt>Structure</dt><dd id="view-user-structure">—</dd></div>
       <div><dt>Statut</dt><dd id="view-user-status">—</dd></div>
@@ -146,6 +144,7 @@
       @csrf
       @method('PUT')
       <div class="form-grid form-grid--balanced">
+<div class="user-form-heading"><span>1</span><h3>Identité</h3></div>
         <div class="form-group">
           <label for="edit-user-nom">Nom <span class="required">*</span></label>
           <input class="form-control" id="edit-user-nom" name="nom" type="text" maxlength="100" required>
@@ -154,11 +153,13 @@
           <label for="edit-user-prenom">Prénom <span class="required">*</span></label>
           <input class="form-control" id="edit-user-prenom" name="prenom" type="text" maxlength="100" required>
         </div>
-        <div class="form-group full">
+        @include('pages.administration.utilisateurs.personal-fields', ['fieldPrefix' => 'edit-user-'])
+<div class="form-group full">
           <label for="edit-user-email">Adresse e-mail <span class="required">*</span></label>
           <input class="form-control" id="edit-user-email" name="email" type="email" maxlength="255" required>
         </div>
-        <div class="form-group">
+        <div class="user-form-heading"><span>3</span><h3>Accès et rattachement</h3></div>
+<div class="form-group">
           <label for="edit-user-role">Rôle <span class="required">*</span></label>
           <select class="form-control" id="edit-user-role" name="role_id" required>
             @foreach ($roles as $role)
@@ -169,12 +170,12 @@
         <div class="form-group">
           <label for="edit-user-perimetre">Périmètre <span class="required">*</span></label>
           <select class="form-control" id="edit-user-perimetre" disabled>
-            <option value="national">National</option>
+            <option value="national">Central</option>
             <option value="regional">Régional</option>
           </select>
         </div>
         <div class="form-group">
-          <label for="edit-user-structure" id="edit-user-structure-label">Établissement (Direction) <span class="required">*</span></label>
+          <label for="edit-user-structure" id="edit-user-structure-label">Direction de rattachement <span class="required">*</span></label>
           <select class="form-control" id="edit-user-structure" name="lieu_service_id" required>
             <option value="">Sélectionner une direction</option>
           </select>
@@ -190,11 +191,25 @@
   </x-module-indemnite>
 
   <form id="delete-user-form" method="POST" hidden>@csrf @method('DELETE')</form>
+  <dialog class="delete-confirmation" id="status-confirmation" aria-labelledby="status-confirmation-title" aria-describedby="status-confirmation-description">
+    <button type="button" class="delete-confirmation-close" data-status-cancel aria-label="Fermer">&times;</button>
+    <span class="delete-confirmation-icon" aria-hidden="true"><i class="fa-solid fa-power-off"></i></span>
+    <h2 id="status-confirmation-title"></h2>
+    <p id="status-confirmation-description"></p>
+    <p class="delete-confirmation-note" id="status-confirmation-note"></p>
+    <div class="delete-confirmation-actions">
+      <button class="btn-secondary" type="button" data-status-cancel autofocus>Annuler</button>
+      <button class="btn-primary" type="button" id="status-confirmation-accept"></button>
+    </div>
+  </dialog>
   <form id="toggle-user-status-form" method="POST" hidden>@csrf</form>
 @endsection
 
 @push('styles')
   <style>
+    .user-status-toggle { border: 0; cursor: pointer; font: inherit; font-weight: 700; }
+    .user-status-toggle:hover { filter: brightness(.94); }
+    .user-status-toggle:focus-visible { outline: 2px solid #176637; outline-offset: 3px; }
     #create-user-modal .modal-dialog,
     #edit-user-modal .modal-dialog {
       width: 80%;
@@ -235,6 +250,16 @@
       const email = document.getElementById('email');
       const emailError = document.getElementById('email-error');
       const hierarchy = @json($organisation['regional'] ?? []);
+      const nationalStructures = @json($organisation['national'] ?? []);
+      function compatibleNationalStructure(item, slug) {
+        const type = String(item.type || item.code || '').toUpperCase();
+        if (slug === 'super_admin' || slug === 'admin') return ['CI', 'DAGE'].includes(type);
+        if (slug === 'agent_decpc') return type === 'DECPC';
+        if (slug === 'agent_drh') return type === 'DRH';
+        if (slug === 'gestionnaire_ia') return type === 'IA';
+        return ['CI', 'DAGE'].includes(type);
+      }
+
       const iaOptionsUrl = @json(route('utilisateurs.ia-options'));
       const role = document.getElementById('role_id');
       const perimeter = document.getElementById('perimetre');
@@ -244,31 +269,47 @@
       const ia = document.getElementById('ia_id');
       const iefGroup = document.getElementById('ief-group');
       const ief = document.getElementById('ief_id');
-      const oldIa = @json((string) old('ia_id', ''));
-      const oldIef = @json((string) old('ief_id', ''));
+      const regionalStructure = document.createElement('input');
+      regionalStructure.type = 'hidden';
+      regionalStructure.name = 'lieu_service_id';
+      form.append(regionalStructure);
+      const oldStructure = @json((string) old('lieu_service_id', ''));
+      const restoredStructure = hierarchy.find(item => String(item.id) === oldStructure);
+      const oldIa = @json((string) old('ia_structure_id', ''));
+      const oldIef = @json((string) old('ief_structure_id', ''));
       let emailTimer;
       let emailRequest;
       let emailIsChecking = false;
       let iaOptionsRequest;
+      const coveredIefs = document.createElement('small');
+      coveredIefs.className = 'form-text';
+      iefGroup.append(coveredIefs);
 
       function optionLabel(item) {
         return [item.code, item.libelle].filter(Boolean).join(' — ');
       }
 
       function fillIefs(selectedValue = '') {
-        ief.replaceChildren(new Option("Toutes les IEF de l'IA", ''));
+        ief.replaceChildren(new Option(role.selectedOptions[0]?.dataset.roleSlug === 'enseignant' ? 'Sélectionner une IEF de rattachement' : "Toutes les IEF de l'IA", ''));
         const selectedIa = hierarchy.find(item => String(item.id) === ia.value);
         hierarchy.filter(item => item.type === 'IEF' && String(item.ia_id) === String(selectedIa?.ia_id)).forEach(item => ief.add(new Option(optionLabel(item), item.id)));
-        ief.disabled = !ia.value || perimeter.value !== 'regional';
+        ief.disabled = !ia.value || perimeter.value !== 'regional' || role.selectedOptions[0]?.dataset.roleSlug === 'gestionnaire_ia';
         ief.value = selectedValue;
+        const isIaManager = role.selectedOptions[0]?.dataset.roleSlug === 'gestionnaire_ia';
+        coveredIefs.hidden = !isIaManager;
+        coveredIefs.textContent = isIaManager && selectedIa
+          ? (hierarchy.filter(item => item.type === 'IEF' && String(item.ia_id) === String(selectedIa.ia_id)).map(optionLabel).join(', ') || 'Aucune IEF enregistrée pour cette IA.')
+          : '';
         syncRegionalStructure();
       }
 
       function syncRegionalStructure() {
-        const useIef = Boolean(ief.value);
-        ia.name = useIef ? 'ia_id' : 'lieu_service_id';
-        ia.disabled = !perimeter.value || perimeter.value !== 'regional' || useIef;
-        ief.name = useIef ? 'lieu_service_id' : 'ief_id';
+        ia.disabled = perimeter.value !== 'regional';
+        ia.name = 'ia_structure_id';
+        ief.name = 'ief_structure_id';
+        regionalStructure.value = perimeter.value === 'regional' ? (role.selectedOptions[0]?.dataset.roleSlug === 'gestionnaire_ia' ? ia.value : (ief.value || ia.value)) : '';
+        regionalStructure.disabled = perimeter.value !== 'regional';
+
       }
 
       async function loadIaOptions() {
@@ -284,8 +325,8 @@
                 ia.add(new Option(optionLabel(item), item.lieu_service_id));
               }
             });
-            ia.value = selectedValue || oldIa;
-            fillIefs(ief.value || oldIef);
+            ia.value = selectedValue || oldIa || String(hierarchy.find(item => item.type === 'IA' && String(item.ia_id) === String(restoredStructure?.ia_id))?.id || '');
+            fillIefs(ief.value || oldIef || (restoredStructure?.type === 'IEF' ? oldStructure : ''));
           })
           .catch(() => {
             ia.replaceChildren(new Option('Impossible de charger les IA', ''));
@@ -314,6 +355,7 @@
           national.name = 'lieu_service_id';
           ia.value = '';
           fillIefs();
+          regionalStructure.disabled = true;
           ia.name = 'ia_id';
           ief.name = 'ief_id';
         }
@@ -322,32 +364,47 @@
     function applyRoleStructureRules() {
   const selectedRole = role.options[role.selectedIndex];
   const allowedTypes = JSON.parse(selectedRole?.dataset.structureTypes || '[]');
+  const previousStructure = national.value;
+  national.replaceChildren(new Option('Sélectionner une direction', ''));
+  nationalStructures
+    .filter(item => compatibleNationalStructure(item, selectedRole?.dataset.roleSlug))
+    .forEach(item => national.add(new Option(optionLabel(item), item.id)));
+  national.value = previousStructure;
   const hasSelectedRole = Boolean(role.value);
   const isGestionnaireIa = selectedRole?.dataset.roleSlug === 'gestionnaire_ia';
-  const allowsIa = isGestionnaireIa || allowedTypes.includes('ia');
-  const allowsIef = allowedTypes.includes('ief');
+  const isTeacher = selectedRole?.dataset.roleSlug === 'enseignant';
+  const regionalOnly = isGestionnaireIa || isTeacher;
+  const allowsIa = isGestionnaireIa || (!isTeacher && allowedTypes.includes('ia'));
+  const allowsIef = isGestionnaireIa || isTeacher || allowedTypes.includes('ief');
   const nationalOption = perimeter.querySelector('option[value="national"]');
   const regionalOption = perimeter.querySelector('option[value="regional"]');
 
-  // Gestionnaire IA => périmètre régional verrouillé.
-  // Tout autre rôle => périmètre national par défaut.
-  nationalOption.disabled = hasSelectedRole && isGestionnaireIa;
-  regionalOption.disabled = hasSelectedRole && !isGestionnaireIa && !allowsIa && !allowsIef;
+  // Les enseignants et gestionnaires IA relèvent du périmètre régional.
+  nationalOption.disabled = hasSelectedRole && regionalOnly;
+  regionalOption.disabled = hasSelectedRole && !regionalOnly && !allowsIa && !allowsIef;
 
-  perimeter.disabled = false;
+  perimeter.disabled = !hasSelectedRole;
 
   if (!hasSelectedRole) {
-    if (!perimeter.value) perimeter.value = 'national';
-  } else {
-    perimeter.value = isGestionnaireIa ? 'regional' : 'national';
+    perimeter.value = '';
+    [nationalGroup, iaGroup, iefGroup].forEach(group => { group.hidden = true; });
+    nationalGroup.dataset.organisationVisibility = 'hidden';
+    [national, ia, ief, regionalStructure].forEach(field => {
+      field.value = '';
+      field.disabled = true;
+      field.required = false;
+    });
+    return;
   }
+
+  perimeter.value = regionalOnly ? 'regional' : 'national';
 
   toggleOrganisation();
 
   if (perimeter.value === 'regional') {
     loadIaOptions();
     iefGroup.hidden = !allowsIef;
-    ief.disabled = !allowsIef || !ia.value;
+    ief.disabled = isGestionnaireIa || !allowsIef || !ia.value;
     ief.required = allowsIef && !allowsIa;
     if (!allowsIef) ief.value = '';
   } else {
@@ -459,26 +516,108 @@
       const deleteForm = document.getElementById('delete-user-form');
       const toggleForm = document.getElementById('toggle-user-status-form');
       const editStatusButton = document.getElementById('edit-user-toggle-status');
+      const statusModal = document.getElementById('status-confirmation');
+      const statusAccept = document.getElementById('status-confirmation-accept');
+      let statusTrigger = null;
+      let statusSubmitting = false;
+
+      function confirmStatus(id, name, activate, trigger) {
+        if (statusSubmitting || statusModal.open) return;
+        statusTrigger = trigger;
+        toggleForm.action = `${usersBaseUrl}/${id}/toggle-status`;
+        document.getElementById('status-confirmation-title').textContent = activate
+          ? 'Confirmer l’activation' : 'Confirmer la désactivation';
+        document.getElementById('status-confirmation-description').textContent =
+          `Voulez-vous ${activate ? 'activer' : 'désactiver'} « ${name} » ?`;
+        document.getElementById('status-confirmation-note').textContent = activate
+          ? 'Cet utilisateur pourra de nouveau se connecter.'
+          : 'Cet utilisateur ne pourra plus se connecter.';
+        statusAccept.textContent = activate ? 'Activer' : 'Désactiver';
+        statusAccept.style.backgroundColor = activate ? '#176637' : '#b91c1c';
+        statusAccept.style.borderColor = activate ? '#176637' : '#b91c1c';
+        statusModal.showModal();
+        statusModal.querySelector('[data-status-cancel]').focus();
+      }
+      statusModal.querySelectorAll('[data-status-cancel]').forEach(button => {
+        button.addEventListener('click', () => { if (!statusSubmitting) statusModal.close(); });
+      });
+      statusModal.addEventListener('cancel', event => {
+        if (statusSubmitting) event.preventDefault();
+        event.stopPropagation();
+      });
+      statusModal.addEventListener('keydown', event => event.stopPropagation());
+      statusModal.addEventListener('click', event => {
+        const box = statusModal.getBoundingClientRect();
+        if (!statusSubmitting && event.target === statusModal &&
+          (event.clientX < box.left || event.clientX > box.right || event.clientY < box.top || event.clientY > box.bottom)) statusModal.close();
+      });
+      statusModal.addEventListener('close', () => {
+        if (statusTrigger?.isConnected) statusTrigger.focus();
+      });
+      statusAccept.addEventListener('click', () => {
+        if (statusSubmitting) return;
+        statusSubmitting = true;
+        statusAccept.disabled = true;
+        statusAccept.textContent = 'Enregistrement…';
+        statusModal.setAttribute('aria-busy', 'true');
+        toggleForm.submit();
+      });
+      window.addEventListener('pageshow', () => {
+        statusSubmitting = false;
+        statusAccept.disabled = false;
+        statusModal.removeAttribute('aria-busy');
+        if (statusModal.open) statusModal.close();
+      });
 
       function openModal(modal) {
         modal.hidden = false;
       }
 
+      const editIaGroup = document.createElement('div');
+      editIaGroup.className = 'form-group';
+      editIaGroup.innerHTML = '<label for="edit-user-ia">IA <span class="required">*</span></label><select class="form-control" id="edit-user-ia" name="ia_structure_id"><option value="">Sélectionner une IA</option></select>';
+      editStructure.closest('.form-group').before(editIaGroup);
+      const editIa = editIaGroup.querySelector('select');
+      function fillEditIefs(selectedValue = '') {
+        const selectedIa = hierarchy.find(item => String(item.id) === editIa.value);
+        editStructure.replaceChildren(new Option('Sélectionner une IEF de rattachement', ''));
+        hierarchy.filter(item => item.type === 'IEF' && selectedIa && String(item.ia_id) === String(selectedIa.ia_id))
+          .forEach(item => editStructure.add(new Option(optionLabel(item), item.id)));
+        editStructure.value = String(selectedValue);
+      }
+      editIa.addEventListener('change', () => fillEditIefs());
+
       function configureEditOrganisation(selectedValue = '') {
         const selectedRole = editRole.options[editRole.selectedIndex];
         const isGestionnaireIa = selectedRole?.dataset.roleSlug === 'gestionnaire_ia';
+        const isTeacher = selectedRole?.dataset.roleSlug === 'enseignant';
+        editIaGroup.hidden = !isTeacher;
+        editIaGroup.style.display = isTeacher ? '' : 'none';
+        editIa.disabled = !isTeacher;
+        editIa.required = isTeacher;
+        if (isTeacher) {
+          editPerimeter.value = 'regional';
+          editStructureLabel.innerHTML = 'IEF de rattachement <span class="required">*</span>';
+          editIa.replaceChildren(new Option('Sélectionner une IA', ''));
+          hierarchy.filter(item => item.type === 'IA').forEach(item => editIa.add(new Option(optionLabel(item), item.id)));
+          const structure = hierarchy.find(item => String(item.id) === String(selectedValue));
+          editIa.value = String(hierarchy.find(item => item.type === 'IA' && String(item.ia_id) === String(structure?.ia_id))?.id || '');
+          fillEditIefs(selectedValue);
+          return;
+        }
         const expectedType = isGestionnaireIa ? 'IA' : null;
 
         editPerimeter.value = isGestionnaireIa ? 'regional' : 'national';
         editStructureLabel.innerHTML = isGestionnaireIa
-          ? 'Établissement (IA) <span class="required">*</span>'
-          : 'Établissement (Direction) <span class="required">*</span>';
+          ? 'IA <span class="required">*</span>'
+          : 'Direction de rattachement <span class="required">*</span>';
         editStructure.replaceChildren(new Option(
           isGestionnaireIa ? 'Sélectionner une IA' : 'Sélectionner une direction',
           ''
         ));
 
         editStructures
+          .filter(item => compatibleNationalStructure(item, selectedRole?.dataset.roleSlug))
           .filter(item => isGestionnaireIa
             ? String(item.type).toUpperCase() === expectedType
             : String(item.perimetre).toLowerCase() === 'national')
@@ -496,22 +635,15 @@
           const name = button.dataset.userName || 'cet utilisateur';
 
           if (action === 'delete') {
-            if (window.confirm(`Supprimer définitivement ${name} ?`)) {
-              deleteForm.action = `${usersBaseUrl}/${id}`;
-              deleteForm.submit();
-            }
+            deleteForm.action = `${usersBaseUrl}/${id}`;
+            deleteForm.dataset.deleteLabel = name;
+            deleteForm.requestSubmit();
             return;
           }
-
           if (action === 'toggle') {
-            const label = button.textContent.trim().toLowerCase();
-            if (window.confirm(`${label.charAt(0).toUpperCase() + label.slice(1)} ${name} ?`)) {
-              toggleForm.action = `${usersBaseUrl}/${id}/toggle-status`;
-              toggleForm.submit();
-            }
+            confirmStatus(id, name, button.dataset.currentStatus !== 'actif', button);
             return;
           }
-
           const user = JSON.parse(button.dataset.user);
 
           if (action === 'view') {
@@ -522,9 +654,8 @@
             document.getElementById('view-user-birth-date').textContent = user.date_naiss || '—';
             document.getElementById('view-user-birth-place').textContent = user.lieu_naissance || '—';
             document.getElementById('view-user-address').textContent = user.adresse || '—';
-            document.getElementById('view-user-function').textContent = user.fonction || '—';
             document.getElementById('view-user-role').textContent = user.role?.nom || '—';
-            document.getElementById('view-user-structure').textContent = [user.lieu_service?.code, user.lieu_service?.libelle].filter(Boolean).join(' — ') || 'Aucune structure';
+            document.getElementById('view-user-structure').textContent = user.lieu_service?.libelle || 'Aucune structure';
             document.getElementById('view-user-status').textContent = user.statut === 'actif' ? 'Actif' : 'Inactif';
             document.getElementById('view-user-created-at').textContent = user.created_at || '—';
             document.getElementById('view-user-updated-at').textContent = user.updated_at || '—';
@@ -537,6 +668,12 @@
             document.getElementById('edit-user-nom').value = user.nom || '';
             document.getElementById('edit-user-prenom').value = user.prenom || '';
             document.getElementById('edit-user-email').value = user.email || '';
+            ['telephone', 'lieu_naissance', 'adresse', 'genre'].forEach(field => {
+              document.getElementById(`edit-user-${field}`).value = user[field] || (field === 'genre' ? 'non_precise' : '');
+            });
+            const birthDate = user.date_naiss_iso || (user.date_naiss?.includes('/') ? user.date_naiss.split('/').reverse().join('-') : user.date_naiss?.slice(0, 10)) || '';
+            document.getElementById('edit-user-date_naiss').value = birthDate;
+
             editRole.value = user.role?.id || '';
             configureEditOrganisation(user.lieu_service?.id || '');
             document.getElementById('edit-user-status').value = user.statut || 'actif';
@@ -550,12 +687,8 @@
       });
 
       editStatusButton.addEventListener('click', function () {
-        const activate = editStatusButton.dataset.currentStatus !== 'actif';
-        const label = activate ? 'Activer' : 'Désactiver (suspendre)';
-        if (window.confirm(`${label} ${editStatusButton.dataset.userName} ?`)) {
-          toggleForm.action = `${usersBaseUrl}/${editStatusButton.dataset.userId}/toggle-status`;
-          toggleForm.submit();
-        }
+        confirmStatus(editStatusButton.dataset.userId, editStatusButton.dataset.userName,
+          editStatusButton.dataset.currentStatus !== 'actif', editStatusButton);
       });
 
       const failedEditUserId = @json(session('edit_user_id'));
@@ -571,10 +704,10 @@
 
         editButton?.click();
 
-        ['nom', 'prenom', 'email', 'role_id'].forEach(field => {
+        ['nom', 'prenom', 'email', 'role_id', 'telephone', 'date_naiss', 'lieu_naissance', 'adresse', 'genre'].forEach(field => {
           const value = failedEditValues?.[field];
-          if (value !== undefined && value !== null && value !== '') {
-            document.getElementById(`edit-user-${field === 'lieu_service_id' ? 'structure' : field}`).value = value;
+          if (value !== undefined && value !== null) {
+            document.getElementById(`edit-user-${field === 'role_id' ? 'role' : field}`).value = value;
           }
         });
         configureEditOrganisation(failedEditValues?.lieu_service_id || '');

@@ -11,6 +11,7 @@
 
             <form action="{{ route('admin.roles.update', $role['id']) }}" method="POST">
                 @csrf
+                <x-interface-preview :permissions="$permissions" />
                 @method('PUT')
 
                 <div class="filter-panel" aria-label="Informations du rôle" style="margin-bottom: 20px;">
