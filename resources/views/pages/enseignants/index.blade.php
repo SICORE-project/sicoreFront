@@ -14,9 +14,6 @@
       title="Dashboard Enseignant"
       subtitle="Paramétrage > Enseignants"
       icon="fa-solid fa-chalkboard-user"
-      search-id="teacherSearch"
-      search-placeholder="Rechercher un enseignant…"
-      filter-target="#teacherTable"
     />
 
     <section class="content-area">
@@ -35,9 +32,20 @@
       </div>
 
       <form class="filter-panel teacher-filters" method="GET" action="{{ route('enseignants.index') }}">
-        <div class="form-group"><label for="filter-teacher-search">Prénom ou nom</label><input class="form-control" id="filter-teacher-search" name="search" value="{{ request('search') }}" placeholder="Rechercher par prénom ou nom…" maxlength="100"></div>
+        <div class="form-group"><label for="filter-teacher-search">Prénom, nom ou matricule</label><input class="form-control" id="filter-teacher-search" name="search" value="{{ request('search') }}" placeholder="Rechercher par prénom, nom ou matricule…" maxlength="100"></div>
         <div class="form-group"><label for="filter-teacher-corps_id">Corps</label><select class="form-control" id="filter-teacher-corps_id" name="corps_id"><option value="">Tous les choix</option>@foreach ($corpsOptions ?? [] as $option)<option value="{{ data_get($option, 'id') }}" @selected((string) request('corps_id') === (string) data_get($option, 'id'))>{{ data_get($option, 'libelle', data_get($option, 'nom')) }}</option>@endforeach</select></div>
-        <div class="form-group"><label for="filter-teacher-diplome_id">Diplôme</label><select class="form-control" id="filter-teacher-diplome_id" name="diplome_id"><option value="">Tous les choix</option>@foreach ($diplomeOptions ?? [] as $option)<option value="{{ data_get($option, 'id') }}" @selected((string) request('diplome_id') === (string) data_get($option, 'id'))>{{ data_get($option, 'libelle', data_get($option, 'nom')) }}</option>@endforeach</select></div>
+        <div class="form-group">
+          <label for="filter-teacher-diplome_id">Diplôme</label>
+          <select class="form-control" id="filter-teacher-diplome_id" name="diplome_id">
+            <option value="">Tous les choix</option>
+            @foreach (collect($diplomeOptions ?? [])->groupBy(fn ($option) => mb_strtolower(preg_replace('/\s+/u', ' ', trim(data_get($option, 'libelle', data_get($option, 'nom', '')))))) as $options)
+              @php
+                $option = $options->first(fn ($item) => (string) data_get($item, 'id') === (string) request('diplome_id')) ?? $options->first();
+              @endphp
+              <option value="{{ data_get($option, 'id') }}" @selected((string) request('diplome_id') === (string) data_get($option, 'id'))>{{ data_get($option, 'libelle', data_get($option, 'nom')) }}</option>
+            @endforeach
+          </select>
+        </div>
         <div class="form-group"><label for="filter-teacher-ia_id">IA</label><select class="form-control" id="filter-teacher-ia_id" name="ia_id"><option value="">Tous les choix</option>@foreach ($academies ?? [] as $option)<option value="{{ data_get($option, 'id') }}" @selected((string) request('ia_id') === (string) data_get($option, 'id'))>{{ data_get($option, 'libelle', data_get($option, 'nom')) }}</option>@endforeach</select></div>
         <div class="form-group"><label for="filter-teacher-ief_id">IEF</label><select class="form-control" id="filter-teacher-ief_id" name="ief_id" @disabled(!request('ia_id'))><option value="">Tous les choix</option>@foreach ($filterIefs ?? [] as $option)<option value="{{ data_get($option, 'id') }}" @selected((string) request('ief_id') === (string) data_get($option, 'id'))>{{ data_get($option, 'libelle', data_get($option, 'nom')) }}</option>@endforeach</select></div>
       </form>
@@ -53,28 +61,33 @@
           <table class="table" id="teacherTable">
             <thead>
               <tr>
+                <th>Enseignant</th>
                 <th>Matricule</th>
-                <th>Nom</th>
-                <th>Prenom</th>
-                <th>IA</th>
                 <th>Corps</th>
+                <th>Affectation</th>
                 <th>Statut</th>
                 <th class="actions-cell">Actions</th>
               </tr>
             </thead>
             <tbody>
+              @php
+                $shortTerritory = static function ($label) {
+                    $label = trim((string) $label);
+                    $short = preg_replace("~^(?:Inspection\\s+d[’']académie|Inspection\\s+de\\s+l[’']éducation\\s+et\\s+de\\s+la\\s+formation|IA|IEF)\\b\\s*[:–-]?\\s*(?:(?:de|des|du)\\s+|d[’'])?~iu", '', $label);
+                    return trim($short) ?: '—';
+                };
+              @endphp
               @forelse ($items as $teacher)
               <tr>
-                <td>{{ data_get($teacher, 'matricule', '—') }}</td>
-                <td>{{ data_get($teacher, 'nom', '—') }}</td>
-                <td>{{ data_get($teacher, 'prenom', '—') }}</td>
-                <td>{{ data_get($teacher, 'ia.libelle', data_get($teacher, 'ia.nom', '—')) }}</td>
-                <td>{{ data_get($teacher, 'corps.libelle', '—') }}</td>
-                <td><span class="badge {{ data_get($teacher, 'est_actif') ? 'badge-active' : 'badge-suspended' }}">{{ data_get($teacher, 'statut', '—') }}</span></td>
+                <td><span class="teacher-list-name">{{ trim(data_get($teacher, 'prenom', '').' '.data_get($teacher, 'nom', '')) ?: '—' }} @if(data_get($teacher, 'is_online')) @include('components.online-indicator') @endif</span></td>
+                <td><span class="teacher-list-matricule">{{ data_get($teacher, 'matricule') ?: '—' }}</span></td>
+                <td>{{ data_get($teacher, 'corps.libelle') ?: '—' }}</td>
+                <td><div class="teacher-list-location"><strong><b class="teacher-list-etab-label">Étab :</b> {{ data_get($teacher, 'lieu_service.libelle') ?: 'Non renseigné' }}</strong><div class="teacher-list-territories"><span><b>IA :</b> {{ $shortTerritory(data_get($teacher, 'ia.libelle')) }},</span><span><b>IEF :</b> {{ $shortTerritory(data_get($teacher, 'ief.libelle')) }}</span></div></div></td>
+                <td><span class="badge {{ data_get($teacher, 'est_actif') ? 'badge-active' : 'badge-suspended' }}">{{ data_get($teacher, 'statut_libelle') ?: data_get($teacher, 'statut', '—') }}</span></td>
                 <td class="actions-cell"><button class="icon-action" type="button" title="Voir les détails" aria-label="Voir les détails de {{ data_get($teacher, 'prenom') }} {{ data_get($teacher, 'nom') }}" data-modal-open="teacher-view-modal" data-view-teacher='@json($teacher)'><i class="fa-solid fa-eye" aria-hidden="true"></i></button><button class="icon-action" type="button" title="Modifier" data-edit-teacher='@json($teacher)'><i class="fa-solid fa-pen" aria-hidden="true"></i></button><form method="POST" action="{{ route('enseignants.destroy', data_get($teacher, 'id')) }}" class="inline-form" onsubmit="return confirm('Voulez-vous supprimer cet enseignant ?');">@csrf @method('DELETE')<button class="icon-action icon-action-danger" type="submit" title="Supprimer"><i class="fa-solid fa-trash" aria-hidden="true"></i></button></form></td>
               </tr>
               @empty
-              <tr><td colspan="7" class="empty-message"><x-table-empty-state>Aucun enseignant trouvé.</x-table-empty-state></td></tr>
+              <tr><td colspan="6" class="empty-message"><x-table-empty-state>Aucun enseignant trouvé.</x-table-empty-state></td></tr>
               @endforelse
             </tbody>
           </table>
@@ -93,6 +106,12 @@
 <x-module-indemnite type="modal" id="teacher-create-modal" title="Ajouter un enseignant" :open="$errors->getBag('default')->any()">
   <form class="teacher-form" method="POST" action="{{ route('enseignants.store') }}" novalidate>
     @csrf
+    @if ($errors->any())
+      <div class="teacher-error-summary" role="alert" tabindex="-1">
+        <strong>Veuillez corriger les erreurs suivantes :</strong>
+        <ul>@foreach ($errors->messages() as $field => $messages)@foreach ($messages as $message)<li data-error-field="{{ $field }}"><b data-error-step>{{ $field === 'matricule' ? 'Étape 1 — Identité : ' : '' }}</b>{{ $message }}</li>@endforeach @endforeach</ul>
+      </div>
+    @endif
     <div class="wizard-progress" aria-label="Progression de la création">
       <button class="wizard-step active" type="button" data-create-step="1"><span class="wizard-step-number">1</span><i class="fa-solid fa-address-card wizard-step-icon" aria-hidden="true"></i><span>Identité</span></button>
       <button class="wizard-step" type="button" data-create-step="2"><span class="wizard-step-number">2</span><i class="fa-solid fa-briefcase wizard-step-icon" aria-hidden="true"></i><span>Carrière</span></button>
@@ -202,7 +221,7 @@
       <div class="form-group"><label for="teacher-type-virement">Type de virement</label><select class="form-control" id="teacher-type-virement" name="compte_bancaire[type_virement]"><option value="unitaire">Unitaire</option><option value="masse">Masse</option></select></div>
     </div>
     <input type="hidden" name="est_actif" value="1">
-    @if ($errors->any())<div class="alert alert-error" role="alert"><ul>@foreach ($errors->all() as $message)<li>{{ $message }}</li>@endforeach</ul></div>@endif
+
     <div class="form-actions">
       <button class="btn-secondary" type="button" data-modal-close>Annuler</button>
       <button class="btn-secondary" type="button" data-create-prev hidden>Précédent</button>
@@ -397,6 +416,20 @@
 
 @push('styles')
 <style>
+  .teacher-error-summary { color: #b91c1c; background: #fef2f2; border: 1px solid #fecaca; border-left: 4px solid #dc2626; border-radius: 8px; padding: 12px 16px; margin-bottom: 16px; font-size: 13px; }
+  .teacher-error-summary ul { margin: 8px 0 0; padding-left: 20px; }
+  .teacher-error-summary li { margin: 4px 0; }
+
+  #teacherTable .teacher-list-name { font-weight: 600; color: #263d34; }
+  #teacherTable .teacher-list-matricule { font-variant-numeric: tabular-nums; white-space: nowrap; font-size: 12px; }
+  #teacherTable .teacher-list-location { display: grid; gap: 4px; min-width: 180px; max-width: 320px; }
+  #teacherTable .teacher-list-location strong { font-size: 12px; font-weight: 500; }
+  #teacherTable .teacher-list-territories { display: flex; flex-wrap: wrap; gap: 5px; }
+  #teacherTable .teacher-list-territories span { color: #77808b; font-size: 11px; }
+  #teacherTable .teacher-list-etab-label { color: #166534; font-weight: 700; }
+  #teacherTable .teacher-list-territories b { color: #166534; font-weight: 600; }
+  #teacherTable td { vertical-align: middle; }
+
   [data-teacher-indice-field][hidden], [data-view-indice][hidden] { display: none !important; }
   .teacher-form .is-invalid, input[name="date_naissance"].is-invalid { border-color: #dc2626; background-color: #fff5f5; box-shadow: 0 0 0 2px #dc26261a; }
   .teacher-identity-error, .teacher-birth-error { color: #b91c1c; font-size: .875rem; line-height: 1.4; }
@@ -515,6 +548,21 @@ document.addEventListener('DOMContentLoaded', function () {
     if (!fonctionnaire) { indice.value = ''; indice.setCustomValidity(''); }
   }
 
+  function formatTeacherMatricule(prefix, event) {
+    var corps = document.getElementById(prefix + 'corps');
+    var field = document.getElementById(prefix + 'matricule');
+    if (!corps || !corps.value || !field || (event && event.isComposing)) { return; }
+    var length = isFonctionnaireCorps(corps) ? 6 : 9;
+    var match = field.value.match(new RegExp('^([0-9]{' + length + '})([a-zA-Z]?)$'));
+    if (!match || (event && String(event.inputType).startsWith('delete') && !match[2])) { return; }
+    var cursor = field.selectionStart;
+    field.value = match[1] + '/' + match[2];
+    if (cursor !== null && cursor !== undefined) {
+      var position = cursor >= length ? cursor + 1 : cursor;
+      field.setSelectionRange(position, position);
+    }
+  }
+
   function validateTeacherIdentity(prefix, showRequired) {
     var corps = document.getElementById(prefix + 'corps');
     if (!corps || !document.getElementById(prefix + 'matricule')) { return; }
@@ -546,7 +594,10 @@ document.addEventListener('DOMContentLoaded', function () {
   ['teacher-', 'edit-teacher-'].forEach(function (prefix) {
     ['corps', 'matricule', 'indice'].forEach(function (name) {
       var field = document.getElementById(prefix + name);
-      field.addEventListener('input', function () { validateTeacherIdentity(prefix, false); });
+      field.addEventListener('input', function (event) {
+        if (name === 'matricule') { formatTeacherMatricule(prefix, event); }
+        validateTeacherIdentity(prefix, false);
+      });
       field.addEventListener('change', function () {
         if (name === 'corps') { updateTeacherIdentity(prefix, true); }
         validateTeacherIdentity(prefix, true);
@@ -1199,7 +1250,21 @@ document.addEventListener('DOMContentLoaded', function () {
       updateCreateCategorieVisibility();
       applyDiplomeSalary(this, createCorps, createCategorie, document.getElementById('teacher-salaire'));
     });
-    showCreateStep(1);
+    var firstErrorStep = null;
+    var errorStepNames = ['Identité', 'Carrière', 'Situation familiale', 'Coordonnées & banque'];
+    createForm.querySelectorAll('[data-error-field]').forEach(function (item) {
+      var field = Array.from(createForm.elements).find(function (input) { return input.name === item.dataset.errorField; });
+      var index = field ? createGroups.findIndex(function (group) { return group.includes(field.id); }) : -1;
+      if (index >= 0) {
+        item.querySelector('[data-error-step]').textContent = 'Étape ' + (index + 1) + ' — ' + errorStepNames[index] + ' : ';
+        if (firstErrorStep === null) { firstErrorStep = index + 1; }
+        field.classList.add('is-invalid');
+        field.setAttribute('aria-invalid', 'true');
+      }
+    });
+    showCreateStep(firstErrorStep || 1);
+    var errorSummary = createForm.querySelector('.teacher-error-summary');
+    if (errorSummary) { requestAnimationFrame(function () { errorSummary.focus(); }); }
     applyDiplomeSalary(document.getElementById('teacher-diplome'), createCorps, createCategorie, document.getElementById('teacher-salaire'));
   }
 

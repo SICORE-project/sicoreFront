@@ -38,56 +38,37 @@ class UserService
     /**
      * Récupérer la liste des utilisateurs depuis le backend.
      */
-    public function getUsers(int $page = 1, int $perPage = 10, ?string $structureType = null): array
+    public function getUsers(int $page = 1, int $perPage = 10, ?string $structureType = null, array $filters = []): array
+    {
+        $pagination = ['current_page' => $page, 'last_page' => 1, 'total' => 0, 'per_page' => $perPage];
+        try {
+            $response = $this->apiClient->get('admin/users', array_merge($filters, [
+                'page' => $page, 'per_page' => $perPage, 'type_structure' => $structureType,
+            ]));
+        } catch (ConnectionException) {
+            return ['items' => [], 'pagination' => $pagination, 'error' => 'Le service backend est inaccessible.'];
+        }
+        if (! $response->successful()) {
+            return ['items' => [], 'pagination' => $pagination, 'error' => $response->json('message', 'Impossible de charger les utilisateurs.')];
+        }
+        return [
+            'items' => $response->json('data', []),
+            'pagination' => array_merge($pagination, $response->json('meta', [])),
+            'error' => null,
+        ];
+    }
+
+    public function userFilterOptions(array $filters = []): array
     {
         try {
-            $response = $this->apiClient->get('admin/users/all');
+            $response = $this->apiClient->get('admin/users/filter-options', $filters);
         } catch (ConnectionException) {
-            return [
-                'items' => [],
-                'error' => 'Le service backend est inaccessible. Vérifiez qu’il est démarré sur le port configuré.',
-                'pagination' => [
-                    'current_page' => $page,
-                    'last_page' => 1,
-                    'total' => 0,
-                    'per_page' => $perPage,
-                ],
-            ];
+            return ['data' => [], 'error' => 'Impossible de charger les listes IA, IEF et établissements.', 'status' => 503];
         }
-
-        if (! $response->successful()) {
-            return [
-                'items' => [],
-                'error' => $response->json('message', "Impossible de charger les utilisateurs (HTTP {$response->status()})."),
-                'pagination' => [
-                    'current_page' => $page,
-                    'last_page' => 1,
-                    'total' => 0,
-                    'per_page' => $perPage,
-                ],
-            ];
-        }
-
-        $data = $response->json();
-        $allItems = data_get($data, 'data.data', data_get($data, 'data', data_get($data, 'users', [])));
-        $allItems = is_array($allItems) ? array_values($allItems) : [];
-        if ($structureType) {
-            $allItems = array_values(array_filter($allItems, fn (array $user): bool => $this->organisationType($user) === $structureType));
-        }
-        $total = count($allItems);
-        $lastPage = max(1, (int) ceil($total / $perPage));
-        $page = min($page, $lastPage);
-        $items = array_slice($allItems, ($page - 1) * $perPage, $perPage);
-
         return [
-            'items' => is_array($items) ? $items : [],
-            'error' => null,
-            'pagination' => [
-                'current_page' => $page,
-                'last_page' => $lastPage,
-                'total' => $total,
-                'per_page' => $perPage,
-            ],
+            'data' => $response->json('data', []),
+            'error' => $response->successful() ? null : $response->json('message', 'Chargement des filtres impossible.'),
+            'status' => $response->status(),
         ];
     }
 

@@ -17,7 +17,7 @@
     :title="$page['title']"
     :subtitle="$page['breadcrumb']"
     :icon="$pageIcon"
-    search-id="moduleSearch"
+    :search-id="$slug === 'utilisateurs' ? null : 'moduleSearch'"
     search-placeholder="Rechercher…"
     filter-target="#moduleTable"
   />
@@ -59,6 +59,7 @@
     @endif
 
     {{-- Cartes statistiques : données API en Paie, configuration sinon. --}}
+    @if (! empty($page['stats']))
     <div class="stats-grid four">
       @foreach ($page['stats'] as $stat)
         <article class="stat-card">
@@ -73,6 +74,7 @@
         </article>
       @endforeach
     </div>
+    @endif
 
     {{-- Boutons globaux : export ou commandes métier. --}}
     <div class="actions-row">
@@ -306,6 +308,8 @@
         </section>
         @endif
       @endif
+    @elseif ($slug === 'utilisateurs')
+      @include('pages.administration.utilisateurs.filters')
     @else
       <section class="filter-panel" aria-label="Filtres de la page">
         @foreach ($page['filters'] as $index => $filter)
@@ -364,7 +368,7 @@
     {{-- Tableau générique construit avec columns et rows. --}}
     <section class="table-card">
       <div class="table-responsive">
-        <table class="table" id="moduleTable" data-paginated-table>
+        <table class="table" id="moduleTable" @if($slug !== 'utilisateurs') data-paginated-table @endif>
           <thead>
             <tr>
               @foreach ($page['columns'] as $column)
@@ -436,6 +440,9 @@
         public/assets/js/app.js affiche uniquement les lignes de la page
         courante et recalcule les pages après une recherche IA/IEF/matricule.
       --}}
+      @if ($slug === 'utilisateurs')
+        @include('pages.administration.utilisateurs.pagination')
+      @else
       <nav
         class="pagination"
         data-table-pagination
@@ -466,6 +473,7 @@
           </select>
         </div>
       </nav>
+      @endif
     </section>
     @endif
   </section>

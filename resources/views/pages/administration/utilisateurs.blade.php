@@ -3,7 +3,7 @@
 @section('title', 'SICORE - Utilisateurs')
 @section('content')
   
-  <x-module-page slug="utilisateurs" />
+  <x-module-page slug="utilisateurs" :error="$listError ?? null" />
 
   <x-module-indemnite
     type="modal"
@@ -123,21 +123,44 @@
   </x-module-indemnite>
 
   <x-module-indemnite type="modal" id="view-user-modal" title="Détails de l’utilisateur">
-    <dl class="user-details">
-      <div><dt>Nom complet</dt><dd id="view-user-name">—</dd></div>
-      <div><dt>Adresse e-mail</dt><dd id="view-user-email">—</dd></div>
-      <div><dt>Téléphone</dt><dd id="view-user-phone">—</dd></div>
-      <div><dt>Genre</dt><dd id="view-user-gender">—</dd></div>
-      <div><dt>Date de naissance</dt><dd id="view-user-birth-date">—</dd></div>
-      <div><dt>Lieu de naissance</dt><dd id="view-user-birth-place">—</dd></div>
-      <div><dt>Adresse</dt><dd id="view-user-address">—</dd></div>
-      <div><dt>Fonction</dt><dd id="view-user-function">—</dd></div>
-      <div><dt>Rôle</dt><dd id="view-user-role">—</dd></div>
-      <div><dt>Structure</dt><dd id="view-user-structure">—</dd></div>
-      <div><dt>Statut</dt><dd id="view-user-status">—</dd></div>
-      <div><dt>Créé le</dt><dd id="view-user-created-at">—</dd></div>
-      <div><dt>Modifié le</dt><dd id="view-user-updated-at">—</dd></div>
-    </dl>
+    <div class="user-detail-cards">
+      <section class="user-detail-card"><dl>
+        <div><dt>Nom complet</dt><dd id="view-user-name">—</dd></div>
+        <div><dt>Matricule</dt><dd id="view-user-matricule">—</dd></div>
+      </dl></section>
+      <section class="user-detail-card"><dl>
+        <div><dt>Adresse e-mail</dt><dd id="view-user-email">—</dd></div>
+        <div><dt>Téléphone</dt><dd id="view-user-phone">—</dd></div>
+      </dl></section>
+      <section class="user-detail-card"><dl>
+        <div><dt>Date de naissance</dt><dd id="view-user-birth-date">—</dd></div>
+        <div><dt>Lieu de naissance</dt><dd id="view-user-birth-place">—</dd></div>
+      </dl></section>
+      <section class="user-detail-card"><dl>
+        <div><dt>Genre</dt><dd id="view-user-gender">—</dd></div>
+        <div><dt>Adresse</dt><dd id="view-user-address">—</dd></div>
+      </dl></section>
+      <section class="user-detail-card"><dl>
+        <div><dt>Fonction</dt><dd id="view-user-function">—</dd></div>
+        <div><dt>Établissement</dt><dd id="view-user-etablissement">—</dd></div>
+      </dl></section>
+      <section class="user-detail-card"><dl>
+        <div><dt>IA</dt><dd id="view-user-ia">—</dd></div>
+        <div><dt>IEF</dt><dd id="view-user-ief">—</dd></div>
+      </dl></section>
+      <section class="user-detail-card"><dl>
+        <div><dt>Rôle</dt><dd id="view-user-role">—</dd></div>
+        <div><dt>Statut</dt><dd id="view-user-status">—</dd></div>
+      </dl></section>
+      <section class="user-detail-card"><dl>
+        <div><dt>Identifiant du compte</dt><dd id="view-user-id">—</dd></div>
+        <div><dt>Structure</dt><dd id="view-user-structure">—</dd></div>
+      </dl></section>
+      <section class="user-detail-card"><dl>
+        <div><dt>Créé le</dt><dd id="view-user-created-at">—</dd></div>
+        <div><dt>Dernière connexion (heure de Dakar)</dt><dd id="view-user-last-login">Non enregistrée</dd></div>
+      </dl></section>
+    </div>
     <div class="form-actions"><button class="btn-secondary" type="button" data-modal-close>Fermer</button></div>
   </x-module-indemnite>
 
@@ -208,13 +231,23 @@
     #create-user-modal .organisation-section small { color:var(--text-muted); }
     #create-user-modal .form-group[hidden] { display:none !important; }
     #create-user-modal .form-group[data-organisation-visibility="hidden"] { display:none !important; }
-    .users-filter-panel { grid-template-columns: repeat(3, minmax(0, 1fr)) auto; align-items:end; }
+    .users-filter-panel { grid-template-columns: repeat(3, minmax(0, 1fr)); align-items:end; }
     .users-filter-panel .actions-group { min-width:120px; }
     .users-filter-panel .actions-group .btn-secondary { width:100%; }
-    .user-details { display:grid; gap:12px; margin:16px 0 24px; }
-    .user-details div { padding:10px 12px; background:#f8fafc; border-radius:8px; }
-    .user-details dt { color:var(--text-muted); font-size:.8rem; font-weight:700; }
-    .user-details dd { margin:4px 0 0; }
+    .user-icon-actions { gap: 8px; flex-wrap: nowrap; }
+    .user-icon-actions .table-action { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; min-width: 34px; padding: 0; border-radius: 8px; }
+    .user-icon-actions .table-action:focus-visible { outline: 2px solid #15803d; outline-offset: 2px; }
+    .user-detail-cards { display: grid; gap: 8px; margin: 12px 0 16px; }
+    .user-detail-card { padding: 10px 14px; border: 1px solid #e5ebe8; border-radius: 12px; background: #fff; box-shadow: 0 2px 6px #163b2a04; }
+    .user-detail-card dl { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 20px; margin: 0; }
+    .user-detail-card dl > div { min-width: 0; }
+    .user-detail-card dl > div + div { border-left: 1px solid #edf1f0; padding-left: 20px; }
+    .user-detail-card dt { font-size: 10px; color: #81908c; line-height: 1.5; }
+    .user-detail-card dd { font-size: 12px; font-weight: 500; color: #263d34; margin: 4px 0 0; line-height: 1.5; overflow-wrap: anywhere; }
+    @media (max-width: 380px) {
+      .user-detail-card dl { grid-template-columns: 1fr; }
+      .user-detail-card dl > div + div { border-left: 0; padding-left: 0; }
+    }
     @media (max-width:1200px) {
       .users-filter-panel { grid-template-columns:repeat(2, minmax(0, 1fr)); }
       .users-filter-panel .actions-group { min-width:0; }
@@ -226,6 +259,7 @@
 @endpush
 
 @push('scripts')
+  <script src="{{ asset('assets/js/user-filters.js') }}" defer></script>
   <script>
     document.addEventListener('DOMContentLoaded', function () {
       const form = document.getElementById('createUserForm');
@@ -515,8 +549,13 @@
           const user = JSON.parse(button.dataset.user);
 
           if (action === 'view') {
+            document.getElementById('view-user-id').textContent = user.id || '—';
             document.getElementById('view-user-name').textContent = user.nom_complet || `${user.prenom || ''} ${user.nom || ''}`.trim() || '—';
             document.getElementById('view-user-email').textContent = user.email || '—';
+            document.getElementById('view-user-matricule').textContent = user.matricule || '—';
+            document.getElementById('view-user-ia').textContent = user.affectation?.ia || '—';
+            document.getElementById('view-user-ief').textContent = user.affectation?.ief || '—';
+            document.getElementById('view-user-etablissement').textContent = user.affectation?.etablissement || '—';
             document.getElementById('view-user-phone').textContent = user.telephone || '—';
             document.getElementById('view-user-gender').textContent = user.genre || '—';
             document.getElementById('view-user-birth-date').textContent = user.date_naiss || '—';
@@ -525,9 +564,11 @@
             document.getElementById('view-user-function').textContent = user.fonction || '—';
             document.getElementById('view-user-role').textContent = user.role?.nom || '—';
             document.getElementById('view-user-structure').textContent = [user.lieu_service?.code, user.lieu_service?.libelle].filter(Boolean).join(' — ') || 'Aucune structure';
-            document.getElementById('view-user-status').textContent = user.statut === 'actif' ? 'Actif' : 'Inactif';
+            document.getElementById('view-user-status').textContent = user.statut !== 'actif'
+                ? 'Suspendu'
+                : (user.enseignant_id && !user.password_defined ? 'En attente de vérification' : 'Actif');
             document.getElementById('view-user-created-at').textContent = user.created_at || '—';
-            document.getElementById('view-user-updated-at').textContent = user.updated_at || '—';
+            document.getElementById('view-user-last-login').textContent = user.derniere_connexion || 'Non enregistrée';
             openModal(viewModal);
             return;
           }

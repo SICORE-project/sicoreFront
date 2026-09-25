@@ -3652,3 +3652,9 @@ body.sidebar-collapsed .logout-btn {
 .password-field .form-control {
   padding-right: 48px;
 }
+
+.user-online-indicator{display:inline-block;width:8px;height:8px;margin-left:7px;border-radius:50%;background:#16a34a;box-shadow:0 0 0 3px #16a34a20;vertical-align:middle;animation:user-online-pulse 2s ease-in-out infinite}
+@keyframes user-online-pulse{50%{box-shadow:0 0 0 5px #16a34a10}}
+@media(prefers-reduced-motion:reduce){.user-online-indicator{animation:none}}
+
+.user-presence-prefix .user-online-indicator { margin-left: 0; margin-right: 10px; }

@@ -1,0 +1,60 @@
+.teacher-dashboard { display: grid; gap: 22px; color: #24354a; }
+.teacher-hero { display: flex; justify-content: space-between; gap: 24px; align-items: center; padding: 10px 0 8px; }
+.teacher-eyebrow { display: block; color: #14866d; font-size: 10px; font-weight: 700; letter-spacing: 1.5px; }
+.teacher-hero h1 { font-size: clamp(22px, 2.2vw, 29px); margin: 10px 0; letter-spacing: -.7px; font-weight: 700; }
+.teacher-hero p { margin: 0; font-size: 13px; color: #7a8797; }
+.teacher-hero-meta { display: grid; gap: 10px; text-align: right; font-size: 12px; flex-shrink: 0; }
+.teacher-hero-meta > span { color: #14866d; }
+.teacher-hero-meta small { color: #8793a3; font-size: 11px; }
+.teacher-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+.teacher-kpi { display: flex; align-items: center; gap: 14px; padding: 18px; border: 1px solid #e6ebf1; border-radius: 14px; background: #fff; box-shadow: 0 3px 14px #24354a03; min-width: 0; }
+.teacher-kpi-icon { display: grid; place-items: center; width: 42px; height: 42px; flex-shrink: 0; color: #5272b7; background: #edf2fc; border-radius: 12px; font-size: 17px; }
+.teacher-kpi:nth-child(2) .teacher-kpi-icon { color: #14866d; background: #eaf7f1; }
+.teacher-kpi:nth-child(3) .teacher-kpi-icon { color: #ba872e; background: #fcf5e6; }
+.teacher-kpi:nth-child(4) .teacher-kpi-icon { color: #8770b4; background: #f2eef9; }
+.teacher-kpi p { margin: 0 0 7px; font-size: 11px; color: #7a8797; line-height: 1.5; }
+.teacher-kpi strong { font-size: clamp(19px, 1.7vw, 25px); letter-spacing: -.5px; overflow-wrap: anywhere; }
+.teacher-kpi strong small { font-size: 10px; letter-spacing: 0; color: #7a8797; font-weight: 500; }
+.teacher-charts, .teacher-details-grid { display: grid; grid-template-columns: minmax(0, 1.9fr) minmax(260px, 1fr); gap: 22px; }
+.teacher-panel { padding: 23px; background: #fff; border: 1px solid #e6ebf1; border-radius: 16px; min-width: 0; box-shadow: 0 3px 14px #24354a03; }
+.teacher-panel-header { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; margin-bottom: 22px; }
+.teacher-panel-header h2 { font-size: 15px; margin: 7px 0 6px; color: #24354a; font-weight: 650; }
+.teacher-panel-header p { margin: 0; font-size: 11px; color: #8793a3; line-height: 1.6; }
+.teacher-range { display: flex; padding: 3px; border-radius: 8px; background: #f4f6f9; flex-shrink: 0; }
+.teacher-range button { border: 0; background: transparent; padding: 7px 9px; border-radius: 6px; color: #7a8797; font-size: 10px; cursor: pointer; }
+.teacher-range button[aria-pressed="true"] { background: #fff; color: #14866d; box-shadow: 0 1px 4px #24354a14; font-weight: 600; }
+.teacher-range button:focus-visible { outline: 2px solid #14866d; outline-offset: 2px; }
+.teacher-net-chart svg { display: block; width: 100%; height: auto; min-height: 200px; }
+.teacher-net-chart circle:focus { outline: none; stroke: #24354a; stroke-width: 3; }
+.teacher-chart-caption { font-size: 11px; color: #8793a3; margin: 8px 0 0; min-height: 18px; }
+.teacher-chart-data { margin-top: 14px; color: #7a8797; font-size: 11px; }
+.teacher-chart-data summary { cursor: pointer; }
+.teacher-donut { position: relative; width: 194px; margin: 0 auto 15px; }
+.teacher-donut svg { display: block; width: 100%; }
+.teacher-donut > div { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 5px; }
+.teacher-donut strong { font-size: 32px; letter-spacing: -1px; }
+.teacher-donut strong small { font-size: 17px; margin-left: 2px; }
+.teacher-donut span { font-size: 11px; color: #8793a3; }
+.teacher-chart-legend { list-style: none; padding: 0; margin: 0; display: grid; gap: 12px; }
+.teacher-chart-legend li { display: flex; justify-content: space-between; font-size: 12px; }
+.teacher-chart-legend li > span { display: flex; align-items: center; gap: 9px; color: #7a8797; }
+.teacher-chart-legend i { width: 8px; height: 8px; border-radius: 50%; }
+.teacher-chart-empty { min-height: 225px; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; color: #8793a3; gap: 12px; padding: 12px; }
+.teacher-chart-empty i { font-size: 27px; color: #b6c4cf; }
+.teacher-chart-empty strong { font-size: 13px; color: #64748b; }
+.teacher-chart-empty p { font-size: 12px; line-height: 1.7; margin: 0; max-width: 300px; }
+.teacher-panel-symbol { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 10px; background: #f4f6f9; color: #7a8797; }
+.teacher-profile dl { margin: 0; display: grid; gap: 16px; }
+.teacher-profile dl > div { border-bottom: 1px solid #f0f3f6; padding-bottom: 13px; }
+.teacher-profile dl > div:last-child { border-bottom: none; padding-bottom: 0; }
+.teacher-profile dt { color: #8793a3; font-size: 11px; margin-bottom: 6px; }
+.teacher-profile dd { margin: 0; font-size: 12px; font-weight: 500; overflow-wrap: anywhere; }
+.teacher-dashboard .dashboard-table { font-size: 12px; }
+.teacher-dashboard .dashboard-table th { font-size: 10px; white-space: nowrap; }
+.teacher-dashboard .dashboard-table td, .teacher-dashboard .dashboard-table th { padding: 13px 10px; }
+.teacher-payment-badge { display: inline-block; border-radius: 6px; padding: 5px 8px; font-size: 10px; white-space: nowrap; }
+.teacher-payment-badge.is-paid { background: #eaf7f1; color: #14866d; }
+.teacher-payment-badge.is-pending { background: #fcf5e6; color: #a87a29; }
+.teacher-payment-badge.is-rejected { background: #fceef0; color: #bb5261; }
+@media (max-width: 1150px) { .teacher-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } .teacher-charts, .teacher-details-grid { grid-template-columns: minmax(0, 1fr); } .teacher-chart-legend { max-width: 340px; margin: auto; } }
+@media (max-width: 600px) { .teacher-hero { flex-direction: column; align-items: flex-start; gap: 14px; } .teacher-hero-meta { text-align: left; } .teacher-kpi { padding: 13px; gap: 10px; } .teacher-kpi-icon { width: 32px; height: 32px; font-size: 14px; } .teacher-panel { padding: 17px; } .teacher-panel-header { flex-wrap: wrap; } .teacher-kpi strong { font-size: 19px; } .teacher-net-chart svg { min-height: 160px; } }

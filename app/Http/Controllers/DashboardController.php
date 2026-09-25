@@ -3,69 +3,52 @@
 namespace App\Http\Controllers;
 
 use App\Services\Api\ApiClient;
-use App\Services\Organisation\OrganisationContext;
 use Illuminate\Http\Client\ConnectionException;
-use Illuminate\Support\Str;
-use Illuminate\View\View;
+use Illuminate\Support\Facades\Route;
 
 class DashboardController extends Controller
 {
-    public function __construct(
-        protected ApiClient $api,
-        protected OrganisationContext $organisation,
-    ) {}
+    public function __construct(protected ApiClient $api) {}
 
-    public function index(): View
+    public function index()
     {
-        $metrics = [];
-        $role = session('sicore_user.role_slug') ?: session('sicore_user.role', '');
-        $roleSlug = Str::slug(is_string($role) ? $role : '', '_');
-        $isGlobalAdmin = in_array($roleSlug, ['admin', 'super_admin', 'administrateur', 'super_administrateur'], true);
-
-        if ($isGlobalAdmin) {
-            $metrics = $this->globalAdministrationMetrics();
-        } else {
-            try {
-                $response = $this->api->get('pages.dashboard.index');
-                if ($response->successful()) $metrics = $response->json('data', []);
-            } catch (ConnectionException) {
-                // Le tableau reste disponible avec des valeurs neutres.
-            }
-        }
-
-        return view('pages.dashboard.index', [
-            'metrics' => is_array($metrics) ? $metrics : [],
-            'scopeLabel' => $this->organisation->label(),
-            'isScoped' => $this->organisation->isScoped(),
-            'isGlobalAdmin' => $isGlobalAdmin,
-        ]);
-    }
-
-    private function globalAdministrationMetrics(): array
-    {
+        $dashboard = null;
+        $error = null;
         try {
-            $users = $this->collection($this->api->get('admin/users/all')->json());
-            $roles = $this->collection($this->api->get('admin/roles/all')->json());
-            $permissions = $this->collection($this->api->get('admin/permissions/all')->json());
-
-            return [
-                'utilisateurs' => count($users),
-                'utilisateurs_actifs' => collect($users)->filter(
-                    fn (array $user): bool => data_get($user, 'statut') === 'actif'
-                        || filter_var(data_get($user, 'statut'), FILTER_VALIDATE_BOOLEAN)
-                )->count(),
-                'roles' => count($roles),
-                'permissions' => count($permissions),
-            ];
+            $response = $this->api->get('dashboard');
+            if ($response->unauthorized()) {
+                session()->forget(['access_token', 'sicore_user']);
+                return redirect()->route('login')->with('warning', 'Votre session a expiré. Veuillez vous reconnecter.');
+            }
+            if ($response->successful()) {
+                $dashboard = $response->json('data');
+            } else {
+                $error = $response->forbidden()
+                    ? 'Votre compte ne dispose pas d’un profil actif. Contactez votre administrateur.'
+                    : 'Les indicateurs sont momentanément indisponibles. Réessayez dans quelques instants.';
+            }
         } catch (ConnectionException) {
-            return [];
+            $error = 'Le service est momentanément inaccessible. Aucun indicateur n’a pu être chargé.';
         }
-    }
 
-    private function collection(array $response): array
-    {
-        $items = data_get($response, 'data.data', data_get($response, 'data', []));
+        // Only shortcuts authorized by the API are exposed on this dashboard.
+        $actions = collect($dashboard['actions'] ?? [])->filter(fn ($action) => Route::has($action['route']))->values()->all();
+        if ($dashboard) $dashboard['actions'] = $actions;
+        $allowedRoutes = array_merge(['dashboard'], array_column($actions, 'route'));
+        $filter = function (array $items) use (&$filter, $allowedRoutes): array {
+            $visible = [];
+            foreach ($items as $item) {
+                if (isset($item['links'])) {
+                    $item['links'] = $filter($item['links']);
+                    if ($item['links'] !== []) $visible[] = $item;
+                } elseif (in_array($item['route'] ?? '', $allowedRoutes, true)) {
+                    $visible[] = $item;
+                }
+            }
+            return $visible;
+        };
+        config()->set('navigation', $filter(config('navigation', [])));
 
-        return is_array($items) ? array_values($items) : [];
+        return view('pages.dashboard.index', compact('dashboard', 'error'));
     }
 }

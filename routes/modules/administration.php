@@ -28,6 +28,13 @@ Route::middleware('sicore.auth')
         Route::get('/utilisateurs', [UserController::class, 'index'])
             ->name('utilisateurs.index');
 
+        Route::get('/utilisateurs/compte-enseignant', [\App\Http\Controllers\Admin\TeacherAccountController::class, 'create'])->name('utilisateurs.teacher.create');
+        Route::get('/utilisateurs/enseignants-sans-compte', [\App\Http\Controllers\Admin\TeacherAccountController::class, 'teachers'])->name('utilisateurs.teacher.candidates');
+        Route::post('/utilisateurs/compte-enseignant', [\App\Http\Controllers\Admin\TeacherAccountController::class, 'store'])->name('utilisateurs.teacher.store');
+        Route::post('/utilisateurs/{id}/invitation-enseignant', [\App\Http\Controllers\Admin\TeacherAccountController::class, 'resend'])->whereNumber('id')->name('utilisateurs.teacher.resend');
+
+        Route::get('/utilisateurs/filtres', [UserController::class, 'filterOptions'])->name('utilisateurs.filter-options');
+
         Route::get('/utilisateurs/nouveau', [UserController::class, 'create'])
             ->name('utilisateurs.create');
 

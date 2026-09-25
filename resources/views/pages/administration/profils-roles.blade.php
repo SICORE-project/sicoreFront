@@ -1,103 +1,16 @@
 @extends('layouts.app')
 
-@section('title', 'SICORE - Profils / Rôles')
+@section('title', 'SICORE - Liste des rôles')
 
 @section('content')
     <main class="main-content" style="margin-left: 280px; padding: 1.5rem;">
-        <x-topbar title="Profils / Rôles" subtitle="Gestion Utilisateur > Profils / Rôles" icon="fa-solid fa-users-cog" />
+        <x-topbar title="Liste des rôles" icon="fa-solid fa-users-cog">
+            <button type="button" class="btn-primary" data-role-modal="create">
+                <i class="fa-solid fa-plus" aria-hidden="true"></i> Ajouter un rôle
+            </button>
+        </x-topbar>
 
         <section class="content-area">
-            <!-- Objectifs métier -->
-            <section class="objective-card">
-                <h2>Objectifs métier</h2>
-                <ul class="objective-list">
-                    <li>Décrire les responsabilités fonctionnelles.</li>
-                    <li>Associer les rôles aux modules SICORE.</li>
-                    <li>Limiter les accès aux besoins réels des services.</li>
-                </ul>
-            </section>
-
-            <!-- Statistiques -->
-            <div class="stats-grid four">
-                <article class="stat-card">
-                    <div>
-                        <p class="stat-label">Profils</p>
-                        <p class="stat-value">{{ isset($roles['data']) ? count($roles['data']) : 0 }}</p>
-                        <p class="stat-note">Rôles actifs</p>
-                    </div>
-                    <span class="stat-icon blue">
-                        <i class="fa-solid fa-users-cog"></i>
-                    </span>
-                </article>
-                <article class="stat-card">
-                    <div>
-                        <p class="stat-label">Types distincts</p>
-                        <p class="stat-value">{{ isset($roles['data']) ? collect($roles['data'])->pluck('type_role.id')->filter()->unique()->count() : 0 }}</p>
-                        <p class="stat-note">Classification des rôles</p>
-                    </div>
-                    <span class="stat-icon green">
-                        <i class="fa-solid fa-th-large"></i>
-                    </span>
-                </article>
-                <article class="stat-card">
-                    <div>
-                        <p class="stat-label">En revue</p>
-                        <p class="stat-value">{{ isset($roles['data']) ? collect($roles['data'])->where('est_actif', false)->count() : 0 }}</p>
-                        <p class="stat-note">Validation interne</p>
-                    </div>
-                    <span class="stat-icon yellow">
-                        <i class="fa-solid fa-clock"></i>
-                    </span>
-                </article>
-                <article class="stat-card">
-                    <div>
-                        <p class="stat-label">Sensibles</p>
-                        <p class="stat-value">{{ isset($roles['data']) ? collect($roles['data'])->where('type_role.code', 'systeme')->count() : 0 }}</p>
-                        <p class="stat-note">Accès renforcés</p>
-                    </div>
-                    <span class="stat-icon red">
-                        <i class="fa-solid fa-shield-halved"></i>
-                    </span>
-                </article>
-            </div>
-
-            <!-- Actions -->
-            <div class="actions-row">
-                <p class="breadcrumb">Gestion Utilisateur > Profils / Rôles</p>
-                <div class="actions-group">
-                    <a href="{{ route('admin.type-roles.index') }}" class="btn-secondary">Types de rôle</a>
-                    <button type="button" class="btn-primary" data-role-modal="create">
-                        <i class="fas fa-plus"></i> Nouveau profil
-                    </button>
-                    <button class="btn-secondary" type="button">Exporter</button>
-                </div>
-            </div>
-
-            <!-- Filtres -->
-            <section class="filter-panel" aria-label="Filtres">
-                <div class="form-group">
-                    <label for="filter-type-role">Type de rôle</label>
-                    <select class="form-control" id="filter-type-role">
-                        <option value="">Tous</option>
-                        @foreach (collect($roles['data'] ?? [])->pluck('type_role')->filter()->unique('id') as $typeRole)
-                            <option value="{{ $typeRole['id'] }}">{{ $typeRole['libelle'] }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="filter-statut">Statut</label>
-                    <select class="form-control" id="filter-statut">
-                        <option value="">Tous</option>
-                        <option value="1">Actif</option>
-                        <option value="0">Inactif</option>
-                    </select>
-                </div>
-                <div class="actions-group">
-                    <button class="btn-secondary" type="button" id="btn-filtrer">Filtrer</button>
-                    <button class="btn-secondary" type="button" id="btn-reset-filtres">Réinitialiser</button>
-                </div>
-            </section>
-
             <!-- Tableau -->
             <section class="table-card">
                 <div class="table-responsive">
@@ -129,13 +42,13 @@
                                     </td>
                                     <td class="actions-cell">
                                         <div class="table-actions-inline">
-                                            <button type="button" class="table-action" data-role-modal="edit" data-role='@json($role)'>Modifier</button>
+                                            <button type="button" class="table-action" data-role-modal="edit" data-role='@json($role)' title="Modifier le rôle" aria-label="Modifier le rôle"><i class="fa-solid fa-pen-to-square" aria-hidden="true"></i></button>
                                             <form action="{{ route('admin.roles.destroy', $role['id']) }}" method="POST"
                                                 style="display: inline;">
                                                 @csrf
                                                 @method('DELETE')
-                                                <button type="submit" class="table-action delete"
-                                                    onclick="return confirm('Supprimer ce rôle ?')">Supprimer</button>
+                                                <button type="submit" class="table-action danger" title="Supprimer le rôle" aria-label="Supprimer le rôle"
+                                                    onclick="return confirm('Supprimer ce rôle ?')"><i class="fa-solid fa-trash-can" aria-hidden="true"></i></button>
                                             </form>
                                         </div>
                                     </td>
@@ -152,7 +65,6 @@
                         </tbody>
                     </table>
                 </div>
-                <p class="empty-message" id="empty-message-filtre" style="display: none;">Aucun résultat pour ce filtre.</p>
                 <p class="empty-message">Aucune donnée trouvée.</p>
                 <div class="pagination" aria-label="Pagination">
                     @if (!empty($roles['links']))
@@ -234,42 +146,6 @@
     @push('scripts')
     <script>
         (function () {
-            const btnFiltrer = document.getElementById('btn-filtrer');
-            const btnReset = document.getElementById('btn-reset-filtres');
-            const selectTypeRole = document.getElementById('filter-type-role');
-            const selectStatut = document.getElementById('filter-statut');
-            const rows = document.querySelectorAll('#moduleTable tbody tr[data-type-role]');
-            const emptyMessage = document.getElementById('empty-message-filtre');
-
-            function applyFilters() {
-                const typeRole = selectTypeRole.value;
-                const statut = selectStatut.value;
-                let visibleCount = 0;
-
-                rows.forEach(function (row) {
-                    const matchTypeRole = !typeRole || row.dataset.typeRole === typeRole;
-                    const matchStatut = !statut || row.dataset.statut === statut;
-                    const visible = matchTypeRole && matchStatut;
-
-                    row.style.display = visible ? '' : 'none';
-                    if (visible) visibleCount++;
-                });
-
-                emptyMessage.style.display = visibleCount === 0 ? 'block' : 'none';
-            }
-
-            if (btnFiltrer) {
-                btnFiltrer.addEventListener('click', applyFilters);
-            }
-
-            if (btnReset) {
-                btnReset.addEventListener('click', function () {
-                    selectTypeRole.value = '';
-                    selectStatut.value = '';
-                    applyFilters();
-                });
-            }
-
             const modal = document.getElementById('role-modal');
             const roleForm = document.getElementById('role-form');
             const methodField = document.getElementById('role-form-method');
