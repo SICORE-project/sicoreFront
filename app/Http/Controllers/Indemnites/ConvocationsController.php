@@ -426,7 +426,7 @@ class ConvocationsController extends Controller
             'date_emission' => ['required', 'date'],
             'objet' => ['required', 'string', 'max:255'],
             'session' => ['nullable', 'string', 'max:150'],
-            'date_debut' => ['required', 'date'],
+            'date_debut' => ['required', 'date', 'after_or_equal:date_emission'],
             'date_fin' => ['required', 'date', 'after_or_equal:date_debut'],
             'heure_debut' => ['required', 'date_format:H:i'],
             'lieu_affectation' => ['nullable', 'string', 'max:255'],
@@ -472,6 +472,8 @@ class ConvocationsController extends Controller
             'beneficiaires.*.metier_index' => ['nullable', 'integer'],
         ], [
             'beneficiaires.*.enseignant_id.distinct' => "Un bénéficiaire ne peut pas être convoqué plus d'une fois sur la même convocation.",
+            'date_debut.after_or_equal' => "La période de l'examen ne peut pas commencer avant la date d'émission.",
+            'date_fin.after_or_equal' => "La fin de la période ne peut pas être antérieure à son début.",
         ]);
 
         $data['utilisateur_id'] = session('sicore_user.id');
@@ -886,7 +888,7 @@ class ConvocationsController extends Controller
             'date_emission' => ['sometimes', 'date'],
             'objet' => ['sometimes', 'string', 'max:255'],
             'session' => ['nullable', 'string', 'max:150'],
-            'date_debut' => ['sometimes', 'date'],
+            'date_debut' => ['sometimes', 'date', $request->has('date_emission') ? 'after_or_equal:date_emission' : 'nullable'],
             'date_fin' => ['sometimes', 'date', 'after_or_equal:date_debut'],
             'heure_debut' => ['sometimes', 'date_format:H:i'],
             'lieu_affectation' => ['nullable', 'string', 'max:255'],
@@ -921,6 +923,8 @@ class ConvocationsController extends Controller
             'beneficiaires.*.metier_index' => ['nullable', 'integer'],
         ], [
             'beneficiaires.*.enseignant_id.distinct' => "Un bénéficiaire ne peut pas être convoqué plus d'une fois sur la même convocation.",
+            'date_debut.after_or_equal' => "La période de l'examen ne peut pas commencer avant la date d'émission.",
+            'date_fin.after_or_equal' => "La fin de la période ne peut pas être antérieure à son début.",
         ]);
 
         $data['ordre_de_mission'] = $request->boolean('ordre_de_mission');
