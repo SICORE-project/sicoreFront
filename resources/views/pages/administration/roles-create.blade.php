@@ -57,6 +57,8 @@
                 Permissions
             </h3>
 
+            <x-permission-filter />
+
             @foreach ($permissions as $module => $perms)
 
                 <div class="objective-card" style="margin-bottom: 16px;">

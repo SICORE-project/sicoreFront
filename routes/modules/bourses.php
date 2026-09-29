@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 */
 
-Route::middleware('sicore.auth')
+Route::middleware(['sicore.auth', 'sicore.module:indemnites.read'])
     ->prefix('bourses')
     ->name('bourses.')
     ->group(function (): void {

@@ -15,7 +15,7 @@ use App\Http\Controllers\DashboardController;
 
 
 
-Route::middleware('sicore.auth')
+Route::middleware(['sicore.auth', 'sicore.module:administration.users.read,administration.roles.read,administration.permissions.read'])
     ->group(function (): void {
 
         Route::get('/administration/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');

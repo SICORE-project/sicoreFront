@@ -27,7 +27,7 @@ class SpecialiteController extends Controller
             return redirect()->route('login')->with('warning', $result['error']);
         }
 
-        $canManage = in_array($request->session()->get('sicore_user.role_slug'), ['admin', 'super_admin'], true);
+        $canManage = \App\Support\SicoreAccess::can($request, 'parametrage.specialites.manage');
 
         return view('pages.parametres.specialites', $result + [
             'filters' => $filters,

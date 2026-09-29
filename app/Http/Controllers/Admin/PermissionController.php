@@ -57,6 +57,10 @@ class PermissionController extends Controller
         $response = Http::withToken(session('access_token'))
             ->post(config('services.backend.url') . '/admin/permissions', [
                 'nom' => $request->nom,
+                'slug' => $request->filled('slug') ? $request->slug : null,
+                'groupe' => $request->filled('groupe') ? $request->groupe : null,
+                'module' => $request->filled('module') ? $request->module : null,
+                'action' => $request->filled('action') ? $request->action : null,
                 'description' => $request->description,
                 'est_actif' => $request->boolean('est_actif'),
             ]);
@@ -102,6 +106,9 @@ class PermissionController extends Controller
         $response = Http::withToken(session('access_token'))
             ->put(config('services.backend.url') . '/admin/permissions/' . $id, [
                 'nom' => $request->nom,
+                'groupe' => $request->filled('groupe') ? $request->groupe : null,
+                'module' => $request->filled('module') ? $request->module : null,
+                'action' => $request->filled('action') ? $request->action : null,
                 'description' => $request->description,
                 'est_actif' => $request->boolean('est_actif'),
             ]);

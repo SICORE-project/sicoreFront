@@ -23,7 +23,30 @@
                         {{ $permission['nom'] ?? '-' }}
                     </p>
                 </div>
-               
+                <div>
+                    <label style="font-weight: 600; color: #374151; font-size: 14px;">Slug (identifiant technique)</label>
+                    <p style="padding: 8px 12px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px; margin-top: 4px;">
+                        <code>{{ $permission['slug'] ?? '-' }}</code>
+                    </p>
+                </div>
+                <div>
+                    <label style="font-weight: 600; color: #374151; font-size: 14px;">Groupe</label>
+                    <p style="padding: 8px 12px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px; margin-top: 4px;">
+                        {{ $permission['groupe'] ?? '-' }}
+                    </p>
+                </div>
+                <div>
+                    <label style="font-weight: 600; color: #374151; font-size: 14px;">Module</label>
+                    <p style="padding: 8px 12px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px; margin-top: 4px;">
+                        {{ $permission['module'] ?? '-' }}
+                    </p>
+                </div>
+                <div>
+                    <label style="font-weight: 600; color: #374151; font-size: 14px;">Action</label>
+                    <p style="padding: 8px 12px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px; margin-top: 4px;">
+                        {{ $permission['action'] ?? '-' }}
+                    </p>
+                </div>
             </div>
 
             <div style="margin-bottom: 24px;">

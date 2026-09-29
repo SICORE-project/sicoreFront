@@ -50,6 +50,8 @@
 
                 <h3 style="font-weight: 700; font-size: 1.125rem; margin-bottom: 16px;">Permissions</h3>
 
+                <x-permission-filter />
+
                 @foreach ($permissions as $module => $perms)
                     <div class="objective-card" style="margin-bottom: 16px;">
                         <h4 style="font-weight: 700; color: #2563eb; margin-bottom: 8px;">{{ ucfirst($module) }}</h4>

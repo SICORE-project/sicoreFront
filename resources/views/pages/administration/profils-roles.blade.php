@@ -494,12 +494,27 @@
                     </div>
 
 
+                    <!-- Filtre des permissions -->
+                    <div class="permissions-filter" style="display:flex; flex-wrap:wrap; align-items:center; gap:12px; margin:12px 0;">
+                        <input
+                            type="search"
+                            id="permission-search"
+                            class="form-control"
+                            placeholder="Rechercher une permission, un groupe…"
+                            autocomplete="off"
+                            style="flex:1 1 240px;"
+                        >
+                        <label style="display:flex; align-items:center; gap:6px; font-size:14px; cursor:pointer; white-space:nowrap;">
+                            <input type="checkbox" id="permission-checked-only"> Cochées seulement
+                        </label>
+                    </div>
+
                     <!-- Liste plate des permissions -->
                     <div class="permissions-list">
 
                         @forelse($permissionsList as $permission)
 
-                            <label class="permission-item">
+                            <label class="permission-item" data-search="{{ ($permission['nom'] ?? '').' '.($permission['slug'] ?? '').' '.($permission['groupe'] ?? '').' '.($permission['description'] ?? '') }}">
 
                                 <input
                                     type="checkbox"
@@ -546,6 +561,10 @@
                         @endforelse
 
                     </div>
+
+                    <p id="permission-no-result" hidden style="margin:12px 0; color:#6b7280; font-size:14px;">
+                        Aucune permission ne correspond à la recherche.
+                    </p>
 
 
                     @if($errors->has('permissions'))
@@ -1114,23 +1133,81 @@
             }
         }
 
+        const permissionSearch      = document.getElementById('permission-search');
+        const permissionCheckedOnly = document.getElementById('permission-checked-only');
+        const permissionNoResult    = document.getElementById('permission-no-result');
+
+        function normalizePermissionText(text) {
+            return (text || '').toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '');
+        }
+
+        function filterPermissions() {
+            const terms = normalizePermissionText(permissionSearch ? permissionSearch.value : '')
+                .split(/\s+/).filter(Boolean);
+            const onlyChecked = Boolean(permissionCheckedOnly && permissionCheckedOnly.checked);
+            let visibleCount = 0;
+
+            document.querySelectorAll('.permission-item').forEach(function (item) {
+                const text = normalizePermissionText(item.dataset.search || item.textContent);
+                const checkbox = item.querySelector('.permission-checkbox');
+                const match = terms.every(function (term) { return text.includes(term); })
+                    && (!onlyChecked || (checkbox && checkbox.checked));
+
+                item.style.display = match ? '' : 'none';
+                if (match) { visibleCount++; }
+            });
+
+            if (permissionNoResult) {
+                permissionNoResult.hidden = visibleCount > 0 || permissionCheckboxes.length === 0;
+            }
+        }
+
+        function resetPermissionFilter() {
+            if (permissionSearch) { permissionSearch.value = ''; }
+            if (permissionCheckedOnly) { permissionCheckedOnly.checked = false; }
+            filterPermissions();
+        }
+
+        // « Tout sélectionner / désélectionner » n'agit que sur les permissions affichées.
+        function visiblePermissionCheckboxes() {
+            return Array.from(permissionCheckboxes).filter(function (cb) {
+                const item = cb.closest('.permission-item');
+                return !item || item.style.display !== 'none';
+            });
+        }
+
         if (selectAllPermissions) {
             selectAllPermissions.addEventListener('click', function () {
-                permissionCheckboxes.forEach(function (cb) { cb.checked = true; });
+                visiblePermissionCheckboxes().forEach(function (cb) { cb.checked = true; });
                 updatePermissionCount();
             });
         }
 
         if (deselectAllPermissions) {
             deselectAllPermissions.addEventListener('click', function () {
-                permissionCheckboxes.forEach(function (cb) { cb.checked = false; });
+                visiblePermissionCheckboxes().forEach(function (cb) { cb.checked = false; });
                 updatePermissionCount();
+                filterPermissions();
             });
         }
 
         permissionCheckboxes.forEach(function (cb) {
-            cb.addEventListener('change', updatePermissionCount);
+            cb.addEventListener('change', function () {
+                updatePermissionCount();
+                if (permissionCheckedOnly && permissionCheckedOnly.checked) { filterPermissions(); }
+            });
         });
+
+        if (permissionSearch) {
+            permissionSearch.addEventListener('input', filterPermissions);
+            // Entrée dans la recherche ne doit pas envoyer le formulaire.
+            permissionSearch.addEventListener('keydown', function (event) {
+                if (event.key === 'Enter') { event.preventDefault(); }
+            });
+        }
+        if (permissionCheckedOnly) {
+            permissionCheckedOnly.addEventListener('change', filterPermissions);
+        }
 
 
         /*
@@ -1164,6 +1241,7 @@
             });
 
             updatePermissionCount();
+            resetPermissionFilter();
 
             modal.hidden = false;
             modal.setAttribute('aria-hidden', 'false');
@@ -1185,6 +1263,7 @@
 
             permissionCheckboxes.forEach(function (cb) { cb.checked = false; });
             updatePermissionCount();
+            resetPermissionFilter();
 
             methodField.value = 'POST';
             roleForm.action   = storeUrl;

@@ -6,6 +6,7 @@ use Illuminate\Foundation\Configuration\Middleware;
 use App\Http\Middleware\EnsureSicoreAuthenticated;
 use App\Http\Middleware\EnsureDiplomeManagementAuthorized;
 use App\Http\Middleware\EnsureSicorePermission;
+use App\Http\Middleware\EnsureSicoreModuleAccess;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -18,6 +19,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'sicore.auth' => EnsureSicoreAuthenticated::class,
             'diplomes.manage' => EnsureDiplomeManagementAuthorized::class,
             'sicore.permission' => EnsureSicorePermission::class,
+            'sicore.module' => EnsureSicoreModuleAccess::class,
+            'sicore.indemnites' => \App\Http\Middleware\EnsureIndemnitesSection::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

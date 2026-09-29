@@ -71,9 +71,9 @@ public function index(Request $request)
         | Permissions (liste plate)
         |--------------------------------------------------------------------------
         */
-        $permissions = $response->successful()
-            ? collect($response->json('data', []))
-            : collect([]);
+        $permissions = $this->groupPermissions(
+            $response->successful() ? $response->json('data', []) : []
+        );
 
         return view(
             'pages.administration.roles-create',
@@ -192,9 +192,9 @@ public function index(Request $request)
             config('services.backend.url') . '/admin/permissions/all'
         );
 
-        $permissions = $responsePerms->successful()
-            ? collect($responsePerms->json()['data'] ?? [])
-            : collect([]);
+        $permissions = $this->groupPermissions(
+            $responsePerms->successful() ? ($responsePerms->json()['data'] ?? []) : []
+        );
 
         /*
         |--------------------------------------------------------------------------
@@ -344,9 +344,9 @@ public function index(Request $request)
                 config('services.backend.url') . '/admin/permissions/all'
             );
 
-        $permissions = $responsePerms->successful()
-            ? collect($responsePerms->json()['data'] ?? [])
-            : collect([]);
+        $permissions = $this->groupPermissions(
+            $responsePerms->successful() ? ($responsePerms->json()['data'] ?? []) : []
+        );
 
         /*
         |--------------------------------------------------------------------------
@@ -401,5 +401,18 @@ public function index(Request $request)
             'error',
             'Erreur lors de la synchronisation'
         );
+    }
+
+    /**
+     * Regroupe les permissions par groupe (administration, parametrage, paie...) :
+     * c'est le format attendu par les vues de création/modification de rôle.
+     */
+    private function groupPermissions(iterable $permissions): array
+    {
+        return collect($permissions)
+            ->groupBy(fn (array $permission) => $permission['groupe'] ?: 'autres')
+            ->sortKeys()
+            ->map(fn ($group) => $group->sortBy('nom')->values()->all())
+            ->all();
     }
 }

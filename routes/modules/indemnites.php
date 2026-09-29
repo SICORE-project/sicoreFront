@@ -15,7 +15,7 @@ use App\Http\Controllers\Indemnites\PiecesJustificativesController;
 |--------------------------------------------------------------------------
 */
 
-Route::middleware('sicore.auth')
+Route::middleware(['sicore.auth', 'sicore.module:indemnites.read,pieces.read,convocations.read', 'sicore.indemnites'])
     ->prefix('indemnites')
     ->name('indemnites.')
     ->group(function (): void {

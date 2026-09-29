@@ -27,7 +27,7 @@ class PeriodePaieController extends Controller
 
         return view('pages.parametres.periodes-paie', $result + [
             'filters' => $filters,
-            'canManage' => in_array($request->session()->get('sicore_user.role_slug'), ['admin', 'super_admin'], true),
+            'canManage' => \App\Support\SicoreAccess::can($request, 'parametrage.periodes_paie.manage'),
         ]);
     }
 

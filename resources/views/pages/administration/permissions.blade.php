@@ -141,6 +141,10 @@
                             data-statut="{{ ($permission['est_actif'] ?? false) ? '1' : '0' }}"
                             data-id="{{ $permission['id'] ?? '' }}"
                             data-description="{{ $permission['description'] ?? '' }}"
+                            data-slug="{{ $permission['slug'] ?? '' }}"
+                            data-groupe="{{ $permission['groupe'] ?? '' }}"
+                            data-module="{{ $permission['module'] ?? '' }}"
+                            data-action="{{ $permission['action'] ?? '' }}"
                         >
                             <td><strong>{{ $permission['nom'] ?? '-' }}</strong></td>
 
@@ -244,6 +248,42 @@
                         maxlength="100"
                     >
                 </div>
+
+                <datalist id="permission-groupes">
+                    @foreach (collect($permissionsData)->pluck('groupe')->filter()->unique()->sort() as $g)
+                        <option value="{{ $g }}">
+                    @endforeach
+                </datalist>
+                <datalist id="permission-actions">
+                    @foreach (['read','create','update','delete','manage','validate','export','search'] as $a)
+                        <option value="{{ $a }}">
+                    @endforeach
+                </datalist>
+
+                <div class="form-group" style="margin-bottom: 20px;">
+                    <label for="permission-groupe">Groupe</label>
+                    <input type="text" id="permission-groupe" name="groupe" class="form-control" maxlength="100" placeholder="ex. indemnites" autocomplete="off" list="permission-groupes">
+                </div>
+
+                <div class="form-group" style="margin-bottom: 20px;">
+                    <label for="permission-module">Module</label>
+                    <input type="text" id="permission-module" name="module" class="form-control" maxlength="100" placeholder="ex. rapports" autocomplete="off">
+                </div>
+
+                <div class="form-group" style="margin-bottom: 20px;">
+                    <label for="permission-action">Action</label>
+                    <input type="text" id="permission-action" name="action" class="form-control" maxlength="100" placeholder="ex. export" autocomplete="off" list="permission-actions">
+                </div>
+
+                <div class="form-group" style="margin-bottom: 20px;">
+                    <label for="permission-slug">Slug (généré, modifiable)</label>
+                    <input type="text" id="permission-slug" name="slug" class="form-control" maxlength="100" placeholder="groupe.module.action" autocomplete="off">
+                </div>
+
+                <p style="font-size:13px; color:#6b7280; margin: 0 0 20px;">
+                    Le slug (<code>groupe.module.action</code>) est construit automatiquement. Une permission n'a d'effet que si une route
+                    la réclame dans le code avec ce même slug.
+                </p>
 
                 <div class="form-group" style="margin-bottom: 20px;">
                     <label for="permission-description">Description</label>
@@ -349,6 +389,26 @@
                         required
                         maxlength="100"
                     >
+                </div>
+
+                <div class="form-group" style="margin-bottom: 20px;">
+                    <label for="permission-edit-slug">Slug (non modifiable)</label>
+                    <input type="text" id="permission-edit-slug" name="slug_affiche" class="form-control" maxlength="100" placeholder="" autocomplete="off" readonly>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 20px;">
+                    <label for="permission-edit-groupe">Groupe</label>
+                    <input type="text" id="permission-edit-groupe" name="groupe" class="form-control" maxlength="100" placeholder="ex. indemnites" autocomplete="off" list="permission-groupes">
+                </div>
+
+                <div class="form-group" style="margin-bottom: 20px;">
+                    <label for="permission-edit-module">Module</label>
+                    <input type="text" id="permission-edit-module" name="module" class="form-control" maxlength="100" placeholder="ex. rapports" autocomplete="off">
+                </div>
+
+                <div class="form-group" style="margin-bottom: 20px;">
+                    <label for="permission-edit-action">Action</label>
+                    <input type="text" id="permission-edit-action" name="action" class="form-control" maxlength="100" placeholder="ex. export" autocomplete="off" list="permission-actions">
                 </div>
 
                 <div class="form-group" style="margin-bottom: 20px;">
@@ -665,11 +725,33 @@
              * ================================
              */
 
+            // Création : le slug se construit avec groupe.module.action tant qu'il n'a pas été saisi à la main.
+            (function () {
+                const g = document.getElementById('permission-groupe');
+                const m = document.getElementById('permission-module');
+                const a = document.getElementById('permission-action');
+                const slug = document.getElementById('permission-slug');
+                if (!g || !m || !a || !slug) { return; }
+                let manual = false;
+                const clean = (v) => v.trim().toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '').replace(/[^a-z0-9_]+/g, '_').replace(/^_+|_+$/g, '');
+                const rebuild = () => {
+                    if (manual) { return; }
+                    const parts = [clean(g.value), clean(m.value), clean(a.value)];
+                    slug.value = parts.every(Boolean) ? parts.join('.') : '';
+                };
+                [g, m, a].forEach((el) => el.addEventListener('input', rebuild));
+                slug.addEventListener('input', () => { manual = slug.value !== ''; });
+            })();
+
             const permissionEditModal = document.getElementById('permission-edit-modal');
             const permissionEditForm = document.getElementById('permission-edit-form');
             const editNomInput = document.getElementById('permission-edit-nom');
             const editDescriptionInput = document.getElementById('permission-edit-description');
             const editActifInput = document.getElementById('permission-edit-est-actif');
+            const editSlugInput = document.getElementById('permission-edit-slug');
+            const editGroupeInput = document.getElementById('permission-edit-groupe');
+            const editModuleInput = document.getElementById('permission-edit-module');
+            const editActionInput = document.getElementById('permission-edit-action');
 
             // Template d'URL avec un id factice (0) qu'on remplace dynamiquement.
             const editUrlTemplate = "{{ route('admin.permissions.update', ['id' => '__ID__']) }}";
@@ -684,6 +766,10 @@
                 editNomInput.value = nom;
                 editDescriptionInput.value = description;
                 editActifInput.checked = isActif;
+                editSlugInput.value = row.dataset.slug || '';
+                editGroupeInput.value = row.dataset.groupe || '';
+                editModuleInput.value = row.dataset.module || '';
+                editActionInput.value = row.dataset.action || '';
 
                 permissionEditModal.hidden = false;
                 permissionEditModal.setAttribute('aria-hidden', 'false');
