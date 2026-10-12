@@ -14,8 +14,16 @@ class UserController extends Controller
 
     public function index(Request $request)
     {
-        $page = max(1, (int) $request->query('page', 1));
-        $perPage = 10;
+        $filters = $request->validate([
+            'nom' => ['nullable', 'string', 'max:100'], 'matricule' => ['nullable', 'string', 'max:30'],
+            'ia_id' => ['nullable', 'integer', 'min:1', 'required_with:ief_id,etablissement_id'],
+            'ief_id' => ['nullable', 'integer', 'min:1', 'required_with:etablissement_id'],
+            'etablissement_id' => ['nullable', 'integer', 'min:1'],
+            'page' => ['nullable', 'integer', 'min:1'],
+            'per_page' => ['nullable', 'integer', 'in:10,20,50'],
+        ]);
+        $page = (int) ($filters['page'] ?? 1);
+        $perPage = (int) ($filters['per_page'] ?? 10);
 
         $filters = $request->validate([
             'role_id' => ['nullable', 'integer', 'min:1'],
@@ -37,37 +45,30 @@ class UserController extends Controller
             $role = data_get($user, 'role.nom', data_get($user, 'role', '—'));
             $status = data_get($user, 'statut', data_get($user, 'status', false));
             $isActive = $status === 'actif' || filter_var($status, FILTER_VALIDATE_BOOLEAN);
+            $awaitingVerification = ! empty($user['enseignant_id']) && empty($user['password_defined']);
 
             if (is_array($role) && array_key_exists('nom', $role)) {
                 $role = $role['nom'];
             }
 
             return [
-                $fullName !== '' ? $fullName : (string) data_get($user, 'email', '—'),
-                data_get($user, 'email', '—'),
-                is_string($role) ? $role : '—',
-                '<button type="button" class="badge user-status-toggle ' . ($isActive ? 'badge-active' : 'badge-suspended')
-                    . '" data-user-action="toggle" data-user-id="' . (int) $user['id']
-                    . '" data-user-name="' . e($fullName !== '' ? $fullName : (string) ($user['email'] ?? ''))
-                    . '" data-current-status="' . ($isActive ? 'actif' : 'inactif')
-                    . '" title="' . ($isActive ? 'Désactiver' : 'Activer') . ' cet utilisateur'
-                    . '" aria-label="' . e(($isActive ? 'Désactiver ' : 'Activer ') . $fullName) . '">'
-                    . ($isActive ? 'Actif' : 'Suspendu') . '</button>',
+                (!empty($user['is_online']) ? '<span class="user-presence-prefix">'.view('components.online-indicator')->render().'</span>' : '')
+                    . e($fullName !== '' ? $fullName : (string) data_get($user, 'email', '—')),
+                e(data_get($user, 'matricule') ?: '—'),
+                e(is_string($role) ? $role : '—'),
+                $isActive
+                    ? ($awaitingVerification
+                        ? '<span class="badge badge-suspended">En attente de vérification</span>'
+                        : '<span class="badge badge-active">Actif</span>')
+                    : '<span class="badge badge-suspended">Suspendu</span>',
                 $this->actions($user, $isActive),
             ];
         }, $users);
 
-        $filterRoles = $this->userService->getRoles();
-        config()->set('module-pages.utilisateurs.filter_roles', collect($filterRoles)
-            ->whereNotIn('slug', [
-                'gestionnaire_ief',
-                'gestionnaire_budget',
-                'consultant',
-                'drh',
-                'decpc',
-            ])
-            ->values()
-            ->all());
+        $options = $this->userService->userFilterOptions($request->only(['ia_id', 'ief_id']));
+        $listError = $response['error'] ?? $options['error'] ?? null;
+        config()->set('module-pages.utilisateurs.filter_options', $options['data']);
+        config()->set('module-pages.utilisateurs.columns', ['Nom complet', 'Matricule', 'Profil', 'Statut', 'Actions']);
         config()->set('module-pages.utilisateurs.rows', $rows);
         config()->set('module-pages.utilisateurs.pagination', $pagination);
         config()->set('module-pages.utilisateurs.actions', [
@@ -89,7 +90,17 @@ class UserController extends Controller
         $organisation = $this->userService->getOrganisationOptions();
         $structures = array_merge($organisation['national'] ?? [], $organisation['regional'] ?? []);
 
-        return view('pages.administration.utilisateurs', compact('roles', 'organisation', 'structures'));
+        return view('pages.administration.utilisateurs', compact('roles', 'organisation', 'structures', 'listError'));
+    }
+
+    public function filterOptions(Request $request)
+    {
+        $filters = $request->validate([
+            'ia_id' => ['nullable', 'integer', 'min:1', 'required_with:ief_id'],
+            'ief_id' => ['nullable', 'integer', 'min:1'],
+        ]);
+        $result = $this->userService->userFilterOptions($filters);
+        return response()->json(['data' => $result['data'], 'message' => $result['error']], $result['status']);
     }
 
     public function create()
@@ -240,10 +251,14 @@ class UserController extends Controller
         $json = e(json_encode($user, JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT | JSON_HEX_TAG));
         $name = e((string) data_get($user, 'nom_complet', $user['email'] ?? ''));
 
-        return '<div class="table-actions-inline">'
-            . '<button class="table-action" type="button" data-user-action="view" data-user="' . $json . '">Voir</button>'
-            . '<button class="table-action" type="button" data-user-action="edit" data-user="' . $json . '">Modifier</button>'
-            . '<button class="table-action delete" type="button" data-user-action="delete" data-user-id="' . (int) $user['id'] . '" data-user-name="' . $name . '">Supprimer</button>'
+        $invitation = ! empty($user['enseignant_id']) && $isActive && empty($user['password_defined'])
+            ? view('pages.administration.utilisateurs.teacher-invitation-action', ['id' => $user['id']])->render() : '';
+
+        return '<div class="table-actions-inline user-icon-actions">'
+            . '<button class="table-action" type="button" title="Voir" aria-label="Voir" data-user-action="view" data-user="' . $json . '"><i class="fa-solid fa-eye" aria-hidden="true"></i></button>'
+            . '<button class="table-action" type="button" title="Modifier" aria-label="Modifier" data-user-action="edit" data-user="' . $json . '"><i class="fa-solid fa-pen-to-square" aria-hidden="true"></i></button>'
+            . '<button class="table-action delete" type="button" title="Supprimer" aria-label="Supprimer" data-user-action="delete" data-user-id="' . (int) $user['id'] . '" data-user-name="' . $name . '"><i class="fa-solid fa-trash-can" aria-hidden="true"></i></button>'
+            . $invitation
             . '</div>';
     }
 }

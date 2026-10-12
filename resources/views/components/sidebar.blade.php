@@ -148,20 +148,24 @@
   </div>
 </aside>
 
-<x-module-indemnite type="modal" id="logout-confirm-modal" title="Confirmer la déconnexion">
+<x-module-indemnite type="modal" id="logout-confirm-modal" title="Se déconnecter ?" icon="fa-right-from-bracket">
   @push('styles')
     <style>
-      #logout-confirm-modal .modal-header h2 { color: #b91c1c; }
-      .logout-confirm-message { display: flex; align-items: center; gap: 12px; color: #7f1d1d; }
-      .logout-confirm-message i { color: #dc2626; font-size: 1.4rem; }
-      #logout-confirm-modal .btn-danger-soft { color: #ffffff; background: #dc2626; }
-      #logout-confirm-modal .btn-danger-soft:hover { background: #b91c1c; }
+      #logout-confirm-modal .modal-dialog { width: min(420px, calc(100vw - 32px)) !important; max-width: 420px !important; padding: 24px; border-radius: 16px; }
+      #logout-confirm-modal .modal-header { margin-bottom: 16px; }
+      #logout-confirm-modal .modal-header h2 { color: #0f172a; font-size: 18px; gap: 10px; }
+      #logout-confirm-modal .modal-header h2 > i { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 10px; background: #f1f5f9; color: #475569; font-size: 16px; }
+      #logout-confirm-modal .modal-close { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 8px; color: #64748b; }
+      #logout-confirm-modal .modal-close:hover { background: #f1f5f9; }
+      #logout-confirm-modal .logout-confirm-message { margin: 0; color: #64748b; font-size: 14px; line-height: 1.6; }
+      #logout-confirm-modal .form-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px; margin-top: 24px; padding-top: 16px; border-top: 1px solid #e2e8f0; }
+      #logout-confirm-modal .form-actions button { display: inline-flex; align-items: center; justify-content: center; min-height: 40px; padding: 10px 16px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
+      #logout-confirm-modal .btn-danger-soft { border: 1px solid #dc2626; color: #ffffff; background: #dc2626; }
+      #logout-confirm-modal .btn-danger-soft:hover { border-color: #b91c1c; background: #b91c1c; }
+      #logout-confirm-modal button:focus-visible { outline: 2px solid #475569; outline-offset: 3px; }
     </style>
   @endpush
-  <div class="logout-confirm-message" role="alert">
-    <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
-    <p>Voulez-vous vraiment vous déconnecter de votre compte&nbsp;?</p>
-  </div>
+  <p class="logout-confirm-message">Vous allez quitter votre session. Vous pourrez vous reconnecter à tout moment.</p>
   <form method="POST" action="{{ route('logout') }}" class="form-actions">
     @csrf
     @if (request()->is('paie', 'paie/*'))
@@ -169,8 +173,7 @@
     @endif
     <button class="btn-secondary" type="button" data-modal-close>Annuler</button>
     <button class="btn-danger-soft" type="submit">
-      <i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i>
-      Confirmer la déconnexion
+      Se déconnecter
     </button>
   </form>
 </x-module-indemnite>

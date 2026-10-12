@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 
 const source = fs.readFileSync('resources/views/pages/enseignants/index.blade.php', 'utf8');
-const functions = ['isFonctionnaireCorpsValue', 'isFonctionnaireCorps', 'updateTeacherIdentity', 'validateTeacherIdentity'].map(name => {
+const functions = ['isFonctionnaireCorpsValue', 'isFonctionnaireCorps', 'updateTeacherIdentity', 'formatTeacherMatricule', 'validateTeacherIdentity'].map(name => {
   const start = source.indexOf(`  function ${name}(`);
   assert.notEqual(start, -1);
   return source.slice(start, source.indexOf('\n  }', start) + 4);
@@ -102,5 +102,25 @@ for (const prefix of ['teacher-', 'edit-teacher-']) {
     assert.equal(indice.disabled, false);
     assert.equal(indice.required, true);
     assert.equal(indice.value, '1500');
+  });
+}
+
+for (const prefix of ['teacher-', 'edit-teacher-']) {
+  test(`${prefix}: slash is inserted according to corps without damaging existing values`, () => {
+    const { context, status, matricule } = setup(prefix);
+    for (const [corps, digits] of [['fonctionnaire', '001234'], ['vacataire', '202409675']]) {
+      status.value = corps;
+      matricule.value = digits;
+      context.formatTeacherMatricule(prefix, { inputType: 'insertText' });
+      assert.equal(matricule.value, digits + '/');
+      matricule.value = digits + 'F';
+      context.formatTeacherMatricule(prefix, { inputType: 'insertFromPaste' });
+      assert.equal(matricule.value, digits + '/F');
+      context.formatTeacherMatricule(prefix, {});
+      assert.equal(matricule.value, digits + '/F');
+      matricule.value = digits;
+      context.formatTeacherMatricule(prefix, { inputType: 'deleteContentBackward' });
+      assert.equal(matricule.value, digits);
+    }
   });
 }

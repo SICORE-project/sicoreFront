@@ -17,7 +17,7 @@
     :title="$page['title']"
     :subtitle="$page['breadcrumb']"
     :icon="$pageIcon"
-    search-id="moduleSearch"
+    :search-id="$slug === 'utilisateurs' ? null : 'moduleSearch'"
     search-placeholder="Rechercher…"
     filter-target="#moduleTable"
   />
@@ -59,6 +59,7 @@
     @endif
 
     {{-- Cartes statistiques : données API en Paie, configuration sinon. --}}
+    @if (! empty($page['stats']))
     <div class="stats-grid four">
       @foreach ($page['stats'] as $stat)
         <article class="stat-card">
@@ -73,6 +74,7 @@
         </article>
       @endforeach
     </div>
+    @endif
 
     {{-- Boutons globaux : export ou commandes métier. --}}
     <div class="actions-row">
@@ -312,29 +314,7 @@
         @endif
       @endif
     @elseif ($slug === 'utilisateurs')
-      <form class="filter-panel" method="GET" action="{{ route('utilisateurs.index') }}" aria-label="Filtres des utilisateurs">
-        <div class="form-group">
-          <label for="users-role-filter">Profil</label>
-          <select class="form-control" id="users-role-filter" name="role_id">
-            <option value="">Tous</option>
-            @foreach(($page['filter_roles'] ?? []) as $filterRole)
-              <option value="{{ $filterRole['id'] }}" @selected((string) request('role_id') === (string) $filterRole['id'])>{{ $filterRole['nom'] }}</option>
-            @endforeach
-          </select>
-        </div>
-        <div class="form-group">
-          <label for="users-status-filter">Statut</label>
-          <select class="form-control" id="users-status-filter" name="statut">
-            <option value="">Tous</option>
-            <option value="actif" @selected(request('statut') === 'actif')>Actif</option>
-            <option value="inactif" @selected(request('statut') === 'inactif')>Suspendu</option>
-          </select>
-        </div>
-        <div class="actions-group">
-          <button class="btn-secondary" type="submit">Filtrer</button>
-          <a class="btn-secondary" href="{{ route('utilisateurs.index') }}">Réinitialiser</a>
-        </div>
-      </form>
+      @include('pages.administration.utilisateurs.filters')
     @else
       <section class="filter-panel" aria-label="Filtres de la page">
         @foreach ($page['filters'] as $index => $filter)
@@ -393,7 +373,7 @@
     {{-- Tableau générique construit avec columns et rows. --}}
     <section class="table-card">
       <div class="table-responsive">
-        <table class="table" id="moduleTable" @if(empty($moduleData['server_pagination']) && $slug !== 'utilisateurs') data-paginated-table @endif>
+        <table class="table" id="moduleTable" @if($slug !== 'utilisateurs') data-paginated-table @endif>
           <thead>
             <tr>
               @foreach ($page['columns'] as $column)
@@ -465,10 +445,8 @@
         public/assets/js/app.js affiche uniquement les lignes de la page
         courante et recalcule les pages après une recherche IA/IEF/matricule.
       --}}
-      @if ($slug === 'utilisateurs' && ! empty($page['pagination']))
-        @include('pages.administration.utilisateurs.pagination', ['pagination' => $page['pagination']])
-      @elseif (! empty($moduleData['server_pagination']))
-        @include('pages.ia.pagination', ['pagination' => $moduleData['server_pagination']])
+      @if ($slug === 'utilisateurs')
+        @include('pages.administration.utilisateurs.pagination')
       @else
       <nav
         class="pagination"
