@@ -79,6 +79,16 @@ class AdministrationDashboardTest extends TestCase
             ->assertDontSee('Gestion utilisateur')->assertDontSee('dashboard-metric-icon');
     }
 
+    public function test_legacy_session_without_permissions_receives_dashboard_view_data(): void
+    {
+        $this->withSession(['sicore_user' => ['role_slug' => 'gestionnaire_paie']]);
+        Http::fake(['*/dashboard' => Http::response(['data' => $this->dashboard()])]);
+
+        $this->get('/dashboard')->assertOk()->assertViewHas('error', null)
+            ->assertViewHas('dashboard', $this->dashboard())->assertSee('001234/F');
+        Http::assertSentCount(1);
+    }
+
     public function test_connection_failure_displays_unavailable_state(): void
     {
         Http::fake(['*' => Http::failedConnection()]);

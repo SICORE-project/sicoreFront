@@ -3,12 +3,18 @@
 namespace App\Http\Controllers;
 
 use App\Services\Api\ApiClient;
+use App\Services\Organisation\OrganisationContext;
+use Illuminate\Contracts\View\View;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Str;
 
 class DashboardController extends Controller
 {
-    public function __construct(protected ApiClient $api) {}
+    public function __construct(
+        protected ApiClient $api,
+        protected OrganisationContext $organisation,
+    ) {}
 
     public function index(): View|\Symfony\Component\HttpFoundation\Response
     {
@@ -33,28 +39,7 @@ class DashboardController extends Controller
             ]);
         }
 
-        $metrics = [];
-        $role = session('sicore_user.role_slug') ?: session('sicore_user.role', '');
-        $roleSlug = Str::slug(is_string($role) ? $role : '', '_');
-        $isGlobalAdmin = in_array($roleSlug, ['admin', 'super_admin', 'administrateur', 'super_administrateur'], true);
-
-        if ($isGlobalAdmin) {
-            $metrics = $this->globalAdministrationMetrics();
-        } else {
-            try {
-                $response = $this->api->get('pages.dashboard.index');
-                if ($response->successful()) $metrics = $response->json('data', []);
-            } catch (ConnectionException) {
-                // Le tableau reste disponible avec des valeurs neutres.
-            }
-        }
-
-        return view('pages.dashboard.index', [
-            'metrics' => is_array($metrics) ? $metrics : [],
-            'scopeLabel' => $this->organisation->label(),
-            'isScoped' => $this->organisation->isScoped(),
-            'isGlobalAdmin' => $isGlobalAdmin,
-        ]);
+        return $this->dashboardView();
     }
 
     private function decpcDashboard(): View
@@ -165,7 +150,7 @@ class DashboardController extends Controller
         ]);
     }
 
-    private function globalAdministrationMetrics(): array
+    private function dashboardView(): View|\Symfony\Component\HttpFoundation\Response
     {
         $dashboard = null;
         $error = null;

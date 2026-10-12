@@ -9,7 +9,9 @@
 --}}
 @section('title', 'SICORE - Dashboard Enseignant')
 @section('content')
-@php($drhAccess = app(\App\Services\Organisation\DrhAccess::class))
+@php
+  $drhAccess = app(\App\Services\Organisation\DrhAccess::class);
+@endphp
 <main class="main-content">
     <x-topbar
       title="Dashboard Enseignant"
@@ -41,7 +43,14 @@
           <label for="filter-teacher-diplome_id">Diplôme</label>
           <select class="form-control" id="filter-teacher-diplome_id" name="diplome_id">
             <option value="">Tous les choix</option>
-            @foreach (collect($diplomeOptions ?? [])->groupBy(fn ($option) => mb_strtolower(preg_replace('/\s+/u', ' ', trim(data_get($option, 'libelle', data_get($option, 'nom', '')))))) as $options)
+            @php
+              $diplomeGroups = collect($diplomeOptions ?? [])->groupBy(function ($option) {
+                $label = data_get($option, 'libelle', data_get($option, 'nom', ''));
+
+                return mb_strtolower(preg_replace('/\s+/u', ' ', trim($label)));
+              });
+            @endphp
+            @foreach ($diplomeGroups as $options)
               @php
                 $option = $options->first(fn ($item) => (string) data_get($item, 'id') === (string) request('diplome_id')) ?? $options->first();
               @endphp
@@ -515,8 +524,16 @@
 @push('scripts')
   {{-- Gestion de la dépendance IA → IEF sur cette page. --}}
 <script src="{{ asset('assets/js/charts.js') }}" defer></script>
+<div id="teacher-page-config" hidden
+  data-referentiel-url="{{ route('enseignants.referentiels.store') }}"
+  data-referentiel-rules="{{ json_encode(config('teacher_referentiels')) }}"
+  data-iefs-url="{{ route('enseignants.iefs') }}"
+  data-old-ia="{{ (string) old('ia_id', '') }}"
+  data-old-ief="{{ (string) old('ief_id', '') }}"
+  data-old-lieu-service="{{ (string) old('lieu_service_id', '') }}"></div>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+  var pageConfig = document.getElementById('teacher-page-config').dataset;
   function isFonctionnaireCorpsValue(corps) {
     if (!corps) { return false; }
     var label = String(corps.libelle || '').trim().toLowerCase();
@@ -687,8 +704,8 @@ document.addEventListener('DOMContentLoaded', function () {
   var referentielForm = document.getElementById('teacher-referentiel-form');
   var referentielFields = Array.from(referentielForm.querySelectorAll('[data-referentiel-field]'));
   var referentielTrigger = null;
-  var referentielUrl = @json(route('enseignants.referentiels.store'));
-  var referentielRules = @json(config('teacher_referentiels'));
+  var referentielUrl = pageConfig.referentielUrl;
+  var referentielRules = JSON.parse(pageConfig.referentielRules);
   var referentielLabels = {
     corps: 'Ajouter un corps', categorie: 'Ajouter une catégorie', discipline: 'Ajouter une spécialité',
     diplome: 'Ajouter un diplôme', lieu_service: 'Ajouter un établissement', banque: 'Ajouter une banque', ia: 'Ajouter une IA', ief: 'Ajouter un IEF'
@@ -845,7 +862,7 @@ document.addEventListener('DOMContentLoaded', function () {
       var iefSelect = document.getElementById('teacher-referentiel-ief');
       iefSelect.innerHTML = '<option value="">Chargement des IEF...</option>';
       if (!this.value) { iefSelect.innerHTML = '<option value="">Sélectionner une IEF</option>'; return; }
-      fetch(@json(route('enseignants.iefs')) + '?ia_id=' + encodeURIComponent(this.value), { headers: { Accept: 'application/json' } })
+      fetch(pageConfig.iefsUrl + '?ia_id=' + encodeURIComponent(this.value), { headers: { Accept: 'application/json' } })
         .then(function (response) { return response.json(); })
         .then(function (payload) {
           iefSelect.innerHTML = '<option value="">Sélectionner une IEF</option>';
@@ -991,8 +1008,8 @@ document.addEventListener('DOMContentLoaded', function () {
   if (ia && ief) {
     ia.addEventListener('change', function () { loadTeacherHierarchy(ia, ief, '', ''); });
     ief.addEventListener('change', function () { loadTeacherEtablissements(ief, document.getElementById('teacher-lieu-service'), ''); });
-    ia.value = @json((string) old('ia_id', ''));
-    if (ia.value) { loadTeacherHierarchy(ia, ief, @json((string) old('ief_id', '')), @json((string) old('lieu_service_id', ''))); }
+    ia.value = pageConfig.oldIa;
+    if (ia.value) { loadTeacherHierarchy(ia, ief, pageConfig.oldIef, pageConfig.oldLieuService); }
   }
 
   var createForm = document.querySelector('#teacher-create-modal form');
@@ -1155,7 +1172,7 @@ document.addEventListener('DOMContentLoaded', function () {
       if (field.name === 'date_naissance') { validateTeacherBirthDate(field, true); }
       var invalid = !value || !field.validity.valid;
       if (!invalid && field.type === 'email') { invalid = !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value); }
-      if (!invalid && field.type === 'date' && field.id === 'teacher-date-naissance') { invalid = value > '{{ now()->subYears(18)->format('Y-m-d') }}'; }
+      if (!invalid && field.type === 'date' && field.id === 'teacher-date-naissance') { invalid = value > field.max; }
       field.classList.toggle('is-invalid', invalid);
       field.setAttribute('aria-invalid', invalid ? 'true' : 'false');
       if (invalid) { valid = false; }
