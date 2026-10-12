@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Contracts\SicoreApiClientInterface;
 use App\Exceptions\SicoreApiException;
+use App\Services\Organisation\OrganisationContext;
 use App\Support\PayrollReturnUrl;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -29,7 +30,10 @@ use Symfony\Component\HttpFoundation\Response;
 class PayrollController extends Controller
 {
     /** Le contrat API est résolu par app/Providers/ApiClientServiceProvider.php. */
-    public function __construct(private readonly SicoreApiClientInterface $api) {}
+    public function __construct(
+        private readonly SicoreApiClientInterface $api,
+        private readonly OrganisationContext $organisationContext,
+    ) {}
 
     /**
      * Charge une page de paie à partir de son slug.
@@ -39,7 +43,10 @@ class PayrollController extends Controller
      */
     public function show(Request $request, string $slug): View|RedirectResponse
     {
-        $filters = $this->validatedPageFilters($request, $slug);
+        if (app(\App\Services\Organisation\InterfaceAccess::class)->isIa()) {
+            return app(IaWorkspaceController::class)->payroll($request, $slug);
+        }
+        $filters = $this->scopedFilters($this->validatedPageFilters($request, $slug));
 
         try {
             // Le backend renvoie statistiques, filtres, colonnes, lignes et actions.
@@ -72,7 +79,7 @@ class PayrollController extends Controller
     {
         // Une action absente de payroll-forms.php ne peut jamais être appelée.
         abort_unless(array_key_exists($action, config('payroll-forms', [])), 404);
-        $payload = $request->except(['_token']);
+        $payload = $this->scopedFilters($request->except(['_token']));
         // La clé d'idempotence empêche un double traitement après un double clic.
         $key = (string) ($request->header('Idempotency-Key') ?: Str::uuid());
 
@@ -103,7 +110,7 @@ class PayrollController extends Controller
      */
     public function export(Request $request, string $slug): Response
     {
-        $filters = $this->validatedPageFilters($request, $slug);
+        $filters = $this->scopedFilters($this->validatedPageFilters($request, $slug));
 
         try {
             $apiResponse = $this->api->payrollExport(
@@ -159,6 +166,12 @@ class PayrollController extends Controller
         }
 
         return $request->validate($rules);
+    }
+
+    /** Le périmètre de session prime toujours sur les filtres du navigateur. */
+    private function scopedFilters(array $filters): array
+    {
+        return array_replace($filters, $this->organisationContext->query());
     }
 
     /**

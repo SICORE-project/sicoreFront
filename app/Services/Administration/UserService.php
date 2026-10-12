@@ -65,6 +65,22 @@ class UserService
         } catch (ConnectionException) {
             return ['data' => [], 'error' => 'Impossible de charger les listes IA, IEF et établissements.', 'status' => 503];
         }
+        $allItems = array_values(array_filter($allItems, function (array $user) use ($filters): bool {
+            if (! empty($filters['role_id']) && (string) data_get($user, 'role.id', $user['role_id'] ?? '') !== (string) $filters['role_id']) {
+                return false;
+            }
+            if (! empty($filters['statut'])) {
+                $status = $user['statut'] ?? $user['status'] ?? false;
+                $active = $status === 'actif' || filter_var($status, FILTER_VALIDATE_BOOLEAN);
+                if ($active !== ($filters['statut'] === 'actif')) return false;
+            }
+            return true;
+        }));
+        $total = count($allItems);
+        $lastPage = max(1, (int) ceil($total / $perPage));
+        $page = min($page, $lastPage);
+        $items = array_slice($allItems, ($page - 1) * $perPage, $perPage);
+
         return [
             'data' => $response->json('data', []),
             'error' => $response->successful() ? null : $response->json('message', 'Chargement des filtres impossible.'),
@@ -216,7 +232,30 @@ class UserService
 
         return [
             'national' => collect($structures)->where('perimetre', 'national')->values()->all(),
-            'regional' => collect($structures)->where('perimetre', 'regional')->values()->all(),
+            'regional' => collect($this->ias())->flatMap(function (array $ia) {
+                $items = [[
+                    'id' => $ia['lieu_service_id'],
+                    'ia_id' => $ia['id'],
+                    'ief_id' => null,
+                    'code' => $ia['code'],
+                    'libelle' => $ia['libelle'],
+                    'type' => 'IA',
+                    'perimetre' => 'regional',
+                ]];
+                foreach ($ia['iefs'] ?? [] as $ief) {
+                    if (! ($ief['lieu_service_id'] ?? null)) continue;
+                    $items[] = [
+                        'id' => $ief['lieu_service_id'],
+                        'ia_id' => $ia['id'],
+                        'ief_id' => $ief['id'],
+                        'code' => $ief['code'],
+                        'libelle' => $ief['libelle'],
+                        'type' => 'IEF',
+                        'perimetre' => 'regional',
+                    ];
+                }
+                return $items;
+            })->values()->all(),
         ];
     }
 

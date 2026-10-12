@@ -7,7 +7,7 @@
       ->firstWhere('label', $statement['academic_year'] ?? null)['id'] ?? null;
   }
   $scopeLabel = $statementRows->pluck('corps')->filter()->unique()->join(', ') ?: 'Tous les corps';
-  $iaLabel = $statementRows->pluck('ia')->filter()->unique()->join(', ') ?: 'Toutes les IA';
+  $iaLabel = $statementRows->pluck('ia')->filter()->unique()->join(', ') ?: ($moduleData['scope_label'] ?? 'Toutes les IA');
   $iefLabel = $statementRows->pluck('ief')->filter()->unique()->join(', ') ?: 'Toutes les IEF';
 @endphp
 
@@ -59,12 +59,17 @@
 
       <div class="form-group">
         <label for="salaryStatementIa">Inspection académique (IA)</label>
+        @if (! empty($moduleData['scope_ia_id']))
+          <input class="form-control" value="{{ $moduleData['scope_label'] }}" readonly aria-label="IA de rattachement">
+          <input type="hidden" id="salaryStatementIa" value="{{ $moduleData['scope_ia_id'] }}" data-salary-statement-ia>
+        @else
         <select class="form-control" id="salaryStatementIa" name="ia_id" data-salary-statement-ia>
           <option value="">Toutes les IA</option>
           @foreach (data_get($statement, 'filter_options.ias', []) as $option)
             <option value="{{ $option['id'] }}" @selected((string) $option['id'] === (string) request('ia_id'))>{{ $option['label'] }}</option>
           @endforeach
         </select>
+        @endif
       </div>
 
       <div class="form-group">

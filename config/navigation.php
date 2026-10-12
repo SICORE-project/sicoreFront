@@ -7,6 +7,7 @@
 | route vient de routes/web.php et active garde le bon lien sélectionné.
 */
 return [
+
     [
         'type' => 'link',
         'label' => 'Tableau de bord',
@@ -17,8 +18,9 @@ return [
         'type' => 'group',
         'label' => 'Gestion du personnel',
         'icon' => 'fa-solid fa-users',
-        'active' => ['enseignants.*', 'personnel.*'],
+        'active' => ['enseignants.*', 'personnel.*', 'recruitment.*'],
         'links' => [
+            ['label' => 'Nouveau recrus', 'route' => 'recruitment.index', 'active' => 'recruitment.*', 'icon' => 'fa-solid fa-user-plus'],
             ['label' => 'Enseignants', 'route' => 'enseignants.index', 'active' => 'enseignants.*', 'icon' => 'fa-solid fa-chalkboard-user'],
             ['label' => 'Reclassement', 'route' => 'personnel.reclassement', 'icon' => 'fa-solid fa-ranking-star'],
             ['label' => 'Impôt sur le revenu', 'route' => 'personnel.impot-sur-le-revenu', 'icon' => 'fa-solid fa-file-invoice-dollar'],
@@ -114,6 +116,9 @@ return [
             ['label' => 'Période de paie', 'route' => 'parametres.periodes-paie.index', 'icon' => 'fa-solid fa-calendar-week'],
             ['label' => 'Rubriques de paie', 'route' => 'parametres.rubriques-paie.index', 'icon' => 'fa-solid fa-list-ul'],
             ['label' => 'Établissements', 'route' => 'parametres.lieux-service.index', 'icon' => 'fa-solid fa-location-dot'],
+            ['label' => 'Régions', 'route' => 'parametres.regions.index', 'icon' => 'fa-solid fa-map-location-dot'],
+            ['label' => 'Départements', 'route' => 'parametres.departements.index', 'icon' => 'fa-solid fa-map-location-dot'],
+            ['label' => 'Communes', 'route' => 'parametres.communes.index', 'icon' => 'fa-solid fa-map-location-dot']
         ],
     ],
     [
