@@ -25,6 +25,10 @@ class UserController extends Controller
         $page = (int) ($filters['page'] ?? 1);
         $perPage = (int) ($filters['per_page'] ?? 10);
 
+        $filters = $request->validate([
+            'role_id' => ['nullable', 'integer', 'min:1'],
+            'statut' => ['nullable', 'in:actif,inactif'],
+        ]);
         $response = $this->userService->getUsers($page, $perPage, null, $filters);
         $users = $response['items'] ?? [];
         $pagination = $response['pagination'] ?? [
@@ -72,7 +76,17 @@ class UserController extends Controller
             'Exporter',
         ]);
 
-        $roles = $this->userService->getRoles();
+        $roles = collect($filterRoles ?? $this->userService->getRoles())
+            ->whereNotIn('slug', [
+               'gestionnaire_ief',
+                'gestionnaire_budget',
+                'gestionnaire_paie',
+               'consultant',
+                'decpc',
+                'drh',
+            ])
+            ->values()
+            ->all();
         $organisation = $this->userService->getOrganisationOptions();
         $structures = array_merge($organisation['national'] ?? [], $organisation['regional'] ?? []);
 
@@ -91,7 +105,17 @@ class UserController extends Controller
 
     public function create()
     {
-        $roles = $this->userService->getRoles();
+        $roles = collect($filterRoles ?? $this->userService->getRoles())
+            ->whereNotIn('slug', [
+                'gestionnaire_ief',
+                'gestionnaire_budget',
+                'gestionnaire_paie',
+                'consultant',
+                'decpc',
+                'drh',
+            ])
+            ->values()
+            ->all();
 
         return view(
             'pages.administration.utilisateurs.create',
@@ -102,6 +126,12 @@ class UserController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
+            'matricule_enseignant' => ['nullable', 'string', 'max:100'],
+            'telephone' => ['required', 'string', 'max:20'],
+            'date_naiss' => ['required', 'date_format:Y-m-d', 'before_or_equal:today'],
+            'lieu_naissance' => ['sometimes', 'nullable', 'string', 'max:100'],
+            'adresse' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'genre' => ['required', 'in:masculin,feminin'],
             'nom' => ['required', 'string', 'max:100'],
             'prenom' => ['required', 'string', 'max:100'],
             'email' => ['required', 'email', 'max:255'],
@@ -164,6 +194,12 @@ class UserController extends Controller
     public function update(Request $request, $id)
     {
         $data = $request->validate([
+            'matricule_enseignant' => ['nullable', 'string', 'max:100'],
+            'telephone' => ['required', 'string', 'max:20'],
+            'date_naiss' => ['required', 'date_format:Y-m-d', 'before_or_equal:today'],
+            'lieu_naissance' => ['sometimes', 'nullable', 'string', 'max:100'],
+            'adresse' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'genre' => ['required', 'in:masculin,feminin'],
             'nom' => ['required', 'string', 'max:100'],
             'prenom' => ['required', 'string', 'max:100'],
             'email' => ['required', 'email', 'max:255'],

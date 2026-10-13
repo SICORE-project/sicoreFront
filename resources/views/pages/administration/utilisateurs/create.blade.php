@@ -115,7 +115,8 @@
                             </div>
 
                             {{-- Email --}}
-                            <div class="form-group full">
+                            @include('pages.administration.utilisateurs.personal-fields')
+<div class="form-group full">
                                 <label for="email">
                                     Adresse e-mail <span class="required">*</span>
                                 </label>

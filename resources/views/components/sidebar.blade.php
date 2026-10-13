@@ -6,7 +6,7 @@
 --}}
 @php
     // Charger le menu et l'identité de l'utilisateur connecté.
-    $navigation = config('navigation', []);
+    $navigation = app(\App\Services\Organisation\DrhAccess::class)->navigation(config('navigation', []));
     $user = session('sicore_user', []);
     $userName = data_get($user, 'name', data_get($user, 'email', 'Utilisateur SICORE'));
     $userRole = data_get($user, 'role', data_get($user, 'roles.0.name', 'Utilisateur'));

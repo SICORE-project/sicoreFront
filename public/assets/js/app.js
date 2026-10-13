@@ -506,6 +506,33 @@
 
     var currentPageNumber = pagination.querySelector("[data-current-page-number]");
     if (currentPageNumber) currentPageNumber.textContent = String(currentPage);
+    var numbers = pagination.querySelector('[data-page-numbers]');
+    if (numbers) {
+      numbers.replaceChildren();
+      var previous = 0;
+      for (var page = 1; page <= totalPages; page++) {
+        if (page !== 1 && page !== totalPages && Math.abs(page - currentPage) > 2) continue;
+        if (previous && page - previous > 1) {
+          var gap = document.createElement('span');
+          gap.textContent = '\u2026';
+          gap.setAttribute('aria-hidden', 'true');
+          numbers.append(gap);
+        }
+        var item = document.createElement(page === currentPage ? 'span' : 'button');
+        item.className = 'page-btn' + (page === currentPage ? ' active' : '');
+        item.textContent = String(page);
+        item.setAttribute('aria-label', 'Page ' + page);
+        if (page === currentPage) item.setAttribute('aria-current', 'page');
+        else {
+          item.type = 'button';
+          item.dataset.pageAction = 'number';
+          item.dataset.page = String(page);
+        }
+        numbers.append(item);
+        previous = page;
+      }
+    }
+
 
     var summary = pagination.querySelector("[data-pagination-summary]");
     if (summary) {
@@ -557,6 +584,7 @@
         var pageSize = Math.max(1, Number(sizeField ? sizeField.value : 10) || 10);
         var totalPages = Math.max(1, Math.ceil(visibleRows / pageSize));
 
+        if (action === "number") currentPage = Number(button.dataset.page);
         if (action === "first") currentPage = 1;
         if (action === "previous") currentPage -= 1;
         if (action === "next") currentPage += 1;

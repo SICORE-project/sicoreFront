@@ -25,8 +25,14 @@
     />
 
     <section class="content-area">
+      @if ($drhAccess->isDrh())
+        <p class="breadcrumb">Périmètre : {{ app(\App\Services\Organisation\OrganisationContext::class)->label() }}</p>
+      @endif
+      @if ($error ?? null)
+        <p class="alert alert-warning" role="alert">{{ $error }}</p>
+      @endif
       <div class="actions-row">
-        <p class="breadcrumb">Paramétrage &gt; Enseignants</p>
+        <p class="breadcrumb">Gestion du personnel &gt; Enseignants</p>
         <div class="actions-group">
           <a class="btn-secondary" href="{{ route('enseignants.export', request()->only(['search', 'prenom', 'nom', 'statut_enseignant_id', 'corps_id', 'diplome_id', 'ia_id', 'ief_id'])) }}" title="Exporter tous les enseignants correspondant aux filtres appliqués">
             <i class="fa-solid fa-file-excel" aria-hidden="true"></i>
@@ -35,7 +41,7 @@
           <button class="btn-primary" type="button" data-modal-open="teacher-create-modal">
             <i class="fa-solid fa-user-plus" aria-hidden="true"></i>
             Ajouter un enseignant
-          </button>
+          </button>@endif
         </div>
       </div>
 
@@ -47,7 +53,14 @@
           <label for="filter-teacher-diplome_id">Diplôme</label>
           <select class="form-control" id="filter-teacher-diplome_id" name="diplome_id">
             <option value="">Tous les choix</option>
-            @foreach (collect($diplomeOptions ?? [])->groupBy(fn ($option) => mb_strtolower(preg_replace('/\s+/u', ' ', trim(data_get($option, 'libelle', data_get($option, 'nom', '')))))) as $options)
+            @php
+              $diplomeGroups = collect($diplomeOptions ?? [])->groupBy(function ($option) {
+                $label = data_get($option, 'libelle', data_get($option, 'nom', ''));
+
+                return mb_strtolower(preg_replace('/\s+/u', ' ', trim($label)));
+              });
+            @endphp
+            @foreach ($diplomeGroups as $options)
               @php
                 $option = $options->first(fn ($item) => (string) data_get($item, 'id') === (string) request('diplome_id')) ?? $options->first();
               @endphp
@@ -165,13 +178,13 @@
           @foreach ($academies as $academy)
             <option value="{{ data_get($academy, 'id') }}">{{ data_get($academy, 'libelle', data_get($academy, 'nom', 'IA')) }}</option>
           @endforeach
-        </select><button class="icon-action" type="button" data-referentiel-open="ia" data-referentiel-target="teacher-ia" title="Ajouter une IA" aria-label="Ajouter une IA"><i class="fa-solid fa-plus"></i></button></div>
+        </select>@if ($drhAccess->allowsRoute('enseignants.referentiels.store'))<button class="icon-action" type="button" data-referentiel-open="ia" data-referentiel-target="teacher-ia" title="Ajouter une IA" aria-label="Ajouter une IA"><i class="fa-solid fa-plus"></i></button>@endif</div>
       </div>
       <div class="form-group">
         <label for="teacher-ief">Inspection de l’Éducation et de la Formation (IEF) <span class="required">*</span></label>
         <div class="teacher-select-create"><select class="form-control" id="teacher-ief" name="ief_id" required disabled data-teacher-ief>
           <option value="">Sélectionner d’abord une IA</option>
-        </select><button class="icon-action" type="button" data-referentiel-open="ief" data-referentiel-target="teacher-ief" title="Ajouter un IEF" aria-label="Ajouter un IEF"><i class="fa-solid fa-plus"></i></button></div>
+        </select>@if ($drhAccess->allowsRoute('enseignants.referentiels.store'))<button class="icon-action" type="button" data-referentiel-open="ief" data-referentiel-target="teacher-ief" title="Ajouter un IEF" aria-label="Ajouter un IEF"><i class="fa-solid fa-plus"></i></button>@endif</div>
       </div>
       <div class="form-group"><label for="teacher-statut-enseignant">Statut enseignant <span class="required">*</span></label><div class="teacher-select-create"><select class="form-control" id="teacher-statut-enseignant" name="statut_enseignant_id" required><option value="">Sélectionner un statut enseignant</option>@foreach ($statutOptions ?? [] as $option)<option value="{{ data_get($option, 'id') }}" data-corps-code="{{ data_get($option, 'code') }}" data-fonctionnaire="{{ $isFonctionnaireStatus($option) ? '1' : '0' }}" @selected((string) old('statut_enseignant_id') === (string) data_get($option, 'id'))>{{ data_get($option, 'libelle') }}</option>@endforeach</select><button class="icon-action" type="button" data-referentiel-open="statut_enseignant" data-referentiel-target="teacher-statut-enseignant" title="Ajouter un statut enseignant"><i class="fa-solid fa-plus"></i></button></div></div>
 <div class="form-group" data-teacher-corps-field>
@@ -181,9 +194,9 @@
           @foreach ($corpsOptions as $corps)
             <option value="{{ data_get($corps, 'id') }}" data-corps-code="{{ data_get($corps, 'code') }}" @selected((string) old('corps_id') === (string) data_get($corps, 'id'))>{{ data_get($corps, 'libelle', 'Corps') }}</option>
           @endforeach
-        </select><button class="icon-action" type="button" data-referentiel-open="corps" data-referentiel-target="teacher-corps" title="Ajouter un corps" aria-label="Ajouter un corps"><i class="fa-solid fa-plus"></i></button></div>
+        </select>@if ($drhAccess->allowsRoute('enseignants.referentiels.store'))<button class="icon-action" type="button" data-referentiel-open="corps" data-referentiel-target="teacher-corps" title="Ajouter un corps" aria-label="Ajouter un corps"><i class="fa-solid fa-plus"></i></button>@endif</div>
       </div>
-      <div class="form-group"><label for="teacher-diplome">Diplôme</label><div class="teacher-select-create"><select class="form-control" id="teacher-diplome" name="diplome_id"><option value="">Sélectionner un diplôme</option>@foreach($diplomeOptions as $diplome)<option value="{{ data_get($diplome, 'id') }}" data-salaire-brut="{{ data_get($diplome, 'salaire_brut') }}" data-categorie-id="{{ data_get($diplome, 'categorie_id', data_get($diplome, 'categorie.id')) }}" @selected((string) old('diplome_id') === (string) data_get($diplome, 'id'))>{{ data_get($diplome, 'libelle') }}</option>@endforeach</select><button class="icon-action" type="button" data-referentiel-open="diplome" data-referentiel-target="teacher-diplome" title="Ajouter un diplôme" aria-label="Ajouter un diplôme"><i class="fa-solid fa-plus"></i></button></div></div>
+      <div class="form-group"><label for="teacher-diplome">Diplôme</label><div class="teacher-select-create"><select class="form-control" id="teacher-diplome" name="diplome_id"><option value="">Sélectionner un diplôme</option>@foreach($diplomeOptions as $diplome)<option value="{{ data_get($diplome, 'id') }}" data-salaire-brut="{{ data_get($diplome, 'salaire_brut') }}" data-categorie-id="{{ data_get($diplome, 'categorie_id', data_get($diplome, 'categorie.id')) }}" @selected((string) old('diplome_id') === (string) data_get($diplome, 'id'))>{{ data_get($diplome, 'libelle') }}</option>@endforeach</select>@if ($drhAccess->allowsRoute('enseignants.referentiels.store'))<button class="icon-action" type="button" data-referentiel-open="diplome" data-referentiel-target="teacher-diplome" title="Ajouter un diplôme" aria-label="Ajouter un diplôme"><i class="fa-solid fa-plus"></i></button>@endif</div></div>
       <div class="form-group" data-create-categorie-field hidden>
         <label for="teacher-categorie">Catégorie <span class="required">*</span></label>
         <div class="teacher-select-create"><select class="form-control" id="teacher-categorie" name="categorie_id" disabled>
@@ -191,7 +204,7 @@
           @foreach ($categorieOptions as $categorie)
             <option value="{{ data_get($categorie, 'id') }}" data-corps-id="{{ data_get($categorie, 'corps_id', data_get($categorie, 'corps.id')) }}" @selected((string) old('categorie_id') === (string) data_get($categorie, 'id'))>{{ data_get($categorie, 'libelle', 'Catégorie') }}</option>
           @endforeach
-        </select><button class="icon-action" type="button" data-referentiel-open="categorie" data-referentiel-target="teacher-categorie" title="Ajouter une catégorie" aria-label="Ajouter une catégorie"><i class="fa-solid fa-plus"></i></button></div>
+        </select>@if ($drhAccess->allowsRoute('enseignants.referentiels.store'))<button class="icon-action" type="button" data-referentiel-open="categorie" data-referentiel-target="teacher-categorie" title="Ajouter une catégorie" aria-label="Ajouter une catégorie"><i class="fa-solid fa-plus"></i></button>@endif</div>
       </div>
       <div class="form-group">
         <label for="teacher-statut">Statut <span class="required">*</span></label>
@@ -206,8 +219,8 @@
       <div class="form-group"><label for="teacher-lieu-naissance">Lieu de naissance</label><input class="form-control" id="teacher-lieu-naissance" name="lieu_naissance" value="{{ old('lieu_naissance') }}" maxlength="100"></div>
       <div class="form-group"><label for="teacher-cni">N° carte d’identité <span class="required">*</span></label><input class="form-control" id="teacher-cni" name="cni" value="{{ old('cni') }}" minlength="13" maxlength="15" pattern="[0-9]{13,15}" inputmode="numeric" title="De 13 à 15 chiffres, sans lettres ni espaces" required></div>
       <div class="form-group"><label for="teacher-genre">Genre</label><select class="form-control" id="teacher-genre" name="genre"><option value="">Sélectionner</option><option value="M" @selected(old('genre') === 'M')>Masculin</option><option value="F" @selected(old('genre') === 'F')>Féminin</option></select></div>
-      <div class="form-group"><label for="teacher-discipline">Spécialité</label><div class="teacher-select-create"><select class="form-control" id="teacher-discipline" name="discipline_id"><option value="">Sélectionner une spécialité</option>@foreach($disciplineOptions as $discipline)<option value="{{ data_get($discipline, 'id') }}">{{ data_get($discipline, 'libelle', data_get($discipline, 'nom')) }}</option>@endforeach</select><button class="icon-action" type="button" data-referentiel-open="discipline" data-referentiel-target="teacher-discipline" title="Ajouter une spécialité" aria-label="Ajouter une spécialité"><i class="fa-solid fa-plus"></i></button></div></div>
-      <div class="form-group"><label for="teacher-lieu-service">Établissement</label><div class="teacher-select-create"><select class="form-control" id="teacher-lieu-service" name="lieu_service_id" disabled data-etablissements-url="{{ route('enseignants.etablissements') }}"><option value="">Sélectionner d’abord une IEF</option></select><button class="icon-action" type="button" data-referentiel-open="lieu_service" data-referentiel-target="teacher-lieu-service" title="Ajouter un établissement" aria-label="Ajouter un établissement"><i class="fa-solid fa-plus"></i></button></div></div>
+      <div class="form-group"><label for="teacher-discipline">Spécialité</label><div class="teacher-select-create"><select class="form-control" id="teacher-discipline" name="discipline_id"><option value="">Sélectionner une spécialité</option>@foreach($disciplineOptions as $discipline)<option value="{{ data_get($discipline, 'id') }}">{{ data_get($discipline, 'libelle', data_get($discipline, 'nom')) }}</option>@endforeach</select>@if ($drhAccess->allowsRoute('enseignants.referentiels.store'))<button class="icon-action" type="button" data-referentiel-open="discipline" data-referentiel-target="teacher-discipline" title="Ajouter une spécialité" aria-label="Ajouter une spécialité"><i class="fa-solid fa-plus"></i></button>@endif</div></div>
+      <div class="form-group"><label for="teacher-lieu-service">Établissement</label><div class="teacher-select-create"><select class="form-control" id="teacher-lieu-service" name="lieu_service_id" disabled data-etablissements-url="{{ route('enseignants.etablissements') }}"><option value="">Sélectionner d’abord une IEF</option></select>@if ($drhAccess->allowsRoute('enseignants.referentiels.store'))<button class="icon-action" type="button" data-referentiel-open="lieu_service" data-referentiel-target="teacher-lieu-service" title="Ajouter un établissement" aria-label="Ajouter un établissement"><i class="fa-solid fa-plus"></i></button>@endif</div></div>
       <div class="form-group"><label for="teacher-salaire">Salaire brut</label><input class="form-control" id="teacher-salaire" name="salaire_brut" type="number" min="0" step="1" value="{{ old('salaire_brut') }}" readonly><small>Renseigné automatiquement selon le diplôme et la catégorie.</small></div>
       <div class="form-group"><label for="teacher-generation">Année de recrutement</label><input class="form-control" id="teacher-generation" name="annee_recrutement" type="number" min="1900" max="{{ now()->year }}" value="{{ old('annee_recrutement') }}"></div>
       <div class="form-group" data-create-contract-field hidden><label for="teacher-date-fin-contrat">Fin du contrat <span class="required">*</span></label><input class="form-control" id="teacher-date-fin-contrat" name="date_fin_contrat" type="date" value="{{ old('date_fin_contrat') }}"></div>
@@ -374,8 +387,8 @@
         <div class="form-group"><label for="edit-teacher-lieu-naissance">Lieu de naissance</label><input class="form-control" id="edit-teacher-lieu-naissance" name="lieu_naissance" maxlength="100"></div>
         <div class="form-group"><label for="edit-teacher-cni">N° carte d’identité <span class="required">*</span></label><input class="form-control" id="edit-teacher-cni" name="cni" minlength="13" maxlength="15" pattern="[0-9]{13,15}" inputmode="numeric" title="De 13 à 15 chiffres, sans lettres ni espaces" required></div>
         <div class="form-group"><label for="edit-teacher-genre">Genre</label><select class="form-control" id="edit-teacher-genre" name="genre"><option value="">Sélectionner</option><option value="M">Masculin</option><option value="F">Féminin</option></select></div>
-        <div class="form-group"><label for="edit-teacher-ia">Inspection académique (IA) <span class="required">*</span></label><div class="teacher-select-create"><select class="form-control" id="edit-teacher-ia" name="ia_id" required data-edit-teacher-ia data-iefs-url="{{ route('enseignants.iefs') }}"><option value="">Sélectionner une IA</option>@foreach ($academies as $academy)<option value="{{ data_get($academy, 'id') }}">{{ data_get($academy, 'libelle', data_get($academy, 'nom', 'IA')) }}</option>@endforeach</select><button class="icon-action" type="button" data-referentiel-open="ia" data-referentiel-target="edit-teacher-ia" title="Ajouter une IA" aria-label="Ajouter une IA"><i class="fa-solid fa-plus"></i></button></div></div>
-        <div class="form-group"><label for="edit-teacher-ief">Inspection de l’Éducation et de la Formation (IEF) <span class="required">*</span></label><div class="teacher-select-create"><select class="form-control" id="edit-teacher-ief" name="ief_id" required disabled data-edit-teacher-ief><option value="">Sélectionner d’abord une IA</option></select><button class="icon-action" type="button" data-referentiel-open="ief" data-referentiel-target="edit-teacher-ief" title="Ajouter un IEF" aria-label="Ajouter un IEF"><i class="fa-solid fa-plus"></i></button></div></div>
+        <div class="form-group"><label for="edit-teacher-ia">Inspection académique (IA) <span class="required">*</span></label><div class="teacher-select-create"><select class="form-control" id="edit-teacher-ia" name="ia_id" required data-edit-teacher-ia data-iefs-url="{{ route('enseignants.iefs') }}"><option value="">Sélectionner une IA</option>@foreach ($academies as $academy)<option value="{{ data_get($academy, 'id') }}">{{ data_get($academy, 'libelle', data_get($academy, 'nom', 'IA')) }}</option>@endforeach</select>@if ($drhAccess->allowsRoute('enseignants.referentiels.store'))<button class="icon-action" type="button" data-referentiel-open="ia" data-referentiel-target="edit-teacher-ia" title="Ajouter une IA" aria-label="Ajouter une IA"><i class="fa-solid fa-plus"></i></button>@endif</div></div>
+        <div class="form-group"><label for="edit-teacher-ief">Inspection de l’Éducation et de la Formation (IEF) <span class="required">*</span></label><div class="teacher-select-create"><select class="form-control" id="edit-teacher-ief" name="ief_id" required disabled data-edit-teacher-ief><option value="">Sélectionner d’abord une IA</option></select>@if ($drhAccess->allowsRoute('enseignants.referentiels.store'))<button class="icon-action" type="button" data-referentiel-open="ief" data-referentiel-target="edit-teacher-ief" title="Ajouter un IEF" aria-label="Ajouter un IEF"><i class="fa-solid fa-plus"></i></button>@endif</div></div>
         <div class="form-group"><label for="edit-teacher-date-recrutement">Date de recrutement</label><input class="form-control" id="edit-teacher-date-recrutement" name="date_recrutement" type="date"></div>
         <div class="form-group"><label for="edit-teacher-statut">Statut <span class="required">*</span></label><select class="form-control" id="edit-teacher-statut" name="statut" required><option value="en_activite">En activité</option><option value="abandon">Abandon</option><option value="retraite">Retraité</option><option value="suspension_provisoire">Suspension provisoire</option><option value="cessation_paiement">Cessation de paiement</option></select></div>
         <div class="form-group"><label for="edit-teacher-statut-enseignant">Statut enseignant <span class="required">*</span></label><div class="teacher-select-create"><select class="form-control" id="edit-teacher-statut-enseignant" name="statut_enseignant_id" required><option value="">Sélectionner un statut enseignant</option>@foreach ($statutOptions ?? [] as $option)<option value="{{ data_get($option, 'id') }}" data-corps-code="{{ data_get($option, 'code') }}" data-fonctionnaire="{{ $isFonctionnaireStatus($option) ? '1' : '0' }}" @selected((string) old('statut_enseignant_id') === (string) data_get($option, 'id'))>{{ data_get($option, 'libelle') }}</option>@endforeach</select><button class="icon-action" type="button" data-referentiel-open="statut_enseignant" data-referentiel-target="edit-teacher-statut-enseignant" title="Ajouter un statut enseignant"><i class="fa-solid fa-plus"></i></button></div></div>
@@ -385,8 +398,8 @@
       </div></div>
     </section>
     <section class="wizard-panel" data-edit-panel="2" hidden><div class="form-section"><h3>Informations professionnelles</h3><div class="form-grid">
-      <div class="form-group"><label for="edit-teacher-discipline">Spécialité</label><div class="teacher-select-create"><select class="form-control" id="edit-teacher-discipline" name="discipline_id"><option value="">Sélectionner une spécialité</option>@foreach($disciplineOptions as $discipline)<option value="{{ data_get($discipline, 'id') }}">{{ data_get($discipline, 'libelle', data_get($discipline, 'nom')) }}</option>@endforeach</select><button class="icon-action" type="button" data-referentiel-open="discipline" data-referentiel-target="edit-teacher-discipline" title="Ajouter une spécialité" aria-label="Ajouter une spécialité"><i class="fa-solid fa-plus"></i></button></div></div>
-      <div class="form-group"><label for="edit-teacher-lieu-service">Établissement</label><div class="teacher-select-create"><select class="form-control" id="edit-teacher-lieu-service" name="lieu_service_id" disabled data-etablissements-url="{{ route('enseignants.etablissements') }}"><option value="">Sélectionner d’abord une IEF</option></select><button class="icon-action" type="button" data-referentiel-open="lieu_service" data-referentiel-target="edit-teacher-lieu-service" title="Ajouter un établissement" aria-label="Ajouter un établissement"><i class="fa-solid fa-plus"></i></button></div></div>
+      <div class="form-group"><label for="edit-teacher-discipline">Spécialité</label><div class="teacher-select-create"><select class="form-control" id="edit-teacher-discipline" name="discipline_id"><option value="">Sélectionner une spécialité</option>@foreach($disciplineOptions as $discipline)<option value="{{ data_get($discipline, 'id') }}">{{ data_get($discipline, 'libelle', data_get($discipline, 'nom')) }}</option>@endforeach</select>@if ($drhAccess->allowsRoute('enseignants.referentiels.store'))<button class="icon-action" type="button" data-referentiel-open="discipline" data-referentiel-target="edit-teacher-discipline" title="Ajouter une spécialité" aria-label="Ajouter une spécialité"><i class="fa-solid fa-plus"></i></button>@endif</div></div>
+      <div class="form-group"><label for="edit-teacher-lieu-service">Établissement</label><div class="teacher-select-create"><select class="form-control" id="edit-teacher-lieu-service" name="lieu_service_id" disabled data-etablissements-url="{{ route('enseignants.etablissements') }}"><option value="">Sélectionner d’abord une IEF</option></select>@if ($drhAccess->allowsRoute('enseignants.referentiels.store'))<button class="icon-action" type="button" data-referentiel-open="lieu_service" data-referentiel-target="edit-teacher-lieu-service" title="Ajouter un établissement" aria-label="Ajouter un établissement"><i class="fa-solid fa-plus"></i></button>@endif</div></div>
       <div class="form-group"><label for="edit-teacher-salaire">Salaire brut</label><input class="form-control" id="edit-teacher-salaire" name="salaire_brut" type="number" min="0" readonly><small>Renseigné automatiquement selon le diplôme et la catégorie.</small></div>
       <div class="form-group"><label for="edit-teacher-generation">Année de recrutement</label><input class="form-control" id="edit-teacher-generation" name="annee_recrutement" type="number" min="1900" max="{{ now()->year }}"></div>
       <div class="form-group" data-edit-contract-field hidden><label for="edit-teacher-date-fin-contrat">Fin du contrat <span class="required">*</span></label><input class="form-control" id="edit-teacher-date-fin-contrat" name="date_fin_contrat" type="date"></div>
@@ -541,8 +554,16 @@
 <script src="{{ asset('assets/js/teacher-status-fields.js') }}?v={{ filemtime(public_path('assets/js/teacher-status-fields.js')) }}"></script>
   {{-- Gestion de la dépendance IA → IEF sur cette page. --}}
 <script src="{{ asset('assets/js/charts.js') }}" defer></script>
+<div id="teacher-page-config" hidden
+  data-referentiel-url="{{ route('enseignants.referentiels.store') }}"
+  data-referentiel-rules="{{ json_encode(config('teacher_referentiels')) }}"
+  data-iefs-url="{{ route('enseignants.iefs') }}"
+  data-old-ia="{{ (string) old('ia_id', '') }}"
+  data-old-ief="{{ (string) old('ief_id', '') }}"
+  data-old-lieu-service="{{ (string) old('lieu_service_id', '') }}"></div>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+  var pageConfig = document.getElementById('teacher-page-config').dataset;
   function isFonctionnaireCorpsValue(corps) {
     if (!corps) { return false; }
     var label = String(corps.libelle || '').trim().toLowerCase();
@@ -750,8 +771,8 @@ document.addEventListener('DOMContentLoaded', function () {
   var referentielForm = document.getElementById('teacher-referentiel-form');
   var referentielFields = Array.from(referentielForm.querySelectorAll('[data-referentiel-field]'));
   var referentielTrigger = null;
-  var referentielUrl = @json(route('enseignants.referentiels.store'));
-  var referentielRules = @json(config('teacher_referentiels'));
+  var referentielUrl = pageConfig.referentielUrl;
+  var referentielRules = JSON.parse(pageConfig.referentielRules);
   var referentielLabels = {
     statut_enseignant: 'Ajouter un statut enseignant', corps: 'Ajouter un corps', categorie: 'Ajouter une catégorie', discipline: 'Ajouter une spécialité',
     diplome: 'Ajouter un diplôme', lieu_service: 'Ajouter un établissement', banque: 'Ajouter une banque', ia: 'Ajouter une IA', ief: 'Ajouter un IEF'
@@ -909,7 +930,7 @@ document.addEventListener('DOMContentLoaded', function () {
       var iefSelect = document.getElementById('teacher-referentiel-ief');
       iefSelect.innerHTML = '<option value="">Chargement des IEF...</option>';
       if (!this.value) { iefSelect.innerHTML = '<option value="">Sélectionner une IEF</option>'; return; }
-      fetch(@json(route('enseignants.iefs')) + '?ia_id=' + encodeURIComponent(this.value), { headers: { Accept: 'application/json' } })
+      fetch(pageConfig.iefsUrl + '?ia_id=' + encodeURIComponent(this.value), { headers: { Accept: 'application/json' } })
         .then(function (response) { return response.json(); })
         .then(function (payload) {
           iefSelect.innerHTML = '<option value="">Sélectionner une IEF</option>';
@@ -1056,8 +1077,8 @@ document.addEventListener('DOMContentLoaded', function () {
   if (ia && ief) {
     ia.addEventListener('change', function () { loadTeacherHierarchy(ia, ief, '', ''); });
     ief.addEventListener('change', function () { loadTeacherEtablissements(ief, document.getElementById('teacher-lieu-service'), ''); });
-    ia.value = @json((string) old('ia_id', ''));
-    if (ia.value) { loadTeacherHierarchy(ia, ief, @json((string) old('ief_id', '')), @json((string) old('lieu_service_id', ''))); }
+    ia.value = pageConfig.oldIa;
+    if (ia.value) { loadTeacherHierarchy(ia, ief, pageConfig.oldIef, pageConfig.oldLieuService); }
   }
 
   var createForm = document.querySelector('#teacher-create-modal form');
@@ -1261,7 +1282,7 @@ document.addEventListener('DOMContentLoaded', function () {
       if (field.name === 'date_naissance') { validateTeacherBirthDate(field, true); }
       var invalid = !value || !field.validity.valid;
       if (!invalid && field.type === 'email') { invalid = !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value); }
-      if (!invalid && field.type === 'date' && field.id === 'teacher-date-naissance') { invalid = value > '{{ now()->subYears(18)->format('Y-m-d') }}'; }
+      if (!invalid && field.type === 'date' && field.id === 'teacher-date-naissance') { invalid = value > field.max; }
       field.classList.toggle('is-invalid', invalid);
       field.setAttribute('aria-invalid', invalid ? 'true' : 'false');
       if (invalid) { valid = false; }
