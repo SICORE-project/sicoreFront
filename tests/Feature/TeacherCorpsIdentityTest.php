@@ -20,7 +20,10 @@ class TeacherCorpsIdentityTest extends TestCase
         return array_replace([
             'matricule' => '543678/F', 'indice' => '0012',
             'nom' => 'Ndiaye', 'prenom' => 'Awa', 'date_naissance' => '1990-01-01',
-            'ia_id' => 1, 'ief_id' => 2, 'corps_id' => 5,
+            'ia_id' => 1, 'ief_id' => 2, 'corps_id' => 5, 'statut_enseignant_id' => 5,
+            'cni' => '1234567890123', 'telephone' => '771234567',
+            'situation_matrimoniale' => 'celibataire', 'nombre_enfants' => 0,
+            'compte_bancaire' => ['code_banque' => '00100', 'code_guichet' => '00001', 'numero_compte' => '00012345678', 'cle_rib' => '01'],
             'est_en_couple' => '0', 'nombre_parts_fiscales' => '1', 'statut' => 'en_activite', 'est_actif' => '1',
         ], $overrides);
     }
@@ -28,8 +31,8 @@ class TeacherCorpsIdentityTest extends TestCase
     private function fakeBackend(array $response = ['message' => 'Enseignant créé.'], int $status = 201): void
     {
         Http::fake(function ($request) use ($response, $status) {
-            if ($request->method() === 'GET' && str_contains($request->url(), '/corps/')) {
-                $fonctionnaire = str_contains($request->url(), '/corps/5');
+            if ($request->method() === 'GET' && str_contains($request->url(), '/statuts-enseignant/')) {
+                $fonctionnaire = str_contains($request->url(), '/statuts-enseignant/5');
                 return Http::response(['data' => ['libelle' => $fonctionnaire ? 'Fonctionnaire' : 'Vacataire', 'code' => $fonctionnaire ? 'FONC' : 'VAC']]);
             }
             return Http::response($response, $status);
@@ -57,7 +60,7 @@ class TeacherCorpsIdentityTest extends TestCase
     {
         $this->fakeBackend();
         $this->post(route('enseignants.store'), $this->payload([
-            'corps_id' => 3, 'statut_administratif' => 'fonctionnaire', 'matricule' => '202409675/H', 'indice' => 'invalid',
+            'corps_id' => 3, 'statut_enseignant_id' => 3, 'statut_administratif' => 'fonctionnaire', 'matricule' => '202409675/H', 'indice' => 'invalid',
         ]))->assertSessionHasNoErrors();
         Http::assertSent(fn ($request) => $request->method() === 'POST' && $request['indice'] === null && $request['matricule'] === '202409675/H');
     }
@@ -66,7 +69,7 @@ class TeacherCorpsIdentityTest extends TestCase
     {
         return [
             [['matricule' => '123456789/H'], 'matricule'],
-            [['corps_id' => 3], 'matricule'],
+            [['corps_id' => 3, 'statut_enseignant_id' => 3], 'matricule'],
             [['matricule' => 'A12345/F'], 'matricule'],
             [['matricule' => ' 543678/F '], 'matricule'],
             [['matricule' => '543678'], 'matricule'],

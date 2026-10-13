@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 
 const source = fs.readFileSync('resources/views/pages/enseignants/index.blade.php', 'utf8');
-const functions = ['isFonctionnaireCorpsValue', 'isFonctionnaireCorps', 'updateTeacherIdentity', 'formatTeacherMatricule', 'validateTeacherIdentity'].map(name => {
+const functions = ['isFonctionnaireCorpsValue', 'isFonctionnaireCorps', 'updateTeacherIdentity', 'teacherMatriculeLetter', 'formatTeacherMatricule', 'validateTeacherIdentity'].map(name => {
   const start = source.indexOf(`  function ${name}(`);
   assert.notEqual(start, -1);
   return source.slice(start, source.indexOf('\n  }', start) + 4);
@@ -12,7 +12,7 @@ const functions = ['isFonctionnaireCorpsValue', 'isFonctionnaireCorps', 'updateT
 
 function setup(prefix) {
   const fields = {};
-  for (const name of ['corps', 'matricule', 'indice']) {
+  for (const name of ['statut-enseignant', 'matricule', 'indice']) {
     const wrapper = { hidden: false, style: {} };
     const classes = new Set();
     fields[prefix + name] = {
@@ -24,15 +24,33 @@ function setup(prefix) {
     };
     fields[prefix + name + '-error'] = { hidden: true, textContent: '' };
   }
-  const corps = fields[prefix + 'corps'];
+  const corps = fields[prefix + 'statut-enseignant'];
   Object.defineProperty(corps, 'options', { get: () => [{ value: corps.value, textContent: corps.value === 'fonctionnaire' ? 'Fonctionnaire' : 'Vacataire', dataset: { corpsCode: corps.value === 'fonctionnaire' ? 'FONC' : 'VAC' } }] });
   corps.selectedIndex = 0;
   const context = vm.createContext({ document: { getElementById: id => fields[id] } });
   vm.runInContext(functions, context);
-  return { fields, context, status: fields[prefix + 'corps'], matricule: fields[prefix + 'matricule'], indice: fields[prefix + 'indice'] };
+  return { fields, context, status: fields[prefix + 'statut-enseignant'], matricule: fields[prefix + 'matricule'], indice: fields[prefix + 'indice'] };
 }
 
 for (const prefix of ['teacher-', 'edit-teacher-']) {
+  test(`${prefix}: checksum uses absolute difference, zero as Z, and no modulo`, () => {
+    const { context, status, matricule } = setup(prefix);
+    for (const [digits, letter] of [['000000', 'Z'], ['000001', 'A'], ['100000', 'A'], ['090907', 'Y'], ['909090', null], ['543678', 'C']]) {
+      assert.equal(context.teacherMatriculeLetter(digits), letter);
+    }
+    status.value = 'fonctionnaire';
+    matricule.value = '909090/F';
+    context.formatTeacherMatricule(prefix, {});
+    assert.equal(matricule.value, '909090');
+    context.validateTeacherIdentity(prefix, true);
+    assert.match(matricule.message, /dépasse 25/);
+    matricule.value = '000001';
+    context.formatTeacherMatricule(prefix, { isComposing: true });
+    assert.equal(matricule.value, '000001');
+    context.formatTeacherMatricule(prefix, {});
+    assert.equal(matricule.value, '000001/A');
+  });
+
   test(`${prefix}: civil servant requires six digits and displays required index`, () => {
     const { context, status, matricule, indice } = setup(prefix);
     status.value = 'fonctionnaire';
@@ -106,21 +124,26 @@ for (const prefix of ['teacher-', 'edit-teacher-']) {
 }
 
 for (const prefix of ['teacher-', 'edit-teacher-']) {
-  test(`${prefix}: slash is inserted according to corps without damaging existing values`, () => {
+  test(`${prefix}: letter is generated from the digits for each status`, () => {
     const { context, status, matricule } = setup(prefix);
-    for (const [corps, digits] of [['fonctionnaire', '001234'], ['vacataire', '202409675']]) {
+    for (const [corps, digits, letter] of [['fonctionnaire', '001234', 'B'], ['vacataire', '202409675', 'E']]) {
       status.value = corps;
       matricule.value = digits;
       context.formatTeacherMatricule(prefix, { inputType: 'insertText' });
-      assert.equal(matricule.value, digits + '/');
+      assert.equal(matricule.value, digits + '/' + letter);
       matricule.value = digits + 'F';
       context.formatTeacherMatricule(prefix, { inputType: 'insertFromPaste' });
-      assert.equal(matricule.value, digits + '/F');
+      assert.equal(matricule.value, digits + '/' + letter);
       context.formatTeacherMatricule(prefix, {});
-      assert.equal(matricule.value, digits + '/F');
+      assert.equal(matricule.value, digits + '/' + letter);
       matricule.value = digits;
       context.formatTeacherMatricule(prefix, { inputType: 'deleteContentBackward' });
       assert.equal(matricule.value, digits);
+      matricule.value = digits + '/';
+      context.formatTeacherMatricule(prefix, { inputType: 'deleteContentBackward' });
+      assert.equal(matricule.value, digits);
+      context.formatTeacherMatricule(prefix);
+      assert.equal(matricule.value, digits + '/' + letter);
     }
   });
 }

@@ -70,9 +70,9 @@ class ApiClient
      * Utilisée par ConvocationService::deposerFichier() et ::importer() —
      * 
      */
-    public function postMultipart(string $uri, array $data = [], array $fichiers = [])
+    public function postMultipart(string $uri, array $data = [], array $fichiers = [], int $timeout = 10)
     {
-        $request = $this->request();
+        $request = $this->request()->timeout($timeout);
 
         foreach ($fichiers as $fichier) {
             $request = $request->attach(

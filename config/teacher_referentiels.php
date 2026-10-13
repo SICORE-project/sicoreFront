@@ -1,9 +1,10 @@
 <?php
 
 return [
+    'statut_enseignant' => ['libelle' => 'required|string|max:50'],
     'corps' => [
-        'code' => 'required|string|max:50',
-        'libelle' => 'required|string|max:255',
+        'code' => 'required|string|max:20',
+        'libelle' => 'required|string|max:100',
     ],
     'categorie' => [
         'libelle' => 'required|string|max:255',

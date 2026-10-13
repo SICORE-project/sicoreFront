@@ -34,6 +34,18 @@ class AdministrationDashboardTest extends TestCase
             ->assertSee('6 mois')->assertSee('12 mois');
     }
 
+    public function test_super_admin_sees_the_complete_menu_without_opening_teachers_first(): void
+    {
+        Http::fake(['*/dashboard*' => Http::response(['data' => $this->dashboard([
+            'layout' => 'super-admin', 'role' => 'Super Administrateur',
+            'actions' => [['label' => 'Enseignants', 'route' => 'enseignants.index', 'icon' => 'fa-users']],
+        ])])]);
+        $navigation = config('navigation');
+        $this->get('/dashboard')->assertOk()
+            ->assertSee('Gestion du personnel')->assertSee('Gestion de la paie');
+        $this->assertSame($navigation, config('navigation'));
+    }
+
     protected function setUp(): void
     {
         parent::setUp();

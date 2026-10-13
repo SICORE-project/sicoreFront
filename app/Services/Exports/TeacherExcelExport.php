@@ -9,7 +9,7 @@ use ZipArchive;
 
 class TeacherExcelExport
 {
-    public function create(iterable $rows, array $headers = ['Matricule', 'Nom', 'Prénom', 'IA', 'Corps', 'Statut']): string
+    public function create(iterable $rows, array $headers = ['Matricule', 'Nom', 'Prénom', 'IA', 'Corps', 'Statut enseignant', 'Situation administrative']): string
     {
         $path = tempnam(sys_get_temp_dir(), 'teachers_xlsx_');
         $sheet = tempnam(sys_get_temp_dir(), 'teachers_sheet_');
