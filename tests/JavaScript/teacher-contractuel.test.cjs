@@ -5,7 +5,7 @@ const vm = require('node:vm');
 
 const source = fs.readFileSync('resources/views/pages/enseignants/index.blade.php', 'utf8');
 const functions = [
-  'isFonctionnaireCorpsValue', 'isFonctionnaireCorps', 'updateTeacherIdentity', 'validateTeacherIdentity', 'isContractuelCorps', 'isVacataireCorps', 'diplomaLabel', 'hideDuplicateDiplomas',
+  'isFonctionnaireCorpsValue', 'isFonctionnaireCorps', 'updateTeacherIdentity', 'teacherMatriculeLetter', 'validateTeacherIdentity', 'isContractuelCorps', 'isVacataireCorps', 'diplomaLabel', 'hideDuplicateDiplomas',
   'applyDiplomeSalary', 'filterCategories', 'updateCreateCategorieVisibility',
   'showCreateStep', 'validateCreateStep', 'updateEditCategorieVisibility',
 ].map(name => {
@@ -100,7 +100,9 @@ function setup() {
   };
   const navigation = {};
   const handlers = {};
+  // These tests isolate category/diploma helpers; status policy has its own coverage.
   const context = vm.createContext({
+    applyTeacherStatus() {}, calculateCreateParts() {},
     document: {
       getElementById: id => fields[id],
       querySelector: selector => selectors[selector],

@@ -187,7 +187,9 @@ class DashboardController extends Controller
             }
             return $visible;
         };
-        config()->set('navigation', $filter(config('navigation', [])));
+        if (($dashboard['layout'] ?? null) !== 'super-admin') {
+            config()->set('navigation', $filter(config('navigation', [])));
+        }
 
         return view('pages.dashboard.index', compact('dashboard', 'error'));
     }

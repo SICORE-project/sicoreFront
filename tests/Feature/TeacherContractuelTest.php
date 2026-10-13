@@ -47,16 +47,19 @@ class TeacherContractuelTest extends TestCase
     }
 
     #[DataProvider('operations')]
-    public function test_contract_fields_are_forwarded_to_the_backend(string $method, ?int $id): void
+    public function test_disabled_non_official_career_fields_are_not_forwarded(string $method, ?int $id): void
     {
         $endpoint = '/admin/personnel/enseignants'.($id ? '/'.$id : '');
-        Http::fake(['*/corps/1*' => Http::response(['data' => ['id' => 1, 'code' => 'CTR', 'libelle' => 'Contractuel']]), '*'.$endpoint => Http::response(['message' => 'Enseignant enregistré.'], 200)]);
+        Http::fake(['*/statuts-enseignant/1*' => Http::response(['data' => ['id' => 1, 'code' => 'CTR', 'libelle' => 'Contractuel']]), '*'.$endpoint => Http::response(['message' => 'Enseignant enregistré.'], 200)]);
         $payload = [
             'matricule' => '000000008/H', 'nom' => 'Diop', 'prenom' => 'Awa',
             'date_naissance' => '1990-01-01', 'ia_id' => 1, 'ief_id' => 1,
-            'corps_id' => 1, 'diplome_id' => 2, 'categorie_id' => 2,
+            'statut_enseignant_id' => 1, 'corps_id' => 1, 'diplome_id' => 2, 'categorie_id' => 2,
             'salaire_brut' => 250000, 'date_recrutement' => '2026-09-01',
-            'date_fin_contrat' => '2027-08-31', 'est_en_couple' => '0',
+            'cni' => '1234567890123', 'telephone' => '771234567',
+            'situation_matrimoniale' => 'celibataire', 'nombre_enfants' => 0,
+            'compte_bancaire' => ['code_banque' => '00100', 'code_guichet' => '00001', 'numero_compte' => '00012345678', 'cle_rib' => '01'],
+            'est_en_couple' => '0',
             'nombre_parts_fiscales' => 1, 'statut' => 'en_activite', 'est_actif' => '1',
         ];
 
@@ -66,7 +69,7 @@ class TeacherContractuelTest extends TestCase
 
         Http::assertSent(fn ($request) => $request->method() === $method
             && str_ends_with($request->url(), $endpoint)
-            && $request['categorie_id'] === 2 && $request['diplome_id'] === 2
-            && $request['salaire_brut'] === 250000 && $request['date_fin_contrat'] === '2027-08-31');
+            && $request['categorie_id'] === null && $request['diplome_id'] === null
+            && $request['salaire_brut'] === null && $request['corps_id'] === null);
     }
 }

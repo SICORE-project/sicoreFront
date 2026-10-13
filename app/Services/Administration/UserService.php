@@ -32,7 +32,7 @@ class UserService
         // L'API peut retourner une collection paginée (data.data) ou une
         // liste simple (data). Accepter les deux évite un select vide, qui
         // bloque ensuite la soumission car role_id est obligatoire.
-        return data_get($data, 'data', []);
+        return collect(data_get($data, 'data', []))->reject(fn ($role) => mb_strtolower((string) data_get($role, 'slug')) === 'drh')->values()->all();
     }
 
     /**

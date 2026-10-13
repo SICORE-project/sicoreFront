@@ -38,6 +38,8 @@ Route::middleware('sicore.auth')
         */
 
         Route::get('/enseignants', [EnseignantController::class, 'index'])->name('enseignants.index');
+        Route::get('/enseignants/import/modele', [\App\Http\Controllers\Parametrage\TeacherImportController::class, 'template'])->name('enseignants.import.template');
+        Route::post('/enseignants/import', [\App\Http\Controllers\Parametrage\TeacherImportController::class, 'store'])->name('enseignants.import.store');
         Route::get('/enseignants/export', [EnseignantController::class, 'export'])->name('enseignants.export');
         Route::get('/enseignants/iefs', [EnseignantController::class, 'ieFs'])->name('enseignants.iefs');
         Route::get('/enseignants/etablissements', [EnseignantController::class, 'etablissements'])->name('enseignants.etablissements');
@@ -63,6 +65,10 @@ Route::middleware('sicore.auth')
         Route::post('/parametres/corps', [CorpsController::class, 'store'])->name('parametres.corps.store');
         Route::put('/parametres/corps/{corps}', [CorpsController::class, 'update'])->whereNumber('corps')->name('parametres.corps.update');
         Route::delete('/parametres/corps/{corps}', [CorpsController::class, 'destroy'])->whereNumber('corps')->name('parametres.corps.destroy');
+        Route::get('/parametres/statuts-enseignant', [\App\Http\Controllers\Parametrage\StatutEnseignantController::class, 'index'])->name('parametres.statuts-enseignant.index');
+        Route::post('/parametres/statuts-enseignant', [\App\Http\Controllers\Parametrage\StatutEnseignantController::class, 'store'])->name('parametres.statuts-enseignant.store');
+        Route::put('/parametres/statuts-enseignant/{corps}', [\App\Http\Controllers\Parametrage\StatutEnseignantController::class, 'update'])->whereNumber('corps')->name('parametres.statuts-enseignant.update');
+        Route::delete('/parametres/statuts-enseignant/{corps}', [\App\Http\Controllers\Parametrage\StatutEnseignantController::class, 'destroy'])->whereNumber('corps')->name('parametres.statuts-enseignant.destroy');
         Route::get('/parametres/grades', [GradeController::class, 'index'])->name('parametres.grades.index');
         Route::post('/parametres/grades', [GradeController::class, 'store'])->name('parametres.grades.store');
         Route::put('/parametres/grades/{grade}', [GradeController::class, 'update'])->whereNumber('grade')->name('parametres.grades.update');
