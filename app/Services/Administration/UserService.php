@@ -65,22 +65,6 @@ class UserService
         } catch (ConnectionException) {
             return ['data' => [], 'error' => 'Impossible de charger les listes IA, IEF et établissements.', 'status' => 503];
         }
-        $allItems = array_values(array_filter($allItems, function (array $user) use ($filters): bool {
-            if (! empty($filters['role_id']) && (string) data_get($user, 'role.id', $user['role_id'] ?? '') !== (string) $filters['role_id']) {
-                return false;
-            }
-            if (! empty($filters['statut'])) {
-                $status = $user['statut'] ?? $user['status'] ?? false;
-                $active = $status === 'actif' || filter_var($status, FILTER_VALIDATE_BOOLEAN);
-                if ($active !== ($filters['statut'] === 'actif')) return false;
-            }
-            return true;
-        }));
-        $total = count($allItems);
-        $lastPage = max(1, (int) ceil($total / $perPage));
-        $page = min($page, $lastPage);
-        $items = array_slice($allItems, ($page - 1) * $perPage, $perPage);
-
         return [
             'data' => $response->json('data', []),
             'error' => $response->successful() ? null : $response->json('message', 'Chargement des filtres impossible.'),

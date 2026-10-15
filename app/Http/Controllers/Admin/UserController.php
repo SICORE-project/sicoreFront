@@ -19,16 +19,14 @@ class UserController extends Controller
             'ia_id' => ['nullable', 'integer', 'min:1', 'required_with:ief_id,etablissement_id'],
             'ief_id' => ['nullable', 'integer', 'min:1', 'required_with:etablissement_id'],
             'etablissement_id' => ['nullable', 'integer', 'min:1'],
+            'role_id' => ['nullable', 'integer', 'min:1'],
+            'statut' => ['nullable', 'in:actif,inactif'],
             'page' => ['nullable', 'integer', 'min:1'],
             'per_page' => ['nullable', 'integer', 'in:10,20,50'],
         ]);
         $page = (int) ($filters['page'] ?? 1);
         $perPage = (int) ($filters['per_page'] ?? 10);
 
-        $filters = $request->validate([
-            'role_id' => ['nullable', 'integer', 'min:1'],
-            'statut' => ['nullable', 'in:actif,inactif'],
-        ]);
         $response = $this->userService->getUsers($page, $perPage, null, $filters);
         $users = $response['items'] ?? [];
         $pagination = $response['pagination'] ?? [

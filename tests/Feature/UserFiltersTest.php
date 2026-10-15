@@ -20,10 +20,10 @@ class UserFiltersTest extends TestCase
             '*/admin/users/filter-options*' => Http::response(['data' => ['ias' => [['id' => 1, 'libelle' => 'Dakar']], 'iefs' => [['id' => 2, 'libelle' => 'Plateau']], 'etablissements' => [['id' => 3, 'libelle' => 'Lycée']]]]),
             '*' => Http::response(['data' => []]),
         ]);
-        $filters = ['nom' => 'Awa Ndiaye', 'matricule' => '1234', 'ia_id' => 1, 'ief_id' => 2, 'etablissement_id' => 3];
+        $filters = ['nom' => 'Awa Ndiaye', 'matricule' => '1234', 'ia_id' => 1, 'ief_id' => 2, 'etablissement_id' => 3, 'role_id' => 4, 'statut' => 'actif'];
         $this->get(route('utilisateurs.index', $filters))->assertOk()->assertSee('Nom ou prénom')->assertSee('Lycée')->assertSee('12 utilisateur(s)')
             ->assertSee(route('utilisateurs.index', $filters + ['page' => 2]))->assertDontSee('data-table-pagination')->assertDontSee('id="moduleSearch"', false);
-        Http::assertSent(fn ($request) => str_contains($request->url(), '/admin/users?') && $request['nom'] === 'Awa Ndiaye' && $request['etablissement_id'] == 3 && $request['page'] == 1);
+        Http::assertSent(fn ($request) => str_contains($request->url(), '/admin/users?') && $request['nom'] === 'Awa Ndiaye' && $request['etablissement_id'] == 3 && $request['page'] == 1 && $request['role_id'] == 4 && $request['statut'] === 'actif');
         Http::assertNotSent(fn ($request) => str_contains($request->url(), '/admin/users/all'));
     }
 

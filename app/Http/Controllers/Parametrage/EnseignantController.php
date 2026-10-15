@@ -38,7 +38,7 @@ class EnseignantController extends Controller
         if ($access->isDrh() && ! app(\App\Services\Organisation\OrganisationContext::class)->isScoped()) {
             return view('pages.enseignants.index', array_merge(array_fill_keys([
                 'items', 'academies', 'filterIefs', 'regionOptions', 'iefOptions', 'corpsOptions',
-                'categorieOptions', 'diplomeOptions', 'disciplineOptions', 'institutionOptions',
+                'categorieOptions', 'diplomeOptions', 'disciplineOptions', 'institutionOptions', 'statutOptions',
             ], []), [
                 'pagination' => ['current_page' => 1, 'last_page' => 1, 'total' => 0],
                 'error' => 'Aucun périmètre organisationnel n’est encore associé à votre compte. Les dossiers seront disponibles après son attribution.',

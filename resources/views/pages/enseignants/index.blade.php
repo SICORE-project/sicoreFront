@@ -1,4 +1,5 @@
 @extends('layouts.app')
+@inject('drhAccess', 'App\Services\Organisation\InterfaceAccess')
 
 {{--
   PAGE : Liste des enseignants — URL /enseignants dans routes/web.php.
@@ -41,7 +42,7 @@
           <button class="btn-primary" type="button" data-modal-open="teacher-create-modal">
             <i class="fa-solid fa-user-plus" aria-hidden="true"></i>
             Ajouter un enseignant
-          </button>@endif
+          </button>
         </div>
       </div>
 
