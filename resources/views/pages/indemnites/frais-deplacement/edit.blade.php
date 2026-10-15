@@ -45,6 +45,10 @@
 
     </section>
 
+    <div class="retour-page">
+        <x-retour-liste cle="frais" route="indemnites.frais-deplacement" :par-defaut="['objet' => $fiche['convocation']['objet'] ?? null]" variante="bouton" />
+    </div>
+
     <section class="form-card wizard-card convocation-card">
 
         <div class="form-card-header">
@@ -56,10 +60,7 @@
                 </p>
             </div>
 
-            <div class="form-card-header-actions">
-                <x-module-indemnite type="statut-frais-deplacement" :statut="$fiche['statut'] ?? null" />
-                <x-retour-liste cle="frais" route="indemnites.frais-deplacement" :par-defaut="['objet' => $fiche['convocation']['objet'] ?? null]" variante="bouton" />
-            </div>
+            <x-module-indemnite type="statut-frais-deplacement" :statut="$fiche['statut'] ?? null" />
         </div>
 
         {{--

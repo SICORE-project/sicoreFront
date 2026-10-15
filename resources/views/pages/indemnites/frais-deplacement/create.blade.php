@@ -59,6 +59,10 @@
          "required-label") — demande utilisatrice.
     ================================================================ --}}
 
+    <div class="retour-page">
+        <x-retour-liste cle="frais" route="indemnites.frais-deplacement" :par-defaut="['objet' => $convocation['objet'] ?? null]" variante="bouton" />
+    </div>
+
     <section class="form-card wizard-card convocation-card">
 
         <div class="form-card-header">
@@ -69,8 +73,6 @@
                     &middot; {{ $convocation['session'] ?? '—' }}
                 </p>
             </div>
-
-            <x-retour-liste cle="frais" route="indemnites.frais-deplacement" :par-defaut="['objet' => $convocation['objet'] ?? null]" variante="bouton" />
         </div>
 
         <form

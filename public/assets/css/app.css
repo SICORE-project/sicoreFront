@@ -3661,8 +3661,8 @@ body.sidebar-collapsed .logout-btn {
   font-weight: 600;
 }
 
-.form-card-header-actions {
-  display: flex;
-  align-items: center;
-  gap: 12px;
+/* Bouton retour placé au-dessus d'une carte de formulaire, aligné sur elle. */
+.retour-page {
+  max-width: 900px;
+  margin: 0 auto 12px;
 }
