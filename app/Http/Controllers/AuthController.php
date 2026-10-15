@@ -74,12 +74,9 @@ class AuthController extends Controller
             'email' => $data['user']['email'],
             'role' => $data['user']['role']['nom'] ?? null,
             'role_slug' => $data['user']['role']['slug'] ?? null,
-            'drh' => $data['drh'] ?? $data['user']['drh'] ?? [],
-            'decpc' => $data['decpc'] ?? $data['user']['decpc'] ?? [],
-            'name' => trim(($data['user']['prenom'] ?? '').' '.($data['user']['nom'] ?? '')),
-            'permissions' => $data['user']['permissions'] ?? $data['user']['role']['permissions'] ?? [],
-            'ia_id' => $data['user']['ia_id'] ?? $data['user']['ia']['id'] ?? null,
-            'ia' => $data['user']['ia'] ?? null,
+            'permissions' => $data['user']['permissions'] ?? [],
+            'ia_id' => $data['user']['ia_id'] ?? null,
+            'ief_id' => $data['user']['ief_id'] ?? null,
             'acces_organisationnel' => $data['user']['acces_organisationnel'] ?? $data['user']['organisation_access'] ?? [],
         ]);
 

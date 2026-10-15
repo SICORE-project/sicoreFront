@@ -27,7 +27,7 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 */
 
-Route::middleware('sicore.auth')
+Route::middleware(['sicore.auth', 'sicore.module:parametrage.ia.read,parametrage.ief.read,parametrage.diplomes.read,parametrage.corps.read,parametrage.categories.read,parametrage.specialites.read,parametrage.syndicats.read,parametrage.institutions_financieres.read,parametrage.lieux_service.read,parametrage.disciplines.read,parametrage.annees_academiques.read,parametrage.periodes_paie.read,paie.rubriques.read,enseignants.read'])
     ->prefix('parametrage')
     ->group(function (): void {
 

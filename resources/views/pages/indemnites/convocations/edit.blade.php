@@ -156,6 +156,7 @@
                                 id="date_debut"
                                 name="date_debut"
                                 type="date"
+                                min="{{ old('date_emission', optional($convocation->date_emission ?? null)->format('Y-m-d')) }}"
                                 value="{{ old('date_debut', optional($convocation->date_debut ?? null)->format('Y-m-d')) }}"
                                 required
                             >
@@ -169,6 +170,7 @@
                                 id="date_fin"
                                 name="date_fin"
                                 type="date"
+                                min="{{ old('date_debut', optional($convocation->date_debut ?? null)->format('Y-m-d')) }}"
                                 value="{{ old('date_fin', optional($convocation->date_fin ?? null)->format('Y-m-d')) }}"
                                 required
                             >
@@ -541,6 +543,26 @@
     window.__convocationWizardPrefill = @json($wizardData ?? []);
 </script>
 <script src="{{ asset('assets/js/indemnites/convocation-wizard.js') }}"></script>
+<script>
+    // La période de l'examen ne peut pas commencer avant la date d'émission, ni finir avant son début.
+    (function () {
+        const emission = document.getElementById('date_emission');
+        const debut = document.getElementById('date_debut');
+        const fin = document.getElementById('date_fin');
+        if (!emission || !debut || !fin) { return; }
+
+        const synchroniser = function () {
+            if (emission.value) { debut.min = emission.value; }
+            const plancher = debut.value || emission.value;
+            if (plancher) { fin.min = plancher; }
+            if (debut.value && emission.value && debut.value < emission.value) { debut.value = ''; }
+            if (fin.value && plancher && fin.value < plancher) { fin.value = ''; }
+        };
+
+        [emission, debut].forEach(function (champ) { champ.addEventListener('change', synchroniser); });
+        synchroniser();
+    })();
+</script>
 @endpush
 
 {{-- ================================================================

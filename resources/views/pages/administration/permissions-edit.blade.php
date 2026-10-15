@@ -15,38 +15,39 @@
 
                 <div class="form-group" style="margin-bottom: 20px;">
                     <label for="nom">Nom *</label>
-                    <input type="text" id="nom" name="nom" value="{{ $permission['nom'] }}" required class="form-control">
+                    <input type="text" id="nom" name="nom" value="{{ old('nom', $permission['nom'] ?? '') }}" required class="form-control">
                     @error('nom') <p style="color:#dc2626; font-size:12px; margin-top:4px;">{{ $message }}</p> @enderror
                 </div>
 
-                <div class="filter-panel" aria-label="Groupe et module" style="margin-bottom: 20px;">
-                    <div class="form-group">
-                        <label for="groupe">Groupe *</label>
-                        <input type="text" id="groupe" name="groupe" value="{{ $permission['groupe'] }}" required class="form-control">
-                        @error('groupe') <p style="color:#dc2626; font-size:12px; margin-top:4px;">{{ $message }}</p> @enderror
-                    </div>
-                    <div class="form-group">
-                        <label for="module">Module *</label>
-                        <input type="text" id="module" name="module" value="{{ $permission['module'] }}" required class="form-control">
-                        @error('module') <p style="color:#dc2626; font-size:12px; margin-top:4px;">{{ $message }}</p> @enderror
-                    </div>
-                </div>
-
                 <div class="form-group" style="margin-bottom: 20px;">
-                    <label for="action">Action *</label>
-                    <input type="text" id="action" name="action" value="{{ $permission['action'] }}" required class="form-control">
+                    <label for="slug">Slug (non modifiable)</label>
+                    <input type="text" id="slug" name="slug" value="{{ $permission['slug'] ?? '' }}" class="form-control" placeholder="" readonly>
+                    @error('slug') <p style="color:#dc2626; font-size:12px; margin-top:4px;">{{ $message }}</p> @enderror
+                </div>
+                <div class="form-group" style="margin-bottom: 20px;">
+                    <label for="groupe">Groupe</label>
+                    <input type="text" id="groupe" name="groupe" value="{{ old('groupe', $permission['groupe'] ?? '') }}" class="form-control" placeholder="ex. indemnites">
+                    @error('groupe') <p style="color:#dc2626; font-size:12px; margin-top:4px;">{{ $message }}</p> @enderror
+                </div>
+                <div class="form-group" style="margin-bottom: 20px;">
+                    <label for="module">Module</label>
+                    <input type="text" id="module" name="module" value="{{ old('module', $permission['module'] ?? '') }}" class="form-control" placeholder="ex. rapports">
+                    @error('module') <p style="color:#dc2626; font-size:12px; margin-top:4px;">{{ $message }}</p> @enderror
+                </div>
+                <div class="form-group" style="margin-bottom: 20px;">
+                    <label for="action">Action</label>
+                    <input type="text" id="action" name="action" value="{{ old('action', $permission['action'] ?? '') }}" class="form-control" placeholder="ex. export">
                     @error('action') <p style="color:#dc2626; font-size:12px; margin-top:4px;">{{ $message }}</p> @enderror
                 </div>
-
                 <div class="form-group" style="margin-bottom: 20px;">
                     <label for="description">Description</label>
-                    <textarea id="description" name="description" rows="3" class="form-control">{{ $permission['description'] }}</textarea>
+                    <textarea id="description" name="description" rows="3" class="form-control">{{ old('description', $permission['description'] ?? '') }}</textarea>
                     @error('description') <p style="color:#dc2626; font-size:12px; margin-top:4px;">{{ $message }}</p> @enderror
                 </div>
 
                 <div class="form-group" style="margin-bottom: 24px;">
                     <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                        <input type="checkbox" name="est_actif" value="1" @checked($permission['est_actif'])>
+                        <input type="checkbox" name="est_actif" value="1" @checked($permission['est_actif'] ?? false)>
                         <span style="font-size: 14px; font-weight: 500;">Actif</span>
                     </label>
                 </div>

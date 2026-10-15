@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 */
 
-Route::middleware('sicore.auth')->group(function (): void {
+Route::middleware(['sicore.auth', 'sicore.module:paie.bulletins.read'])->group(function (): void {
     Route::prefix('paie')->name('paie.')->group(function (): void {
         $pages = [
             'etats-presence' => 'paie-etats-presence',

@@ -27,20 +27,44 @@ class EnsureSicoreAuthenticated
                 ->with('warning', 'Veuillez vous connecter pour accéder à SICORE.');
         }
 
-        $access = app(\App\Services\Organisation\InterfaceAccess::class);
-        if ($access->isTeacher()) {
-            abort_unless($access->allowsRoute((string) $request->route()?->getName()), 403);
-            return $next($request);
-        }
-
-        $allowed = app(\App\Services\Organisation\DrhAccess::class)->allowsRoute(
-            (string) $request->route()?->getName()
-        );
-        if (! $allowed && $request->isMethod('GET') && ! $request->expectsJson()) {
-            return redirect()->route('dashboard');
-        }
-        abort_unless($allowed, 403, 'Vous ne disposez pas des droits ou du périmètre requis.');
+        $this->refreshProfile($request);
 
         return $next($request);
+    }
+
+    /**
+     * Relit le profil (rôle, permissions, IA/IEF) toutes les 60 s pour que les
+     * changements de droits apparaissent sans reconnexion. En cas d'échec réseau,
+     * la session existante est conservée.
+     */
+    private function refreshProfile(Request $request): void
+    {
+        $session = $request->session();
+        $token = $session->get('access_token');
+
+        if (! $token || now()->timestamp - (int) $session->get('sicore_profile_checked_at', 0) < 60) {
+            return;
+        }
+
+        $session->put('sicore_profile_checked_at', now()->timestamp);
+
+        try {
+            $user = app(\App\Contracts\SicoreApiClientInterface::class)->me($token)['user'] ?? null;
+        } catch (\Throwable) {
+            return;
+        }
+
+        if (! is_array($user)) {
+            return;
+        }
+
+        $session->put('sicore_user', array_merge((array) $session->get('sicore_user', []), [
+            'role' => $user['role']['nom'] ?? null,
+            'role_slug' => $user['role']['slug'] ?? null,
+            'permissions' => $user['permissions'] ?? [],
+            'ia_id' => $user['ia_id'] ?? null,
+            'ief_id' => $user['ief_id'] ?? null,
+            'acces_organisationnel' => $user['acces_organisationnel'] ?? [],
+        ]));
     }
 }

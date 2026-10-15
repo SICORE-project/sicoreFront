@@ -73,7 +73,7 @@
                 </button>
 
                 <button class="btn-secondary btn-bulk-delete" type="button" data-bulk-delete-button disabled>
-                    Supprimer la sélection
+                    Supprimer
                 </button>
             </div>
         </div>

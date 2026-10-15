@@ -27,7 +27,7 @@ class RubriquePaieController extends Controller
             return redirect()->route('login')->with('warning', $result['error']);
         }
 
-        $canManage = in_array($request->session()->get('sicore_user.role_slug'), ['admin', 'super_admin'], true);
+        $canManage = \App\Support\SicoreAccess::can($request, 'paie.rubriques.manage');
 
         return view('pages.parametres.rubriques-paie', $result + [
             'filters' => $filters,
