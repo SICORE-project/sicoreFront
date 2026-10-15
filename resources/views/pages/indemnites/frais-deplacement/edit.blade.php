@@ -14,6 +14,10 @@
 
 <section class="content-area">
 
+    <div class="actions-row">
+        <p class="breadcrumb"><x-retour-liste cle="frais" route="indemnites.frais-deplacement" :par-defaut="['objet' => $fiche['convocation']['objet'] ?? null]" /></p>
+    </div>
+
     {{-- ================================================================
          "EDIT DOIT ETRE COMPLET, BASE TOI SUR L'EDIT DE CONVOCATION" —
          même principe que convocations/edit.blade.php ("IL FAUT QUE EDIT
@@ -44,10 +48,6 @@
         </ol>
 
     </section>
-
-    <div class="actions-row">
-        <p class="breadcrumb"><x-retour-liste cle="frais" route="indemnites.frais-deplacement" :par-defaut="['objet' => $fiche['convocation']['objet'] ?? null]" /></p>
-    </div>
 
     <section class="form-card wizard-card convocation-card">
 

@@ -14,6 +14,10 @@
 
 <section class="content-area">
 
+    <div class="actions-row">
+        <p class="breadcrumb"><x-retour-liste cle="frais" route="indemnites.frais-deplacement" :par-defaut="['objet' => $convocation['objet'] ?? null]" /></p>
+    </div>
+
     {{-- ================================================================
          NOTA — tout en haut de page (demande utilisatrice), bandeau
          horizontal reprenant l'encadre "NOTA" + les notes de bas de page
@@ -58,10 +62,6 @@
          Tous les champs obligatoires ont leur libelle en gras (classe
          "required-label") — demande utilisatrice.
     ================================================================ --}}
-
-    <div class="actions-row">
-        <p class="breadcrumb"><x-retour-liste cle="frais" route="indemnites.frais-deplacement" :par-defaut="['objet' => $convocation['objet'] ?? null]" /></p>
-    </div>
 
     <section class="form-card wizard-card convocation-card">
 
