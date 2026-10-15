@@ -63,13 +63,14 @@
 
         <div class="form-card-header">
             <div>
-                <p class="breadcrumb"><x-retour-liste cle="frais" route="indemnites.frais-deplacement" :par-defaut="['objet' => $convocation['objet'] ?? null]" /></p>
                 <h2>Feuille de déplacement</h2>
                 <p class="breadcrumb">
                     {{ $convocation['objet'] ?? '—' }}
                     &middot; {{ $convocation['session'] ?? '—' }}
                 </p>
             </div>
+
+            <x-retour-liste cle="frais" route="indemnites.frais-deplacement" :par-defaut="['objet' => $convocation['objet'] ?? null]" variante="bouton" />
         </div>
 
         <form

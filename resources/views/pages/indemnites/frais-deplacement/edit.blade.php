@@ -49,7 +49,6 @@
 
         <div class="form-card-header">
             <div>
-                <p class="breadcrumb"><x-retour-liste cle="frais" route="indemnites.frais-deplacement" :par-defaut="['objet' => $fiche['convocation']['objet'] ?? null]" /></p>
                 <h2>Modifier la fiche de déplacement</h2>
                 <p class="breadcrumb">
                     {{ $fiche['reference'] ?? '—' }}
@@ -57,7 +56,10 @@
                 </p>
             </div>
 
-            <x-module-indemnite type="statut-frais-deplacement" :statut="$fiche['statut'] ?? null" />
+            <div class="form-card-header-actions">
+                <x-module-indemnite type="statut-frais-deplacement" :statut="$fiche['statut'] ?? null" />
+                <x-retour-liste cle="frais" route="indemnites.frais-deplacement" :par-defaut="['objet' => $fiche['convocation']['objet'] ?? null]" variante="bouton" />
+            </div>
         </div>
 
         {{--
