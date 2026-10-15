@@ -109,7 +109,7 @@ return [
         'type' => 'group',
         'label' => 'Gestion utilisateur',
         'icon' => 'fa-solid fa-users-gear',
-        'active' => ['utilisateurs.*'],
+        'active' => ['utilisateurs.*', 'admin.roles.*', 'admin.type-roles.*', 'admin.permissions.*'],
         'links' => [
             ['label' => 'Utilisateurs', 'route' => 'utilisateurs.index', 'icon' => 'fa-solid fa-user-shield', 'permission' => 'administration.users.read'],
             ['label' => 'Profils / Rôles', 'route' => 'utilisateurs.profils-roles', 'icon' => 'fa-solid fa-id-badge', 'permission' => 'administration.roles.read'],
