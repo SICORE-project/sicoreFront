@@ -140,15 +140,6 @@
 
         <div data-ajax-region="corps">
 
-        @if (! $filtreActif)
-
-            <section class="table-card">
-                <p class="empty-message show">
-                    Choisissez une session, un objet ou un centre d'examen ci-dessus pour afficher les correcteurs éligibles.
-                </p>
-            </section>
-
-        @else
 
             <section class="table-card">
 
@@ -205,16 +196,16 @@
 
                 <div class="convocation-pagination" aria-label="Pagination">
 
-                    @if ($convocations->onFirstPage())
+                    @if ($pagination->onFirstPage())
                         <span class="page-btn" aria-disabled="true">←</span>
                     @else
-                        <a class="page-btn" href="{{ $convocations->previousPageUrl() }}" aria-label="Page précédente" data-ajax-lien>←</a>
+                        <a class="page-btn" href="{{ $pagination->previousPageUrl() }}" aria-label="Page précédente" data-ajax-lien>←</a>
                     @endif
 
-                    @for ($page = 1; $page <= $convocations->lastPage(); $page++)
+                    @for ($page = 1; $page <= $pagination->lastPage(); $page++)
                         <a
-                            class="page-btn {{ $page === $convocations->currentPage() ? 'active' : '' }}"
-                            href="{{ $convocations->url($page) }}"
+                            class="page-btn {{ $page === $pagination->currentPage() ? 'active' : '' }}"
+                            href="{{ $pagination->url($page) }}"
                             data-page-number
                             data-ajax-lien
                         >
@@ -222,8 +213,8 @@
                         </a>
                     @endfor
 
-                    @if ($convocations->hasMorePages())
-                        <a class="page-btn" href="{{ $convocations->nextPageUrl() }}" aria-label="Page suivante" data-ajax-lien>→</a>
+                    @if ($pagination->hasMorePages())
+                        <a class="page-btn" href="{{ $pagination->nextPageUrl() }}" aria-label="Page suivante" data-ajax-lien>→</a>
                     @else
                         <span class="page-btn" aria-disabled="true">→</span>
                     @endif
@@ -231,8 +222,6 @@
                 </div>
 
             </section>
-
-        @endif
 
         </div>
 

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Indemnites;
 
+use App\Support\PaginationLignes;
 use App\Http\Controllers\Controller;
 use App\Services\Api\Indemnites\ConvocationService;
 use Illuminate\Http\JsonResponse;
@@ -38,10 +39,9 @@ class ConvocationsController extends Controller
 
         $filtreActif = count($filtres) > 0;
 
-        $resultat = $this->convocations->liste(array_merge($filtres, [
-            'per_page' => 10,
-            'page' => $request->query('page', 1),
-        ]));
+        // Toutes les convocations du filtre : le tableau (une ligne par convocation et par centre)
+        // est ensuite paginé par 10 lignes.
+        $resultat = $this->convocations->liste(array_merge($filtres, ['per_page' => 100]));
 
         $meta = $resultat['success'] ? ($resultat['data'] ?? []) : [];
         $items = $meta['data'] ?? [];
@@ -50,30 +50,18 @@ class ConvocationsController extends Controller
             session()->flash('error', $resultat['message'] ?? "Impossible de charger les convocations.");
         }
 
-        // La vue (index.blade.php) attend un vrai paginator Laravel
-        // (->total(), ->onFirstPage(), ->url(), ...). L'API renvoie une
-        // pagination "a la Laravel" (data/current_page/per_page/total), on
-        // la reconstruit ici cote frontend.
-        $convocationsPage = array_map([$this, 'formatConvocationForView'], $items);
-
-        $convocations = new LengthAwarePaginator(
-            $convocationsPage,
-            $meta['total'] ?? count($convocationsPage),
-            $meta['per_page'] ?? 10,
-            $meta['current_page'] ?? (int) $request->query('page', 1),
-            [
-                'path' => $request->url(),
-                'query' => $request->query(),
-            ]
+        // La vue attend un vrai paginator Laravel (->total(), ->url(), ...) : une page = 10 lignes.
+        $convocations = PaginationLignes::paginer(
+            $this->construireLignesCentres($items, $filtres['metier'] ?? null, $filtres['centre'] ?? null),
+            $request
         );
 
         // Statistiques rapides pour les cartes en haut de page. L'API ne
-        // fournit pas d'agregat dedie : "total" reprend le total reel de la
-        // pagination, le reste est calcule sur la page courante uniquement.
+        // fournit pas d'agregat dedie : calcules sur toutes les convocations du filtre.
         // NB: les cles doivent correspondre a index.blade.php
         // ($stats['envoyees'], $stats['brouillons']).
         $stats = [
-            'total' => $convocations->total(),
+            'total' => count($items),
             'brouillons' => 0,
             'emises' => 0,
             'envoyees' => 0,
@@ -100,7 +88,7 @@ class ConvocationsController extends Controller
             // different sont deux lignes distinctes en base), donc "Voir"/
             // "Modifier" doivent pointer vers CE centre precis plutot que
             // vers toute la convocation (cf. construireLignesCentres()).
-            'centresLignes' => $this->construireLignesCentres($items, $filtres['metier'] ?? null, $filtres['centre'] ?? null),
+            'centresLignes' => $convocations->items(),
             'stats' => $stats,
             'importAvertissements' => session('import_avertissements', []),
             // Selectionne dans le formulaire d'import (modal) : le type
@@ -968,12 +956,15 @@ class ConvocationsController extends Controller
         }
 
         $supprimees = 0;
+        $refus = [];
 
         foreach ($ids as $id) {
             $resultat = $this->convocations->supprimer($id);
 
             if ($resultat['success']) {
                 $supprimees++;
+            } else {
+                $refus[] = $resultat['message'] ?? 'échec';
             }
         }
 
@@ -981,9 +972,14 @@ class ConvocationsController extends Controller
             ? $supprimees.' convocation(s) supprimée(s).'
             : "Aucune des convocations sélectionnées n'a pu être supprimée.";
 
+        // Motifs de refus (fiche validée ou remboursée, état de paie…), sans répétition.
+        if ($refus !== []) {
+            $message .= ' '.count($refus).' refusée(s) : '.implode(' — ', array_unique($refus));
+        }
+
         return redirect()
             ->route('indemnites.convocations')
-            ->with($supprimees > 0 ? 'success' : 'error', $message);
+            ->with($supprimees > 0 && $refus === [] ? 'success' : 'error', $message);
     }
 
     // Ajoute un ou plusieurs beneficiaires a une convocation existante
