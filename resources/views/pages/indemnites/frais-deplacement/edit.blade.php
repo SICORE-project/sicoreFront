@@ -45,8 +45,8 @@
 
     </section>
 
-    <div class="retour-page">
-        <x-retour-liste cle="frais" route="indemnites.frais-deplacement" :par-defaut="['objet' => $fiche['convocation']['objet'] ?? null]" variante="bouton" />
+    <div class="actions-row">
+        <p class="breadcrumb"><x-retour-liste cle="frais" route="indemnites.frais-deplacement" :par-defaut="['objet' => $fiche['convocation']['objet'] ?? null]" /></p>
     </div>
 
     <section class="form-card wizard-card convocation-card">

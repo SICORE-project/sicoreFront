@@ -3660,9 +3660,3 @@ body.sidebar-collapsed .logout-btn {
   gap: 8px;
   font-weight: 600;
 }
-
-/* Bouton retour placé au-dessus d'une carte de formulaire, aligné sur elle. */
-.retour-page {
-  max-width: 900px;
-  margin: 0 auto 12px;
-}
