@@ -88,7 +88,7 @@ return [
         'type' => 'group',
         'label' => 'Paramétrage',
         'icon' => 'fa-solid fa-gears',
-        'active' => ['parametres.*', 'enseignants.*'],
+        'active' => ['parametres.*', 'enseignants.*', 'systeme.*'],
         'links' => [
             ['label' => 'IA', 'route' => 'parametres.ia.index', 'icon' => 'fa-solid fa-building-columns', 'permission' => 'parametrage.ia.read'],
             ['label' => 'IEF', 'route' => 'parametres.ief.index', 'icon' => 'fa-solid fa-sitemap', 'permission' => 'parametrage.ief.read'],
@@ -103,6 +103,7 @@ return [
             ['label' => 'Période de paie', 'route' => 'parametres.periodes-paie.index', 'icon' => 'fa-solid fa-calendar-week', 'permission' => 'parametrage.periodes_paie.read'],
             ['label' => 'Rubriques de paie', 'route' => 'parametres.rubriques-paie.index', 'icon' => 'fa-solid fa-list-ul', 'permission' => 'paie.rubriques.read'],
             ['label' => 'Établissements', 'route' => 'parametres.lieux-service.index', 'icon' => 'fa-solid fa-location-dot', 'permission' => 'parametrage.lieux_service.read'],
+            ['label' => 'Import des données', 'route' => 'systeme.import', 'icon' => 'fa-solid fa-file-import', 'permission' => 'systeme.import'],
         ],
     ],
     [
