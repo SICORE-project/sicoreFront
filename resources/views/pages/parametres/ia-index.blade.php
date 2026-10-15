@@ -45,7 +45,7 @@
 
     <form class="filter-panel parametrage-filters" id="iaFilterForm" method="GET" action="{{ route($listRoute) }}">
       <div class="form-group"><label for="iaSearch">Rechercher</label><input class="form-control" id="iaSearch" name="search" type="search" value="{{ request('search') }}" placeholder="Code ou libellé"></div>
-      <div class="form-group"><label for="iaRegionFilter">Région</label><select class="form-control" id="iaRegionFilter" name="region_id"><option value="">Toutes les régions</option>@foreach ($regions as $region)<option value="{{ data_get($region, 'id') }}" @selected((string) request('region_id') === (string) data_get($region, 'id'))>{{ data_get($region, 'nom') }}</option>@endforeach</select></div>
+      <div class="form-group"><label for="iaRegionFilter">Région</label><select class="form-control" id="iaRegionFilter" name="region_id"><option value="">Toutes les régions</option>@foreach ($regions as $region)<option value="{{ data_get($region, 'id') }}" @selected((string) request('region_id') === (string) data_get($region, 'id'))>{{ data_get($region, 'libelle', data_get($region, 'nom')) }}</option>@endforeach</select></div>
       <div class="actions-group"><a class="btn-secondary" href="{{ route($listRoute) }}">Réinitialiser</a></div>
     </form>
 
@@ -121,7 +121,7 @@
         <select class="form-control" id="iaCreateRegion" name="region_id" required>
           <option value="">Sélectionner une région</option>
           @foreach ($regions as $region)
-            <option value="{{ data_get($region, 'id') }}">{{ data_get($region, 'nom') }}</option>
+            <option value="{{ data_get($region, 'id') }}">{{ data_get($region, 'libelle', data_get($region, 'nom')) }}</option>
           @endforeach
         </select>
       </div>
@@ -154,7 +154,7 @@
         <select class="form-control" id="iaEditRegion" name="region_id" required>
           <option value="">Sélectionner une région</option>
           @foreach ($regions as $region)
-            <option value="{{ data_get($region, 'id') }}">{{ data_get($region, 'nom') }}</option>
+            <option value="{{ data_get($region, 'id') }}">{{ data_get($region, 'libelle', data_get($region, 'nom')) }}</option>
           @endforeach
         </select>
       </div>
