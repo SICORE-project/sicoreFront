@@ -22,7 +22,6 @@
 
             <div class="form-card-header">
                 <div>
-                    <p class="breadcrumb"><x-retour-liste cle="import" route="parametres.ia.index" /></p>
                     <h2>Import des données de base</h2>
                     <p class="breadcrumb">Référentiels du paramétrage, à partir d'un fichier CSV</p>
                 </div>
