@@ -76,6 +76,7 @@ class AuthController extends Controller
             'role_slug' => $data['user']['role']['slug'] ?? null,
             'permissions' => $data['user']['permissions'] ?? [],
             'ia_id' => $data['user']['ia_id'] ?? null,
+            'enseignant_id' => $data['user']['enseignant_id'] ?? null,
             'ief_id' => $data['user']['ief_id'] ?? null,
             'acces_organisationnel' => $data['user']['acces_organisationnel'] ?? $data['user']['organisation_access'] ?? [],
         ]);

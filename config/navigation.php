@@ -66,7 +66,7 @@ return [
         'icon' => 'fa-solid fa-coins',
         'active' => 'indemnites.*',
         'links' => [
-            ['label' => 'Mes pièces', 'route' => 'indemnites.mes-pieces', 'icon' => 'fa-solid fa-folder-open', 'permission' => 'mes_pieces.read'],
+            ['label' => 'Mes pièces', 'route' => 'indemnites.mes-pieces', 'icon' => 'fa-solid fa-folder-open', 'permission' => 'mes_pieces.read', 'enseignant_requis' => true],
             ['label' => 'Convocations', 'route' => 'indemnites.convocations', 'icon' => 'fa-solid fa-calendar-check', 'permission' => ['indemnites.read', 'convocations.read']],
             ['label' => 'Pièces justificatives', 'route' => 'indemnites.pieces-justificatives', 'icon' => 'fa-solid fa-folder-open', 'permission' => ['indemnites.read', 'pieces.read']],
             ['label' => 'Frais de déplacement', 'route' => 'indemnites.frais-deplacement', 'icon' => 'fa-solid fa-route', 'permission' => 'indemnites.read'],
