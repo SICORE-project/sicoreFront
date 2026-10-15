@@ -86,7 +86,9 @@
               @php
                 $exportParameters = array_filter([
                   'slug' => $slug,
-                  'period_id' => data_get($moduleData, 'period.id'),
+                  'period_id' => in_array($slug, ['paie-avance-tabaski', 'paie-retenue-tabaski'], true)
+                    ? null
+                    : data_get($moduleData, 'period.id'),
                 ]);
                 if ($slug === 'paie-etat-salaires') {
                   $exportParameters = array_merge(
@@ -220,6 +222,7 @@
     {{-- Filtre de période transmis par GET au contrôleur. --}}
     @if ($connected)
       @if (empty($moduleData['report_catalog']))
+        @if (! empty($page['filters']))
         <form class="filter-panel" method="GET" aria-label="Filtres de la page">
         @foreach ($page['filters'] as $index => $filter)
           @php
@@ -246,6 +249,7 @@
           </button>
         </div>
         </form>
+        @endif
 
       {{-- Recherche instantanée IA → IEF → matricule, sans rechargement. --}}
         @if (! empty($moduleData['supports_hierarchy_filter']))
@@ -295,7 +299,6 @@
                 autocapitalize="characters"
                 spellcheck="false"
                 data-payroll-live-matricule
-                disabled
               >
               <datalist id="payrollLiveMatriculeSuggestions" data-payroll-live-suggestions></datalist>
             </div>

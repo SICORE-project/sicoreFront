@@ -49,6 +49,17 @@ class ModulePage extends Component
 
         abort_unless(is_array($page), 404, 'Page SICORE introuvable.');
 
+        // Sans réponse API, ne jamais présenter les anciennes maquettes de
+        // paie comme des données issues d'Administration et Paramétrage.
+        if ($data === [] && str_starts_with($slug, 'paie-')) {
+            $page = array_replace($page, [
+                'stats' => [],
+                'filters' => [],
+                'actions' => [],
+                'rows' => [],
+            ]);
+        }
+
         $this->moduleData = $data;
         $this->connected = $data !== [];
         $this->payrollForms = (array) config('payroll-forms', []);

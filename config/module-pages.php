@@ -276,6 +276,8 @@ return [
         'title' => 'Retenues rappel',
         'icon' => 'RR',
         'breadcrumb' => 'Gestion de la paie > Retenues rappel',
+        'helpTitle' => 'Que signifie « retenue sur rappel » ?',
+        'helpText' => 'Un rappel est une somme de salaire due pour des mois antérieurs. Une retenue sur rappel est un montant déduit de ce versement rétroactif après vérification du dossier (par exemple, une régularisation ou un trop-perçu). Dans SICORE, cette page enregistre la retenue pour un formateur et une période ; elle ne calcule pas automatiquement le rappel dû. Elle est distincte de la retenue Tabaski de 10 000 FCFA par mois.',
         'stats' => [
             [
                 'label' => 'Rappels traites',
