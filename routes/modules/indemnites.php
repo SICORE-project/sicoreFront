@@ -280,6 +280,11 @@ Route::middleware(['sicore.auth', 'sicore.module:indemnites.read,pieces.read,con
         Route::post('/etats-paie', [EtatPaieIndemnitesController::class, 'storeEtatPaie'])
             ->name('etats-paie.store');
 
+        // Un seul état de paie pour tous les bénéficiaires du filtre (un ou plusieurs centres).
+        Route::post('/etats-paie/generer', [EtatPaieIndemnitesController::class, 'genererEtatGroupe'])
+            ->middleware('sicore.permission:indemnites.manage')
+            ->name('etats-paie.generer');
+
     });
 
   /*

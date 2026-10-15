@@ -87,7 +87,6 @@
             <div class="form-group">
                 <label for="etat-paie-type">Type d'indemnité</label>
                 <select class="form-control" id="etat-paie-type" name="type">
-                    <option value="">Sélectionner</option>
                     @foreach ($typesIndemnite as $valeur => $libelle)
                         <option value="{{ $valeur }}" @selected(($filtres['type'] ?? null) === $valeur)>{{ $libelle }}</option>
                     @endforeach
@@ -97,7 +96,7 @@
             <div class="form-group">
                 <label for="etat-paie-objet">Objet</label>
                 <select class="form-control" id="etat-paie-objet" name="objet" data-etat-paie-filtre>
-                    <option value="">Sélectionner</option>
+                    <option value="">Tous les objets</option>
                     @foreach ($optionsFiltres['objets'] ?? [] as $valeur)
                         <option value="{{ $valeur }}" @selected(($filtres['objet'] ?? null) === $valeur)>{{ $valeur }}</option>
                     @endforeach
@@ -107,7 +106,7 @@
             <div class="form-group">
                 <label for="etat-paie-session">Session</label>
                 <select class="form-control" id="etat-paie-session" name="session" data-etat-paie-filtre>
-                    <option value="">Sélectionner</option>
+                    <option value="">Toutes les sessions</option>
                     @foreach ($optionsFiltres['sessions'] ?? [] as $valeur)
                         <option value="{{ $valeur }}" @selected(($filtres['session'] ?? null) === $valeur)>{{ $valeur }}</option>
                     @endforeach
@@ -116,9 +115,10 @@
 
             <div class="form-group">
                 <label for="etat-paie-centre">Centre</label>
-                <select class="form-control" id="etat-paie-centre" name="centre" data-etat-paie-centre disabled>
-                    <option value="">Choisissez d'abord un objet ou une session</option>
-                </select>
+                <details class="multi-select" id="etat-paie-centre" data-etat-paie-centre>
+                    <summary class="form-control" data-etat-paie-centre-resume>Chargement des centres…</summary>
+                    <div class="multi-select__panel" data-etat-paie-centre-liste></div>
+                </details>
             </div>
 
             <div class="form-group etat-paie-generer-group">
@@ -141,6 +141,25 @@
 
         <section class="table-card">
 
+            @if (\App\Support\SicoreAccess::can(request(), 'indemnites.manage'))
+                <div class="etat-paie-groupe" data-etat-paie-groupe hidden>
+                    <p class="etat-paie-groupe__resume" data-etat-paie-groupe-resume></p>
+
+                    <form method="POST" action="{{ route('indemnites.etats-paie.generer') }}" data-etat-paie-groupe-form>
+                        @csrf
+                        <input type="hidden" name="type" data-etat-paie-groupe-champ="type">
+                        <input type="hidden" name="objet" data-etat-paie-groupe-champ="objet">
+                        <input type="hidden" name="session" data-etat-paie-groupe-champ="session">
+                        <span data-etat-paie-groupe-centres></span>
+
+                        <button type="submit" class="btn-primary">
+                            <i class="fa-solid fa-file-invoice-dollar" aria-hidden="true"></i>
+                            Générer l'état de paie
+                        </button>
+                    </form>
+                </div>
+            @endif
+
             <div class="table-responsive">
                 <table class="table" id="etatsPaieMembresTable">
                     <thead>
@@ -149,6 +168,7 @@
                             <th>Prénom</th>
                             <th>Catégorie</th>
                             <th>Fonction</th>
+                            <th>Centre</th>
                             <th style="text-align:right;">Montant</th>
                             <th class="actions-cell">Action</th>
                         </tr>
@@ -158,8 +178,10 @@
             </div>
 
             <p class="empty-message show" data-etat-paie-membres-hint>
-                Choisissez un type d'indemnité, puis un objet ou une session, pour afficher les membres associés.
+                Chargement des membres…
             </p>
+
+            <div class="convocation-pagination" aria-label="Pagination" data-etat-paie-pagination hidden></div>
 
         </section>
 
@@ -360,6 +382,56 @@
         color: var(--text-muted);
     }
 
+    /* Liste de centres à cocher (plusieurs centres possibles). */
+    .multi-select { position: relative; }
+    .multi-select > summary { cursor: pointer; list-style: none; }
+    .multi-select > summary::-webkit-details-marker { display: none; }
+    .multi-select[data-desactive] { pointer-events: none; opacity: 0.6; }
+    .multi-select__panel {
+        position: absolute;
+        z-index: 20;
+        top: calc(100% + 4px);
+        left: 0;
+        min-width: 100%;
+        max-height: 260px;
+        overflow-y: auto;
+        padding: 8px 10px;
+        background: #ffffff;
+        border: 1px solid var(--border, #e5e7eb);
+        border-radius: 10px;
+        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+    }
+    .multi-select__option {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 4px;
+        font-size: 14px;
+        cursor: pointer;
+        white-space: nowrap;
+    }
+
+    .convocation-pagination {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 7px;
+        padding: 14px 18px;
+        border-top: 1px solid var(--border-soft);
+    }
+
+    .etat-paie-groupe {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 14px 18px;
+        background: #ecfdf5;
+        border-bottom: 1px solid var(--border-soft);
+    }
+    .etat-paie-groupe__resume { margin: 0; font-weight: 600; }
+
     .etat-paie-btn-vert {
         display: inline-flex;
         align-items: center;
@@ -524,6 +596,13 @@
     var objetSelect = document.getElementById("etat-paie-objet");
     var sessionSelect = document.getElementById("etat-paie-session");
     var centreSelect = document.querySelector("[data-etat-paie-centre]");
+    var centreResume = centreSelect ? centreSelect.querySelector("[data-etat-paie-centre-resume]") : null;
+    var centreListe = centreSelect ? centreSelect.querySelector("[data-etat-paie-centre-liste]") : null;
+    var placeholderCentres = "Chargement des centres…";
+    var groupeBloc = document.querySelector("[data-etat-paie-groupe]");
+    var groupeForm = document.querySelector("[data-etat-paie-groupe-form]");
+    var groupeResume = document.querySelector("[data-etat-paie-groupe-resume]");
+    var groupeCentres = document.querySelector("[data-etat-paie-groupe-centres]");
     var centresUrl = "{{ route('indemnites.etats-paie.centres') }}";
     var membresUrl = "{{ route('indemnites.etats-paie.membres') }}";
     var membresBody = document.querySelector("[data-etat-paie-membres-body]");
@@ -540,11 +619,81 @@
     var etatsExistants = [];
     var etatsExistantsCharges = false;
     var membresActuels = [];
+    var pageMembres = 1;
+    var MEMBRES_PAR_PAGE = 10;
+    var paginationMembres = document.querySelector("[data-etat-paie-pagination]");
     var genererPdfUrl = "{{ route('indemnites.etats-paie.fiche-pdf') }}";
     var genererPdfLien = document.querySelector("[data-etat-paie-generer-pdf]");
 
     if (!typeSelect || !objetSelect || !sessionSelect || !centreSelect || !membresBody || !modal) {
         return;
+    }
+
+    // Centres cochés ([] = tous les centres).
+    function valeursCentres() {
+        if (!centreListe) return [];
+        return Array.prototype.slice.call(centreListe.querySelectorAll("input[data-centre-option]:checked"))
+            .map(function (c) { return c.value; });
+    }
+
+    function ajouterCentresAuxParametres(params) {
+        valeursCentres().forEach(function (centre) { params.append("centre[]", centre); });
+    }
+
+    function resumeCentres() {
+        var choisis = valeursCentres();
+        var aDesOptions = centreListe && centreListe.children.length > 0;
+
+        if (!aDesOptions) {
+            centreResume.textContent = placeholderCentres;
+        } else if (choisis.length === 0) {
+            centreResume.textContent = "Tous les centres";
+        } else if (choisis.length === 1) {
+            centreResume.textContent = choisis[0];
+        } else {
+            centreResume.textContent = choisis.length + " centres sélectionnés";
+        }
+    }
+
+    function creerOptionCentre(libelle, valeur, estTous) {
+        var label = document.createElement("label");
+        label.className = "multi-select__option";
+
+        var champ = document.createElement("input");
+        champ.type = "checkbox";
+        champ.value = valeur;
+        champ.setAttribute(estTous ? "data-centre-tous" : "data-centre-option", "");
+        if (estTous) champ.checked = true;
+
+        label.appendChild(champ);
+        label.appendChild(document.createTextNode(libelle));
+        return label;
+    }
+
+    // « Tous les centres » est coché tant qu'aucun centre précis ne l'est.
+    if (centreListe) {
+        centreListe.addEventListener("change", function (event) {
+            var tous = centreListe.querySelector("input[data-centre-tous]");
+            var cible = event.target;
+
+            if (!tous) return;
+
+            if (cible === tous) {
+                centreListe.querySelectorAll("input[data-centre-option]").forEach(function (c) { c.checked = false; });
+                tous.checked = true;
+            } else {
+                tous.checked = valeursCentres().length === 0;
+            }
+
+            resumeCentres();
+        });
+
+        // La liste se referme quand on clique ailleurs.
+        document.addEventListener("click", function (event) {
+            if (centreSelect.open && !centreSelect.contains(event.target)) {
+                centreSelect.open = false;
+            }
+        });
     }
 
     function formatFCFA(n) {
@@ -599,18 +748,26 @@
         });
     }
 
-    function afficherMembres(membres) {
+    // Tableau paginé par 10 lignes ; le résumé et le bouton « Générer » portent sur tous les membres.
+    function afficherMembres(membres, conserverPage) {
         membresActuels = membres;
         membresBody.innerHTML = "";
+        mettreAJourGroupe(membres);
+
+        var nombrePages = Math.max(1, Math.ceil(membres.length / MEMBRES_PAR_PAGE));
+        pageMembres = conserverPage ? Math.min(pageMembres, nombrePages) : 1;
 
         if (!membres.length) {
             afficherMembresHint("Aucun membre trouvé pour ce filtre.");
+            if (paginationMembres) paginationMembres.hidden = true;
             return;
         }
 
         membresHint.hidden = true;
 
-        membres.forEach(function (membre) {
+        var debut = (pageMembres - 1) * MEMBRES_PAR_PAGE;
+
+        membres.slice(debut, debut + MEMBRES_PAR_PAGE).forEach(function (membre) {
             var tr = document.createElement("tr");
             tr.setAttribute("data-etat-paie-membre-row", "");
             tr.dataset.id = membre.id || "";
@@ -618,6 +775,7 @@
             tr.dataset.prenom = membre.prenom || "";
             tr.dataset.categoriePersonnel = membre.categorie_personnel || "";
             tr.dataset.fonction = membre.fonction || "";
+            tr.dataset.centre = membre.centre || "";
             tr.dataset.montant = membre.montant || 0;
 
             var montantHtml = membre.montant_par_defaut
@@ -639,9 +797,93 @@
                 "<td>" + echapper(membre.prenom) + "</td>" +
                 "<td>" + (membre.categorie_personnel ? echapper(membre.categorie_personnel.charAt(0).toUpperCase() + membre.categorie_personnel.slice(1)) : "—") + "</td>" +
                 "<td>" + echapper(membre.fonction || "—") + "</td>" +
+                "<td>" + echapper(membre.centre || "—") + "</td>" +
                 "<td style=\"text-align:right;\">" + montantHtml + "</td>" +
                 "<td class=\"actions-cell\">" + actionHtml + "</td>";
             membresBody.appendChild(tr);
+        });
+
+        afficherPagination(nombrePages);
+    }
+
+    function afficherPagination(nombrePages) {
+        if (!paginationMembres) return;
+
+        paginationMembres.innerHTML = "";
+        paginationMembres.hidden = nombrePages <= 1;
+
+        if (nombrePages <= 1) return;
+
+        function bouton(libelle, page, actif, desactive) {
+            var b = document.createElement("button");
+            b.type = "button";
+            b.className = "page-btn" + (actif ? " active" : "");
+            b.textContent = libelle;
+            b.disabled = Boolean(desactive);
+            b.setAttribute("data-etat-paie-page", String(page));
+            paginationMembres.appendChild(b);
+        }
+
+        bouton("←", pageMembres - 1, false, pageMembres === 1);
+        for (var page = 1; page <= nombrePages; page++) {
+            bouton(String(page), page, page === pageMembres, false);
+        }
+        bouton("→", pageMembres + 1, false, pageMembres === nombrePages);
+    }
+
+    if (paginationMembres) {
+        paginationMembres.addEventListener("click", function (evenement) {
+            var cible = evenement.target.closest("[data-etat-paie-page]");
+            if (!cible || cible.disabled) return;
+
+            pageMembres = parseInt(cible.getAttribute("data-etat-paie-page"), 10) || 1;
+            afficherMembres(membresActuels, true);
+        });
+    }
+
+    // Résumé et champs du bouton « Générer l'état de paie » (un seul état pour tout le tableau).
+    function mettreAJourGroupe(membres) {
+        if (!groupeBloc || !groupeForm) return;
+
+        var avecMontant = membres.filter(function (m) { return (Number(m.montant) || 0) > 0; });
+        var total = avecMontant.reduce(function (somme, m) { return somme + (Number(m.montant) || 0); }, 0);
+
+        var perimetreChoisi = Boolean(objetSelect.value || sessionSelect.value);
+        var boutonGenerer = groupeForm.querySelector("button[type='submit']");
+
+        groupeBloc.hidden = membres.length === 0;
+        groupeResume.textContent = membres.length + " bénéficiaire(s) listé(s) — "
+            + avecMontant.length + " avec un montant à payer, total " + formatFCFA(total)
+            + (perimetreChoisi ? "" : " — choisissez une session ou un objet pour générer l'état de paie");
+
+        if (boutonGenerer) {
+            boutonGenerer.disabled = !perimetreChoisi;
+            boutonGenerer.title = perimetreChoisi ? "" : "Choisissez une session ou un objet pour générer l'état de paie";
+        }
+
+        groupeForm.querySelector("[data-etat-paie-groupe-champ='type']").value = typeSelect.value;
+        groupeForm.querySelector("[data-etat-paie-groupe-champ='objet']").value = objetSelect.value;
+        groupeForm.querySelector("[data-etat-paie-groupe-champ='session']").value = sessionSelect.value;
+
+        groupeCentres.innerHTML = "";
+        valeursCentres().forEach(function (centre) {
+            var champ = document.createElement("input");
+            champ.type = "hidden";
+            champ.name = "centre[]";
+            champ.value = centre;
+            groupeCentres.appendChild(champ);
+        });
+    }
+
+    if (groupeForm) {
+        groupeForm.addEventListener("submit", function (evenement) {
+            var avecMontant = membresActuels.filter(function (m) { return (Number(m.montant) || 0) > 0; });
+            var total = avecMontant.reduce(function (somme, m) { return somme + (Number(m.montant) || 0); }, 0);
+
+            if (!window.confirm("Générer un état de paie pour " + avecMontant.length + " bénéficiaire(s) (total "
+                + formatFCFA(total) + ") ?")) {
+                evenement.preventDefault();
+            }
         });
     }
 
@@ -649,10 +891,9 @@
         var type = typeSelect.value;
         var objet = objetSelect.value;
         var session = sessionSelect.value;
-        var centre = centreSelect.value;
 
-        if (!type || (!objet && !session)) {
-            afficherMembresHint("Choisissez un type d'indemnité, puis un objet ou une session, pour afficher les membres associés.");
+        if (!type) {
+            afficherMembresHint("Choisissez un type d'indemnité pour afficher les membres associés.");
             return;
         }
 
@@ -662,7 +903,7 @@
         params.set("type", type);
         if (objet) params.set("objet", objet);
         if (session) params.set("session", session);
-        if (centre) params.set("centre", centre);
+        ajouterCentresAuxParametres(params);
 
         fetch(membresUrl + "?" + params.toString(), {
             headers: { "X-Requested-With": "XMLHttpRequest" },
@@ -695,7 +936,6 @@
         var type = typeSelect.value;
         var objet = objetSelect.value;
         var session = sessionSelect.value;
-        var centre = centreSelect.value;
 
         if (!type || (!objet && !session)) {
             genererPdfLien.hidden = true;
@@ -706,7 +946,7 @@
         params.set("type", type);
         if (objet) params.set("objet", objet);
         if (session) params.set("session", session);
-        if (centre) params.set("centre", centre);
+        ajouterCentresAuxParametres(params);
 
         genererPdfLien.href = genererPdfUrl + "?" + params.toString();
         genererPdfLien.hidden = false;
@@ -729,9 +969,8 @@
         var type = typeSelect.value;
         var objet = objetSelect.value;
         var session = sessionSelect.value;
-        var centre = centreSelect.value;
 
-        if (!type || (!objet && !session)) {
+        if (!type) {
             return;
         }
 
@@ -739,7 +978,6 @@
         params.set("type", type);
         if (objet) params.set("objet", objet);
         if (session) params.set("session", session);
-        if (centre) params.set("centre", centre);
 
         fetch(existantsUrl + "?" + params.toString(), {
             headers: { "X-Requested-With": "XMLHttpRequest" },
@@ -750,7 +988,7 @@
                 etatsExistantsCharges = true;
 
                 if (membresActuels.length) {
-                    afficherMembres(membresActuels);
+                    afficherMembres(membresActuels, true);
                 }
             })
             .catch(function () {
@@ -886,21 +1124,25 @@
     });
 
     function remplirCentre(options, placeholder) {
-        centreSelect.innerHTML = "";
+        centreListe.innerHTML = "";
+        placeholderCentres = placeholder;
 
-        var option = document.createElement("option");
-        option.value = "";
-        option.textContent = placeholder;
-        centreSelect.appendChild(option);
+        if (options.length) {
+            centreListe.appendChild(creerOptionCentre("Tous les centres", "", true));
+            options.forEach(function (centre) {
+                centreListe.appendChild(creerOptionCentre(centre, centre, false));
+            });
+        } else {
+            centreSelect.open = false;
+        }
 
-        options.forEach(function (centre) {
-            var opt = document.createElement("option");
-            opt.value = centre;
-            opt.textContent = centre;
-            centreSelect.appendChild(opt);
-        });
+        if (options.length === 0) {
+            centreSelect.setAttribute("data-desactive", "");
+        } else {
+            centreSelect.removeAttribute("data-desactive");
+        }
 
-        centreSelect.disabled = options.length === 0;
+        resumeCentres();
     }
 
     // $apresChargement (optionnel) : execute une fois les options du menu
@@ -910,12 +1152,7 @@
         var objet = objetSelect.value;
         var session = sessionSelect.value;
 
-        if (!objet && !session) {
-            remplirCentre([], "Choisissez d'abord un objet ou une session");
-            return;
-        }
-
-        remplirCentre([], "Recherche des centres…");
+        remplirCentre([], "Chargement des centres…");
 
         var params = new URLSearchParams();
         if (objet) params.set("objet", objet);
@@ -937,6 +1174,7 @@
             })
             .catch(function () {
                 remplirCentre([], "Impossible de charger les centres");
+                if (apresChargement) apresChargement();
             });
     }
 
@@ -973,7 +1211,7 @@
         remplirChampModal("type", typeSelect.value);
         remplirChampModal("objet", objetSelect.value);
         remplirChampModal("session", sessionSelect.value);
-        remplirChampModal("centre", centreSelect.value);
+        remplirChampModal("centre", ligne.dataset.centre || valeursCentres().join(", "));
 
         remplirChampModal("id", ligne.dataset.id);
         remplirChampModal("nom", ligne.dataset.nom);
@@ -1045,27 +1283,25 @@
     // l'utilisatrice venait de les choisir elle-meme.
     var filtreInitialObjet = @json($filtres['objet'] ?? '');
     var filtreInitialSession = @json($filtres['session'] ?? '');
-    var filtreInitialCentre = @json($filtres['centre'] ?? '');
+    var filtreInitialCentre = [].concat(@json($filtres['centre'] ?? []));
     var filtreInitialType = @json($filtres['type'] ?? '');
 
-    if (filtreInitialObjet || filtreInitialSession) {
-        chargerCentres(function () {
-            if (filtreInitialCentre) {
-                centreSelect.value = filtreInitialCentre;
-            }
-
-            if (filtreInitialType) {
-                chargerMembres();
-                chargerEtatsExistants();
-            }
-
-            mettreAJourLienGenererPdf();
+    chargerCentres(function () {
+        filtreInitialCentre.forEach(function (centre) {
+            centreListe.querySelectorAll("input[data-centre-option]").forEach(function (champ) {
+                if (champ.value === centre) champ.checked = true;
+            });
         });
-    } else if (filtreInitialType) {
+
+        var tousLesCentres = centreListe.querySelector("input[data-centre-tous]");
+        if (tousLesCentres) tousLesCentres.checked = valeursCentres().length === 0;
+        resumeCentres();
+
+        // Liste par défaut : les membres s'affichent dès l'ouverture, sans filtre obligatoire.
         chargerMembres();
         chargerEtatsExistants();
         mettreAJourLienGenererPdf();
-    }
+    });
 })();
 </script>
 @endpush
