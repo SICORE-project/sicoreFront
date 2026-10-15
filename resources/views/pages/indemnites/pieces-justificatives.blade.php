@@ -150,6 +150,13 @@
              rechargent la page".
         ============================================================ --}}
 
+        <p class="info-depot" role="note">
+            <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+            Les pièces justificatives sont fournies <strong>après les services faits (après les examens)</strong> :
+            le dépôt n'est possible qu'une fois l'examen terminé. L'ordre de mission se dépose en <strong>un seul fichier</strong>
+            contenant le recto et le verso.
+        </p>
+
         <div data-ajax-region="corps">
 
 
@@ -196,6 +203,8 @@
                                               <button
                                                 class="table-action"
                                                 type="button"
+                                                @disabled(! ($membre['depot_ouvert'] ?? true))
+                                                @if (! ($membre['depot_ouvert'] ?? true)) title="Dépôt possible une fois l'examen terminé (après le {{ \Illuminate\Support\Carbon::parse($membre['date_fin'])->format('d/m/Y') }})" @endif
                                                 data-modal-open="modal-piece-justificative"
                                                 data-piece-mode="ajouter"
                                                 data-piece-convocation-id="{{ $membre['convocation_id'] }}"
@@ -331,7 +340,7 @@
                     <div class="import-panel-form-grid">
 
                         <div class="form-group">
-                            <label for="piece-service-fait">Service fait <span class="form-group-hint">(PDF, JPG, PNG — 100 Ko max)</span></label>
+                            <label for="piece-service-fait">Service fait <span class="form-group-hint">(PDF, JPG, PNG — 1 Mo max)</span></label>
                             <div class="dropzone" data-dropzone>
                                 <div class="dropzone-visual">
                                     <i class="fa-solid fa-cloud-arrow-up" aria-hidden="true"></i>
@@ -342,7 +351,7 @@
                         </div>
 
                         <div class="form-group">
-                            <label for="piece-ordre-mission">Ordre de mission <span class="form-group-hint">(PDF, JPG, PNG — 100 Ko max)</span></label>
+                            <label for="piece-ordre-mission">Ordre de mission (recto-verso) <span class="form-group-hint">(PDF, JPG, PNG — 1 Mo max — un seul fichier contenant le recto et le verso)</span></label>
                             <div class="dropzone" data-dropzone>
                                 <div class="dropzone-visual">
                                     <i class="fa-solid fa-cloud-arrow-up" aria-hidden="true"></i>
@@ -353,7 +362,7 @@
                         </div>
 
                         <div class="form-group">
-                            <label for="piece-rapport-mission">Rapport de mission <span class="form-group-hint">(PDF, JPG, PNG — 100 Ko max)</span></label>
+                            <label for="piece-rapport-mission">Rapport de mission <span class="form-group-hint">(PDF, JPG, PNG — 1 Mo max)</span></label>
                             <div class="dropzone" data-dropzone>
                                 <div class="dropzone-visual">
                                     <i class="fa-solid fa-cloud-arrow-up" aria-hidden="true"></i>
@@ -364,7 +373,7 @@
                         </div>
 
                         <div class="form-group">
-                            <label for="piece-bulletin-salaire">Bulletin de salaire <span class="form-group-hint">(PDF, JPG, PNG — 100 Ko max)</span></label>
+                            <label for="piece-bulletin-salaire">Bulletin de salaire <span class="form-group-hint">(PDF, JPG, PNG — 1 Mo max)</span></label>
                             <div class="dropzone" data-dropzone>
                                 <div class="dropzone-visual">
                                     <i class="fa-solid fa-cloud-arrow-up" aria-hidden="true"></i>
@@ -375,7 +384,7 @@
                         </div>
 
                         <div class="form-group">
-                            <label for="piece-accuse-reception">Accusé de réception <span class="form-group-hint">(PDF, JPG, PNG — 100 Ko max)</span></label>
+                            <label for="piece-accuse-reception">Accusé de réception <span class="form-group-hint">(PDF, JPG, PNG — 1 Mo max)</span></label>
                             <div class="dropzone" data-dropzone>
                                 <div class="dropzone-visual">
                                     <i class="fa-solid fa-cloud-arrow-up" aria-hidden="true"></i>
@@ -489,6 +498,16 @@
 
 @push('styles')
 <style>
+    .info-depot {
+        margin: 0 0 16px;
+        padding: 12px 16px;
+        background: #eff6ff;
+        border: 1px solid #bfdbfe;
+        border-radius: 10px;
+        color: #1e3a8a;
+        font-size: 14px;
+    }
+
 
     .convocation-pagination {
         display: flex;
@@ -804,12 +823,12 @@
         var recapPiece = document.querySelector("[data-piece-recap]");
         var compteurRecap = recapPiece ? recapPiece.querySelector("[data-piece-recap-count]") : null;
 
-        // 100 Ko max par fichier (voir demande utilisateur) — verifie des
+        // 1 Mo max par fichier (voir demande utilisateur) — verifie des
         // la selection, cote client, plutot que d'attendre le retour du
         // serveur apres l'envoi : memes classes (.field-error/.is-invalid)
         // que le wizard de convocation (convocation-wizard.js), pour rester
         // coherent avec le reste de l'appli.
-        var TAILLE_MAX_OCTETS = 100 * 1024;
+        var TAILLE_MAX_OCTETS = 1024 * 1024;
 
         function formaterKo(octets) {
             return Math.round(octets / 1024) + " Ko";
@@ -847,7 +866,7 @@
             }
         }
 
-        // Renvoie false et vide le champ si le fichier depasse 100 Ko —
+        // Renvoie false et vide le champ si le fichier depasse 1 Mo —
         // ainsi mettreAJourRecap() ne le compte jamais comme "pret" et le
         // formulaire ne peut pas etre soumis avec ce fichier.
         function verifierTailleFichier(champ) {
@@ -862,7 +881,7 @@
             if (fichier.size > TAILLE_MAX_OCTETS) {
                 afficherErreurChamp(
                     champ,
-                    "Fichier trop volumineux (" + formaterKo(fichier.size) + ") — diminuez sa taille à 100 Ko maximum."
+                    "Fichier trop volumineux (" + formaterKo(fichier.size) + ") — diminuez sa taille à 1 Mo maximum."
                 );
                 champ.value = "";
 

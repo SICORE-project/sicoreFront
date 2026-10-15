@@ -6,6 +6,7 @@ use App\Http\Controllers\Indemnites\EtatPaieIndemnitesController;
 use App\Http\Controllers\Indemnites\FraisDeplacementController;
 use App\Http\Controllers\Indemnites\IndemniteCorrectionController;
 use App\Http\Controllers\Indemnites\IndemniteSurveillanceController;
+use App\Http\Controllers\Indemnites\MesPiecesController;
 use App\Http\Controllers\Indemnites\NotificationController;
 use App\Http\Controllers\Indemnites\PiecesJustificativesController;
 
@@ -14,6 +15,16 @@ use App\Http\Controllers\Indemnites\PiecesJustificativesController;
 | Module Indemnités
 |--------------------------------------------------------------------------
 */
+
+// Espace enseignant : ses propres pièces (hors section DAGE).
+Route::middleware(['sicore.auth', 'sicore.module:mes_pieces.read'])
+    ->prefix('indemnites/mes-pieces')
+    ->name('indemnites.mes-pieces')
+    ->group(function (): void {
+        Route::post('/deposer', [MesPiecesController::class, 'deposer'])->name('.deposer');
+        Route::get('/{id}/telecharger', [MesPiecesController::class, 'telecharger'])->name('.telecharger');
+        Route::get('/', [MesPiecesController::class, 'index']);
+    });
 
 Route::middleware(['sicore.auth', 'sicore.module:indemnites.read,pieces.read,convocations.read', 'sicore.indemnites'])
     ->prefix('indemnites')
@@ -261,12 +272,6 @@ Route::middleware(['sicore.auth', 'sicore.module:indemnites.read,pieces.read,con
         Route::get('/etats-paie/membres', [EtatPaieIndemnitesController::class, 'membresPourFiltre'])
             ->name('etats-paie.membres');
 
-        // AJAX : coordonnees bancaires d'un membre (pre-remplissage de la
-        // modale "Ajouter etat de paie").
-        Route::get('/etats-paie/membres/{id}/rib', [EtatPaieIndemnitesController::class, 'ribMembre'])
-            ->name('etats-paie.membres.rib');
-
-        // AJAX : etats de paie deja crees pour le filtre courant ("Voir etat").
         Route::get('/etats-paie/existants', [EtatPaieIndemnitesController::class, 'etatsExistants'])
             ->name('etats-paie.existants');
 
@@ -274,11 +279,27 @@ Route::middleware(['sicore.auth', 'sicore.module:indemnites.read,pieces.read,con
         Route::get('/etats-paie/fiche-pdf', [EtatPaieIndemnitesController::class, 'genererFichePdf'])
             ->name('etats-paie.fiche-pdf');
 
+        // États de paie enregistrés : liste (AJAX), PDF d'un état, suppression d'un brouillon.
+        Route::get('/etats-paie/liste', [EtatPaieIndemnitesController::class, 'listeEtats'])
+            ->name('etats-paie.liste');
+
+        Route::get('/etats-paie/{id}/pdf', [EtatPaieIndemnitesController::class, 'telechargerEtat'])
+            ->whereNumber('id')
+            ->name('etats-paie.pdf');
+
+        Route::delete('/etats-paie/{id}', [EtatPaieIndemnitesController::class, 'supprimerEtat'])
+            ->whereNumber('id')
+            ->middleware('sicore.permission:indemnites.manage')
+            ->name('etats-paie.destroy');
+
+        Route::post('/etats-paie/{id}/{action}', [EtatPaieIndemnitesController::class, 'changerStatutEtat'])
+            ->whereNumber('id')
+            ->whereIn('action', ['valider', 'transmettre', 'archiver'])
+            ->middleware('sicore.permission:indemnites.validate')
+            ->name('etats-paie.statut');
+
         Route::get('/etats-paie', [EtatPaieIndemnitesController::class, 'index'])
             ->name('etats-paie');
-
-        Route::post('/etats-paie', [EtatPaieIndemnitesController::class, 'storeEtatPaie'])
-            ->name('etats-paie.store');
 
         // Un seul état de paie pour tous les bénéficiaires du filtre (un ou plusieurs centres).
         Route::post('/etats-paie/generer', [EtatPaieIndemnitesController::class, 'genererEtatGroupe'])

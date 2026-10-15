@@ -41,7 +41,7 @@ class PiecesJustificativesController extends Controller
      */
     private const TYPES_MANUELS = [
         'service_fait' => 'Service fait',
-        'ordre_mission' => 'Ordre de mission',
+        'ordre_mission' => 'Ordre de mission (recto-verso)',
         'rapport_mission' => 'Rapport de mission',
         'bulletin_salaire' => 'Bulletin de salaire',
         'accuse_reception' => 'Accusé de réception',
@@ -151,6 +151,7 @@ class PiecesJustificativesController extends Controller
 
                 $centreCommun = [
                     'convocation_id' => $item['id'] ?? null,
+                    'date_fin' => $item['date_fin'] ?? null,
                     'centre_id' => $centre['id'] ?? null,
                     'centre' => $centre['centre'] ?? null,
                     'objet' => $item['objet'] ?? null,
@@ -219,6 +220,7 @@ class PiecesJustificativesController extends Controller
         $complet = collect($dossier)->every(fn ($piece) => ! empty($piece['statut']) && $piece['statut'] !== 'rejete');
 
         return array_merge($centreCommun, [
+            'depot_ouvert' => self::depotOuvert($centreCommun['date_fin'] ?? null),
             'enseignant_id' => $enseignantId,
             'nom' => $enseignant['nom'] ?? null,
             'prenom' => $enseignant['prenom'] ?? null,
@@ -414,11 +416,11 @@ class PiecesJustificativesController extends Controller
             'convocation_id' => ['required', 'integer'],
             'enseignant_id' => ['required', 'integer'],
             'centre_id' => ['nullable', 'integer'],
-            'service_fait' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:100'],
-            'ordre_mission' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:100'],
-            'rapport_mission' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:100'],
-            'bulletin_salaire' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:100'],
-            'accuse_reception' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:100'],
+            'service_fait' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:1024'],
+            'ordre_mission' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:1024'],
+            'rapport_mission' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:1024'],
+            'bulletin_salaire' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:1024'],
+            'accuse_reception' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:1024'],
         ]);
 
         $donnees = array_filter([
@@ -462,11 +464,11 @@ class PiecesJustificativesController extends Controller
             'convocation_id' => ['required', 'integer'],
             'enseignant_id' => ['required', 'integer'],
             'centre_id' => ['nullable', 'integer'],
-            'service_fait' => ['sometimes', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:100'],
-            'ordre_mission' => ['sometimes', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:100'],
-            'rapport_mission' => ['sometimes', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:100'],
-            'bulletin_salaire' => ['sometimes', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:100'],
-            'accuse_reception' => ['sometimes', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:100'],
+            'service_fait' => ['sometimes', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:1024'],
+            'ordre_mission' => ['sometimes', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:1024'],
+            'rapport_mission' => ['sometimes', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:1024'],
+            'bulletin_salaire' => ['sometimes', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:1024'],
+            'accuse_reception' => ['sometimes', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:1024'],
         ]);
 
         $donnees = array_filter([
@@ -546,5 +548,15 @@ class PiecesJustificativesController extends Controller
             'Content-Type' => $reponse->header('Content-Type') ?: 'application/octet-stream',
             'Content-Disposition' => $reponse->header('Content-Disposition'),
         ]));
+    }
+
+    /** Dépôt possible une fois l'examen terminé (lendemain de la date de fin de la convocation). */
+    public static function depotOuvert(?string $dateFin): bool
+    {
+        if (! config('sicore.depot_apres_examen', true) || ! $dateFin) {
+            return true;
+        }
+
+        return now()->startOfDay()->gt(\Illuminate\Support\Carbon::parse($dateFin)->startOfDay());
     }
 }
