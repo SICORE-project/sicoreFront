@@ -61,7 +61,7 @@
                     </div>
 
                     <div class="form-group">
-                        <label>Type de bénéficiaire</label>
+                        <label>Statut</label>
                         <p>{{ ucfirst($fiche['statut_agent'] ?? '—') }}</p>
                     </div>
 
@@ -99,10 +99,6 @@
                         <p>{{ ! empty($fiche['date_depart']) ? \Illuminate\Support\Carbon::parse($fiche['date_depart'])->format('d/m/Y') : '—' }}</p>
                     </div>
 
-                    <div class="form-group">
-                        <label>Heure de départ</label>
-                        <p>{{ $fiche['heure_depart'] ?? '—' }}</p>
-                    </div>
 
                     <div class="form-group">
                         <label>Lieu de destination</label>

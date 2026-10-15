@@ -133,27 +133,14 @@
 
         {{-- ============================================================
              TABLEAU
-             Cache tant qu'aucun filtre (session, objet ou centre) n'est
-             choisi — meme comportement que Pieces justificatives. Une fois
-             un filtre choisi : une ligne par bénéficiaire au dossier
-             complet des convocations correspondantes.
+             Liste par défaut : les bénéficiaires au dossier complet des
+             convocations les plus récentes ; les filtres la réduisent.
 
              data-ajax-region="corps" : bascule sans recharger la page
-             (indemnites-ajax-resultats.js) — demande utilisatrice : "je ne
-             veux pas que les filtres rechargent la page".
+             (indemnites-ajax-resultats.js).
         ============================================================ --}}
 
         <div data-ajax-region="corps">
-
-        @if (! $filtreActif)
-
-            <section class="table-card">
-                <p class="empty-message show">
-                    Choisissez une session, un objet ou un centre d'examen ci-dessus pour afficher les bénéficiaires éligibles.
-                </p>
-            </section>
-
-        @else
 
             <section class="table-card">
 
@@ -165,7 +152,7 @@
                                 <th>Nom</th>
                                 <th>Prénom</th>
                                 <th>Matricule</th>
-                                <th>Type</th>
+                                <th>Statut</th>
                                 <th>Objet</th>
                                 <th>Session</th>
                                 <th>Statut fiche</th>
@@ -174,7 +161,7 @@
                         </thead>
 
                         <tbody>
-                            @forelse ($lignes as $ligne)
+                            @foreach ($lignes as $ligne)
                                 <tr>
                                     <td>{{ $ligne['nom'] ?? '—' }}</td>
                                     <td>{{ $ligne['prenom'] ?? '—' }}</td>
@@ -206,29 +193,28 @@
                                         </div>
                                     </td>
                                 </tr>
-                            @empty
-                            @endforelse
+                            @endforeach
                         </tbody>
 
                     </table>
                 </div>
 
                 @if (empty($lignes))
-                    <p class="empty-message show">Aucun bénéficiaire au dossier complet pour ce filtre.</p>
+                    <p class="empty-message show">Aucun bénéficiaire au dossier complet{{ request()->hasAny(['session', 'objet', 'centre']) ? ' pour ce filtre' : '' }}.</p>
                 @endif
 
                 <div class="convocation-pagination" aria-label="Pagination">
 
-                    @if ($convocations->onFirstPage())
+                    @if ($pagination->onFirstPage())
                         <span class="page-btn" aria-disabled="true">←</span>
                     @else
-                        <a class="page-btn" href="{{ $convocations->previousPageUrl() }}" aria-label="Page précédente" data-ajax-lien>←</a>
+                        <a class="page-btn" href="{{ $pagination->previousPageUrl() }}" aria-label="Page précédente" data-ajax-lien>←</a>
                     @endif
 
-                    @for ($page = 1; $page <= $convocations->lastPage(); $page++)
+                    @for ($page = 1; $page <= $pagination->lastPage(); $page++)
                         <a
-                            class="page-btn {{ $page === $convocations->currentPage() ? 'active' : '' }}"
-                            href="{{ $convocations->url($page) }}"
+                            class="page-btn {{ $page === $pagination->currentPage() ? 'active' : '' }}"
+                            href="{{ $pagination->url($page) }}"
                             data-page-number
                             data-ajax-lien
                         >
@@ -236,8 +222,8 @@
                         </a>
                     @endfor
 
-                    @if ($convocations->hasMorePages())
-                        <a class="page-btn" href="{{ $convocations->nextPageUrl() }}" aria-label="Page suivante" data-ajax-lien>→</a>
+                    @if ($pagination->hasMorePages())
+                        <a class="page-btn" href="{{ $pagination->nextPageUrl() }}" aria-label="Page suivante" data-ajax-lien>→</a>
                     @else
                         <span class="page-btn" aria-disabled="true">→</span>
                     @endif
@@ -245,8 +231,6 @@
                 </div>
 
             </section>
-
-        @endif
 
         </div>
 

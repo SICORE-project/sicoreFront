@@ -81,7 +81,7 @@
                 </div>
                 <div class="bareme-row" data-groupe="II">
                     <div class="bareme-row-top"><strong>Groupe II</strong><span>20 000 F</span></div>
-                    <span class="bareme-detail">Indice entre 1728 et 2295</span>
+                    <span class="bareme-detail">Indice entre 1729 et 2295</span>
                     <span class="bareme-detail">Salaire annuel entre 2 109 610 et 24 294 500</span>
                 </div>
                 <div class="bareme-row" data-groupe="III">
@@ -167,7 +167,7 @@
                                             if ($ficheDonneesDisponibles) {
                                                 if ($ficheCategorie === 'fonctionnaire') {
                                                     $ficheIndice = (float) $membre['fiche_indice_agent'];
-                                                    $ficheGroupe = $ficheIndice >= 2296 ? 'I' : ($ficheIndice >= 1728 ? 'II' : 'III');
+                                                    $ficheGroupe = $ficheIndice >= 2296 ? 'I' : ($ficheIndice >= 1729 ? 'II' : 'III');
                                                     $ficheSeuilTexte = 'Indice '.rtrim(rtrim(number_format($ficheIndice, 2, ',', ' '), '0'), ',');
                                                 } else {
                                                     // Seul le salaire ANNUALISE est stocke (voir
@@ -527,7 +527,7 @@
 
     var TAUX = { I: 25000, II: 20000, III: 15000 };
     var SEUIL_INDICE_I = 2296;
-    var SEUIL_INDICE_II = 1728;
+    var SEUIL_INDICE_II = 1729;
     var SEUIL_SG_I = 24294500;
     var SEUIL_SG_II = 2109610;
 

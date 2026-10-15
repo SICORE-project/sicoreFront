@@ -156,7 +156,7 @@
                         </div>
 
                         <div class="form-group">
-                            <label for="statut_agent_affiche">Type de bénéficiaire</label>
+                            <label for="statut_agent_affiche">Statut</label>
                             <input
                                 type="text"
                                 class="form-control field-prefilled"
@@ -294,16 +294,6 @@
                             <small class="form-hint">Déjà enregistrée sur la fiche — non modifiable ici.</small>
                         </div>
 
-                        <div class="form-group">
-                            <label for="heure_depart">à (heure)</label>
-                            <input
-                                type="time"
-                                class="form-control @error('heure_depart') is-invalid @enderror"
-                                id="heure_depart"
-                                name="heure_depart"
-                                value="{{ old('heure_depart', $fiche['heure_depart'] ?? '') }}"
-                            >
-                        </div>
 
                         <div class="form-group">
                             <label for="lieu_destination" class="required-label">Pour se rendre à <span class="required">*</span></label>
@@ -1073,6 +1063,38 @@
 
     .piece-form input[type="file"] {
         max-width: 220px;
+    }
+
+    /* Champs plus lisibles : texte plus grand, champs plus hauts, plus d'espace entre eux. */
+    .convocation-card .form-group label {
+        font-size: 14px;
+        margin-bottom: 6px;
+    }
+
+    .convocation-card .form-control,
+    .convocation-card select.form-control {
+        font-size: 15px;
+        min-height: 46px;
+        padding: 10px 14px;
+    }
+
+    .convocation-card textarea.form-control {
+        font-size: 15px;
+        min-height: 96px;
+        padding: 10px 14px;
+    }
+
+    .convocation-card .form-grid {
+        gap: 22px 26px;
+    }
+
+    .convocation-card .form-section h3 {
+        font-size: 18px;
+    }
+
+    /* Un tableau trop large défile au lieu d'être coupé par le bord de la carte. */
+    .convocation-card .table-responsive {
+        overflow-x: auto;
     }
 </style>
 @endpush

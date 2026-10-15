@@ -158,7 +158,7 @@
                         </div>
 
                         <div class="form-group">
-                            <label for="statut_agent_affiche">Type de bénéficiaire</label>
+                            <label for="statut_agent_affiche">Statut</label>
                             {{--
                                 Demande du chef de groupe : mettre en évidence
                                 les champs déjà récupérés (ici depuis la fiche
@@ -354,16 +354,6 @@
                             <small class="form-hint">Déjà connue depuis la convocation (début de la période d'examen) — non modifiable ici.</small>
                         </div>
 
-                        <div class="form-group">
-                            <label for="heure_depart">à (heure)</label>
-                            <input
-                                type="time"
-                                class="form-control @error('heure_depart') is-invalid @enderror"
-                                id="heure_depart"
-                                name="heure_depart"
-                                value="{{ old('heure_depart') }}"
-                            >
-                        </div>
 
                         <div class="form-group">
                             <label for="lieu_destination" class="required-label">Pour se rendre à <span class="required">*</span></label>
@@ -1104,6 +1094,38 @@
     .avance-decompte {
         font-variant-numeric: tabular-nums;
         white-space: nowrap;
+    }
+
+    /* Champs plus lisibles : texte plus grand, champs plus hauts, plus d'espace entre eux. */
+    .convocation-card .form-group label {
+        font-size: 14px;
+        margin-bottom: 6px;
+    }
+
+    .convocation-card .form-control,
+    .convocation-card select.form-control {
+        font-size: 15px;
+        min-height: 46px;
+        padding: 10px 14px;
+    }
+
+    .convocation-card textarea.form-control {
+        font-size: 15px;
+        min-height: 96px;
+        padding: 10px 14px;
+    }
+
+    .convocation-card .form-grid {
+        gap: 22px 26px;
+    }
+
+    .convocation-card .form-section h3 {
+        font-size: 18px;
+    }
+
+    /* Un tableau trop large défile au lieu d'être coupé par le bord de la carte. */
+    .convocation-card .table-responsive {
+        overflow-x: auto;
     }
 </style>
 @endpush
