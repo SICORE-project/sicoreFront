@@ -81,11 +81,7 @@
         </table>
       </div>
       @if ($pagination['last_page'] > 1)
-        <nav class="pagination" aria-label="Pagination des rubriques de paie">
-          @for ($page = 1; $page <= $pagination['last_page']; $page++)
-            <a class="page-btn {{ $page === $pagination['current_page'] ? 'active' : '' }}" href="{{ route('parametres.rubriques-paie.index', array_merge(request()->except('page'), ['page' => $page])) }}" @if ($page === $pagination['current_page']) aria-current="page" @endif>{{ $page }}</a>
-          @endfor
-        </nav>
+        @include('components.pagination', ['pagination' => $pagination])
       @endif
     </section>
   </section>

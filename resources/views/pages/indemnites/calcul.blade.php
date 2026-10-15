@@ -203,32 +203,7 @@
                     <p class="empty-message show">Aucun correcteur pour ce filtre.</p>
                 @endif
 
-                <div class="convocation-pagination" aria-label="Pagination">
-
-                    @if ($convocations->onFirstPage())
-                        <span class="page-btn" aria-disabled="true">←</span>
-                    @else
-                        <a class="page-btn" href="{{ $convocations->previousPageUrl() }}" aria-label="Page précédente" data-ajax-lien>←</a>
-                    @endif
-
-                    @for ($page = 1; $page <= $convocations->lastPage(); $page++)
-                        <a
-                            class="page-btn {{ $page === $convocations->currentPage() ? 'active' : '' }}"
-                            href="{{ $convocations->url($page) }}"
-                            data-page-number
-                            data-ajax-lien
-                        >
-                            {{ $page }}
-                        </a>
-                    @endfor
-
-                    @if ($convocations->hasMorePages())
-                        <a class="page-btn" href="{{ $convocations->nextPageUrl() }}" aria-label="Page suivante" data-ajax-lien>→</a>
-                    @else
-                        <span class="page-btn" aria-disabled="true">→</span>
-                    @endif
-
-                </div>
+                @include('components.pagination', ['pagination' => $convocations, 'ajax' => true])
 
             </section>
 

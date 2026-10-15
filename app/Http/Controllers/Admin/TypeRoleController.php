@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 
 class TypeRoleController extends Controller
 {
@@ -25,7 +26,10 @@ class TypeRoleController extends Controller
 
     public function store(Request $request)
     {
-        $data = $this->validated($request);
+        $data = $this->validated($request, creating: true);
+        $data['code'] = (Str::slug($data['libelle'], '_') ?: 'type_role');
+        $data['code'] = substr($data['code'], 0, 23).'_'.Str::ulid();
+        $data['est_actif'] = true;
         $response = Http::withToken(session('access_token'))
             ->post(config('services.backend.url').'/admin/type-roles', $data);
 
@@ -65,13 +69,13 @@ class TypeRoleController extends Controller
         return back()->with('error', $response->json('message', 'Suppression impossible.'));
     }
 
-    private function validated(Request $request): array
+    private function validated(Request $request, bool $creating = false): array
     {
         return $request->validate([
-            'code' => ['required', 'string', 'max:50'],
+            'code' => [$creating ? 'exclude' : 'required', 'string', 'max:50'],
             'libelle' => ['required', 'string', 'max:100'],
             'description' => ['nullable', 'string', 'max:255'],
-            'est_actif' => ['required', 'boolean'],
+            'est_actif' => [$creating ? 'exclude' : 'required', 'boolean'],
         ]);
     }
 

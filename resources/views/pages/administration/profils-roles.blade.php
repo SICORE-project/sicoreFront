@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'SICORE - Profils / Rôles')
+@section('title', 'SICORE - Liste des rôles')
 
 @section('content')
 <main class="main-content" style="margin-left: 280px; padding: 1.5rem;">

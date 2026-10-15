@@ -34,7 +34,7 @@
         <span></span>
     </div>
 
-    <span class="auth-kicker">Mot de passe oublié</span>
+    <span class="auth-kicker">{{ request()->boolean('welcome') ? 'Bienvenue sur SICORE' : 'Mot de passe oublié' }}</span>
     <p class="auth-subtitle">Entrez l'adresse e-mail associée à votre compte SICORE. Nous vous enverrons un code de vérification.</p>
 
     @if ($errors->any())
@@ -50,7 +50,7 @@
             <label for="email">Adresse e-mail</label>
             <div class="input-shell">
                 <span class="input-icon" aria-hidden="true"><i class="fa-solid fa-envelope"></i></span>
-                <input class="login-input @error('email') is-invalid @enderror" id="email" type="email" name="email" value="{{ old('email') }}" placeholder="adresse@sicore.sn" autocomplete="username" required autofocus>
+                <input class="login-input @error('email') is-invalid @enderror" id="email" type="email" name="email" value="{{ old('email', request()->query('email', '')) }}" placeholder="adresse@sicore.sn" autocomplete="username" required autofocus>
             </div>
         </div>
         <button class="login-button" type="submit">
