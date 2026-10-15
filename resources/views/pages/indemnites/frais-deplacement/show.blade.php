@@ -523,9 +523,7 @@
 
             <div class="form-actions">
 
-                <a class="btn-secondary" href="{{ route('indemnites.frais-deplacement', ['objet' => $fiche['convocation']['objet'] ?? null]) }}">
-                    Retour à la liste
-                </a>
+                <x-retour-liste cle="frais" route="indemnites.frais-deplacement" :par-defaut="['objet' => $fiche['convocation']['objet'] ?? null]" variante="bouton" />
 
                 <a class="btn-secondary" href="{{ route('indemnites.frais-deplacement.pdf', $fiche['id']) }}">
                     <i class="fa-solid fa-download" aria-hidden="true"></i>

@@ -15,9 +15,7 @@
     <section class="content-area">
 
         <div class="actions-row">
-            <p class="breadcrumb">
-                <a href="{{ route('indemnites.calcul') }}">&larr; Retour à la liste</a>
-            </p>
+            <p class="breadcrumb"><x-retour-liste cle="correction" route="indemnites.calcul" /></p>
         </div>
 
         {{-- ============================================================

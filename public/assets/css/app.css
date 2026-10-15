@@ -3652,3 +3652,11 @@ body.sidebar-collapsed .logout-btn {
 .password-field .form-control {
   padding-right: 48px;
 }
+
+/* « Retour à la liste » : flèche et texte alignés, partout pareil. */
+.retour-liste {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}

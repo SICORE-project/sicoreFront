@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Indemnites;
 
 use App\Support\PaginationLignes;
+use App\Support\RetourListe;
 use App\Http\Controllers\Controller;
 use App\Services\Api\Indemnites\ConvocationService;
 use App\Services\Api\Indemnites\FraisDeplacementService;
@@ -38,6 +39,8 @@ class FraisDeplacementController extends Controller
      */
     public function index(Request $request): View
     {
+        RetourListe::memoriser('frais', $request);
+
         $filtres = array_filter([
             'session' => $request->query('session'),
             'objet' => $request->query('objet'),

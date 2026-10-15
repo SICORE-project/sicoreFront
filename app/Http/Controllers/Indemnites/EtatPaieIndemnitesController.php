@@ -56,7 +56,7 @@ class EtatPaieIndemnitesController extends Controller
     /**
      * Demande utilisatrice : "je veux fixer tableau filtré après ajout de
      * l'état de paie" — le filtre (type/objet/session/centre) est repris
-     * depuis la query string (voir storeEtatPaie() ci-dessous, qui y
+     * depuis la query string (voir genererEtatGroupe() ci-dessous, qui y
      * redirige avec ces mêmes valeurs) pour pré-sélectionner les menus et
      * relancer automatiquement le chargement du tableau côté JS, au lieu de
      * revenir sur une page vide après la création.
@@ -280,97 +280,6 @@ class EtatPaieIndemnitesController extends Controller
     }
 
     /**
-     * AJAX — coordonnées bancaires d'UN membre, pour pré-remplir la modale
-     * "Ajouter état de paie" (demande utilisatrice : "un modal ... on doit
-     * avoir code banque code guichet Numero compte clé rib") — déjà
-     * enregistrées sur la fiche de l'enseignant si présentes, sinon
-     * laissées vides pour saisie manuelle dans la modale.
-     */
-    public function ribMembre(string $id): JsonResponse
-    {
-        $resultat = $this->enseignants->coordonneesBancaires([$id]);
-
-        if (! $resultat['success']) {
-            return response()->json([
-                'success' => false,
-                'message' => $resultat['message'] ?? 'Coordonnées bancaires introuvables.',
-            ], $resultat['status'] ?? 404);
-        }
-
-        $rib = $resultat['data'][$id] ?? [];
-
-        return response()->json(['success' => true, 'data' => [
-            'code_banque' => $rib['code_banque'] ?? null,
-            'code_guichet' => $rib['code_guichet'] ?? null,
-            'numero_compte_bancaire' => $rib['numero_compte_bancaire'] ?? null,
-            'cle_rib' => $rib['cle_rib'] ?? null,
-        ]]);
-    }
-
-    /**
-     * Crée la fiche état de paie (demande utilisatrice : "mets un bouton
-     * ajouter etat de paie") — regroupe les membres cochés dans le tableau
-     * (nom/prenom/categorie/fonction/montant) sous 'details', 'total_montant'
-     * calculé serveur. periode_debut/periode_fin (requis côté back, voir
-     * StoreEtatPaieIndemniteRequest) ne sont pas saisis sur ce formulaire :
-     * dérivés des dates de la/les convocation(s) correspondant à
-     * l'objet/session choisis.
-     */
-    public function storeEtatPaie(Request $request): RedirectResponse
-    {
-        $type = $request->input('type');
-        $objet = $request->input('objet');
-        $session = $request->input('session');
-        $centre = $request->input('centre');
-        $details = $request->input('details', []);
-
-        // Repris sur chaque redirection (succès ou erreur) pour rester sur
-        // le meme tableau filtré plutot que de revenir a une page vide.
-        $retour = array_filter(compact('type', 'objet', 'session', 'centre'));
-
-        if (! $type || (! $objet && ! $session) || empty($details)) {
-            return redirect()
-                ->route('indemnites.etats-paie', $retour)
-                ->with('error', "Choisissez un type, un objet ou une session, et au moins un membre avant d'ajouter un état de paie.");
-        }
-
-        $filtres = array_filter(['objet' => $objet, 'session' => $session]);
-        $resultat = $this->convocations->liste(array_merge($filtres, ['per_page' => 100]));
-        $items = $resultat['success'] ? ($resultat['data']['data'] ?? []) : [];
-
-        $datesDebut = collect($items)->pluck('date_debut')->filter();
-        $datesFin = collect($items)->pluck('date_fin')->filter();
-
-        if ($datesDebut->isEmpty() || $datesFin->isEmpty()) {
-            return redirect()
-                ->route('indemnites.etats-paie', $retour)
-                ->with('error', "Impossible de déterminer la période : aucune convocation avec dates ne correspond à ce filtre.");
-        }
-
-        $donnees = [
-            'type' => $type,
-            'periode_debut' => $datesDebut->min(),
-            'periode_fin' => $datesFin->max(),
-            'lieu_examen' => $centre,
-            'session' => $session,
-            'perimetre' => array_filter(['type' => $type, 'objet' => $objet, 'session' => $session, 'centre' => $centre]),
-            'details' => $details,
-        ];
-
-        $creation = $this->etatPaieIndemnites->creer($donnees);
-
-        if (! $creation['success']) {
-            return redirect()
-                ->route('indemnites.etats-paie', $retour)
-                ->with('error', $creation['message'] ?? "Échec de la création de l'état de paie.");
-        }
-
-        return redirect()
-            ->route('indemnites.etats-paie', $retour)
-            ->with('success', 'État de paie créé avec succès.');
-    }
-
-    /**
      * Produit UN état de paie pour tous les bénéficiaires du filtre (un ou plusieurs
      * centres). Rien n'est créé si une règle n'est pas respectée :
      *  - montant à 0 : la personne est ignorée (rien à payer) ;
@@ -438,7 +347,7 @@ class EtatPaieIndemnitesController extends Controller
             return redirect()
                 ->route('indemnites.etats-paie', $retour)
                 ->with('error', "Génération bloquée : coordonnées bancaires incomplètes pour {$sansRib->count()} bénéficiaire(s) — {$noms}"
-                    .($reste > 0 ? " et {$reste} autre(s)" : '').'. Renseignez leur RIB puis recommencez.');
+                    .($reste > 0 ? " et {$reste} autre(s)" : '').'. Le RIB complet (24 caractères) est obligatoire : renseignez-le puis recommencez.');
         }
 
         $filtres = array_filter(['objet' => $objet, 'session' => $session]);
@@ -502,6 +411,82 @@ class EtatPaieIndemnitesController extends Controller
         }
 
         return redirect()->route('indemnites.etats-paie', $retour)->with('success', $message);
+    }
+
+    /** AJAX — états de paie enregistrés (filtrables par type, objet et session), avec leurs bénéficiaires. */
+    public function listeEtats(Request $request): JsonResponse
+    {
+        $filtres = array_filter([
+            'type' => $request->query('type'),
+            'objet' => $request->query('objet'),
+            'session' => $request->query('session'),
+        ]);
+
+        $resultat = $this->etatPaieIndemnites->liste($filtres);
+
+        if (! $resultat['success']) {
+            return response()->json([
+                'success' => false,
+                'message' => $resultat['message'] ?? 'Impossible de charger les états de paie.',
+            ], $resultat['status'] ?? 500);
+        }
+
+        $etats = collect($resultat['data'] ?? [])->map(fn (array $etat) => [
+            'id' => $etat['id'] ?? null,
+            'reference' => $etat['reference'] ?? null,
+            'type' => $etat['type'] ?? null,
+            'type_libelle' => self::TYPES_INDEMNITE[$etat['type'] ?? ''] ?? ($etat['type'] ?? null),
+            'session' => $etat['session'] ?? null,
+            'objet' => $etat['perimetre']['objet'] ?? null,
+            'periode_debut' => $etat['periode_debut'] ?? null,
+            'periode_fin' => $etat['periode_fin'] ?? null,
+            'lieu_examen' => $etat['lieu_examen'] ?? null,
+            'statut' => $etat['statut'] ?? 'brouillon',
+            'date_generation' => $etat['date_generation'] ?? null,
+            'total_montant' => $etat['total_montant'] ?? 0,
+            'details' => $etat['details'] ?? [],
+        ])->values();
+
+        return response()->json(['success' => true, 'data' => ['etats' => $etats]]);
+    }
+
+    /** PDF d'un état enregistré. */
+    public function telechargerEtat(string $id): RedirectResponse|\Illuminate\Http\Response
+    {
+        $reponse = $this->etatPaieIndemnites->pdf($id);
+
+        if (! $reponse->successful()) {
+            return redirect()
+                ->route('indemnites.etats-paie')
+                ->with('error', $reponse->json('message') ?? "Impossible de générer le PDF de l'état de paie.");
+        }
+
+        return response($reponse->body(), 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => $reponse->header('Content-Disposition') ?: 'inline; filename="etat-de-paie.pdf"',
+        ]);
+    }
+
+    /** Supprime un état de paie en brouillon (l'API refuse les autres statuts). */
+    public function supprimerEtat(Request $request, string $id): RedirectResponse
+    {
+        $resultat = $this->etatPaieIndemnites->supprimer($id);
+
+        return redirect()
+            ->route('indemnites.etats-paie', array_filter($request->only(['type', 'objet', 'session'])))
+            ->with($resultat['success'] ? 'success' : 'error', $resultat['message'] ?? ($resultat['success'] ? 'État de paie supprimé.' : "Impossible de supprimer l'état de paie."));
+    }
+
+    /** Valider, transmettre ou archiver un état de paie (circuit de la DAGE). */
+    public function changerStatutEtat(Request $request, string $id, string $action): RedirectResponse
+    {
+        abort_unless(in_array($action, ['valider', 'transmettre', 'archiver'], true), 404);
+
+        $resultat = $this->etatPaieIndemnites->changerStatut($id, $action);
+
+        return redirect()
+            ->route('indemnites.etats-paie', array_filter($request->only(['type', 'objet', 'session'])))
+            ->with($resultat['success'] ? 'success' : 'error', $resultat['message'] ?? "Impossible de modifier le statut de l'état de paie.");
     }
 
     /** Centres choisis : `centre` (un seul) ou `centre[]` (plusieurs), sans valeur vide. */

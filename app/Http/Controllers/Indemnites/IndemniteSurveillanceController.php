@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Indemnites;
 
 use App\Support\PaginationLignes;
+use App\Support\RetourListe;
 use App\Http\Controllers\Controller;
 use App\Services\Api\Indemnites\ConvocationService;
 use App\Services\Api\Indemnites\IndemniteSurveillanceService;
@@ -21,6 +22,8 @@ class IndemniteSurveillanceController extends Controller
 
     public function index(Request $request): View
     {
+        RetourListe::memoriser('surveillance', $request);
+
         $filtres = array_filter([
             'session' => $request->query('session'),
             'objet' => $request->query('objet'),

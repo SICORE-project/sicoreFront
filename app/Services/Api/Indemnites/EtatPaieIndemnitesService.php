@@ -40,6 +40,23 @@ class EtatPaieIndemnitesService
         return $this->wrap($this->api->get('etat-paie-indemnites', $filtres));
     }
 
+    /** Changement de statut d'un état : 'valider', 'transmettre' ou 'archiver'. */
+    public function changerStatut(int|string $id, string $action): array
+    {
+        return $this->wrap($this->api->post("etat-paie-indemnites/{$id}/{$action}"));
+    }
+
+    public function supprimer(int|string $id): array
+    {
+        return $this->wrap($this->api->delete("etat-paie-indemnites/{$id}"));
+    }
+
+    /** PDF d'un état enregistré (réponse HTTP brute, comme genererFichePdf()). */
+    public function pdf(int|string $id)
+    {
+        return $this->api->get("etat-paie-indemnites/{$id}/pdf");
+    }
+
     /**
      * Réponse HTTP brute (fichier PDF) — pas de wrap(), même principe que
      * FraisDeplacementService::telechargerPdf().
