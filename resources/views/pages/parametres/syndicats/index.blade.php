@@ -88,23 +88,7 @@
         </table>
       </div>
       @if ($syndicats->hasPages())
-        <nav class="pagination" aria-label="Pagination des syndicats">
-          @if ($syndicats->onFirstPage())
-            <span class="page-btn" aria-disabled="true">&#8592;</span>
-          @else
-            <a class="page-btn" href="{{ $syndicats->previousPageUrl() }}" aria-label="Page précédente">&#8592;</a>
-          @endif
-
-          @foreach ($syndicats->getUrlRange(1, $syndicats->lastPage()) as $page => $url)
-            <a class="page-btn {{ $page === $syndicats->currentPage() ? 'active' : '' }}" href="{{ $url }}" @if ($page === $syndicats->currentPage()) aria-current="page" @endif>{{ $page }}</a>
-          @endforeach
-
-          @if ($syndicats->hasMorePages())
-            <a class="page-btn" href="{{ $syndicats->nextPageUrl() }}" aria-label="Page suivante">&#8594;</a>
-          @else
-            <span class="page-btn" aria-disabled="true">&#8594;</span>
-          @endif
-        </nav>
+        @include('components.pagination', ['pagination' => $syndicats])
       @endif
     </section>
   </section>

@@ -7,11 +7,27 @@
 | route vient de routes/web.php et active garde le bon lien sélectionné.
 */
 return [
+
     [
         'type' => 'link',
         'label' => 'Tableau de bord',
         'icon' => 'fa-solid fa-gauge-high',
         'route' => 'dashboard',
+    ],
+    [
+        'type' => 'group',
+        'label' => 'Gestion du personnel',
+        'icon' => 'fa-solid fa-users',
+        'active' => ['enseignants.*', 'personnel.*', 'recruitment.*'],
+        'links' => [
+            // ['label' => 'Nouveau recrus', 'route' => 'recruitment.index', 'active' => 'recruitment.*', 'icon' => 'fa-solid fa-user-plus'],
+            ['label' => 'Enseignants', 'route' => 'enseignants.index', 'active' => 'enseignants.*', 'icon' => 'fa-solid fa-chalkboard-user'],
+            ['label' => 'Reclassement', 'route' => 'personnel.reclassement', 'icon' => 'fa-solid fa-ranking-star'],
+            ['label' => 'Impôt sur le revenu', 'route' => 'personnel.impot-sur-le-revenu', 'icon' => 'fa-solid fa-file-invoice-dollar'],
+            ['label' => 'Validation enseignants transférés', 'route' => 'personnel.validation-enseignants-transferes', 'icon' => 'fa-solid fa-user-check'],
+            // ['label' => 'Heures supplémentaires', 'route' => 'personnel.heures-supplementaires', 'icon' => 'fa-solid fa-clock'],
+            // ['label' => 'Principaux intérimaires', 'route' => 'personnel.principaux-interimaires', 'icon' => 'fa-solid fa-user-tie'],
+        ],
     ],
     [
         'type' => 'group',
@@ -86,12 +102,12 @@ return [
         'type' => 'group',
         'label' => 'Paramétrage',
         'icon' => 'fa-solid fa-gears',
-        'active' => ['parametres.*', 'enseignants.*'],
+        'active' => ['parametres.*'],
         'links' => [
             ['label' => 'IA', 'route' => 'parametres.ia.index', 'icon' => 'fa-solid fa-building-columns'],
             ['label' => 'IEF', 'route' => 'parametres.ief.index', 'icon' => 'fa-solid fa-sitemap'],
             ['label' => 'Diplômes', 'route' => 'parametres.diplomes.index', 'icon' => 'fa-solid fa-graduation-cap'],
-            ['label' => 'Enseignants', 'route' => 'enseignants.index', 'icon' => 'fa-solid fa-chalkboard-user'],
+            ['label' => 'Statuts enseignants', 'route' => 'parametres.statuts-enseignant.index', 'icon' => 'fa-solid fa-user-tag'],
             ['label' => 'Corps', 'route' => 'parametres.corps.index', 'icon' => 'fa-solid fa-users-line'],
             ['label' => 'Catégories', 'route' => 'parametres.categories.index', 'icon' => 'fa-solid fa-layer-group'],
             ['label' => 'Banques', 'route' => 'parametres.institutions-financieres', 'icon' => 'fa-solid fa-building-columns'],
@@ -101,16 +117,21 @@ return [
             ['label' => 'Période de paie', 'route' => 'parametres.periodes-paie.index', 'icon' => 'fa-solid fa-calendar-week'],
             ['label' => 'Rubriques de paie', 'route' => 'parametres.rubriques-paie.index', 'icon' => 'fa-solid fa-list-ul'],
             ['label' => 'Établissements', 'route' => 'parametres.lieux-service.index', 'icon' => 'fa-solid fa-location-dot'],
+            ['label' => 'Régions', 'route' => 'parametres.regions.index', 'icon' => 'fa-solid fa-map-location-dot'],
+            ['label' => 'Départements', 'route' => 'parametres.departements.index', 'icon' => 'fa-solid fa-map-location-dot'],
+            ['label' => 'Communes', 'route' => 'parametres.communes.index', 'icon' => 'fa-solid fa-map-location-dot']
         ],
     ],
     [
         'type' => 'group',
         'label' => 'Gestion utilisateur',
         'icon' => 'fa-solid fa-users-gear',
-        'active' => ['utilisateurs.*'],
+        'active' => ['utilisateurs.*', 'admin.roles.*', 'admin.type-roles.*'],
         'links' => [
             ['label' => 'Utilisateurs', 'route' => 'utilisateurs.index', 'icon' => 'fa-solid fa-user-shield'],
-            ['label' => 'Profils / Rôles', 'route' => 'utilisateurs.profils-roles', 'icon' => 'fa-solid fa-id-badge'],
+            ['label' => 'Compte enseignant', 'route' => 'utilisateurs.teacher.create', 'active' => ['utilisateurs.teacher.*'], 'icon' => 'fa-solid fa-user-plus'],
+            ['label' => 'Rôles', 'route' => 'utilisateurs.profils-roles', 'active' => ['utilisateurs.profils-roles', 'admin.roles.*'], 'icon' => 'fa-solid fa-id-badge'],
+            ['label' => 'Types de rôle', 'route' => 'admin.type-roles.index', 'active' => ['admin.type-roles.*'], 'icon' => 'fa-solid fa-tags'],
             ['label' => 'Permissions', 'route' => 'utilisateurs.permissions', 'icon' => 'fa-solid fa-key'],
         ],
     ],

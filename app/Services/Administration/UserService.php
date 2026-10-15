@@ -32,62 +32,43 @@ class UserService
         // L'API peut retourner une collection paginée (data.data) ou une
         // liste simple (data). Accepter les deux évite un select vide, qui
         // bloque ensuite la soumission car role_id est obligatoire.
-        return data_get($data, 'data', []);
+        return collect(data_get($data, 'data', []))->reject(fn ($role) => mb_strtolower((string) data_get($role, 'slug')) === 'drh')->values()->all();
     }
 
     /**
      * Récupérer la liste des utilisateurs depuis le backend.
      */
-    public function getUsers(int $page = 1, int $perPage = 10, ?string $structureType = null): array
+    public function getUsers(int $page = 1, int $perPage = 10, ?string $structureType = null, array $filters = []): array
+    {
+        $pagination = ['current_page' => $page, 'last_page' => 1, 'total' => 0, 'per_page' => $perPage];
+        try {
+            $response = $this->apiClient->get('admin/users', array_merge($filters, [
+                'page' => $page, 'per_page' => $perPage, 'type_structure' => $structureType,
+            ]));
+        } catch (ConnectionException) {
+            return ['items' => [], 'pagination' => $pagination, 'error' => 'Le service backend est inaccessible.'];
+        }
+        if (! $response->successful()) {
+            return ['items' => [], 'pagination' => $pagination, 'error' => $response->json('message', 'Impossible de charger les utilisateurs.')];
+        }
+        return [
+            'items' => $response->json('data', []),
+            'pagination' => array_merge($pagination, $response->json('meta', [])),
+            'error' => null,
+        ];
+    }
+
+    public function userFilterOptions(array $filters = []): array
     {
         try {
-            $response = $this->apiClient->get('admin/users/all');
+            $response = $this->apiClient->get('admin/users/filter-options', $filters);
         } catch (ConnectionException) {
-            return [
-                'items' => [],
-                'error' => 'Le service backend est inaccessible. Vérifiez qu’il est démarré sur le port configuré.',
-                'pagination' => [
-                    'current_page' => $page,
-                    'last_page' => 1,
-                    'total' => 0,
-                    'per_page' => $perPage,
-                ],
-            ];
+            return ['data' => [], 'error' => 'Impossible de charger les listes IA, IEF et établissements.', 'status' => 503];
         }
-
-        if (! $response->successful()) {
-            return [
-                'items' => [],
-                'error' => $response->json('message', "Impossible de charger les utilisateurs (HTTP {$response->status()})."),
-                'pagination' => [
-                    'current_page' => $page,
-                    'last_page' => 1,
-                    'total' => 0,
-                    'per_page' => $perPage,
-                ],
-            ];
-        }
-
-        $data = $response->json();
-        $allItems = data_get($data, 'data.data', data_get($data, 'data', data_get($data, 'users', [])));
-        $allItems = is_array($allItems) ? array_values($allItems) : [];
-        if ($structureType) {
-            $allItems = array_values(array_filter($allItems, fn (array $user): bool => $this->organisationType($user) === $structureType));
-        }
-        $total = count($allItems);
-        $lastPage = max(1, (int) ceil($total / $perPage));
-        $page = min($page, $lastPage);
-        $items = array_slice($allItems, ($page - 1) * $perPage, $perPage);
-
         return [
-            'items' => is_array($items) ? $items : [],
-            'error' => null,
-            'pagination' => [
-                'current_page' => $page,
-                'last_page' => $lastPage,
-                'total' => $total,
-                'per_page' => $perPage,
-            ],
+            'data' => $response->json('data', []),
+            'error' => $response->successful() ? null : $response->json('message', 'Chargement des filtres impossible.'),
+            'status' => $response->status(),
         ];
     }
 
@@ -235,7 +216,30 @@ class UserService
 
         return [
             'national' => collect($structures)->where('perimetre', 'national')->values()->all(),
-            'regional' => collect($structures)->where('perimetre', 'regional')->values()->all(),
+            'regional' => collect($this->ias())->flatMap(function (array $ia) {
+                $items = [[
+                    'id' => $ia['lieu_service_id'],
+                    'ia_id' => $ia['id'],
+                    'ief_id' => null,
+                    'code' => $ia['code'],
+                    'libelle' => $ia['libelle'],
+                    'type' => 'IA',
+                    'perimetre' => 'regional',
+                ]];
+                foreach ($ia['iefs'] ?? [] as $ief) {
+                    if (! ($ief['lieu_service_id'] ?? null)) continue;
+                    $items[] = [
+                        'id' => $ief['lieu_service_id'],
+                        'ia_id' => $ia['id'],
+                        'ief_id' => $ief['id'],
+                        'code' => $ief['code'],
+                        'libelle' => $ief['libelle'],
+                        'type' => 'IEF',
+                        'perimetre' => 'regional',
+                    ];
+                }
+                return $items;
+            })->values()->all(),
         ];
     }
 

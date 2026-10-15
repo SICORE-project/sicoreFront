@@ -11,6 +11,7 @@
 
             <form action="{{ route('admin.roles.syncPermissions', $role['id']) }}" method="POST">
                 @csrf
+                <x-interface-preview :permissions="$permissions" />
                 @method('PUT')
 
                 @foreach ($permissions as $module => $perms)

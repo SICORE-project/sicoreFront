@@ -17,7 +17,7 @@
     :title="$page['title']"
     :subtitle="$page['breadcrumb']"
     :icon="$pageIcon"
-    search-id="moduleSearch"
+    :search-id="$slug === 'utilisateurs' ? null : 'moduleSearch'"
     search-placeholder="Rechercher…"
     filter-target="#moduleTable"
   />
@@ -103,7 +103,7 @@
               @endphp
               <a
                 class="btn-secondary"
-                href="{{ route('paie.export', $exportParameters) }}"
+                href="{{ $action['url'] ?? route('paie.export', $exportParameters) }}"
               >
                 <i class="fa-solid fa-file-csv" aria-hidden="true"></i>
                 {{ $action['label'] }}
@@ -267,12 +267,17 @@
           <div class="payroll-live-filter-grid">
             <div class="form-group">
               <label for="payrollLiveIa">Inspection académique (IA)</label>
+              @if (! empty($moduleData['scope_ia_id']))
+                <input class="form-control" value="{{ $moduleData['scope_label'] }}" readonly aria-label="IA de rattachement">
+                <select id="payrollLiveIa" data-payroll-live-ia hidden><option value="{{ $moduleData['scope_ia_id'] }}" selected>{{ $moduleData['scope_label'] }}</option></select>
+              @else
               <select class="form-control" id="payrollLiveIa" data-payroll-live-ia>
                 <option value="">Toutes les IA</option>
                 @foreach (($moduleData['academic_inspections'] ?? []) as $inspection)
                   <option value="{{ $inspection['id'] }}">{{ $inspection['label'] }}</option>
                 @endforeach
               </select>
+              @endif
             </div>
 
             <div class="form-group">
@@ -311,7 +316,9 @@
         </section>
         @endif
       @endif
-    @elseif (! empty($page['filters']))
+    @elseif ($slug === 'utilisateurs')
+      @include('pages.administration.utilisateurs.filters')
+    @else
       <section class="filter-panel" aria-label="Filtres de la page">
         @foreach ($page['filters'] as $index => $filter)
           @php
@@ -369,7 +376,7 @@
     {{-- Tableau générique construit avec columns et rows. --}}
     <section class="table-card">
       <div class="table-responsive">
-        <table class="table" id="moduleTable" data-paginated-table>
+        <table class="table" id="moduleTable" @if($slug !== 'utilisateurs') data-paginated-table @endif>
           <thead>
             <tr>
               @foreach ($page['columns'] as $column)
@@ -402,7 +409,7 @@
                         @if ($cellAction['code'] === 'view-payslip')
                           <a
                             class="btn-table-action"
-                            href="{{ route('paie.payslip', ['payslip' => data_get($cellAction, 'payload.payroll_payslip_id')]) }}"
+                            href="{{ $cellAction['url'] ?? route('paie.payslip', ['payslip' => data_get($cellAction, 'payload.payroll_payslip_id')]) }}"
                           >
                             {{ $cellAction['label'] }}
                           </a>
@@ -441,6 +448,9 @@
         public/assets/js/app.js affiche uniquement les lignes de la page
         courante et recalcule les pages après une recherche IA/IEF/matricule.
       --}}
+      @if ($slug === 'utilisateurs')
+        @include('pages.administration.utilisateurs.pagination')
+      @else
       <nav
         class="pagination"
         data-table-pagination
@@ -450,19 +460,9 @@
       >
         <p class="pagination-summary" data-pagination-summary aria-live="polite"></p>
         <div class="pagination-controls">
-          <button class="page-btn page-btn-direction" type="button" data-page-action="first" aria-label="Première page">
-            <i class="fa-solid fa-angles-left" aria-hidden="true"></i>
-          </button>
-          <button class="page-btn page-btn-direction" type="button" data-page-action="previous" aria-label="Page précédente">
-            <i class="fa-solid fa-angle-left" aria-hidden="true"></i>
-          </button>
-          <button class="page-btn page-number active" type="button" data-current-page-number aria-current="page" tabindex="-1">1</button>
-          <button class="page-btn page-btn-direction" type="button" data-page-action="next" aria-label="Page suivante">
-            <i class="fa-solid fa-angle-right" aria-hidden="true"></i>
-          </button>
-          <button class="page-btn page-btn-direction" type="button" data-page-action="last" aria-label="Dernière page">
-            <i class="fa-solid fa-angles-right" aria-hidden="true"></i>
-          </button>
+          <button class="page-btn page-btn-direction" type="button" data-page-action="previous" aria-label="Page précédente">Précédent</button>
+          <span class="page-numbers" data-page-numbers></span>
+          <button class="page-btn page-btn-direction" type="button" data-page-action="next" aria-label="Page suivante">Suivant</button>
           <label class="visually-hidden" for="{{ $slug }}-page-size">Nombre de lignes par page</label>
           <select class="page-size-select" id="{{ $slug }}-page-size" data-page-size aria-label="Nombre de lignes par page">
             <option value="10" selected>10</option>
@@ -471,6 +471,7 @@
           </select>
         </div>
       </nav>
+      @endif
     </section>
     @endif
   </section>
