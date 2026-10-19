@@ -77,7 +77,7 @@
                         </div>
                     @endforeach
 
-                    <p class="import-ordre">Ordre conseillé : IA → IEF, Catégories → Corps, Années académiques → Périodes de paie.</p>
+                    <p class="import-ordre">Ordre conseillé : IA → IEF → Établissements ; Corps → Catégories → Diplômes. Les régions doivent déjà exister (elles servent aux IA). Une cellule vide dans « est_actif » garde la valeur par défaut (actif).</p>
                 </section>
 
                 <div class="form-actions">
