@@ -77,7 +77,7 @@
                         </div>
                     @endforeach
 
-                    <p class="import-ordre">Ordre conseillé : Régions → IA → IEF → Établissements ; Corps → Catégories → Diplômes. Une cellule vide dans « est_actif » garde la valeur par défaut (actif).</p>
+                    <p class="import-ordre">Ordre conseillé : Régions → Départements → Communes ; Régions → IA → IEF → Établissements ; Corps → Catégories → Diplômes. Une cellule vide dans « est_actif » garde la valeur par défaut (actif).</p>
                 </section>
 
                 <div class="form-actions">
