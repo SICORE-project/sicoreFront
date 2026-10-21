@@ -36,6 +36,12 @@ class ImportDonneesController extends Controller
 
         $resultat = $this->import->traiter($data['entite'], $request->file('fichier'), $data['mode']);
 
+        $erreurs = $resultat['rapport']['erreurs'] ?? [];
+        if ($erreurs) {
+            $apercu = collect($erreurs)->take(3)->map(fn (array $e) => "ligne {$e['ligne']} : {$e['message']}")->implode(' | ');
+            $resultat['message'] .= ' '.$apercu.(count($erreurs) > 3 ? ' (… voir le détail ci-dessous)' : '');
+        }
+
         return redirect()
             ->route('systeme.import', ['entite' => $data['entite']])
             ->with($resultat['success'] ? 'success' : 'error', $resultat['message'])
