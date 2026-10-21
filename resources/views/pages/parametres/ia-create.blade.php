@@ -38,7 +38,7 @@
               <select class="form-control" id="iaRegion" name="region_id" required>
                 <option value="">Sélectionner une région</option>
                 @foreach ($regions as $region)
-                  <option value="{{ data_get($region, 'id') }}">{{ data_get($region, 'nom') }}</option>
+                  <option value="{{ data_get($region, 'id') }}">{{ data_get($region, 'libelle', data_get($region, 'nom')) }}</option>
                 @endforeach
               </select>
             </div>

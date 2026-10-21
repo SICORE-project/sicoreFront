@@ -258,32 +258,7 @@
                     <p class="empty-message show">Aucune donnée trouvée.</p>
                 @endif
 
-                <div class="convocation-pagination" aria-label="Pagination">
-
-                    @if ($pagination->onFirstPage())
-                        <span class="page-btn" aria-disabled="true">←</span>
-                    @else
-                        <a class="page-btn" href="{{ $pagination->previousPageUrl() }}" aria-label="Page précédente" data-ajax-lien>←</a>
-                    @endif
-
-                    @for ($page = 1; $page <= $pagination->lastPage(); $page++)
-                        <a
-                            class="page-btn {{ $page === $pagination->currentPage() ? 'active' : '' }}"
-                            href="{{ $pagination->url($page) }}"
-                            data-page-number
-                            data-ajax-lien
-                        >
-                            {{ $page }}
-                        </a>
-                    @endfor
-
-                    @if ($pagination->hasMorePages())
-                        <a class="page-btn" href="{{ $pagination->nextPageUrl() }}" aria-label="Page suivante" data-ajax-lien>→</a>
-                    @else
-                        <span class="page-btn" aria-disabled="true">→</span>
-                    @endif
-
-                </div>
+                @include('components.pagination', ['pagination' => $pagination, 'ajax' => true])
 
             </section>
 

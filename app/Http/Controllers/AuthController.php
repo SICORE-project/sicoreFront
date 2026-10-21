@@ -81,7 +81,10 @@ class AuthController extends Controller
             'acces_organisationnel' => $data['user']['acces_organisationnel'] ?? $data['user']['organisation_access'] ?? [],
         ]);
 
-        $redirect = $returnUrl
+        $redirect = $returnUrl && ! app(\App\Services\Organisation\DrhAccess::class)->isDrh()
+            && ! app(\App\Services\Organisation\InterfaceAccess::class)->isIa()
+            && ! app(\App\Services\Organisation\InterfaceAccess::class)->isDecpc()
+            && ! app(\App\Services\Organisation\InterfaceAccess::class)->isTeacher()
             ? redirect()->to($returnUrl)
             : redirect()->route('dashboard');
 

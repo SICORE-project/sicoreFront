@@ -9,11 +9,11 @@
 
 /*
 | Les opérations Tabaski sont collectives. Elles ciblent tous les enseignants
-| actifs du corps et de l'IEF choisis ; aucun matricule ni catégorie salariale
+| actifs du statut et de l'IEF choisis ; aucun matricule ni catégorie salariale
 | ne doit donc apparaître dans ces deux formulaires.
 */
 $collectiveTabaskiFields = [
-    ['name' => 'corps_id', 'label' => 'Corps d’enseignement', 'type' => 'teaching_corps', 'required' => true],
+    ['name' => 'statut_enseignant_id', 'label' => 'Statut enseignant', 'type' => 'teaching_statuses', 'required' => true],
     [
         'name' => 'ia_ids',
         'label' => 'Inspections académiques (IA)',
@@ -154,7 +154,7 @@ return [
     ],
     'apply-tabaski-advance' => [
         'title' => 'Appliquer une avance Tabaski',
-        'confirmation' => 'L’avance sera appliquée aux enseignants actifs du corps et des IA sélectionnés, sur un seul mois.',
+        'confirmation' => 'L’avance sera appliquée aux enseignants actifs du statut et des IA sélectionnés, sur un seul mois.',
         'fields' => [
             ...$collectiveTabaskiFields,
             ['name' => 'month', 'label' => 'Mois d’application', 'type' => 'payroll_month', 'required' => true],
@@ -163,7 +163,7 @@ return [
     ],
     'apply-tabaski-deduction' => [
         'title' => 'Appliquer une retenue Tabaski',
-        'confirmation' => 'La retenue sera appliquée aux enseignants actifs du corps et des IA sélectionnés sur exactement 10 mois. Le montant saisi reste inchangé pour chaque mois.',
+        'confirmation' => 'La retenue sera appliquée aux enseignants actifs du statut et des IA sélectionnés sur exactement 10 mois. Le montant saisi reste inchangé pour chaque mois.',
         'fields' => [
             ...$collectiveTabaskiFields,
             [

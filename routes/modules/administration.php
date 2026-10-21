@@ -25,9 +25,14 @@ Route::middleware(['sicore.auth', 'sicore.module:administration.users.read,admin
             Route::get('/utilisateurs', [UserController::class, 'index'])->name('utilisateurs.index');
             Route::get('/utilisateurs/verifier-email', [UserController::class, 'checkEmail'])->name('utilisateurs.check-email');
             Route::get('/utilisateurs/ias', [UserController::class, 'iaOptions'])->name('utilisateurs.ia-options');
+            Route::get('/utilisateurs/filtres', [UserController::class, 'filterOptions'])->name('utilisateurs.filter-options');
         });
 
         Route::middleware('sicore.permission:administration.users.create')->group(function (): void {
+            Route::get('/utilisateurs/compte-enseignant', [\App\Http\Controllers\Admin\TeacherAccountController::class, 'create'])->name('utilisateurs.teacher.create');
+            Route::get('/utilisateurs/enseignants-sans-compte', [\App\Http\Controllers\Admin\TeacherAccountController::class, 'teachers'])->name('utilisateurs.teacher.candidates');
+            Route::post('/utilisateurs/compte-enseignant', [\App\Http\Controllers\Admin\TeacherAccountController::class, 'store'])->name('utilisateurs.teacher.store');
+            Route::post('/utilisateurs/{id}/invitation-enseignant', [\App\Http\Controllers\Admin\TeacherAccountController::class, 'resend'])->whereNumber('id')->name('utilisateurs.teacher.resend');
             Route::get('/utilisateurs/nouveau', [UserController::class, 'create'])->name('utilisateurs.create');
             Route::post('/utilisateurs', [UserController::class, 'store'])->name('utilisateurs.store');
         });
