@@ -118,6 +118,9 @@ return [
             ['label' => 'Période de paie', 'route' => 'parametres.periodes-paie.index', 'icon' => 'fa-solid fa-calendar-week', 'permission' => 'parametrage.periodes_paie.read'],
             ['label' => 'Rubriques de paie', 'route' => 'parametres.rubriques-paie.index', 'icon' => 'fa-solid fa-list-ul', 'permission' => 'paie.rubriques.read'],
             ['label' => 'Établissements', 'route' => 'parametres.lieux-service.index', 'icon' => 'fa-solid fa-location-dot', 'permission' => 'parametrage.lieux_service.read'],
+            ['label' => 'Régions', 'route' => 'parametres.regions.index', 'icon' => 'fa-solid fa-map-location-dot'],
+            ['label' => 'Départements', 'route' => 'parametres.departements.index', 'icon' => 'fa-solid fa-map-location-dot'],
+            ['label' => 'Communes', 'route' => 'parametres.communes.index', 'icon' => 'fa-solid fa-map-location-dot']
         ],
     ],
     [
