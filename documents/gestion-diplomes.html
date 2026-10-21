@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<style>
+@page { margin: 42px 48px; }
+body { font-family: DejaVu Sans, sans-serif; color: #1f2937; font-size: 11px; line-height: 1.48; }
+h1 { color: #0f6b3f; font-size: 25px; margin: 0 0 5px; }
+.subtitle { color: #64748b; font-size: 12px; margin: 0 0 22px; }
+h2 { color: #0f6b3f; font-size: 16px; border-bottom: 1px solid #cbd5e1; padding-bottom: 5px; margin: 22px 0 10px; }
+h3 { color: #111827; font-size: 13px; margin: 15px 0 6px; }
+.flow { background: #ecfdf5; border: 1px solid #86efac; border-radius: 6px; padding: 13px; text-align: center; font-weight: bold; color: #14532d; }
+.box { background: #f8fafc; border-left: 4px solid #0f6b3f; padding: 10px 12px; margin: 10px 0; }
+.warning { background: #fff7ed; border-left-color: #ea580c; }
+pre { background: #111827; color: #f8fafc; padding: 10px 12px; border-radius: 5px; font-family: DejaVu Sans Mono, monospace; font-size: 8.6px; line-height: 1.38; white-space: pre-wrap; }
+code { font-family: DejaVu Sans Mono, monospace; }
+ul, ol { padding-left: 20px; margin: 6px 0; }
+li { margin-bottom: 4px; }
+.api { color: #075985; font-weight: bold; }
+.page-break { page-break-before: always; }
+.oral { background: #eff6ff; border: 1px solid #93c5fd; border-radius: 6px; padding: 14px; font-style: italic; }
+table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+th, td { border: 1px solid #cbd5e1; padding: 7px; text-align: left; vertical-align: top; }
+th { background: #e2e8f0; }
+.footer { margin-top: 25px; font-size: 9px; color: #64748b; text-align: center; }
+</style>
+</head>
+<body>
+<h1>Gestion des diplômes</h1>
+<p class="subtitle">SICORE — Fiche technique, API JSON et support de soutenance</p>
+
+<div class="flow">Interface administrateur → Contrôleur Front → API REST sécurisée → Contrôleur Back → Base de données</div>
+
+<h2>1. Objectif du module</h2>
+<p>Le module Diplômes est un référentiel de paramétrage. Il permet aux administrateurs de consulter, rechercher, ajouter, modifier et supprimer les diplômes utilisés dans SICORE, notamment pour les informations des enseignants.</p>
+
+<h2>2. Architecture et sécurité</h2>
+<ol>
+  <li>L’utilisateur agit depuis la vue <code>parametres/diplomes</code>.</li>
+  <li>Le contrôleur du front valide les données et appelle le back par HTTP.</li>
+  <li>Le jeton de connexion est transmis dans l’en-tête <code>Authorization: Bearer ...</code>.</li>
+  <li>L’API vérifie l’authentification Sanctum et le rôle.</li>
+  <li>Les contrôleurs et Form Requests du back appliquent les règles métier.</li>
+  <li>Le modèle Eloquent lit ou modifie la table <code>diplomes</code>.</li>
+  <li>Une ressource Laravel normalise le JSON retourné au front.</li>
+</ol>
+
+<div class="box"><strong>Autorisation :</strong> le middleware du front <code>diplomes.manage</code> et l’API <code>auth:sanctum + role:admin,super_admin</code> réservent la gestion aux Administrateurs et Super Administrateurs.</div>
+
+<h2>3. Structure d’un diplôme</h2>
+<table>
+<tr><th>Champ</th><th>Rôle</th><th>Règle</th></tr>
+<tr><td><code>id</code></td><td>Identifiant technique</td><td>Généré automatiquement</td></tr>
+<tr><td><code>code</code></td><td>Code court du diplôme</td><td>Obligatoire, 20 caractères maximum, unique</td></tr>
+<tr><td><code>libelle</code></td><td>Nom complet</td><td>Obligatoire, 100 caractères maximum</td></tr>
+<tr><td><code>type</code></td><td>Catégorie</td><td>Optionnel : <code>academique</code> ou <code>professionnel</code></td></tr>
+<tr><td><code>date_obteention</code></td><td>Date d’obtention</td><td>Date valide, obligatoire dans les formulaires</td></tr>
+</table>
+
+<div class="box warning"><strong>Attention pour la soutenance :</strong> le code utilise partout le nom <code>date_obteention</code> avec deux « e ». C’est cohérent entre le front, l’API et la base, mais le nom devrait idéalement être corrigé en <code>date_obtention</code> par une migration contrôlée.</div>
+
+<h2>4. Flow de consultation</h2>
+<p>Quand l’administrateur ouvre la page, le front construit les paramètres <code>search</code>, <code>type</code>, <code>page</code> et <code>per_page=15</code>, puis appelle :</p>
+<pre>GET /api/diplomes?search=master&amp;type=academique&amp;page=1&amp;per_page=15
+Authorization: Bearer &lt;access_token&gt;
+Accept: application/json</pre>
+<p>Le back recherche le texte dans les colonnes <code>code</code> et <code>libelle</code>, filtre éventuellement par type, trie les résultats par libellé puis applique la pagination.</p>
+
+<h3>Réponse HTTP 200</h3>
+<pre>{
+  "message": "Liste des diplômes",
+  "data": [
+    {
+      "id": 1,
+      "code": "MASTER",
+      "libelle": "Master en informatique",
+      "type": "academique",
+      "date_obteention": "15/07/2025",
+      "created_at": "2026-08-20T10:00:00+00:00",
+      "updated_at": "2026-08-20T10:00:00+00:00"
+    }
+  ],
+  "meta": {
+    "current_page": 1,
+    "last_page": 1,
+    "per_page": 15,
+    "total": 1
+  }
+}</pre>
+
+<div class="page-break"></div>
+<h2>5. Flow d’ajout</h2>
+<ol>
+  <li>L’administrateur ouvre la fenêtre « Ajouter un diplôme ».</li>
+  <li>Il renseigne le code, le libellé, le type et la date.</li>
+  <li>Le front valide les champs puis appelle <span class="api">POST /api/diplomes</span>.</li>
+  <li>Le back refait la validation, notamment l’unicité du code.</li>
+  <li><code>Diplome::create()</code> insère le diplôme.</li>
+  <li>L’API retourne HTTP 201 et le diplôme créé.</li>
+</ol>
+
+<h3>JSON envoyé</h3>
+<pre>{
+  "code": "MASTER",
+  "libelle": "Master en informatique",
+  "type": "academique",
+  "date_obteention": "2025-07-15"
+}</pre>
+<h3>Réponse HTTP 201</h3>
+<pre>{
+  "message": "Diplôme créé avec succès",
+  "data": {
+    "id": 1,
+    "code": "MASTER",
+    "libelle": "Master en informatique",
+    "type": "academique",
+    "date_obteention": "15/07/2025",
+    "created_at": "2026-08-20T10:00:00+00:00",
+    "updated_at": "2026-08-20T10:00:00+00:00"
+  }
+}</pre>
+
+<h3>Exemple d’erreur HTTP 422</h3>
+<pre>{
+  "message": "The given data was invalid.",
+  "errors": {
+    "code": ["Ce code de diplôme existe déjà."]
+  }
+}</pre>
+
+<h2>6. Flow d’affichage d’un détail</h2>
+<pre>GET /api/diplomes/1
+Authorization: Bearer &lt;access_token&gt;</pre>
+<pre>{
+  "message": "Détail du diplôme",
+  "data": {
+    "id": 1,
+    "code": "MASTER",
+    "libelle": "Master en informatique",
+    "type": "academique",
+    "date_obteention": "15/07/2025",
+    "created_at": "2026-08-20T10:00:00+00:00",
+    "updated_at": "2026-08-20T10:00:00+00:00"
+  }
+}</pre>
+
+<h2>7. Flow de modification</h2>
+<ol>
+  <li>Le bouton Modifier fournit à la modale les valeurs actuelles du diplôme.</li>
+  <li>L’administrateur change les informations.</li>
+  <li>Le front appelle <span class="api">PUT /api/diplomes/{id}</span>.</li>
+  <li>Le back valide les valeurs. Pour l’unicité, le code du diplôme actuel est ignoré.</li>
+  <li>Le modèle exécute la mise à jour et l’API retourne la ressource actualisée.</li>
+</ol>
+<h3>JSON envoyé</h3>
+<pre>{
+  "code": "MASTER-INFO",
+  "libelle": "Master professionnel en informatique",
+  "type": "professionnel",
+  "date_obteention": "2025-07-15"
+}</pre>
+<h3>Réponse HTTP 200</h3>
+<pre>{
+  "message": "Diplôme mis à jour avec succès",
+  "data": {
+    "id": 1,
+    "code": "MASTER-INFO",
+    "libelle": "Master professionnel en informatique",
+    "type": "professionnel",
+    "date_obteention": "15/07/2025",
+    "created_at": "2026-08-20T10:00:00+00:00",
+    "updated_at": "2026-08-26T14:30:00+00:00"
+  }
+}</pre>
+
+<div class="page-break"></div>
+<h2>8. Flow de suppression</h2>
+<ol>
+  <li>L’administrateur clique sur Supprimer.</li>
+  <li>Une fenêtre demande confirmation, car l’action est irréversible.</li>
+  <li>Le front appelle <span class="api">DELETE /api/diplomes/{id}</span>.</li>
+  <li>Laravel retrouve automatiquement le diplôme grâce au route model binding.</li>
+  <li>Le back appelle <code>delete()</code> et retourne un message de succès.</li>
+</ol>
+<pre>DELETE /api/diplomes/1
+Authorization: Bearer &lt;access_token&gt;</pre>
+<pre>{
+  "message": "Diplôme supprimé avec succès"
+}</pre>
+
+<h2>9. Résumé des API</h2>
+<table>
+<tr><th>Méthode</th><th>Route</th><th>Fonction</th><th>Succès</th></tr>
+<tr><td>GET</td><td><code>/api/diplomes</code></td><td>Lister, rechercher et paginer</td><td>200</td></tr>
+<tr><td>POST</td><td><code>/api/diplomes</code></td><td>Créer</td><td>201</td></tr>
+<tr><td>GET</td><td><code>/api/diplomes/{id}</code></td><td>Afficher un détail</td><td>200</td></tr>
+<tr><td>PUT/PATCH</td><td><code>/api/diplomes/{id}</code></td><td>Modifier</td><td>200</td></tr>
+<tr><td>DELETE</td><td><code>/api/diplomes/{id}</code></td><td>Supprimer</td><td>200</td></tr>
+</table>
+
+<h2>10. Gestion des erreurs</h2>
+<ul>
+  <li><strong>401 :</strong> jeton absent ou utilisateur non authentifié.</li>
+  <li><strong>403 :</strong> utilisateur authentifié, mais rôle non autorisé.</li>
+  <li><strong>404 :</strong> identifiant du diplôme introuvable.</li>
+  <li><strong>422 :</strong> données invalides, code déjà utilisé ou type incorrect.</li>
+  <li><strong>Service indisponible :</strong> le front intercepte l’exception et affiche un message compréhensible.</li>
+</ul>
+
+<h2>11. Discours prêt pour la soutenance</h2>
+<div class="oral">« Le module Diplômes est un CRUD de paramétrage. L’administrateur utilise une interface qui communique avec le back à travers une API REST sécurisée. Pour la consultation, le front envoie les paramètres de recherche, de type et de pagination à l’API. Pour l’ajout et la modification, les données sont validées une première fois par le front, puis une seconde fois par le back. Le code doit être unique, le libellé est obligatoire, le type est académique ou professionnel et la date doit être valide. Le back utilise Eloquent pour accéder à la table diplômes et une ressource Laravel pour normaliser les réponses JSON. La suppression demande une confirmation avant l’appel DELETE. Toutes les requêtes transmettent le bearer token, et seuls les administrateurs ou super administrateurs peuvent gérer ce référentiel. »</div>
+
+<h2>12. Questions possibles du jury</h2>
+<p><strong>Pourquoi valider au front et au back ?</strong><br>Le front améliore l’expérience utilisateur, tandis que le back constitue la validation de sécurité, car une API peut être appelée sans passer par l’interface.</p>
+<p><strong>Pourquoi utiliser une API Resource ?</strong><br>Pour garantir une structure JSON stable et contrôler précisément les données exposées.</p>
+<p><strong>Comment l’unicité du code est-elle garantie ?</strong><br>Par la validation Laravel et par une contrainte unique dans la base de données.</p>
+<p><strong>À quoi sert le route model binding ?</strong><br>Laravel transforme automatiquement l’identifiant de la route en modèle Diplome et retourne une erreur 404 s’il n’existe pas.</p>
+
+<div class="box warning"><strong>Améliorations possibles :</strong> corriger <code>date_obteention</code>, harmoniser le caractère obligatoire de la date entre la migration et la validation, et vérifier les contraintes de relation avant une suppression si le diplôme est déjà associé à un enseignant.</div>
+<p class="footer">SICORE — Gestion des diplômes</p>
+</body>
+</html>

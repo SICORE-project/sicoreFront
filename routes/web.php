@@ -1,33 +1,80 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\Parametrage\EnseignantController;
 use Illuminate\Support\Facades\Route;
-
 
 Route::middleware('guest')->group(function (): void {
 
-    Route::get('/', [AuthController::class, 'showLogin'])
-        ->name('login');
+    // Racine -> redirige vers la page de login
+    Route::get('/', function () {
+        return redirect()->route('login');
+    });
 
+    // Page de login (GET)
+    Route::get('/login', [AuthController::class, 'showLogin'])
+            ->name('login');
+
+    // Soumission du formulaire de login (POST)
     Route::post('/login', [AuthController::class, 'login'])
-        ->middleware('throttle:6,1')
-        ->name('login.submit');
+            ->middleware('throttle:6,1')
+            ->name('login.submit');
+
+    // --- Réinitialisation du mot de passe (flux OTP en 3 étapes) ---
+
+    // Étape 1 — email
+    Route::get('/forgot-password', [AuthController::class, 'showForgotPasswordForm'])
+                ->name('password.reset.form');
+    Route::post('/forgot-password', [AuthController::class, 'sendOtp'])
+                ->middleware('throttle:6,1')
+                ->name('password.reset.send');
+
+    // Étape 2 — code OTP
+    Route::get('/verify-otp', [AuthController::class, 'showVerifyOtpForm'])
+                ->name('password.reset.otp');
+    Route::post('/verify-otp', [AuthController::class, 'verifyOtp'])
+                ->middleware('throttle:6,1')
+                ->name('password.reset.otp.submit');
+    Route::post('/verify-otp/resend', [AuthController::class, 'resendOtp'])
+                ->middleware('throttle:3,1')
+                ->name('password.reset.otp.resend');
+
+    // Étape 3 — nouveau mot de passe
+    Route::get('/reset-password', [AuthController::class, 'showResetPasswordForm'])
+                ->name('password.reset.newpassword');
+    Route::post('/reset-password', [AuthController::class, 'resetPassword'])
+                ->middleware('throttle:6,1')
+                ->name('password.reset.submit');
 
 });
-
 
 Route::middleware('sicore.auth')->group(function (): void {
 
     Route::post('/logout', [AuthController::class, 'logout'])
-        ->name('logout');
+            ->name('logout');
 
-    Route::view('/dashboard', 'pages.dashboard.index')
-        ->name('dashboard');
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/mon-espace/informations', [\App\Http\Controllers\TeacherPersonalController::class, 'page'])->name('teacher.profile');
+    Route::get('/mon-espace/bulletins', [\App\Http\Controllers\TeacherPersonalController::class, 'page'])->name('teacher.payslips');
+    Route::get('/mon-espace/bulletins/{id}/pdf', [\App\Http\Controllers\TeacherPersonalController::class, 'pdf'])->whereNumber('id')->name('teacher.pdf');
+    Route::get('/ia/structure', [\App\Http\Controllers\IaWorkspaceController::class, 'references'])->name('ia.structure');
+    Route::get('/ia/iefs', [\App\Http\Controllers\IaWorkspaceController::class, 'references'])->name('ia.iefs');
+    Route::get('/ia/enseignants/{id}', [\App\Http\Controllers\IaWorkspaceController::class, 'teacher'])->whereNumber('id')->name('ia.teachers.show');
+    Route::get('/ia/paie/export', [\App\Http\Controllers\IaWorkspaceController::class, 'export'])->name('ia.payroll.export');
+    Route::get('/ia/paie/{id}', [\App\Http\Controllers\IaWorkspaceController::class, 'payslip'])->whereNumber('id')->name('ia.payroll.show');
+
+    Route::get('/enseignants', [EnseignantController::class, 'index'])->name('enseignants.legacy.index');
+    Route::get('/enseignants/nouveau', [EnseignantController::class, 'create'])->name('enseignants.legacy.create');
 
 });
 
-
 require __DIR__.'/modules/administration.php';
+require __DIR__.'/modules/recruitment.php';
 require __DIR__.'/modules/parametrage.php';
+require __DIR__.'/modules/personnel.php';
+
 require __DIR__.'/modules/paie.php';
+require __DIR__.'/modules/bourses.php';
+require __DIR__.'/modules/compatibilite.php';
 require __DIR__.'/modules/indemnites.php';

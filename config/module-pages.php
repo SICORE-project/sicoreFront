@@ -1,5 +1,12 @@
 <?php
 
+/*
+| CATALOGUE VISUEL DES PAGES FONCTIONNELLES
+| Chaque clé est un slug utilisé par <x-module-page>. Pour les pages Paie
+| connectées, ModulePage.php remplace stats, filters, actions, columns et rows
+| par les données de sicoreBack/app/Services/PayrollPageService.php.
+| Aucun calcul financier ne doit être écrit dans ce fichier.
+*/
 return [
     'paie-etats-presence' => [
         'title' => 'États de présence',
@@ -269,6 +276,8 @@ return [
         'title' => 'Retenues rappel',
         'icon' => 'RR',
         'breadcrumb' => 'Gestion de la paie > Retenues rappel',
+        'helpTitle' => 'Que signifie « retenue sur rappel » ?',
+        'helpText' => 'Un rappel est une somme de salaire due pour des mois antérieurs. Une retenue sur rappel est un montant déduit de ce versement rétroactif après vérification du dossier (par exemple, une régularisation ou un trop-perçu). Dans SICORE, cette page enregistre la retenue pour un formateur et une période ; elle ne calcule pas automatiquement le rappel dû. Elle est distincte de la retenue Tabaski de 10 000 FCFA par mois.',
         'stats' => [
             [
                 'label' => 'Rappels traites',
@@ -632,10 +641,12 @@ return [
         'icon' => 'ES',
         'breadcrumb' => 'Gestion de la paie > État des salaires',
         'objectives' => [
-            'Calculer le salaire brut.',
+            'Éditer l’état mensuel détaillé des salaires à partir des bulletins calculés.',
+            'Contrôler chaque rubrique de gain, retenue et cotisation avant paiement.',
+            'Produire une édition filtrée, imprimable et exportable pour la traçabilité.',
         ],
-        'helpTitle' => 'Aide : comment le salaire brut est calcule ?',
-        'helpText' => 'Le salaire brut est calcule a partir du traitement indiciaire, des indemnites, des elements variables et des eventuels rappels, avant application des retenues sociales, fiscales ou administratives.',
+        'helpTitle' => 'Lecture de l’état des salaires',
+        'helpText' => 'Le salaire catégoriel regroupe le salaire de base et ses augmentations historiques. Le brut ajoute les primes, indemnités et rappels ; le net déduit ensuite les cotisations et retenues détaillées.',
         'stats' => [
             [
                 'label' => 'Salaires calcules',
@@ -1421,8 +1432,14 @@ return [
             'Statut',
         ],
         'actions' => [
-            'Editer',
-            'Exporter',
+            [
+                'label' => 'Éditer',
+                'url' => '/credits/edition-delegations/apercu',
+            ],
+            [
+                'label' => 'Exporter',
+                'url' => '/credits/edition-delegations/export',
+            ],
         ],
         'columns' => [
             'Reference',
@@ -1443,7 +1460,7 @@ return [
                 '92 000 000',
                 '30 000 000',
                 '<span class="badge badge-active">Actif</span>',
-                '<div class="table-actions-inline"><button class="table-action " type="button">Voir</button></div>',
+                '<div class="table-actions-inline"><a class="table-action" href="/credits/edition-delegations/DEL-2026-001">Voir</a></div>',
             ],
             [
                 'DEL-2026-002',
@@ -1453,7 +1470,7 @@ return [
                 '50 000 000',
                 '28 000 000',
                 '<span class="badge badge-active">Actif</span>',
-                '<div class="table-actions-inline"><button class="table-action " type="button">Voir</button></div>',
+                '<div class="table-actions-inline"><a class="table-action" href="/credits/edition-delegations/DEL-2026-002">Voir</a></div>',
             ],
         ],
     ],
@@ -1500,8 +1517,14 @@ return [
             'Statut',
         ],
         'actions' => [
-            'Export PDF',
-            'Export Excel',
+            [
+                'label' => 'Export PDF',
+                'url' => '/credits/edition-engagements/export/pdf',
+            ],
+            [
+                'label' => 'Export Excel',
+                'url' => '/credits/edition-engagements/export/excel',
+            ],
         ],
         'columns' => [
             'Periode',
@@ -1520,7 +1543,7 @@ return [
                 '120 000 000',
                 '92 000 000',
                 '30 000 000',
-                '<div class="table-actions-inline"><button class="table-action " type="button">PDF</button><button class="table-action " type="button">Excel</button></div>',
+                '<div class="table-actions-inline"><a class="table-action" href="/credits/edition-engagements/0/pdf">PDF</a><a class="table-action" href="/credits/edition-engagements/0/excel">Excel</a></div>',
             ],
             [
                 'Juin 2026',
@@ -1529,7 +1552,7 @@ return [
                 '62 000 000',
                 '50 000 000',
                 '28 000 000',
-                '<div class="table-actions-inline"><button class="table-action " type="button">PDF</button><button class="table-action " type="button">Excel</button></div>',
+                '<div class="table-actions-inline"><a class="table-action" href="/credits/edition-engagements/1/pdf">PDF</a><a class="table-action" href="/credits/edition-engagements/1/excel">Excel</a></div>',
             ],
         ],
     ],
@@ -1746,6 +1769,7 @@ return [
             ],
         ],
     ],
+    // Gestion des accusés de réception
     'indemnites-accuses-reception' => [
         'title' => 'Gestion des accusés de réception',
         'icon' => 'AR',
@@ -1816,6 +1840,8 @@ return [
             ],
         ],
     ],
+
+    // Gestion des indemnités
     'indemnites-calcul' => [
         'title' => 'Calcul des indemnités',
         'icon' => 'CI',
@@ -1890,6 +1916,8 @@ return [
             ],
         ],
     ],
+
+    // Gestion des frais de déplacement
     'indemnites-frais-deplacement' => [
         'title' => 'Gestion des frais de déplacement',
         'icon' => 'FD',
@@ -1966,6 +1994,8 @@ return [
             ],
         ],
     ],
+
+    // Gestion des états de paie
     'indemnites-etats-paie' => [
         'title' => 'Génération des états de paie',
         'icon' => 'EP',
@@ -2036,6 +2066,8 @@ return [
             ],
         ],
     ],
+
+    // Gestion des bourses et aides
     'bourses-enregistrer-demande' => [
         'title' => 'Enregistrer une demande',
         'icon' => 'BD',
@@ -2109,6 +2141,8 @@ return [
             ],
         ],
     ],
+
+    // Gestion des bourses et aides
     'bourses-valider-dossier' => [
         'title' => 'Valider un dossier',
         'icon' => 'VD',
@@ -2176,6 +2210,8 @@ return [
             ],
         ],
     ],
+
+    // Gestion des bourses et aides
     'bourses-attribuer-aide' => [
         'title' => 'Attribuer une aide',
         'icon' => 'AA',
@@ -2249,49 +2285,17 @@ return [
             ],
         ],
     ],
+
+    // Gestion des utilisateurs et profils
     'utilisateurs' => [
         'title' => 'Utilisateurs',
         'icon' => 'US',
         'breadcrumb' => 'Gestion Utilisateur > Utilisateurs',
-        'objectives' => [
-            'Consulter les comptes d’accès au système.',
-            'Suivre les profils affectés aux utilisateurs.',
-            'Garder une vision claire des comptes actifs et suspendus.',
-        ],
-        'stats' => [
-            [
-                'label' => 'Comptes',
-                'value' => '42',
-                'note' => 'Tous profils',
-                'icon' => 'fa-solid fa-users',
-                'color' => 'green',
-            ],
-            [
-                'label' => 'Actifs',
-                'value' => '36',
-                'note' => 'Accès ouverts',
-                'icon' => 'fa-solid fa-circle-check',
-                'color' => 'blue',
-            ],
-            [
-                'label' => 'Suspendus',
-                'value' => '4',
-                'note' => 'À revoir',
-                'icon' => 'fa-solid fa-user-lock',
-                'color' => 'yellow',
-            ],
-            [
-                'label' => 'Administrateurs',
-                'value' => '2',
-                'note' => 'Accès sensibles',
-                'icon' => 'fa-solid fa-user-shield',
-                'color' => 'red',
-            ],
-        ],
+        'objectives' => [],
+        'stats' => [],
         'filters' => [
             'Profil',
             'Statut',
-            'Service',
         ],
         'actions' => [
             'Nouvel utilisateur',
@@ -2301,7 +2305,6 @@ return [
             'Nom',
             'E-mail',
             'Profil',
-            'Service',
             'Statut',
             'Actions',
         ],
@@ -2310,7 +2313,6 @@ return [
                 'Amina Diallo',
                 'amina.diallo@sicore.sn',
                 'Administrateur',
-                'Direction',
                 '<span class="badge badge-active">Actif</span>',
                 '<div class="table-actions-inline"><button class="table-action " type="button">Voir</button><button class="table-action " type="button">Modifier</button></div>',
             ],
@@ -2318,7 +2320,6 @@ return [
                 'Moussa Ndiaye',
                 'moussa.ndiaye@sicore.sn',
                 'Gestionnaire paie',
-                'Paie',
                 '<span class="badge badge-active">Actif</span>',
                 '<div class="table-actions-inline"><button class="table-action " type="button">Voir</button><button class="table-action " type="button">Modifier</button></div>',
             ],
@@ -2326,51 +2327,17 @@ return [
                 'Fatou Kane',
                 'fatou.kane@sicore.sn',
                 'Contrôleur',
-                'Indemnités',
                 '<span class="badge badge-suspended">Suspendu</span>',
                 '<div class="table-actions-inline"><button class="table-action " type="button">Voir</button></div>',
             ],
         ],
     ],
+
+    // Gestion des profils et rôles
     'profils-roles' => [
         'title' => 'Profils / Rôles',
         'icon' => 'PR',
         'breadcrumb' => 'Gestion Utilisateur > Profils / Rôles',
-        'objectives' => [
-            'Décrire les responsabilités fonctionnelles.',
-            'Associer les rôles aux modules SICORE.',
-            'Limiter les accès aux besoins réels des services.',
-        ],
-        'stats' => [
-            [
-                'label' => 'Profils',
-                'value' => '8',
-                'note' => 'Rôles actifs',
-                'icon' => 'fa-solid fa-id-badge',
-                'color' => 'green',
-            ],
-            [
-                'label' => 'Modules couverts',
-                'value' => '6',
-                'note' => 'Navigation officielle',
-                'icon' => 'fa-solid fa-layer-group',
-                'color' => 'blue',
-            ],
-            [
-                'label' => 'En revue',
-                'value' => '2',
-                'note' => 'Validation interne',
-                'icon' => 'fa-solid fa-clock',
-                'color' => 'yellow',
-            ],
-            [
-                'label' => 'Sensibles',
-                'value' => '3',
-                'note' => 'Accès renforcés',
-                'icon' => 'fa-solid fa-shield-halved',
-                'color' => 'red',
-            ],
-        ],
         'filters' => [
             'Module',
             'Niveau',

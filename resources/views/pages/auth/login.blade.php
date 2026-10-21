@@ -32,6 +32,9 @@
 
           <form class="form-stack" method="POST" action="{{ route('login.submit') }}" novalidate>
             @csrf
+            @if (old('next', $next ?? null))
+              <input type="hidden" name="next" value="{{ old('next', $next ?? null) }}">
+            @endif
             <div class="field-group">
               <label for="email">Adresse e-mail</label>
               <div class="input-shell">
@@ -44,7 +47,7 @@
               <label for="password">Mot de passe</label>
               <div class="password-field">
                 <span class="input-icon" aria-hidden="true"><i class="fa-solid fa-lock"></i></span>
-                <input class="login-input @error('password') is-invalid @enderror" id="password" type="password" name="password" placeholder="Votre mot de passe" autocomplete="current-password" required>
+                <input class="login-input @error('password') is-invalid @enderror" id="password" type="password" name="password" placeholder="Votre mot de passe" autocomplete="current-password" minlength="8" required>
                 <button class="password-toggle" type="button" data-password-toggle="#password" aria-label="Afficher le mot de passe" aria-pressed="false">
                   <i class="fa-solid fa-eye" aria-hidden="true"></i>
                 </button>
@@ -56,7 +59,7 @@
                 <input type="checkbox" name="remember" value="1" {{ old('remember', true) ? 'checked' : '' }}>
                 <span>Se souvenir de moi</span>
               </label>
-              <a class="forgot-link" href="#">Mot de passe oubli&eacute; ?</a>
+              <a class="forgot-link" href="{{ route('password.reset.form') }}">Mot de passe oublié ?</a>
             </div>
 
             @if ($errors->any())
@@ -80,4 +83,3 @@
     </section>
   </main>
 @endsection
-

@@ -1,6 +1,13 @@
+/*
+ * GRAPHIQUES DU TABLEAU DE BORD
+ * Chargé uniquement par resources/views/pages/dashboard/index.blade.php.
+ * Les graphiques sont dessinés directement dans des éléments <canvas>, sans
+ * bibliothèque externe. Les valeurs sont actuellement de présentation.
+ */
 (function () {
   "use strict";
 
+  // Palette commune garantissant la cohérence avec le thème SICORE.
   var palette = {
     primary: "#166534",
     blue: "#2563eb",
@@ -11,6 +18,7 @@
     card: "#ffffff"
   };
 
+  /** Adapte la résolution du canvas à sa taille CSS et à la densité de l'écran. */
   function sizeCanvas(canvas, fallbackHeight) {
     var parent = canvas.parentElement;
     var rect = parent.getBoundingClientRect();
@@ -30,6 +38,7 @@
     };
   }
 
+  /** Dessine les lignes horizontales servant de repères aux graphiques. */
   function drawGrid(ctx, width, height, padding) {
     ctx.strokeStyle = palette.grid;
     ctx.lineWidth = 1;
@@ -45,6 +54,7 @@
     }
   }
 
+  /** Prépare un rectangle à coins arrondis dans le contexte Canvas. */
   function roundRect(ctx, x, y, width, height, radius) {
     var r = Math.min(radius, Math.abs(height) / 2, width / 2);
     ctx.beginPath();
@@ -56,6 +66,7 @@
     ctx.closePath();
   }
 
+  /** Dessine plusieurs séries de barres regroupées par libellé. */
   function drawGroupedBars(canvas, labels, series) {
     var sized = sizeCanvas(canvas, 260);
     var ctx = sized.ctx;
@@ -91,6 +102,7 @@
     });
   }
 
+  /** Dessine un graphique simple avec une seule série de barres. */
   function drawSimpleBars(canvas, labels, values, color) {
     var sized = sizeCanvas(canvas, 260);
     var ctx = sized.ctx;
@@ -119,6 +131,7 @@
     });
   }
 
+  /** Dessine le graphique circulaire de répartition. */
   function drawDonut(canvas) {
     var sized = sizeCanvas(canvas, 260);
     var ctx = sized.ctx;
@@ -127,11 +140,10 @@
     var centerX = width / 2;
     var centerY = height / 2;
     var radius = Math.min(width, height) * 0.32;
+    var value = Math.max(0, Math.min(100, percentage));
     var segments = [
-      { value: 44, color: palette.primary },
-      { value: 26, color: palette.blue },
-      { value: 18, color: palette.green },
-      { value: 12, color: "#facc15" }
+      { value: value, color: palette.primary },
+      { value: 100 - value, color: palette.grid }
     ];
     var total = segments.reduce(function (sum, item) {
       return sum + item.value;
@@ -157,20 +169,26 @@
     ctx.fillStyle = palette.text;
     ctx.font = "800 26px Segoe UI, Arial, sans-serif";
     ctx.textAlign = "center";
-    ctx.fillText("75%", centerX, centerY + 6);
+    ctx.fillText(value + "%", centerX, centerY + 6);
     ctx.fillStyle = palette.muted;
     ctx.font = "12px Segoe UI, Arial, sans-serif";
-    ctx.fillText("execution", centerX, centerY + 27);
+    ctx.fillText("comptes actifs", centerX, centerY + 27);
   }
 
+  /** Recherche les canvas attendus dans la page et lance tous les dessins. */
   function renderCharts() {
     document.querySelectorAll("[data-chart]").forEach(function (canvas) {
       var chart = canvas.getAttribute("data-chart");
       if (chart === "main-bars") {
-        drawSimpleBars(canvas, ["Jan", "Fev", "Mar", "Avr", "Mai", "Juin"], [18, 26, 21, 34, 30, 42], palette.blue);
+        drawSimpleBars(
+          canvas,
+          JSON.parse(canvas.getAttribute("data-labels") || "[]"),
+          JSON.parse(canvas.getAttribute("data-values") || "[]"),
+          palette.blue
+        );
       }
       if (chart === "main-donut") {
-        drawDonut(canvas);
+        drawDonut(canvas, Number(canvas.getAttribute("data-percentage") || 0));
       }
       if (chart === "teacher-bars") {
         drawGroupedBars(

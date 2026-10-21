@@ -1,99 +1,102 @@
 @extends('layouts.app')
-
 @section('title', 'SICORE - Tableau de bord')
 @section('content')
 <main class="main-content">
-    <x-topbar
-      title="Tableau de bord"
-      subtitle="Vue d’ensemble des paramètres et de la paie"
-      icon="fa-solid fa-gauge-high"
-      search-id="dashboardSearch"
-      search-placeholder="Rechercher…"
-    />
+  <x-topbar title="Tableau de bord" subtitle="Votre espace de travail" icon="fa-solid fa-gauge-high" />
+  <section class="content-area role-dashboard">
+    @if ($error)
+      <section class="dashboard-empty" role="alert">
+        <i class="fa-solid fa-cloud-arrow-down" aria-hidden="true"></i>
+        <h1>Tableau de bord indisponible</h1><p>{{ $error }}</p>
+        <a class="btn-secondary" href="{{ route('dashboard') }}">Réessayer</a>
+      </section>
+    @elseif ($dashboard)
+      @if (($dashboard['layout'] ?? '') === 'teacher')
+        @include('pages.dashboard.teacher')
+      @elseif (($dashboard['layout'] ?? '') === 'super-admin')
+        @include('pages.dashboard.super-admin')
+      @else
+      <header class="dashboard-welcome">
+        <div>
+          <span class="dashboard-kicker">{{ $dashboard['role'] }}</span>
+          <h1>{{ $dashboard['title'] }}</h1>
+          <p>Bonjour {{ $dashboard['name'] }}. Retrouvez les informations utiles à votre activité.</p>
+        </div>
+        <div class="dashboard-context"><span><i class="fa-solid fa-location-dot" aria-hidden="true"></i> {{ $dashboard['scope'] }}</span><small>Actualisé le {{ \Carbon\Carbon::parse($dashboard['updated_at'])->format('d/m/Y à H:i') }}</small></div>
+      </header>
 
-    <section class="content-area">
-      <div class="stats-grid">
-        <article class="stat-card">
-          <div>
-            <p class="stat-label">Parametres</p>
-            <p class="stat-value">24</p>
-            <p class="stat-note">+3 cette semaine</p>
-          </div>
-          <span class="stat-icon green">&#9881;</span>
-        </article>
-        <article class="stat-card">
-          <div>
-            <p class="stat-label">Alertes actives</p>
-            <p class="stat-value">5</p>
-            <p class="stat-note">+2 nouvelles</p>
-          </div>
-          <span class="stat-icon red">!</span>
-        </article>
-        <article class="stat-card">
-          <div>
-            <p class="stat-label">Cessions</p>
-            <p class="stat-value">12</p>
-            <p class="stat-note neutral">4 en cours</p>
-          </div>
-          <span class="stat-icon blue">C</span>
-        </article>
-        <article class="stat-card">
-          <div>
-            <p class="stat-label">Groupes IPM</p>
-            <p class="stat-value">8</p>
-            <p class="stat-note">1 nouveau</p>
-          </div>
-          <span class="stat-icon purple">IP</span>
-        </article>
-        <article class="stat-card">
-          <div>
-            <p class="stat-label">Categories</p>
-            <p class="stat-value">15</p>
-            <p class="stat-note neutral">2 modifiees</p>
-          </div>
-          <span class="stat-icon yellow">CA</span>
-        </article>
-      </div>
-
-      <div class="dashboard-grid">
-        <section class="panel">
-          <div class="panel-header">
-            <div>
-              <h2>Indicateurs principaux</h2>
-              <p>Suivi visuel de l&#39;execution</p>
-            </div>
-          </div>
-          <div class="chart-panel">
-            <div class="metric-circle">
-              <strong>24</strong>
-              <small>Parametres</small>
-            </div>
-            <div class="donut-metric"><span>75%</span></div>
-            <div class="canvas-wrap">
-              <canvas data-chart="main-donut" aria-label="Repartition des donnees"></canvas>
-            </div>
+      @if ($dashboard['cards'])
+        @foreach (collect($dashboard['cards'])->groupBy(fn ($card) => $card['group'] ?? 'Vos indicateurs') as $group => $cards)
+        <section class="dashboard-metric-group" aria-label="{{ $group }}">
+          <h2>{{ $group }}</h2>
+          <div class="dashboard-metrics">
+          @foreach ($cards as $card)
+            <article class="dashboard-metric">
+              <span class="dashboard-metric-icon"><i class="fa-solid {{ $card['icon'] }}" aria-hidden="true"></i></span>
+              <p>{{ $card['label'] }}</p>
+              <strong>{{ number_format((float) $card['value'], 0, ',', ' ') }} @if ($card['unit'])<small>{{ $card['unit'] }}</small>@endif</strong>
+            </article>
+          @endforeach
           </div>
         </section>
+        @endforeach
+      @endif
 
-        <section class="panel">
-          <div class="panel-header">
-            <div>
-              <h2>Activite mensuelle</h2>
-              <p>Operations traitees</p>
-            </div>
-          </div>
-          <div class="canvas-card">
-            <div class="canvas-wrap">
-              <canvas data-chart="main-bars" aria-label="Graphique en barres"></canvas>
-            </div>
-          </div>
+      <div class="dashboard-workspace">
+        <section class="dashboard-panel">
+          <div class="dashboard-panel-heading"><span class="dashboard-section-icon"><i class="fa-solid fa-list-check" aria-hidden="true"></i></span><div><h2>Points de suivi</h2><p>Les informations à prendre en compte dans votre périmètre.</p></div></div>
+          @forelse ($dashboard['notices'] as $notice)
+            <p class="dashboard-notice"><i class="fa-solid fa-circle-info" aria-hidden="true"></i><span>{{ $notice }}</span></p>
+          @empty
+            <p class="dashboard-muted">Consultez vos indicateurs et vos dernières informations ci-dessous.</p>
+          @endforelse
         </section>
+        @if ($dashboard['actions'])
+          <section class="dashboard-panel">
+            <div class="dashboard-panel-heading"><span class="dashboard-section-icon"><i class="fa-solid fa-arrow-pointer" aria-hidden="true"></i></span><div><h2>Accès rapides</h2><p>Vos outils de travail.</p></div></div>
+            <div class="dashboard-shortcuts">
+              @foreach ($dashboard['actions'] as $action)
+                <a href="{{ route($action['route']) }}"><i class="fa-solid {{ $action['icon'] }}" aria-hidden="true"></i><span>{{ $action['label'] }}</span><i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a>
+              @endforeach
+            </div>
+          </section>
+        @endif
       </div>
-    </section>
-  </main>
+      @foreach ($dashboard['sections'] as $section)
+        <section class="dashboard-panel">
+          <div class="dashboard-panel-heading"><h2>{{ $section['title'] }}</h2></div>
+          @if ($section['rows'])
+            <div class="dashboard-table-scroll"><table class="dashboard-table"><thead><tr>@foreach ($section['columns'] as $column)<th scope="col">{{ $column }}</th>@endforeach</tr></thead>
+              <tbody>@foreach ($section['rows'] as $row)<tr>@foreach ($row as $cell)<td>{{ $cell ?? 'Non renseigné' }}</td>@endforeach</tr>@endforeach</tbody>
+            </table></div>
+          @else
+            <p class="dashboard-muted">Aucune donnée disponible dans votre périmètre pour le moment.</p>
+          @endif
+        </section>
+      @endforeach
+      @endif
+    @endif
+  </section>
+</main>
 @endsection
-
-@push('scripts')
-<script src="{{ asset('assets/js/charts.js') }}" defer></script>
+@push('styles')
+<link rel="stylesheet" href="{{ asset('assets/css/role-dashboard.css') }}">
 @endpush
 
+@if (($dashboard['layout'] ?? '') === 'teacher')
+@push('styles')
+<link rel="stylesheet" href="{{ asset('assets/css/teacher-dashboard.css') }}">
+@endpush
+@push('scripts')
+<script src="{{ asset('assets/js/teacher-dashboard.js') }}" defer></script>
+@endpush
+@endif
+
+@if (($dashboard['layout'] ?? '') === 'super-admin')
+@push('styles')
+<link rel="stylesheet" href="{{ asset('assets/css/super-admin-dashboard.css') }}">
+@endpush
+@push('scripts')
+<script src="{{ asset('assets/js/super-admin-dashboard.js') }}" defer></script>
+@endpush
+@endif

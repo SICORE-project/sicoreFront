@@ -1,11 +1,20 @@
+/*
+ * SCRIPT COMMUN DU FRONTEND SICORE
+ * Chargé par resources/views/layouts/base.blade.php sur toutes les pages.
+ * Il gère la sidebar, le lien actif, les recherches de tableaux, les formulaires,
+ * les confirmations et les notifications. La logique Paie reste dans payroll.js.
+ */
 (function () {
   "use strict";
 
+  // Clés utilisées pour mémoriser les préférences du menu dans le navigateur.
   var SIDEBAR_STORAGE_KEY = "sicore_sidebar_collapsed";
+  var SIDEBAR_SCROLL_STORAGE_KEY = "sicore_sidebar_scroll";
   var FONT_AWESOME_ID = "font-awesome-css";
   var FONT_AWESOME_HREF = "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css";
   var sidebarTooltip = null;
 
+  /** Charge Font Awesome si la feuille n'est pas déjà présente dans le layout. */
   function ensureFontAwesome() {
     if (!document.head || document.getElementById(FONT_AWESOME_ID) || document.querySelector('link[href*="font-awesome"]')) {
       return;
@@ -18,6 +27,7 @@
     document.head.appendChild(link);
   }
 
+  /** Normalise une URL pour comparer correctement les liens et la page actuelle. */
   function normalizeRoutePath(path) {
     var value = (path || "").split("?")[0].replace(/\\/g, "/");
     value = value.replace(/^https?:\/\/[^/]+/i, "");
@@ -63,6 +73,7 @@
     return Boolean(parts.page && parts.page === currentPage);
   }
 
+  /** Vérifie et complète la structure minimale sidebar + contenu + calque mobile. */
   function renderAppShell() {
     var sidebar = getSidebar();
     var mainContent = document.querySelector(".main-content");
@@ -90,6 +101,7 @@
     icon.className = iconClass;
   }
 
+  /** Harmonise les boutons et icônes des anciens en-têtes avec le design actuel. */
   function enhanceTopbars() {
     document.querySelectorAll(".mobile-menu-btn").forEach(function (button) {
       setButtonIcon(button, "fa-solid fa-bars");
@@ -178,6 +190,10 @@
     });
   }
 
+  // ---------------------------------------------------------------------------
+  // Gestion du menu latéral : état réduit, mobile, sous-menus et lien actif.
+  // Vue concernée : resources/views/components/sidebar.blade.php.
+  // ---------------------------------------------------------------------------
   function saveSidebarPreference(collapsed) {
     try {
       localStorage.setItem(SIDEBAR_STORAGE_KEY, collapsed ? "true" : "false");
@@ -292,18 +308,72 @@
       link.classList.toggle("active", isActive);
 
       if (isActive || isRelated) {
+        // Remonte TOUS les sous-menus ancetres (pas seulement le plus
+        // proche) pour gerer un menu imbrique sur 2 niveaux ("Indemnité"
+        // dans "Gestion des indemnités") : sans la boucle, seul le
+        // sous-menu le plus interne s'ouvrait, reste invisible tant que son
+        // propre parent (max-height:0 par defaut) n'est pas deplie aussi.
         var submenu = link.closest(".sidebar-submenu");
-        if (submenu) {
+        while (submenu) {
           var trigger = submenu.previousElementSibling;
-          if (trigger) {
+          if (trigger && trigger.matches("[data-submenu-toggle]")) {
             setSubmenuState(trigger, true);
             trigger.classList.add("active");
           }
+          submenu = submenu.parentElement && submenu.parentElement.classList.contains("sidebar-submenu")
+            ? submenu.parentElement
+            : null;
         }
       }
     });
+
+    keepActiveSidebarLinkVisible();
   }
 
+  function saveSidebarScroll() {
+    var nav = document.querySelector(".sidebar-nav");
+    if (!nav) return;
+
+    try {
+      sessionStorage.setItem(SIDEBAR_SCROLL_STORAGE_KEY, String(nav.scrollTop));
+    } catch (error) {
+      return;
+    }
+  }
+
+  function keepActiveSidebarLinkVisible() {
+    var nav = document.querySelector(".sidebar-nav");
+    if (!nav) return;
+
+    try {
+      var savedScroll = sessionStorage.getItem(SIDEBAR_SCROLL_STORAGE_KEY);
+      if (savedScroll !== null && Number.isFinite(Number(savedScroll))) {
+        nav.scrollTop = Number(savedScroll);
+      }
+    } catch (error) {
+      // Le stockage peut être désactivé ; le recentrage de secours reste actif.
+    }
+
+    window.requestAnimationFrame(function () {
+      var activeLink = nav.querySelector(".sidebar-submenu a.active, .sidebar-link.active[href]");
+      if (!activeLink) return;
+
+      var navRect = nav.getBoundingClientRect();
+      var linkRect = activeLink.getBoundingClientRect();
+      var safeTop = navRect.top + 12;
+      var safeBottom = navRect.bottom - 12;
+
+      if (linkRect.top < safeTop || linkRect.bottom > safeBottom) {
+        nav.scrollTop += linkRect.top - navRect.top - ((navRect.height - linkRect.height) / 2);
+      }
+      saveSidebarScroll();
+    });
+  }
+
+  // ---------------------------------------------------------------------------
+  // Recherche générale dans les tableaux.
+  // L'input indique sa cible avec l'attribut data-table-filter="#idDuTableau".
+  // ---------------------------------------------------------------------------
   function filterTable(input) {
     var selector = input.getAttribute("data-table-filter");
     var table = selector ? document.querySelector(selector) : null;
@@ -312,13 +382,14 @@
     }
 
     var query = input.value.trim().toLowerCase();
-    var rows = table.querySelectorAll("tbody tr");
+    var rows = table.querySelectorAll("tbody [data-table-row]");
+    if (!rows.length) rows = table.querySelectorAll("tbody tr");
     var visible = 0;
 
     rows.forEach(function (row) {
       var matches = row.textContent.toLowerCase().indexOf(query) !== -1;
       row.classList.toggle("is-hidden", !matches);
-      if (matches) {
+      if (matches && !row.classList.contains("is-hierarchy-hidden")) {
         visible += 1;
       }
     });
@@ -328,6 +399,11 @@
     if (empty) {
       empty.classList.toggle("show", visible === 0);
     }
+
+    // La pagination repart à la première page et tient compte de la recherche.
+    table.dispatchEvent(new CustomEvent("sicore:table-filtered", {
+      detail: { resetPage: true }
+    }));
   }
 
   function syncPasswordToggle(button) {
@@ -343,6 +419,7 @@
     setButtonIcon(button, isVisible ? "fa-solid fa-eye-slash" : "fa-solid fa-eye");
   }
 
+  /** Affiche ou masque un mot de passe sans modifier sa valeur. */
   function togglePassword(button) {
     var selector = button.getAttribute("data-password-toggle");
     var field = selector ? document.querySelector(selector) : null;
@@ -354,6 +431,7 @@
     field.focus();
   }
 
+  /** Délègue l'affichage à notifications.js, avec alert comme solution de secours. */
   function notify(type, message) {
     if (typeof window.showToast === "function") {
       window.showToast(type, message);
@@ -362,6 +440,7 @@
     window.alert(message);
   }
 
+  /** Contrôle les champs HTML required avant une soumission locale. */
   function validateRequiredFields(form) {
     var fields = form.querySelectorAll("[required]");
     var valid = true;
@@ -392,28 +471,144 @@
     return valid;
   }
 
+  /**
+   * Affiche une tranche de lignes et synchronise les boutons de navigation.
+   * Les lignes masquées par la recherche générale ou IA/IEF/matricule ne sont
+   * pas comptées dans le nombre de pages.
+   */
+  function refreshTablePagination(pagination, resetPage) {
+    var selector = pagination.getAttribute("data-table-target");
+    var table = selector ? document.querySelector(selector) : null;
+    if (!table) return;
+
+    var rows = Array.prototype.slice.call(table.querySelectorAll("tbody [data-table-row]"));
+    var filteredRows = rows.filter(function (row) {
+      return !row.classList.contains("is-hidden") &&
+        !row.classList.contains("is-hierarchy-hidden");
+    });
+    var sizeField = pagination.querySelector("[data-page-size]");
+    var pageSize = Math.max(1, Number(sizeField ? sizeField.value : 10) || 10);
+    var totalPages = Math.max(1, Math.ceil(filteredRows.length / pageSize));
+    var requestedPage = resetPage ? 1 : Number(pagination.dataset.currentPage || 1);
+    var currentPage = Math.min(totalPages, Math.max(1, requestedPage));
+    var firstIndex = (currentPage - 1) * pageSize;
+    var lastIndex = Math.min(firstIndex + pageSize, filteredRows.length);
+
+    rows.forEach(function (row) {
+      row.classList.add("is-pagination-hidden");
+    });
+    filteredRows.slice(firstIndex, lastIndex).forEach(function (row) {
+      row.classList.remove("is-pagination-hidden");
+    });
+
+    pagination.dataset.currentPage = String(currentPage);
+    pagination.hidden = rows.length === 0;
+
+    var currentPageNumber = pagination.querySelector("[data-current-page-number]");
+    if (currentPageNumber) currentPageNumber.textContent = String(currentPage);
+    var numbers = pagination.querySelector('[data-page-numbers]');
+    if (numbers) {
+      numbers.replaceChildren();
+      var previous = 0;
+      for (var page = 1; page <= totalPages; page++) {
+        if (page !== 1 && page !== totalPages && Math.abs(page - currentPage) > 2) continue;
+        if (previous && page - previous > 1) {
+          var gap = document.createElement('span');
+          gap.textContent = '\u2026';
+          gap.setAttribute('aria-hidden', 'true');
+          numbers.append(gap);
+        }
+        var item = document.createElement(page === currentPage ? 'span' : 'button');
+        item.className = 'page-btn' + (page === currentPage ? ' active' : '');
+        item.textContent = String(page);
+        item.setAttribute('aria-label', 'Page ' + page);
+        if (page === currentPage) item.setAttribute('aria-current', 'page');
+        else {
+          item.type = 'button';
+          item.dataset.pageAction = 'number';
+          item.dataset.page = String(page);
+        }
+        numbers.append(item);
+        previous = page;
+      }
+    }
+
+
+    var summary = pagination.querySelector("[data-pagination-summary]");
+    if (summary) {
+      summary.textContent = filteredRows.length === 0
+        ? "0 résultat"
+        : (firstIndex + 1) + "–" + lastIndex + " sur " + filteredRows.length;
+    }
+
+    ["first", "previous"].forEach(function (action) {
+      var button = pagination.querySelector('[data-page-action="' + action + '"]');
+      if (button) button.disabled = currentPage === 1;
+    });
+    ["next", "last"].forEach(function (action) {
+      var button = pagination.querySelector('[data-page-action="' + action + '"]');
+      if (button) button.disabled = currentPage === totalPages || filteredRows.length === 0;
+    });
+
+    var card = table.closest(".table-card");
+    var empty = card ? card.querySelector(".empty-message") : null;
+    if (empty && rows.length > 0) {
+      empty.classList.toggle("show", filteredRows.length === 0);
+    }
+  }
+
+  /** Active la pagination fonctionnelle de tous les tableaux SICORE. */
   function setupPagination() {
-    document.querySelectorAll(".pagination").forEach(function (pagination) {
+    document.querySelectorAll("[data-table-pagination]").forEach(function (pagination) {
       if (pagination.dataset.bound === "true") {
+        refreshTablePagination(pagination, false);
         return;
       }
       pagination.dataset.bound = "true";
+
+      var selector = pagination.getAttribute("data-table-target");
+      var table = selector ? document.querySelector(selector) : null;
+      var sizeField = pagination.querySelector("[data-page-size]");
+
       pagination.addEventListener("click", function (event) {
-        var button = event.target.closest(".page-btn");
+        var button = event.target.closest("[data-page-action]");
         if (!button || button.disabled) {
           return;
         }
         event.preventDefault();
-        if (button.hasAttribute("data-page-number")) {
-          pagination.querySelectorAll(".page-btn").forEach(function (item) {
-            item.classList.remove("active");
-          });
-          button.classList.add("active");
-        }
+        var action = button.getAttribute("data-page-action");
+        var currentPage = Number(pagination.dataset.currentPage || 1);
+        var visibleRows = table
+          ? table.querySelectorAll("tbody [data-table-row]:not(.is-hidden):not(.is-hierarchy-hidden)").length
+          : 0;
+        var pageSize = Math.max(1, Number(sizeField ? sizeField.value : 10) || 10);
+        var totalPages = Math.max(1, Math.ceil(visibleRows / pageSize));
+
+        if (action === "number") currentPage = Number(button.dataset.page);
+        if (action === "first") currentPage = 1;
+        if (action === "previous") currentPage -= 1;
+        if (action === "next") currentPage += 1;
+        if (action === "last") currentPage = totalPages;
+        pagination.dataset.currentPage = String(currentPage);
+        refreshTablePagination(pagination, false);
       });
+
+      if (sizeField) {
+        sizeField.addEventListener("change", function () {
+          refreshTablePagination(pagination, true);
+        });
+      }
+      if (table) {
+        table.addEventListener("sicore:table-filtered", function (event) {
+          refreshTablePagination(pagination, !event.detail || event.detail.resetPage !== false);
+        });
+      }
+
+      refreshTablePagination(pagination, true);
     });
   }
 
+  /** Branche les formulaires génériques qui ne disposent pas d'un contrôleur dédié. */
   function setupForms() {
     document.querySelectorAll("[data-validate-form]").forEach(function (form) {
       if (form.dataset.bound === "true" || form.hasAttribute("data-teacher-wizard")) {
@@ -440,6 +635,9 @@
     });
   }
 
+  // ---------------------------------------------------------------------------
+  // Fenêtre de confirmation commune aux actions portant data-confirm.
+  // ---------------------------------------------------------------------------
   function ensureConfirmModal() {
     var existing = document.querySelector("[data-confirm-modal]");
     if (existing) {
@@ -493,13 +691,6 @@
   function setupConfirmations() {
     ensureConfirmModal();
 
-    document.querySelectorAll(".icon-action[title='Supprimer']").forEach(function (button) {
-      if (!button.hasAttribute("data-confirm")) {
-        button.setAttribute("data-confirm", "Voulez-vous vraiment supprimer cet \u00e9l\u00e9ment ?");
-        button.setAttribute("data-success-message", "\u00c9l\u00e9ment supprim\u00e9 avec succ\u00e8s.");
-      }
-    });
-
     document.querySelectorAll("[data-confirm]").forEach(function (trigger) {
       if (trigger.dataset.confirmBound === "true") {
         return;
@@ -508,12 +699,19 @@
       trigger.addEventListener("click", function (event) {
         event.preventDefault();
         confirmAction(trigger.getAttribute("data-confirm"), function () {
-          notify("success", trigger.getAttribute("data-success-message") || "Action confirm\u00e9e.");
+          if (trigger.hasAttribute("data-confirm-submit") && trigger.form) {
+            trigger.disabled = true;
+            trigger.form.requestSubmit();
+            return;
+          }
+
+          notify("error", "Cette action n’est reliée à aucune API.");
         });
       });
     });
   }
 
+  /** Convertit certains messages de page en notifications temporaires. */
   function setupToasts() {
     document.querySelectorAll("[data-toast]").forEach(function (trigger) {
       if (trigger.dataset.toastBound === "true") {
@@ -526,6 +724,7 @@
     });
   }
 
+  /** Initialise les petits calculs de présentation hors du moteur de paie. */
   function setupDynamicCalculations() {
     document.querySelectorAll("[data-calculate-indemnity]").forEach(function (button) {
       if (button.dataset.bound === "true") {
@@ -574,6 +773,7 @@
     sidebarTooltip.style.top = Math.round(rect.top + rect.height / 2) + "px";
   }
 
+  /** Affiche le libellé des icônes lorsque la sidebar est réduite. */
   function setupSidebarTooltips() {
     document.querySelectorAll(".sidebar-link, .sidebar-logo, .logout-btn").forEach(function (element) {
       if (element.dataset.tooltipBound === "true") {
@@ -591,7 +791,14 @@
     });
   }
 
+  /** Regroupe tous les écouteurs de clic, saisie, redimensionnement et clavier. */
   function bindEvents() {
+    var sidebarNav = document.querySelector(".sidebar-nav");
+    if (sidebarNav && sidebarNav.dataset.scrollBound !== "true") {
+      sidebarNav.dataset.scrollBound = "true";
+      sidebarNav.addEventListener("scroll", saveSidebarScroll, { passive: true });
+    }
+
     document.querySelectorAll("[data-sidebar-toggle]").forEach(function (button) {
       if (button.dataset.bound === "true") {
         return;
@@ -636,6 +843,7 @@
       }
       link.dataset.pageBound = "true";
       link.addEventListener("click", function () {
+        saveSidebarScroll();
         if (!isDesktop()) {
           closeMobileSidebar();
         }
@@ -664,6 +872,7 @@
     });
   }
 
+  /** Réactive les comportements après l'ajout éventuel de contenu dans le DOM. */
   function refreshDynamicContent() {
     ensureFontAwesome();
     enhanceTopbars();
@@ -719,6 +928,7 @@
   window.restoreSidebarPreference = restoreSidebarPreference;
   window.toggleSubmenu = toggleSubmenu;
   window.setActiveMenu = setActiveMenu;
+  window.keepActiveSidebarLinkVisible = keepActiveSidebarLinkVisible;
   window.filterTable = filterTable;
   window.togglePassword = togglePassword;
   window.validateRequiredFields = validateRequiredFields;
@@ -729,5 +939,3 @@
     notify: notify
   };
 })();
-
-

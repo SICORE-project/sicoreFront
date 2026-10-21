@@ -4,6 +4,9 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use App\Http\Middleware\EnsureSicoreAuthenticated;
+use App\Http\Middleware\EnsureDiplomeManagementAuthorized;
+use App\Http\Middleware\EnsureSicorePermission;
+use App\Http\Middleware\EnsureSicoreModuleAccess;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -12,8 +15,14 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Reject matricule whitespace instead of silently removing it before validation.
+        $middleware->trimStrings(except: ['matricule', 'indice', 'rows.*.data.matricule', 'rows.*.data.indice']);
         $middleware->alias([
             'sicore.auth' => EnsureSicoreAuthenticated::class,
+            'diplomes.manage' => EnsureDiplomeManagementAuthorized::class,
+            'sicore.permission' => EnsureSicorePermission::class,
+            'sicore.module' => EnsureSicoreModuleAccess::class,
+            'sicore.indemnites' => \App\Http\Middleware\EnsureIndemnitesSection::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

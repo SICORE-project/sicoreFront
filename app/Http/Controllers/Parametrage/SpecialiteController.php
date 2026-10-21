@@ -1,0 +1,96 @@
+<?php
+
+namespace App\Http\Controllers\Parametrage;
+
+use App\Http\Controllers\Controller;
+use App\Services\Parametrage\SpecialiteService;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\View\View;
+
+class SpecialiteController extends Controller
+{
+    public function index(Request $request, SpecialiteService $service): View|RedirectResponse
+    {
+        $filters = $request->validate([
+            'search' => ['nullable', 'string', 'max:100'],
+            'statut' => ['nullable', 'in:actif,inactif'],
+            'sort' => ['nullable', 'in:code,libelle,description,statut'],
+            'direction' => ['nullable', 'in:asc,desc'],
+            'page' => ['nullable', 'integer', 'min:1'],
+        ]);
+        $result = $service->paginate($filters);
+        if ($result['unauthorized']) {
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            return redirect()->route('login')->with('warning', $result['error']);
+        }
+
+        $canManage = \App\Support\SicoreAccess::can($request, 'parametrage.specialites.manage');
+
+        return view('pages.parametres.specialites', $result + [
+            'filters' => $filters,
+            'canCreate' => $canManage,
+            'canUpdate' => $canManage,
+            'canDelete' => $canManage,
+            'hideFlashMessages' => true,
+        ]);
+    }
+
+    public function store(Request $request, SpecialiteService $service): RedirectResponse
+    {
+        $request->mergeIfMissing(['statut' => 'actif']);
+        $data = $request->validate([
+            'libelle' => ['required', 'string', 'max:150'],
+            'description' => ['nullable', 'string', 'max:500'],
+            'statut' => ['required', 'in:actif,inactif'],
+        ]);
+        $result = $service->create($data);
+        if ($result['success']) {
+            return redirect()->route('parametres.disciplines.index')->with('success', $result['message']);
+        }
+
+        return back()->withInput()
+            ->with('discipline_create_form_open', true)
+            ->withErrors($result['errors'] ?: ['api' => $result['message']]);
+    }
+
+    public function update(Request $request, string $discipline, SpecialiteService $service): RedirectResponse
+    {
+        $data = $request->validateWithBag('updateSpecialite', [
+            'libelle' => ['required', 'string', 'max:150'],
+            'description' => ['nullable', 'string', 'max:500'],
+        ]);
+        $result = $service->update($discipline, $data);
+        if ($result['success']) {
+            return redirect()->route('parametres.disciplines.index')->with('success', $result['message']);
+        }
+
+        return back()->withInput()
+            ->with('discipline_update_form_open', true)
+            ->with('discipline_update_id', $discipline)
+            ->withErrors($result['errors'] ?: ['api' => $result['message']], 'updateSpecialite');
+    }
+
+    public function updateStatus(Request $request, string $discipline, SpecialiteService $service): RedirectResponse
+    {
+        $data = $request->validate([
+            'statut' => ['required', 'in:actif,inactif'],
+        ]);
+        $result = $service->updateStatus($discipline, $data['statut']);
+        if ($result['success']) {
+            return redirect()->route('parametres.disciplines.index')->with('success', $result['message']);
+        }
+
+        return back()->with('error', $result['message']);
+    }
+
+    public function destroy(string $discipline, SpecialiteService $service): RedirectResponse
+    {
+        $result = $service->delete($discipline);
+
+        return redirect()->route('parametres.disciplines.index')
+            ->with($result['success'] ? 'success' : 'error', $result['message']);
+    }
+}

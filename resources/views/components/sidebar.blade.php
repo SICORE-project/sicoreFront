@@ -1,6 +1,13 @@
+{{--
+  COMPOSANT DU MENU LATÉRAL
+  Liens : config/navigation.php.
+  Comportement et défilement : public/assets/js/app.js.
+  Utilisateur : session "sicore_user" créée par AuthController.php.
+--}}
 @php
-    $navigation = config('navigation', []);
+    // Charger le menu et l'identité de l'utilisateur connecté.
     $user = session('sicore_user', []);
+    $navigation = \App\Support\NavigationAccess::filter(config('navigation', []), (array) $user);
     $userName = data_get($user, 'name', data_get($user, 'email', 'Utilisateur SICORE'));
     $userRole = data_get($user, 'role', data_get($user, 'roles.0.name', 'Utilisateur'));
 @endphp
@@ -17,13 +24,16 @@
 
   <nav class="sidebar-nav" aria-label="Navigation principale">
     <div class="sidebar-section">
+      {{-- Une entrée est soit un lien direct, soit un groupe déroulant. --}}
       @foreach ($navigation as $item)
         @php
+            // routeIs indique si l'entrée correspond à la route actuelle.
             $patterns = (array) ($item['active'] ?? $item['route'] ?? []);
             $groupIsActive = collect($patterns)->contains(fn ($pattern) => request()->routeIs($pattern));
         @endphp
 
         @if (($item['type'] ?? 'link') === 'link')
+          {{-- Cas 1 : lien simple, par exemple Tableau de bord. --}}
           <a
             class="sidebar-link {{ $groupIsActive ? 'active' : '' }}"
             href="{{ route($item['route']) }}"
@@ -37,6 +47,7 @@
             <span class="nav-label">{{ $item['label'] }}</span>
           </a>
         @else
+          {{-- Cas 2 : groupe avec sous-menu, par exemple Gestion de la paie. --}}
           <button
             class="sidebar-link {{ $groupIsActive ? 'active' : '' }}"
             type="button"
@@ -54,21 +65,65 @@
           <div class="sidebar-submenu {{ $groupIsActive ? 'open' : '' }}">
             @foreach ($item['links'] as $link)
               @php
-                  $linkIsActive = request()->routeIs($link['route'])
-                      && (! isset($link['fragment']) || request()->fullUrlIs('*#'.$link['fragment']));
-                  $href = route($link['route']).(isset($link['fragment']) ? '#'.$link['fragment'] : '');
+                  $linkIsGroup = ($link['type'] ?? 'link') === 'group';
+                  $linkPatterns = (array) ($link['active'] ?? $link['route'] ?? []);
+                  $linkIsActive = collect($linkPatterns)->contains(fn ($pattern) => request()->routeIs($pattern));
               @endphp
-              <a
-                class="{{ $linkIsActive ? 'active' : '' }}"
-                href="{{ $href }}"
-                data-page-link
-                title="{{ $link['label'] }}"
-                aria-label="{{ $link['label'] }}"
-                @if ($linkIsActive) aria-current="page" @endif
-              >
-                <span class="nav-icon submenu-icon"><i class="{{ $link['icon'] }}" aria-hidden="true"></i></span>
-                <span class="submenu-label">{{ $link['label'] }}</span>
-              </a>
+
+              @if ($linkIsGroup)
+                <button
+                  class="sidebar-link sidebar-subgroup-toggle {{ $linkIsActive ? 'active expanded' : '' }}"
+                  type="button"
+                  data-submenu-toggle
+                  title="{{ $link['label'] }}"
+                  aria-label="{{ $link['label'] }}"
+                  aria-expanded="{{ $linkIsActive ? 'true' : 'false' }}"
+                >
+                  <span class="nav-icon submenu-icon"><i class="{{ $link['icon'] }}" aria-hidden="true"></i></span>
+                  <span class="submenu-label">{{ $link['label'] }}</span>
+                  <span class="chevron"><i class="fa-solid fa-chevron-down" aria-hidden="true"></i></span>
+                </button>
+
+                <div class="sidebar-submenu sidebar-submenu-nested {{ $linkIsActive ? 'open' : '' }}">
+                  @foreach ($link['links'] as $nestedLink)
+                    @php
+                        $nestedLinkIsActive = request()->routeIs($nestedLink['route'])
+                            && (! isset($nestedLink['fragment']) || request()->fullUrlIs('*#'.$nestedLink['fragment']));
+                        $nestedHref = route($nestedLink['route'])
+                            .(isset($nestedLink['fragment']) ? '#'.$nestedLink['fragment'] : '');
+                    @endphp
+                    <a
+                      class="{{ $nestedLinkIsActive ? 'active' : '' }}"
+                      href="{{ $nestedHref }}"
+                      data-page-link
+                      title="{{ $nestedLink['label'] }}"
+                      aria-label="{{ $nestedLink['label'] }}"
+                      @if ($nestedLinkIsActive) aria-current="page" @endif
+                    >
+                      <span class="nav-icon submenu-icon"><i class="{{ $nestedLink['icon'] }}" aria-hidden="true"></i></span>
+                      <span class="submenu-label">{{ $nestedLink['label'] }}</span>
+                    </a>
+                  @endforeach
+                </div>
+              @else
+                @php
+                    // Construire le lien et ajouter éventuellement une ancre #...
+                    $href = route($link['route']).(isset($link['fragment']) ? '#'.$link['fragment'] : '');
+                    $linkIsActive = $linkIsActive
+                        && (! isset($link['fragment']) || request()->fullUrlIs('*#'.$link['fragment']));
+                @endphp
+                <a
+                  class="{{ $linkIsActive ? 'active' : '' }}"
+                  href="{{ $href }}"
+                  data-page-link
+                  title="{{ $link['label'] }}"
+                  aria-label="{{ $link['label'] }}"
+                  @if ($linkIsActive) aria-current="page" @endif
+                >
+                  <span class="nav-icon submenu-icon"><i class="{{ $link['icon'] }}" aria-hidden="true"></i></span>
+                  <span class="submenu-label">{{ $link['label'] }}</span>
+                </a>
+              @endif
             @endforeach
           </div>
         @endif
@@ -77,6 +132,7 @@
   </nav>
 
   <div class="sidebar-footer">
+    {{-- Identité connectée et formulaire sécurisé de déconnexion. --}}
     <div class="user-card" title="{{ $userName }} — {{ $userRole }}">
       <span class="avatar" aria-hidden="true"><i class="fa-solid fa-user-shield"></i></span>
       <div>
@@ -85,12 +141,39 @@
       </div>
     </div>
 
-    <form method="POST" action="{{ route('logout') }}" class="sidebar-logout-form">
-      @csrf
-      <button class="logout-btn" type="submit" data-tooltip="Déconnexion" title="Déconnexion" aria-label="Déconnexion">
+    <button class="logout-btn" type="button" data-modal-open="logout-confirm-modal" data-tooltip="Déconnexion" title="Déconnexion" aria-label="Déconnexion">
         <i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i>
         <span class="logout-label">Déconnexion</span>
-      </button>
-    </form>
+    </button>
   </div>
 </aside>
+
+<x-module-indemnite type="modal" id="logout-confirm-modal" title="Se déconnecter ?" icon="fa-right-from-bracket">
+  @push('styles')
+    <style>
+      #logout-confirm-modal .modal-dialog { width: min(420px, calc(100vw - 32px)) !important; max-width: 420px !important; padding: 24px; border-radius: 16px; }
+      #logout-confirm-modal .modal-header { margin-bottom: 16px; }
+      #logout-confirm-modal .modal-header h2 { color: #0f172a; font-size: 18px; gap: 10px; }
+      #logout-confirm-modal .modal-header h2 > i { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 10px; background: #f1f5f9; color: #475569; font-size: 16px; }
+      #logout-confirm-modal .modal-close { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 8px; color: #64748b; }
+      #logout-confirm-modal .modal-close:hover { background: #f1f5f9; }
+      #logout-confirm-modal .logout-confirm-message { margin: 0; color: #64748b; font-size: 14px; line-height: 1.6; }
+      #logout-confirm-modal .form-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px; margin-top: 24px; padding-top: 16px; border-top: 1px solid #e2e8f0; }
+      #logout-confirm-modal .form-actions button { display: inline-flex; align-items: center; justify-content: center; min-height: 40px; padding: 10px 16px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
+      #logout-confirm-modal .btn-danger-soft { border: 1px solid #dc2626; color: #ffffff; background: #dc2626; }
+      #logout-confirm-modal .btn-danger-soft:hover { border-color: #b91c1c; background: #b91c1c; }
+      #logout-confirm-modal button:focus-visible { outline: 2px solid #475569; outline-offset: 3px; }
+    </style>
+  @endpush
+  <p class="logout-confirm-message">Vous allez quitter votre session. Vous pourrez vous reconnecter à tout moment.</p>
+  <form method="POST" action="{{ route('logout') }}" class="form-actions">
+    @csrf
+    @if (request()->is('paie', 'paie/*'))
+      <input type="hidden" name="next" value="{{ request()->getRequestUri() }}">
+    @endif
+    <button class="btn-secondary" type="button" data-modal-close>Annuler</button>
+    <button class="btn-danger-soft" type="submit">
+      Se déconnecter
+    </button>
+  </form>
+</x-module-indemnite>

@@ -6,6 +6,7 @@ INSTALLATION — SICORE FRONTEND LARAVEL 12 — MODE TEST
 2. Ouvrez PowerShell dans le dossier du projet.
 
 3. Nettoyez le cache Laravel :
+   PHP 8.4.1 ou supérieur doit être prioritaire dans le PATH.
    php artisan optimize:clear
 
 4. Démarrez le frontend sur le port 8001 :
