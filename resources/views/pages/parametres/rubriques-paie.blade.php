@@ -27,7 +27,8 @@
     <form class="filter-panel parametrage-filters rubrique-filters" method="GET" action="{{ route('parametres.rubriques-paie.index') }}" data-rubrique-filters>
       <div class="form-group rubrique-search">
         <label for="rubriqueSearch">Rechercher</label>
-        <input class="form-control" id="rubriqueSearch" name="search" type="search" value="{{ $filters['search'] ?? '' }}" placeholder="Code, libellé ou description…" autocomplete="off">
+        {{-- Placeholder mis à jour --}}
+        <input class="form-control" id="rubriqueSearch" name="search" type="search" value="{{ $filters['search'] ?? '' }}" placeholder="Code, libellé ou montant…" autocomplete="off">
       </div>
       <div class="form-group">
         <label for="rubriqueType">Type</label>
@@ -54,7 +55,8 @@
       <div class="table-card-header"><div><h2 id="rubriqueListTitle">Liste des rubriques de paie</h2><p class="table-card-subtitle">{{ $pagination['total'] }} résultat{{ $pagination['total'] > 1 ? 's' : '' }}</p></div></div>
       <div class="table-responsive">
         <table class="table">
-          <thead><tr><th>Code</th><th>Libellé</th><th>Type</th><th>Périodicité</th><th>Description</th>@if ($canManage)<th class="actions-cell">Actions</th>@endif</tr></thead>
+          {{-- En-tête mis à jour --}}
+          <thead><tr><th>Code</th><th>Libellé</th><th>Type</th><th>Périodicité</th><th>Montant</th>@if ($canManage)<th class="actions-cell">Actions</th>@endif</tr></thead>
           <tbody>
             @forelse ($items as $rubrique)
               @php
@@ -66,7 +68,8 @@
                 <td><strong>{{ data_get($rubrique, 'libelle', '—') }}</strong></td>
                 <td><span class="rubrique-type rubrique-type--{{ $type === 'gain' ? 'gain' : 'retenue' }}"><i class="fa-solid {{ $type === 'gain' ? 'fa-arrow-up' : 'fa-arrow-down' }}" aria-hidden="true"></i> {{ $type === 'gain' ? 'Gain' : 'Retenue' }}</span></td>
                 <td>{{ ucfirst((string) data_get($rubrique, 'periodicite', '—')) }}</td>
-                <td>{{ data_get($rubrique, 'description') ?: '—' }}</td>
+                {{-- Affichage du montant (formaté) --}}
+                <td>{{ data_get($rubrique, 'montant') !== null ? number_format((float) data_get($rubrique, 'montant'), 0, '', ' ') : '—' }}</td>
                 @if ($canManage)
                   <td class="actions-cell">
                     <button class="icon-action" type="button" data-modal-open="rubrique-update-modal" data-rubrique-edit='@json($rubrique)' title="Modifier" aria-label="Modifier {{ data_get($rubrique, 'libelle') }}"><i class="fa-solid fa-pen-to-square" aria-hidden="true"></i></button>
@@ -152,7 +155,8 @@
       document.getElementById('rubriqueUpdateLibelle').value = item.libelle || '';
       document.getElementById('rubriqueUpdateType').value = item.type || 'gain';
       document.getElementById('rubriqueUpdatePeriodicite').value = item.periodicite || 'mensuelle';
-      document.getElementById('rubriqueUpdateDescription').value = item.description || '';
+      // Modification ici : utilisation de "montant" au lieu de "description"
+      document.getElementById('rubriqueUpdateMontant').value = item.montant || '';
     }
     document.querySelectorAll('[data-rubrique-edit]').forEach(function (button) {
       button.addEventListener('click', function () { fillUpdateForm(JSON.parse(button.dataset.rubriqueEdit)); });
@@ -183,7 +187,8 @@
       document.getElementById('rubriqueUpdateLibelle').value = @json(old('libelle'));
       document.getElementById('rubriqueUpdateType').value = @json(old('type', 'gain'));
       document.getElementById('rubriqueUpdatePeriodicite').value = @json(old('periodicite', 'mensuelle'));
-      document.getElementById('rubriqueUpdateDescription').value = @json(old('description'));
+      // Modification ici : utilisation de "montant" au lieu de "description"
+      document.getElementById('rubriqueUpdateMontant').value = @json(old('montant'));
     @endif
   }());
 </script>
