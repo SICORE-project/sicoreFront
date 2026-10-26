@@ -109,7 +109,7 @@ return [
             ['label' => 'IA', 'route' => 'parametres.ia.index', 'icon' => 'fa-solid fa-building-columns', 'permission' => 'parametrage.ia.read'],
             ['label' => 'IEF', 'route' => 'parametres.ief.index', 'icon' => 'fa-solid fa-sitemap', 'permission' => 'parametrage.ief.read'],
             ['label' => 'Diplômes', 'route' => 'parametres.diplomes.index', 'icon' => 'fa-solid fa-graduation-cap', 'permission' => 'parametrage.diplomes.read'],
-            ['label' => 'Enseignants', 'route' => 'enseignants.index', 'icon' => 'fa-solid fa-chalkboard-user', 'permission' => 'enseignants.read'],
+           // ['label' => 'Enseignants', 'route' => 'enseignants.index', 'icon' => 'fa-solid fa-chalkboard-user', 'permission' => 'enseignants.read'],
             ['label' => 'Corps', 'route' => 'parametres.corps.index', 'icon' => 'fa-solid fa-users-line', 'permission' => 'parametrage.corps.read'],
             ['label' => 'Catégories', 'route' => 'parametres.categories.index', 'icon' => 'fa-solid fa-layer-group', 'permission' => 'parametrage.categories.read'],
             ['label' => 'Banques', 'route' => 'parametres.institutions-financieres', 'icon' => 'fa-solid fa-building-columns', 'permission' => 'parametrage.institutions_financieres.read'],
