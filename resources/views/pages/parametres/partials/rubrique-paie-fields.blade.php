@@ -24,8 +24,8 @@
     @if ($bag) @error('periodicite', $bag)<span class="invalid-feedback">{{ $message }}</span>@enderror @else @error('periodicite')<span class="invalid-feedback">{{ $message }}</span>@enderror @endif
   </div>
   <div class="form-group full">
-    <label for="{{ $prefix }}Description">Description</label>
-    <textarea class="form-control" id="{{ $prefix }}Description" name="description" rows="3" maxlength="1000" placeholder="Précisez l’utilisation de cette rubrique…">{{ $oldValue('description') }}</textarea>
-    @if ($bag) @error('description', $bag)<span class="invalid-feedback">{{ $message }}</span>@enderror @else @error('description')<span class="invalid-feedback">{{ $message }}</span>@enderror @endif
+    <label for="{{ $prefix }}Montant">Montant</label>
+    <input class="form-control" type="number" step="0.01" min="0" id="{{ $prefix }}Montant" name="montant" value="{{ $oldValue('montant') }}" placeholder="Ex. 150000.00">
+    @if ($bag) @error('montant', $bag)<span class="invalid-feedback">{{ $message }}</span>@enderror @else @error('montant')<span class="invalid-feedback">{{ $message }}</span>@enderror @endif
   </div>
 </div>
