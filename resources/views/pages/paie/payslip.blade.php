@@ -11,6 +11,7 @@
 @section('title', 'SICORE - Bulletin '.$data['reference'].' - '.data_get($data, 'period.month_label', data_get($data, 'period.label')))
 
 @php
+  require_once app_path('Helpers/sicore.php');
   // Préparer uniquement des libellés d'affichage ; aucun calcul financier ici.
   $category = data_get($data, 'profile.category');
   $categoryLabel = $category ? ((int) $category === 1 ? '1re catégorie' : $category.'e catégorie') : 'Non applicable';
@@ -143,6 +144,22 @@
       </section>
 
       {{-- Rubriques déjà calculées par le backend : gains, retenues et employeur. --}}
+      @if (data_get($data, 'display_settings.matched_rubric_count', 0) > 0)
+        <section class="payslip-claim-note" aria-label="Paramétrage des rubriques">
+          <i class="fa-solid fa-list-check" aria-hidden="true"></i>
+          <p>
+            Libellés et affichage issus du paramétrage des rubriques de paie.
+            @if (data_get($data, 'display_settings.origin') === 'calculation_snapshot')
+              Réglages conservés à la date du calcul.
+            @else
+              Réglages actuels appliqués à ce bulletin antérieur.
+            @endif
+            @if (data_get($data, 'display_settings.hidden_line_count', 0) > 0)
+              {{ data_get($data, 'display_settings.hidden_line_count') }} ligne(s) non affichée(s) selon le paramétrage ; leurs montants restent inclus dans les totaux.
+            @endif
+          </p>
+        </section>
+      @endif
       <div class="payslip-lines-wrap">
         <table class="payslip-lines">
           <thead>
@@ -154,7 +171,7 @@
             </tr>
           </thead>
           <tbody>
-            @foreach ($data['lines'] as $line)
+            @forelse ($data['lines'] as $line)
               @php
                 $isEarning = $line['category'] === 'earning';
                 $isEmployer = $line['category'] === 'employer_contribution';
@@ -177,7 +194,9 @@
                   {{ $isEmployer ? format_fcfa($line['amount']) : '—' }}
                 </td>
               </tr>
-            @endforeach
+            @empty
+              <tr><td colspan="4">Aucune rubrique à afficher pour ce bulletin.</td></tr>
+            @endforelse
           </tbody>
         </table>
       </div>
