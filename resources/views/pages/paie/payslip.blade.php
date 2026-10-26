@@ -1,251 +1,112 @@
 @extends('layouts.app')
-
-{{--
-  PAGE PAIE SPÉCIFIQUE : bulletin individuel — URL /paie/bulletins/{id}.
-  Route/contrôleur frontend : routes/web.php → PayrollController::payslip().
-  Appel API : SicoreApi::payslip().
-  Données backend : sicoreBack/PayrollPageController::payslip().
-  Styles écran/impression : classes payslip-* dans style.css et responsive.css.
-  Contrairement aux listes, cette page possède son propre HTML de bulletin.
---}}
-@section('title', 'SICORE - Bulletin '.$data['reference'].' - '.data_get($data, 'period.month_label', data_get($data, 'period.label')))
-
+@section('title', 'SICORE - Bulletin de solde '.$data['reference'])
+@push('styles')
+  <link rel="stylesheet" href="{{ asset('assets/css/payroll-bulletin.css') }}?v={{ filemtime(public_path('assets/css/payroll-bulletin.css')) }}">
+@endpush
 @php
-  require_once app_path('Helpers/sicore.php');
-  // Préparer uniquement des libellés d'affichage ; aucun calcul financier ici.
+  $money = fn ($amount) => number_format((float) $amount, 0, ',', ' ');
+  $monthLabel = data_get($data, 'period.month_label', data_get($data, 'period.label', ''));
+  $monthUpper = mb_strtoupper(trim(preg_replace('/\s*\d{4}\s*/u', '', $monthLabel)), 'UTF-8');
+  $year = data_get($data, 'period.year') ?: preg_replace('/.*(\d{4}).*/', '$1', $monthLabel);
   $category = data_get($data, 'profile.category');
-  $categoryLabel = $category ? ((int) $category === 1 ? '1re catégorie' : $category.'e catégorie') : 'Non applicable';
-  $monthLabel = data_get($data, 'period.month_label', data_get($data, 'period.label', data_get($data, 'period.code', 'Mois non renseigné')));
-  $monthUpper = mb_strtoupper($monthLabel, 'UTF-8');
+  $categoryLabel = $category ? ($category == 1 ? '1ere catégorie' : $category.'e catégorie') : '';
+  $categoryText = trim((data_get($data, 'profile.diploma') ?? '').' '.(data_get($data, 'profile.category_label') ?: $categoryLabel));
+  $lines = collect($data['lines'] ?? []);
+  $employerLines = $lines->where('category', 'employer_contribution');
+  $salaryLines = $lines->where('category', '!=', 'employer_contribution');
+  $bank = data_get($data, 'teacher.bank') ?: '—';
 @endphp
-
 @section('content')
-<main class="main-content payslip-page">
-  {{-- Actions d'écran non imprimées : retour à la liste et impression. --}}
-  <x-topbar
-    :title="'Bulletin de salaire — '.$monthLabel"
-    :subtitle="'Gestion de la paie > Bulletins > '.$monthLabel.' > '.$data['reference']"
-    icon="fa-solid fa-file-invoice-dollar"
-  >
-    <div class="actions-group payslip-screen-actions">
-      <a class="btn-secondary" href="{{ route('paie.bulletins', ['period_id' => $data['period']['id']]) }}">
-        <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
-        Retour
-      </a>
-      <button class="btn-primary" type="button" onclick="window.print()">
-        <i class="fa-solid fa-print" aria-hidden="true"></i>
-        Imprimer le bulletin
-      </button>
+<main class="main-content solde-page">
+  <x-topbar title="Bulletin de solde" :subtitle="$monthLabel.' · '.$data['reference']" icon="fa-solid fa-file-invoice-dollar">
+    <div class="actions-group">
+      <a class="btn-secondary" href="{{ route('paie.bulletins', ['period_id' => $data['period']['id']]) }}">Retour aux bulletins</a>
+      <button class="btn-primary" type="button" onclick="window.print()"><i class="fa-solid fa-print" aria-hidden="true"></i> Imprimer</button>
     </div>
   </x-topbar>
-
-  <section class="content-area payslip-canvas">
-    {{-- Document A4 complet envoyé à l'impression par window.print(). --}}
-    <article class="payslip-document" aria-label="Bulletin de salaire {{ $data['reference'] }} du mois de {{ $monthLabel }}">
-      <div class="payslip-color-rule" aria-hidden="true">
-        <span></span><span></span><span></span>
-      </div>
-
-      {{-- En-tête officiel : République, service émetteur, matricule et période. --}}
-      <header class="payslip-official-header">
-        <section class="payslip-republic" aria-label="République du Sénégal">
-          <img src="{{ asset('assets/images/flag-senegal.svg') }}" alt="Drapeau du Sénégal">
-          <div>
-            <p>République du Sénégal</p>
-            <span>Un Peuple · Un But · Une Foi</span>
-          </div>
-        </section>
-
-        <section class="payslip-document-title">
-          <span>Direction des Ressources Humaines</span>
-          <h2>Bulletin de salaire</h2>
-          <p>Paie du mois de {{ $monthLabel }}</p>
-        </section>
-
-        <section class="payslip-document-meta">
-          <span>Matricule</span>
-          <strong>{{ $data['teacher']['matricule'] ?: 'Non renseigné' }}</strong>
-          <small>Mois de paie : {{ $monthUpper }}</small>
-        </section>
+  <section class="content-area solde-canvas">
+    <article class="solde-document" aria-label="Bulletin de solde {{ $data['reference'] }}">
+      <header class="solde-header">
+        <strong>REPUBLIQUE<br>DU SENEGAL</strong>
+        <div><h2>BULLETIN DE SOLDE</h2><strong>VALIDITE : MOIS DE {{ $monthUpper }}</strong></div>
+        <strong>MATRICULE : {{ data_get($data, 'teacher.matricule') ?: '—' }}</strong>
       </header>
-
-      {{-- Identité et situation administrative du bénéficiaire. --}}
-      <section class="payslip-agent-card">
-        <header class="payslip-agent-main">
-          <div>
-            <span class="payslip-section-kicker">Agent bénéficiaire</span>
-            <h3>{{ $data['teacher']['name'] ?: 'Identité non renseignée' }}</h3>
-          </div>
-          <span class="payslip-agent-profile">
-            <i class="fa-solid fa-user-tie" aria-hidden="true"></i>
-            Dossier administratif et bancaire
-          </span>
-        </header>
-
-        <dl class="payslip-administrative-grid">
-          <div>
-            <dt>Type d’engagement</dt>
-            <dd>{{ data_get($data, 'profile.engagement_label', 'Profil historique') }}</dd>
-          </div>
-          <div>
-            <dt>Banque / compte</dt>
-            <dd>
-              {{ $data['teacher']['bank'] ?: 'Banque non renseignée' }}
-              @if ($data['teacher']['account_last_four'])
-                <small>Compte •••• {{ $data['teacher']['account_last_four'] }}</small>
-              @endif
-            </dd>
-          </div>
-          <div>
-            <dt>Inspection académique (IA)</dt>
-            <dd>{{ $data['teacher']['academic_inspection'] ?: 'Non renseignée' }}</dd>
-          </div>
-          <div>
-            <dt>IEF / IDEN</dt>
-            <dd>{{ $data['teacher']['education_inspection'] ?: 'Non renseignée' }}</dd>
-          </div>
-          <div>
-            <dt>École / Établissement</dt>
-            <dd>{{ $data['teacher']['establishment'] ?: 'Non renseigné' }}</dd>
-          </div>
-          <div>
-            <dt>Corps enseignant</dt>
-            <dd>{{ $data['teacher']['corps'] ?: 'Non renseigné' }}</dd>
-          </div>
-          <div>
-            <dt>Diplôme</dt>
-            <dd>{{ data_get($data, 'profile.diploma') ?: 'Non applicable' }}</dd>
-          </div>
-          <div>
-            <dt>Catégorie</dt>
-            <dd>{{ $categoryLabel }}</dd>
-          </div>
-        </dl>
+      <section class="solde-identity">
+        <div class="solde-agent">
+          <strong>{{ mb_strtoupper(data_get($data, 'teacher.name', ''), 'UTF-8') }}</strong>
+          <dl>
+            <div><dt>IA:</dt><dd>{{ data_get($data, 'teacher.academic_inspection') ?: '—' }}</dd></div>
+            <div><dt>IDEN:</dt><dd>{{ data_get($data, 'teacher.education_inspection') ?: '—' }}</dd></div>
+            <div><dt>Ecole/Etablissement :</dt><dd>{{ data_get($data, 'teacher.establishment') ?: '—' }}</dd></div>
+            <div><dt>Corps Enseignant :</dt><dd>{{ data_get($data, 'teacher.corps') ?: data_get($data, 'profile.engagement_label', '—') }}</dd></div>
+            <div><dt>Catégorie :</dt><dd>{{ $categoryText ?: '—' }}</dd></div>
+          </dl>
+        </div>
+        <aside class="solde-claim">Joindre le present timbre<br>à l'appui de toute réclamation ou<br>observation .Adresser la correspondance à<br>la DIRECTION DES RESSOURCES<br>HUMAINES<br>BUREAU DE SOLDE</aside>
       </section>
-
-      {{-- Références du bulletin, du compte masqué et du paiement. --}}
-      <section class="payslip-reference-strip" aria-label="Références du bulletin">
-        <div>
-          <span>Référence bulletin</span>
-          <strong>{{ $data['reference'] }}</strong>
-        </div>
-        <div>
-          <span>Mois concerné</span>
-          <strong>{{ $monthUpper }}</strong>
-        </div>
-        <div>
-          <span>Référence paiement</span>
-          <strong>{{ $data['payment_reference'] ?: 'En attente de paiement' }}</strong>
-        </div>
-        <div class="payslip-payment-state">
-          <span class="payslip-status-dot" aria-hidden="true"></span>
-          {{ $data['payment_status'] === 'paid' ? 'Bulletin payé' : 'Paiement en attente' }}
-        </div>
-      </section>
-
-      {{-- Rubriques déjà calculées par le backend : gains, retenues et employeur. --}}
-      @if (data_get($data, 'display_settings.matched_rubric_count', 0) > 0)
-        <section class="payslip-claim-note" aria-label="Paramétrage des rubriques">
-          <i class="fa-solid fa-list-check" aria-hidden="true"></i>
-          <p>
-            Libellés et affichage issus du paramétrage des rubriques de paie.
-            @if (data_get($data, 'display_settings.origin') === 'calculation_snapshot')
-              Réglages conservés à la date du calcul.
-            @else
-              Réglages actuels appliqués à ce bulletin antérieur.
-            @endif
-            @if (data_get($data, 'display_settings.hidden_line_count', 0) > 0)
-              {{ data_get($data, 'display_settings.hidden_line_count') }} ligne(s) non affichée(s) selon le paramétrage ; leurs montants restent inclus dans les totaux.
-            @endif
-          </p>
-        </section>
+      @if (data_get($data, 'display_settings.hidden_line_count', 0) > 0)
+        <p class="solde-display-note">{{ data_get($data, 'display_settings.hidden_line_count') }} ligne(s) non affichée(s) selon le paramétrage ; leurs montants restent inclus dans les totaux.</p>
       @endif
-      <div class="payslip-lines-wrap">
-        <table class="payslip-lines">
+      <div class="solde-table-scroll">
+        <table class="solde-lines">
+          <colgroup><col class="solde-date-col"><col class="solde-date-col"><col><col class="solde-amount-col"><col class="solde-amount-col"></colgroup>
           <thead>
-            <tr>
-              <th scope="col">Code et rubrique</th>
-              <th scope="col" class="payslip-money-column">Gains</th>
-              <th scope="col" class="payslip-money-column">Retenues</th>
-              <th scope="col" class="payslip-money-column">Part employeur</th>
-            </tr>
+            <tr><th colspan="2" scope="colgroup">Dates</th><th rowspan="2" scope="col"><span class="solde-sr-only">Rubriques</span></th><th rowspan="2" scope="col">Gains</th><th rowspan="2" scope="col">Retenues</th></tr>
+            <tr><th scope="col">Origine</th><th scope="col">Echéances</th></tr>
           </thead>
           <tbody>
-            @forelse ($data['lines'] as $line)
-              @php
-                $isEarning = $line['category'] === 'earning';
-                $isEmployer = $line['category'] === 'employer_contribution';
-                $isDeduction = ! $isEarning && ! $isEmployer;
-              @endphp
-              <tr class="payslip-line-{{ $line['category'] }}">
-                <td>
-                  <span class="payslip-line-code">{{ $line['code'] }}</span>
-                  <span class="payslip-line-label">
-                    <strong>{{ $line['label'] }}</strong>
-                  </span>
-                </td>
-                <td class="payslip-money-column {{ $isEarning ? 'is-gain' : '' }}">
-                  {{ $isEarning ? format_fcfa($line['amount']) : '—' }}
-                </td>
-                <td class="payslip-money-column {{ $isDeduction ? 'is-deduction' : '' }}">
-                  {{ $isDeduction ? format_fcfa($line['amount']) : '—' }}
-                </td>
-                <td class="payslip-money-column {{ $isEmployer ? 'is-employer' : '' }}">
-                  {{ $isEmployer ? format_fcfa($line['amount']) : '—' }}
-                </td>
+            @forelse ($salaryLines as $line)
+              <tr>
+                <td>{{ $line['origin_date'] ?? '' }}</td><td>{{ $line['due_date'] ?? '' }}</td>
+                <td class="solde-rubric"><span class="solde-code">{{ $line['display_code'] ?? $line['code'] }}</span> {{ $line['label'] }}</td>
+                <td class="solde-amount solde-gain">{{ $line['category'] === 'earning' ? $money($line['amount']) : '' }}</td>
+                <td class="solde-amount solde-deduction">{{ $line['category'] !== 'earning' ? $money($line['amount']) : '' }}</td>
               </tr>
             @empty
-              <tr><td colspan="4">Aucune rubrique à afficher pour ce bulletin.</td></tr>
+              <tr><td colspan="5">Aucune rubrique à afficher pour ce bulletin.</td></tr>
             @endforelse
           </tbody>
+          <tfoot><tr><td></td><td></td><th scope="row">TOTAL</th><td class="solde-amount">{{ $money($data['gross_amount']) }}</td><td class="solde-amount">{{ $money($data['deduction_amount']) }}</td></tr></tfoot>
         </table>
+        <table class="solde-settlement">
+          <thead><tr><th>N° Emission</th><th>N° Ordre</th><th>Date</th><th>Imputation</th><th>Bulletin Négatif</th><th>NET A PERCEVOIR</th></tr></thead>
+          <tbody><tr>
+            <td>{{ $data['issue_number'] ?? '—' }}</td><td>{{ $data['order_number'] ?? '—' }}</td>
+            <td>{{ $monthUpper }} {{ $year }}</td><td>{{ $data['allocation'] ?? '—' }}</td>
+            <td>{{ (float) $data['net_amount'] < 0 ? 'Oui' : '' }}</td><td class="solde-net">{{ $money($data['net_amount']) }}</td>
+          </tr></tbody>
+        </table>
+        <section class="solde-stub" aria-label="Talon du bulletin">
+          <div class="solde-stub-agent">
+            <div class="solde-stub-republic"><strong>REPUBLIQUE DU<br>SENEGAL</strong><strong>{{ $bank }}</strong></div>
+            <strong>{{ mb_strtoupper(data_get($data, 'teacher.last_name', data_get($data, 'teacher.name', '')), 'UTF-8') }}<br>{{ mb_strtoupper(data_get($data, 'teacher.first_name', ''), 'UTF-8') }}</strong>
+            <strong>GESTION {{ $year }}</strong>
+          </div>
+          <div class="solde-stamp"><span>Visa</span><span>Timbre à date</span></div>
+          <div class="solde-stub-payment">
+            <table><thead><tr><th>Matricule</th><th>N° Emission</th><th>N° Ordre</th><th>Date</th></tr></thead>
+              <tbody><tr><td>{{ data_get($data, 'teacher.matricule') ?: '—' }}</td><td>{{ $data['issue_number'] ?? '—' }}</td><td>{{ $data['order_number'] ?? '—' }}</td><td>{{ $data['payment_date'] ?? '—' }}</td></tr></tbody>
+            </table>
+            <div class="solde-stub-net"><span>{{ $bank }}</span><strong>{{ $money($data['net_amount']) }}</strong></div>
+          </div>
+        </section>
       </div>
-
-      {{-- Totaux fournis par PayrollPayslip ; ne jamais les recalculer dans Blade. --}}
-      <section @class([
-        'payslip-summary',
-        'has-employer-contribution' => (float) $data['employer_contribution_amount'] > 0,
-      ]) aria-label="Totaux du bulletin">
-        <div class="payslip-summary-item">
-          <span>Total des gains</span>
-          <strong>{{ format_fcfa($data['gross_amount']) }}</strong>
-        </div>
-        <div class="payslip-summary-item is-deduction">
-          <span>Total des retenues</span>
-          <strong>{{ format_fcfa($data['deduction_amount']) }}</strong>
-        </div>
-        @if ((float) $data['employer_contribution_amount'] > 0)
-          <div class="payslip-summary-item is-employer">
-            <span>Part employeur · hors net</span>
-            <strong>{{ format_fcfa($data['employer_contribution_amount']) }}</strong>
-          </div>
-        @endif
-        <div class="payslip-net-card">
-          <span>Net à percevoir</span>
-          <strong>{{ format_fcfa($data['net_amount']) }}</strong>
-        </div>
-      </section>
-
-      <section class="payslip-claim-note">
-        <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
-        <p>Pour toute réclamation ou observation, mentionnez le matricule et la référence de ce bulletin auprès du Bureau de la solde.</p>
-      </section>
-
-      {{-- Pied officiel demandé : plateforme/ministère et date d'édition. --}}
-      <footer class="payslip-official-footer">
-        <div class="payslip-footer-brand">
-          <img src="{{ asset('assets/images/logo.svg') }}" alt="Logo SICORE">
-          <div>
-            <strong>SICORE - MEFPT</strong>
-            <span>Plateforme intégrée de gestion</span>
-          </div>
-        </div>
-        <div class="payslip-edition-date">
-          <span>Document généré électroniquement</span>
-          <strong>Bulletin de {{ $monthLabel }} · Édité le {{ $data['edited_on'] }}</strong>
-        </div>
-      </footer>
+      <footer class="solde-footer"><strong>SICORE - MEFPT</strong><span>Edité le {{ $data['edited_at'] ?? $data['edited_on'] }}</span></footer>
     </article>
+    <aside class="solde-screen-note" aria-label="Informations de consultation">
+      <span>Référence : {{ $data['reference'] }}</span>
+      <span>{{ ($data['payment_status'] ?? '') === 'paid' ? 'Bulletin payé' : 'Paiement en attente' }}</span>
+      @if (data_get($data, 'display_settings.matched_rubric_count', 0) > 0)
+        <span>Libellés et affichage issus de Paramétrage.
+          {{ data_get($data, 'display_settings.origin') === 'calculation_snapshot' ? 'Réglages conservés à la date du calcul.' : 'Réglages actuels appliqués à ce bulletin antérieur.' }}
+        </span>
+      @endif
+      @if ($employerLines->isNotEmpty())
+        <details><summary>Part employeur · hors net : {{ $money($data['employer_contribution_amount']) }} FCFA</summary>
+          @foreach ($employerLines as $line)<p>{{ $line['label'] }} : {{ $money($line['amount']) }} FCFA</p>@endforeach
+        </details>
+      @endif
+    </aside>
   </section>
 </main>
 @endsection
