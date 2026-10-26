@@ -14,7 +14,11 @@ class NavigationAccess
         $role = (string) ($user['role_slug'] ?? '');
         $permissions = (array) ($user['permissions'] ?? []);
 
-        $allowed = function (array $item) use ($role, $permissions): bool {
+        $allowed = function (array $item) use ($role, $permissions, $user): bool {
+            // Entrée réservée aux comptes rattachés à un enseignant (même pour le super admin).
+            if (! empty($item['enseignant_requis']) && empty($user['enseignant_id'])) {
+                return false;
+            }
             if ($role === 'super_admin') {
                 return true;
             }

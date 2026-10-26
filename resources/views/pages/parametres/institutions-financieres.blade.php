@@ -149,7 +149,7 @@
         </select>
       </div>
       <div class="form-group"><label for="bankAccountNumber">Numéro de compte <span class="required">*</span></label><input class="form-control" id="bankAccountNumber" name="numero_compte" value="{{ old('numero_compte') }}" maxlength="100" required></div>
-      <div class="form-group"><label for="bankRib">RIB <span class="required">*</span></label><input class="form-control" id="bankRib" name="rib" value="{{ old('rib') }}" maxlength="100" required></div>
+      <div class="form-group"><label for="bankRib">RIB <span class="required">*</span></label><input class="form-control" id="bankRib" name="rib" value="{{ old('rib') }}" minlength="24" maxlength="24" placeholder="24 caractères" required></div>
       <div class="form-group"><label for="bankAccountStatus">Statut du compte <span class="required">*</span></label><select class="form-control" id="bankAccountStatus" name="est_actif" required><option value="1" @selected(old('est_actif', '1') === '1')>Actif</option><option value="0" @selected(old('est_actif') === '0')>Inactif</option></select></div>
     </div>
     <div class="form-actions"><button class="btn-secondary" type="button" data-modal-close>Annuler</button><button class="btn-primary" type="submit">Enregistrer l’association</button></div>

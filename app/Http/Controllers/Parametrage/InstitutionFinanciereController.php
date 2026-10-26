@@ -169,11 +169,12 @@ class InstitutionFinanciereController extends Controller
             'enseignant_id' => ['required', 'integer'],
             'institut_financier_id' => ['required', 'integer'],
             'numero_compte' => ['required', 'string', 'max:100'],
-            'rib' => ['required', 'string', 'max:100'],
+            'rib' => ['required', 'string', 'size:24'],
             'est_actif' => ['required', 'boolean'],
         ], [
             'required' => 'Le champ :attribute est obligatoire.',
             'boolean' => 'Le statut du compte bancaire est invalide.',
+            'rib.size' => 'Le RIB complet doit comporter exactement 24 caractères.',
         ]);
 
         $teacherId = (int) $data['enseignant_id'];

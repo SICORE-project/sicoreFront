@@ -15,9 +15,7 @@
     <section class="content-area">
 
         <div class="actions-row">
-            <p class="breadcrumb">
-                <a href="{{ route('indemnites.frais-deplacement') }}">&larr; Retour aux fiches de déplacement</a>
-            </p>
+            <p class="breadcrumb"><x-retour-liste cle="frais" route="indemnites.frais-deplacement" /></p>
         </div>
 
         {{-- ============================================================
@@ -53,8 +51,8 @@
                     </span>
                 </div>
                 <div class="convoc-summary-field">
-                    <span class="label">Jours</span>
-                    <span class="value" id="joursAffiche">—</span>
+                    <span class="label">Nuitées</span>
+                    <span class="value" id="nuiteesAffiche">—</span>
                 </div>
             </div>
         </section>
@@ -81,7 +79,7 @@
                 </div>
                 <div class="bareme-row" data-groupe="II">
                     <div class="bareme-row-top"><strong>Groupe II</strong><span>20 000 F</span></div>
-                    <span class="bareme-detail">Indice entre 1728 et 2295</span>
+                    <span class="bareme-detail">Indice entre 1729 et 2295</span>
                     <span class="bareme-detail">Salaire annuel entre 2 109 610 et 24 294 500</span>
                 </div>
                 <div class="bareme-row" data-groupe="III">
@@ -167,7 +165,7 @@
                                             if ($ficheDonneesDisponibles) {
                                                 if ($ficheCategorie === 'fonctionnaire') {
                                                     $ficheIndice = (float) $membre['fiche_indice_agent'];
-                                                    $ficheGroupe = $ficheIndice >= 2296 ? 'I' : ($ficheIndice >= 1728 ? 'II' : 'III');
+                                                    $ficheGroupe = $ficheIndice >= 2296 ? 'I' : ($ficheIndice >= 1729 ? 'II' : 'III');
                                                     $ficheSeuilTexte = 'Indice '.rtrim(rtrim(number_format($ficheIndice, 2, ',', ' '), '0'), ',');
                                                 } else {
                                                     // Seul le salaire ANNUALISE est stocke (voir
@@ -527,24 +525,25 @@
 
     var TAUX = { I: 25000, II: 20000, III: 15000 };
     var SEUIL_INDICE_I = 2296;
-    var SEUIL_INDICE_II = 1728;
+    var SEUIL_INDICE_II = 1729;
     var SEUIL_SG_I = 24294500;
     var SEUIL_SG_II = 2109610;
 
     var dateDebut = "{{ $convocation['date_debut'] ?? '' }}";
     var dateFin = "{{ $convocation['date_fin'] ?? '' }}";
     var baremeRows = document.querySelectorAll("#baremeGrid .bareme-row");
-    var joursAffiche = document.getElementById("joursAffiche");
+    var nuiteesAffiche = document.getElementById("nuiteesAffiche");
 
     function formatFCFA(n) {
         return new Intl.NumberFormat("fr-FR").format(Math.round(n)) + " F";
     }
 
-    function joursInclusifs(debut, fin) {
+    // Nuitées = date de fin − date de début (du 16 au 20 = 4) ; -1 si la période n'est pas définie.
+    function nuiteesPeriode(debut, fin) {
         var d1 = new Date(debut);
         var d2 = new Date(fin);
-        if (isNaN(d1) || isNaN(d2) || d2 < d1) return 0;
-        return Math.round((d2 - d1) / 86400000) + 1;
+        if (isNaN(d1) || isNaN(d2) || d2 < d1) return -1;
+        return Math.round((d2 - d1) / 86400000);
     }
 
     function groupeParIndice(indice) {
@@ -559,8 +558,8 @@
         return "III";
     }
 
-    var jours = joursInclusifs(dateDebut, dateFin);
-    joursAffiche.textContent = jours > 0 ? (jours + (jours > 1 ? " jours" : " jour")) : "—";
+    var nuitees = nuiteesPeriode(dateDebut, dateFin);
+    nuiteesAffiche.textContent = nuitees >= 0 ? (nuitees + (nuitees > 1 ? " nuitées" : " nuitée")) : "—";
 
     function recalculerLigne(row) {
         var id = row.querySelector("[data-field='valeur']");
@@ -588,22 +587,22 @@
         var memeLieu = provenanceMembre !== "" && lieuAffectation !== ""
             && provenanceMembre.toLowerCase() === lieuAffectation.toLowerCase();
         var tauxAjuste = memeLieu ? tauxBase / 4 : tauxBase;
-        var montant = tauxAjuste * jours;
+        var montant = tauxAjuste * Math.max(nuitees, 0);
 
         var detail = document.querySelector('[data-detail="' + index + '"]');
         if (detail) {
             detail.innerHTML =
-                '<div class="stack-item"><span class="mini-badge accent">Groupe ' + groupe + ' · ' + formatFCFA(tauxBase) + '/j</span><span class="seuil-detail">' + seuilTexte + '</span></div>' +
+                '<div class="stack-item"><span class="mini-badge accent">Groupe ' + groupe + ' · ' + formatFCFA(tauxBase) + '/nuitée</span><span class="seuil-detail">' + seuilTexte + '</span></div>' +
                 '<div class="stack-item"><span class="mini-badge ' + (memeLieu ? "warn" : "info") + '">' + (memeLieu ? "÷4 même lieu" : "Taux plein") + '</span><span class="seuil-detail">' + (provenanceMembre || "—") + ' ' + (memeLieu ? "=" : "≠") + ' ' + (lieuAffectation || "—") + '</span></div>';
         }
 
         var calc = document.querySelector('[data-calc="' + index + '"]');
-        if (calc) calc.textContent = jours > 0 ? (formatFCFA(tauxAjuste) + "/j × " + jours + " j") : "période non définie";
+        if (calc) calc.textContent = nuitees >= 0 ? (formatFCFA(tauxAjuste) + "/nuitée × " + nuitees + " nuitée(s)") : "période non définie";
 
         var figure = document.querySelector('[data-montant="' + index + '"]');
-        if (figure) figure.textContent = jours > 0 ? formatFCFA(montant) : "—";
+        if (figure) figure.textContent = nuitees >= 0 ? formatFCFA(montant) : "—";
 
-        return { groupe: groupe, montant: jours > 0 ? montant : 0, checked: row.querySelector("[data-membre-checkbox]") };
+        return { groupe: groupe, montant: nuitees >= 0 ? montant : 0, checked: row.querySelector("[data-membre-checkbox]") };
     }
 
     function recalculerTout() {
