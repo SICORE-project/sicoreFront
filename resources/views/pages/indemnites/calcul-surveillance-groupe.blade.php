@@ -15,9 +15,7 @@
     <section class="content-area">
 
         <div class="actions-row">
-            <p class="breadcrumb">
-                <a href="{{ route('indemnites.calcul-surveillance') }}">&larr; Retour à la liste</a>
-            </p>
+            <p class="breadcrumb"><x-retour-liste cle="surveillance" route="indemnites.calcul-surveillance" /></p>
         </div>
 
         <section class="form-card convoc-summary-card">

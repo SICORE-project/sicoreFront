@@ -133,27 +133,14 @@
 
         {{-- ============================================================
              TABLEAU
-             Cache tant qu'aucun filtre (session, objet ou centre) n'est
-             choisi — meme comportement que Pieces justificatives. Une fois
-             un filtre choisi : une ligne par bénéficiaire au dossier
-             complet des convocations correspondantes.
+             Liste par défaut : les bénéficiaires au dossier complet des
+             convocations les plus récentes ; les filtres la réduisent.
 
              data-ajax-region="corps" : bascule sans recharger la page
-             (indemnites-ajax-resultats.js) — demande utilisatrice : "je ne
-             veux pas que les filtres rechargent la page".
+             (indemnites-ajax-resultats.js).
         ============================================================ --}}
 
         <div data-ajax-region="corps">
-
-        @if (! $filtreActif)
-
-            <section class="table-card">
-                <p class="empty-message show">
-                    Choisissez une session, un objet ou un centre d'examen ci-dessus pour afficher les bénéficiaires éligibles.
-                </p>
-            </section>
-
-        @else
 
             <section class="table-card">
 
@@ -165,7 +152,7 @@
                                 <th>Nom</th>
                                 <th>Prénom</th>
                                 <th>Matricule</th>
-                                <th>Type</th>
+                                <th>Statut</th>
                                 <th>Objet</th>
                                 <th>Session</th>
                                 <th>Statut fiche</th>
@@ -174,7 +161,7 @@
                         </thead>
 
                         <tbody>
-                            @forelse ($lignes as $ligne)
+                            @foreach ($lignes as $ligne)
                                 <tr>
                                     <td>{{ $ligne['nom'] ?? '—' }}</td>
                                     <td>{{ $ligne['prenom'] ?? '—' }}</td>
@@ -206,22 +193,19 @@
                                         </div>
                                     </td>
                                 </tr>
-                            @empty
-                            @endforelse
+                            @endforeach
                         </tbody>
 
                     </table>
                 </div>
 
                 @if (empty($lignes))
-                    <p class="empty-message show">Aucun bénéficiaire au dossier complet pour ce filtre.</p>
+                    <p class="empty-message show">Aucun bénéficiaire au dossier complet{{ request()->hasAny(['session', 'objet', 'centre']) ? ' pour ce filtre' : '' }}.</p>
                 @endif
 
-                @include('components.pagination', ['pagination' => $convocations, 'ajax' => true])
+                @include('components.pagination', ['pagination' => $pagination, 'ajax' => true])
 
             </section>
-
-        @endif
 
         </div>
 

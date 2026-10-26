@@ -216,9 +216,7 @@
 
             <div class="form-actions">
 
-                <a class="btn-secondary" href="{{ route('indemnites.convocations') }}">
-                    Retour à la liste
-                </a>
+                <x-retour-liste cle="convocations" route="indemnites.convocations" variante="bouton" />
 
                 @if (! empty($centreId))
                     <a class="btn-secondary" href="{{ route('indemnites.convocations.show', $id) }}">

@@ -118,15 +118,6 @@
              (indemnites-ajax-resultats.js). --}}
         <div data-ajax-region="corps">
 
-        @if (! $filtreActif)
-
-            <section class="table-card">
-                <p class="empty-message show">
-                    Choisissez une session, un objet ou un centre d'examen ci-dessus pour afficher les surveillants éligibles.
-                </p>
-            </section>
-
-        @else
 
             <section class="table-card">
 
@@ -181,11 +172,9 @@
                     <p class="empty-message show">Aucun surveillant pour ce filtre.</p>
                 @endif
 
-                @include('components.pagination', ['pagination' => $convocations, 'ajax' => true])
+                @include('components.pagination', ['pagination' => $pagination, 'ajax' => true])
 
             </section>
-
-        @endif
 
         </div>
 

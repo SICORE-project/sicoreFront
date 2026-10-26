@@ -40,6 +40,18 @@ class FraisDeplacementService
      * Bénéficiaires (dossier complet / incomplet) d'UNE convocation — voir
      * FraisDeplacementController::beneficiairesEligibles() côté back.
      */
+    /**
+     * Bénéficiaires éligibles de plusieurs convocations en un seul appel : [convocation_id => données].
+     *
+     * @param  array<int, int|string>  $convocationIds
+     */
+    public function beneficiairesEligiblesLot(array $convocationIds): array
+    {
+        return $this->wrap($this->api->get('frais-deplacement/beneficiaires-eligibles-lot', [
+            'convocation_ids' => array_values($convocationIds),
+        ]));
+    }
+
     public function beneficiairesEligibles(int|string $convocationId): array
     {
         return $this->wrap($this->api->get('frais-deplacement/beneficiaires-eligibles', [
