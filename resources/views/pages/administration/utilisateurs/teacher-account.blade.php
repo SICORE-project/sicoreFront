@@ -1,8 +1,7 @@
-@extends('layouts.app')
+@extends('layouts.standalone')
 @section('title', 'SICORE - Compte enseignant')
 @section('content')
 <main class="main-content">
-  <x-topbar title="Gestion utilisateurs" subtitle="Créer un compte enseignant" icon="fa-solid fa-user-plus" />
   <dialog id="teacher-account-modal" class="teacher-account-modal" aria-labelledby="teacher-account-title" data-return-url="{{ route('utilisateurs.index') }}">
     <header class="teacher-account-header">
       <span class="teacher-account-icon"><i class="fa-solid fa-user-plus" aria-hidden="true"></i></span>
