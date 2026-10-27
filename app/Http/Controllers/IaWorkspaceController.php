@@ -91,7 +91,7 @@ class IaWorkspaceController extends Controller
             unset($cell);
         }
         unset($row);
-        return view('pages.paie.'.\Illuminate\Support\Str::after($slug, 'paie-'), ['moduleData' => $moduleData, 'apiError' => $error]);
+        return view(PayrollController::viewFor($slug), ['moduleData' => $moduleData, 'apiError' => $error]);
     }
 
     public function payslip(Request $request, int $id): View

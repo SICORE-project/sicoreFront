@@ -64,11 +64,23 @@ class PayrollController extends Controller
             $apiError = $this->apiErrorDetails($request, $exception);
         }
 
-        // Le préfixe "paie-" est retiré pour retrouver le nom du fichier Blade.
-        return view('pages.paie.'.Str::after($slug, 'paie-'), compact(
+        return view(self::viewFor($slug), compact(
             'moduleData',
             'apiError'
         ));
+    }
+
+    /**
+     * Le préfixe "paie-" est retiré pour retrouver le nom du fichier Blade.
+     * L'état des salaires a son propre dossier : pages/paie/etat-salaire/.
+     */
+    public static function viewFor(string $slug): string
+    {
+        if ($slug === 'paie-etat-salaires') {
+            return 'pages.paie.etat-salaire.index';
+        }
+
+        return 'pages.paie.'.Str::after($slug, 'paie-');
     }
 
     /**

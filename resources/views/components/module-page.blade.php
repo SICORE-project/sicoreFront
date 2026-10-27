@@ -215,7 +215,7 @@
     @endif
 
     @if ($connected && $slug === 'paie-etat-salaires' && ! empty($moduleData['salary_statement']))
-      @include('pages.paie.partials.salary-statement', [
+      @include('pages.paie.etat-salaire.partials.salary-statement', [
         'statement' => $moduleData['salary_statement'],
       ])
     @else
