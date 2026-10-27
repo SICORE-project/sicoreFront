@@ -27,9 +27,23 @@ $collectiveTabaskiFields = [
 ];
 
 return [
+    'generate-payslips' => [
+        'title' => 'Générer les bulletins de salaire',
+        'confirmation' => 'Les dossiers sont repris depuis Personnel. Les montants des retenues viennent de Rubriques de paie. Seule la sélection sera recalculée ; les autres bulletins sont conservés.',
+        'fields' => [
+            ['name' => 'generation_scope', 'label' => 'Générer pour', 'type' => 'select', 'required' => true, 'default' => 'ia', 'full_width' => true,
+                'options' => [['value' => 'ia', 'label' => 'Toute une IA'], ['value' => 'teacher', 'label' => 'Un enseignant identifié par son matricule']]],
+            ['name' => 'enseignant_id', 'label' => 'Enseignant / matricule', 'type' => 'teacher', 'full_width' => true],
+            ['name' => 'ia_id', 'label' => 'Inspection académique (IA)', 'type' => 'academic_inspection'],
+            ['name' => 'ief_id', 'label' => 'IEF (facultatif)', 'type' => 'education_inspection', 'help' => 'Laisser vide pour toutes les IEF de l’IA.'],
+            ['name' => 'statut_enseignant_id', 'label' => 'Corps / statut enseignant (facultatif)', 'type' => 'teaching_statuses', 'full_width' => true, 'help' => 'Laisser vide pour les PC et VAC de la sélection.'],
+            ['name' => 'annee_academique_id', 'label' => 'Année académique', 'type' => 'academic_year', 'required' => true],
+            ['name' => 'month', 'label' => 'Mois de paie', 'type' => 'payroll_month', 'required' => true],
+        ],
+    ],
     'configure-teacher-payroll' => [
         'title' => 'Configurer le profil de paie',
-        'confirmation' => 'La grille applicable déterminera automatiquement le salaire de base. Les montants IMPR et TRIMF doivent être ceux validés par le service de la solde.',
+        'confirmation' => 'La grille applicable détermine le salaire de base. IMPR et TRIMF, ainsi que IPM et Check-off pour les PC, sont repris automatiquement depuis les montants de Paramétrage → Rubriques de paie. Aucune saisie individuelle de ces montants ici.',
         'fields' => [
             ['name' => 'ia_id', 'label' => 'Inspection académique (IA)', 'type' => 'academic_inspection', 'required' => true],
             ['name' => 'ief_id', 'label' => 'Inspection de l’Éducation et de la Formation (IEF)', 'type' => 'education_inspection', 'required' => true],
@@ -75,40 +89,6 @@ return [
                     range(1, 12)
                 ),
             ],
-            ['name' => 'impr_monthly_amount', 'label' => 'IMPR mensuel validé (FCFA)', 'type' => 'number', 'required' => true, 'min' => '0', 'step' => '1', 'after_teacher' => true],
-            ['name' => 'trimf_monthly_amount', 'label' => 'TRIMF mensuelle validée (FCFA)', 'type' => 'number', 'required' => true, 'min' => '0', 'step' => '1', 'after_teacher' => true],
-            [
-                'name' => 'ipm_monthly_amount',
-                'label' => 'IPM mensuelle (FCFA)',
-                'type' => 'number',
-                'required' => false,
-                'min' => '0',
-                'step' => '1',
-                'after_teacher' => true,
-                'show_for' => ['contractuel'],
-                'help' => 'Facultatif. Mettre 0 si aucune retenue IPM ne s’applique.',
-            ],
-            [
-                'name' => 'union_checkoff_monthly_amount',
-                'label' => 'Check-off UES (FCFA)',
-                'type' => 'number',
-                'required' => false,
-                'min' => '0',
-                'step' => '1',
-                'after_teacher' => true,
-                'show_for' => ['contractuel'],
-                'help' => 'Facultatif. La retenue syndicale ne doit être renseignée que si elle est autorisée.',
-            ],
-        ],
-    ],
-    'create-period' => [
-        'title' => 'Créer une période de paie',
-        'confirmation' => null,
-        'fields' => [
-            ['name' => 'code', 'label' => 'Code de période', 'type' => 'month', 'required' => true],
-            ['name' => 'label', 'label' => 'Libellé', 'type' => 'text', 'required' => true, 'placeholder' => 'Ex. Août 2026'],
-            ['name' => 'start_date', 'label' => 'Date de début', 'type' => 'date', 'required' => true],
-            ['name' => 'end_date', 'label' => 'Date de fin', 'type' => 'date', 'required' => true],
         ],
     ],
     'save-attendance' => [
