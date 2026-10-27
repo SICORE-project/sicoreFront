@@ -71,6 +71,10 @@ class UserController extends Controller
         config()->set('module-pages.utilisateurs.pagination', $pagination);
         config()->set('module-pages.utilisateurs.actions', [
             'Nouvel utilisateur',
+            [
+                'label' => 'Créer un compte enseignant',
+                'url' => route('utilisateurs.teacher.create'),
+            ],
             'Exporter',
         ]);
 
