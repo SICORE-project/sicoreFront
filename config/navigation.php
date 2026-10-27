@@ -41,6 +41,7 @@ return [
                 'label' => 'États de présence',
                 'icon' => 'fa-solid fa-calendar-check',
                 'active' => [
+                    'paie.edition',
                     'paie.avance-tabaski',
                     'paie.retenue-tabaski',
                     'paie.retenues-rappel',
@@ -52,6 +53,7 @@ return [
                     'paie.non-generee',
                 ],
                 'links' => [
+                    ['label' => 'Edition', 'route' => 'paie.edition', 'icon' => 'fa-solid fa-hand-holding-dollar'],
                     ['label' => 'Avance Tabaski', 'route' => 'paie.avance-tabaski', 'icon' => 'fa-solid fa-hand-holding-dollar'],
                     ['label' => 'Retenue Tabaski', 'route' => 'paie.retenue-tabaski', 'icon' => 'fa-solid fa-money-bill-transfer'],
                     ['label' => 'Retenue sur rappel', 'route' => 'paie.retenues-rappel', 'icon' => 'fa-solid fa-clock-rotate-left'],

@@ -149,7 +149,8 @@ class PayrollController extends Controller
             'period_id' => ['nullable', 'integer', 'min:1'],
         ];
 
-        if ($slug === 'paie-etat-salaires') {
+        // On ajoute 'paie-edition' à la condition existante
+        if (in_array($slug, ['paie-etat-salaires', 'paie-edition'], true)) {
             $rules += [
                 'academic_year_id' => ['nullable', 'integer', 'min:1'],
                 'corps_id' => ['nullable', 'integer', 'min:1'],

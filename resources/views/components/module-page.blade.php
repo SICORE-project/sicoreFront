@@ -220,32 +220,49 @@
       ])
     @else
     {{-- Filtre de période transmis par GET au contrôleur. --}}
+    {{-- Filtre de période transmis par GET au contrôleur. --}}
     @if ($connected)
       @if (empty($moduleData['report_catalog']))
-        @if (! empty($page['filters']))
+        @php
+            // On utilise les filtres de l'API s'ils existent (pour paie-edition), sinon ceux de la config
+            $activeFilters = !empty($moduleData['filters']) ? $moduleData['filters'] : ($page['filters'] ?? []);
+        @endphp
+        
+        @if (! empty($activeFilters))
         <form class="filter-panel" method="GET" aria-label="Filtres de la page">
-        @foreach ($page['filters'] as $index => $filter)
+        @foreach ($activeFilters as $index => $filter)
           @php
             $filterId = $slug.'-filter-'.$index;
+            $filterName = is_array($filter) ? ($filter['name'] ?? $index) : $index;
+            $filterLabel = is_array($filter) ? ($filter['label'] ?? $filterName) : $filter;
+            $filterValue = is_array($filter) ? ($filter['value'] ?? '') : '';
+            $filterOptions = is_array($filter) ? ($filter['options'] ?? []) : [];
           @endphp
           <div class="form-group">
-            <label for="{{ $filterId }}">{{ $filter['label'] }}</label>
-            <select class="form-control" id="{{ $filterId }}" name="{{ $filter['name'] }}">
-              @foreach ($filter['options'] as $option)
-                <option
-                  value="{{ $option['value'] }}"
-                  @selected((string) $option['value'] === (string) ($filter['value'] ?? ''))
-                >
-                  {{ $option['label'] }}
-                </option>
-              @endforeach
-            </select>
+            <label for="{{ $filterId }}">{{ $filterLabel }}</label>
+            
+            {{-- Si c'est le matricule, on affiche un champ texte --}}
+            @if ($filterName === 'matricule')
+                <input class="form-control" id="{{ $filterId }}" name="{{ $filterName }}" type="search" value="{{ $filterValue }}" placeholder="Saisir un matricule">
+            @else
+                <select class="form-control" id="{{ $filterId }}" name="{{ $filterName }}">
+                  <option value="">Tous</option>
+                  @foreach ($filterOptions as $option)
+                    <option
+                      value="{{ $option['value'] }}"
+                      @selected((string) $option['value'] === (string) $filterValue)
+                    >
+                      {{ $option['label'] }}
+                    </option>
+                  @endforeach
+                </select>
+            @endif
           </div>
         @endforeach
         <div class="actions-group">
           <button class="btn-secondary" type="submit">
             <i class="fa-solid fa-filter" aria-hidden="true"></i>
-            Appliquer
+            {{ $slug === 'paie-edition' ? 'Générer la paie' : 'Appliquer' }}
           </button>
         </div>
         </form>
