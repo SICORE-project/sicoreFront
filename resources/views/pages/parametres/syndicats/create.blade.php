@@ -7,14 +7,8 @@
 
   <div class="form-grid form-grid--balanced">
     <div class="form-group">
-      <label for="code">Code <span class="required">*</span></label>
-      <input class="form-control @error('code') is-invalid @enderror" id="code" name="code" type="text" value="{{ old('code') }}" maxlength="20" placeholder="Ex. SYND-01" required autofocus data-unique-field aria-describedby="code-feedback">
-      <div class="invalid-feedback" id="code-feedback" aria-live="polite">@error('code'){{ $message }}@enderror</div>
-    </div>
-
-    <div class="form-group">
       <label for="libelle">Libellé <span class="required">*</span></label>
-      <input class="form-control @error('libelle') is-invalid @enderror" id="libelle" name="libelle" type="text" value="{{ old('libelle') }}" maxlength="100" placeholder="Ex. Syndicat des enseignants" required data-unique-field aria-describedby="libelle-feedback">
+      <input class="form-control @error('libelle') is-invalid @enderror" id="libelle" name="libelle" type="text" value="{{ old('libelle') }}" maxlength="100" placeholder="Ex. Syndicat des enseignants" required autofocus data-unique-field aria-describedby="libelle-feedback">
       <div class="invalid-feedback" id="libelle-feedback" aria-live="polite">@error('libelle'){{ $message }}@enderror</div>
     </div>
 
