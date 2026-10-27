@@ -35,6 +35,18 @@ class IndemniteCorrectionService
      * IndemniteCorrectionController::correcteursEligibles() côté back.
      * $centreId restreint à un seul centre (utilisé par le calcul groupé).
      */
+    /**
+     * Correcteurs éligibles de plusieurs convocations en un seul appel : [convocation_id => données].
+     *
+     * @param  array<int, int|string>  $convocationIds
+     */
+    public function correcteursEligiblesLot(array $convocationIds): array
+    {
+        return $this->wrap($this->api->get('indemnite-correction/correcteurs-eligibles-lot', [
+            'convocation_ids' => array_values($convocationIds),
+        ]));
+    }
+
     public function correcteursEligibles(int|string $convocationId, int|string|null $centreId = null): array
     {
         return $this->wrap($this->api->get('indemnite-correction/correcteurs-eligibles', array_filter([

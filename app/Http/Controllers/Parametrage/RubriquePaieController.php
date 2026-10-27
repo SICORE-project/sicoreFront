@@ -78,7 +78,7 @@ class RubriquePaieController extends Controller
             'libelle' => ['required', 'string', 'max:100'],
             'type' => ['required', 'in:gain,retenue'],
             'periodicite' => ['required', 'in:mensuelle,ponctuelle,annuelle'],
-            'description' => ['nullable', 'string', 'max:1000'],
+            'montant' => ['nullable', 'numeric', 'min:0'], // <-- Remplace 'description'
         ];
     }
 }

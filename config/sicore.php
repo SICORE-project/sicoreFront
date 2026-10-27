@@ -1,6 +1,9 @@
 <?php
 
 return [
+    // Pièces justificatives : dépôt possible seulement après la fin de l'examen (même réglage que le backend).
+    'depot_apres_examen' => (bool) env('INDEMNITES_DEPOT_APRES_EXAMEN', true),
+
     'api' => [
         'url' => env('API_BASE_URL', 'http://127.0.0.1:8000/api'),
         'timeout' => env('API_TIMEOUT', 10),

@@ -82,6 +82,7 @@ return [
         'icon' => 'fa-solid fa-coins',
         'active' => 'indemnites.*',
         'links' => [
+            ['label' => 'Mes pièces', 'route' => 'indemnites.mes-pieces', 'icon' => 'fa-solid fa-folder-open', 'permission' => 'mes_pieces.read', 'enseignant_requis' => true],
             ['label' => 'Convocations', 'route' => 'indemnites.convocations', 'icon' => 'fa-solid fa-calendar-check', 'permission' => ['indemnites.read', 'convocations.read']],
             ['label' => 'Pièces justificatives', 'route' => 'indemnites.pieces-justificatives', 'icon' => 'fa-solid fa-folder-open', 'permission' => ['indemnites.read', 'pieces.read']],
             ['label' => 'Frais de déplacement', 'route' => 'indemnites.frais-deplacement', 'icon' => 'fa-solid fa-route', 'permission' => 'indemnites.read'],
@@ -103,12 +104,12 @@ return [
         'type' => 'group',
         'label' => 'Paramétrage',
         'icon' => 'fa-solid fa-gears',
-        'active' => ['parametres.*'],
+        'active' => ['parametres.*', 'systeme.*'],
         'links' => [
             ['label' => 'IA', 'route' => 'parametres.ia.index', 'icon' => 'fa-solid fa-building-columns', 'permission' => 'parametrage.ia.read'],
             ['label' => 'IEF', 'route' => 'parametres.ief.index', 'icon' => 'fa-solid fa-sitemap', 'permission' => 'parametrage.ief.read'],
             ['label' => 'Diplômes', 'route' => 'parametres.diplomes.index', 'icon' => 'fa-solid fa-graduation-cap', 'permission' => 'parametrage.diplomes.read'],
-            ['label' => 'Enseignants', 'route' => 'enseignants.index', 'icon' => 'fa-solid fa-chalkboard-user', 'permission' => 'enseignants.read'],
+           // ['label' => 'Enseignants', 'route' => 'enseignants.index', 'icon' => 'fa-solid fa-chalkboard-user', 'permission' => 'enseignants.read'],
             ['label' => 'Corps', 'route' => 'parametres.corps.index', 'icon' => 'fa-solid fa-users-line', 'permission' => 'parametrage.corps.read'],
             ['label' => 'Catégories', 'route' => 'parametres.categories.index', 'icon' => 'fa-solid fa-layer-group', 'permission' => 'parametrage.categories.read'],
             ['label' => 'Banques', 'route' => 'parametres.institutions-financieres', 'icon' => 'fa-solid fa-building-columns', 'permission' => 'parametrage.institutions_financieres.read'],
@@ -120,14 +121,15 @@ return [
             ['label' => 'Établissements', 'route' => 'parametres.lieux-service.index', 'icon' => 'fa-solid fa-location-dot', 'permission' => 'parametrage.lieux_service.read'],
             ['label' => 'Régions', 'route' => 'parametres.regions.index', 'icon' => 'fa-solid fa-map-location-dot'],
             ['label' => 'Départements', 'route' => 'parametres.departements.index', 'icon' => 'fa-solid fa-map-location-dot'],
-            ['label' => 'Communes', 'route' => 'parametres.communes.index', 'icon' => 'fa-solid fa-map-location-dot']
+            ['label' => 'Communes', 'route' => 'parametres.communes.index', 'icon' => 'fa-solid fa-map-location-dot'],
+            ['label' => 'Import des données', 'route' => 'systeme.import', 'icon' => 'fa-solid fa-file-import', 'permission' => 'systeme.import'],
         ],
     ],
     [
         'type' => 'group',
         'label' => 'Gestion utilisateur',
         'icon' => 'fa-solid fa-users-gear',
-        'active' => ['utilisateurs.*', 'admin.roles.*', 'admin.type-roles.*'],
+        'active' => ['utilisateurs.*', 'admin.roles.*', 'admin.type-roles.*', 'admin.permissions.*'],
         'links' => [
             ['label' => 'Utilisateurs', 'route' => 'utilisateurs.index', 'icon' => 'fa-solid fa-user-shield', 'permission' => 'administration.users.read'],
             ['label' => 'Profils / Rôles', 'route' => 'utilisateurs.profils-roles', 'icon' => 'fa-solid fa-id-badge', 'permission' => 'administration.roles.read'],

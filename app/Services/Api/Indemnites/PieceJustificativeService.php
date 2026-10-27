@@ -90,6 +90,27 @@ class PieceJustificativeService
         ]));
     }
 
+    /** Espace enseignant : convocations de l'enseignant connecté et statut de ses pièces. */
+    public function mesPieces(): array
+    {
+        return $this->wrap($this->api->get('mes-pieces'));
+    }
+
+    /** Espace enseignant : dépôt (ou remplacement) d'UNE de mes pièces. */
+    public function deposerMaPiece(array $donnees, UploadedFile $fichier): array
+    {
+        return $this->wrap($this->api->postMultipart('mes-pieces/deposer', $donnees, [[
+            'name' => 'document',
+            'contents' => fopen($fichier->getRealPath(), 'r'),
+            'filename' => $fichier->getClientOriginalName(),
+        ]]));
+    }
+
+    public function telechargerMaPiece(int|string $id)
+    {
+        return $this->api->get("mes-pieces/{$id}/download");
+    }
+
     /**
      * $fichiers est indexé par type ('service_fait', 'ordre_mission', ...) ;
      * les entrées absentes/vides (aucun fichier choisi pour ce type) sont
