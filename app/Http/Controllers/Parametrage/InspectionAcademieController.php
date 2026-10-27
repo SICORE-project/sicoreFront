@@ -68,6 +68,42 @@ class InspectionAcademieController extends Controller
         return $this->redirectAfterSave($service->delete($ia));
     }
 
+    public function destroyMultiple(Request $request, InspectionAcademieService $service): RedirectResponse
+    {
+        $ids = array_unique(array_filter((array) $request->input('ids', [])));
+
+        if (empty($ids)) {
+            return redirect()
+                ->route($request->input('retour', 'parametres.ia.index'))
+                ->with('error', 'Aucune IA sélectionnée.');
+        }
+
+        $supprimees = 0;
+        $refus = [];
+
+        foreach ($ids as $id) {
+            $resultat = $service->delete($id);
+
+            if ($resultat['success']) {
+                $supprimees++;
+            } else {
+                $refus[] = $resultat['message'] ?? 'échec';
+            }
+        }
+
+        $message = $supprimees > 0
+            ? $supprimees.' IA supprimée(s).'
+            : "Aucune des IA sélectionnées n'a pu être supprimée.";
+
+        if ($refus !== []) {
+            $message .= ' '.count($refus).' refusée(s) : '.implode(' — ', array_unique($refus));
+        }
+
+        return redirect()
+            ->route($request->input('retour', 'parametres.ia.index'))
+            ->with($supprimees > 0 && $refus === [] ? 'success' : 'error', $message);
+    }
+
     private function validated(Request $request): array
     {
         return $request->validate([

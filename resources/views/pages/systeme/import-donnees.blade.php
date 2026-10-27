@@ -32,8 +32,8 @@
 
                 <p class="info-import" role="note">
                     <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
-                    Depuis Excel : « Enregistrer sous » → CSV. Contrôlez d'abord le fichier : <strong>rien n'est écrit si une seule ligne est en erreur</strong>.
-                    Réimporter un fichier met à jour les lignes existantes (même code) sans créer de doublon.
+                    Depuis Excel : « Enregistrer sous » → CSV. Les lignes valides sont importées, les lignes en erreur sont signalées sans bloquer l'import.
+                    Les lignes dont la clé existe déjà sont <strong>ignorées</strong> (aucune mise à jour, aucun doublon créé).
                 </p>
 
                 <section class="form-section">
@@ -90,15 +90,18 @@
         @if ($rapport)
             <section class="form-card import-card import-rapport">
                 <div class="form-card-header">
-                    <h2>{{ ($rapport['mode'] ?? '') === 'importer' && ($rapport['importe'] ?? false) ? 'Résultat de l\'import' : 'Résultat du contrôle' }}</h2>
+                    <h2>{{ match ($rapport['statut'] ?? '') {
+                        'ok' => ($rapport['importe'] ?? false) ? 'Import terminé' : 'Contrôle terminé',
+                        'partiel' => ($rapport['importe'] ?? false) ? 'Import partiel' : 'Contrôle terminé (avec erreurs)',
+                        default => 'Aucune ligne importée',
+                    } }}</h2>
                 </div>
 
                 <div class="teacher-form">
                     <div class="import-chiffres">
                         <div><strong>{{ $rapport['total'] }}</strong><span>ligne(s)</span></div>
-                        <div><strong>{{ $rapport['crees'] }}</strong><span>à créer</span></div>
-                        <div><strong>{{ $rapport['mis_a_jour'] }}</strong><span>à mettre à jour</span></div>
-                        <div><strong>{{ $rapport['inchanges'] }}</strong><span>inchangée(s)</span></div>
+                        <div><strong>{{ $rapport['crees'] }}</strong><span>créée(s)</span></div>
+                        <div><strong>{{ $rapport['ignores'] }}</strong><span>ignorée(s) (doublon)</span></div>
                         <div class="{{ $rapport['erreurs'] ? 'texte-erreur' : '' }}"><strong>{{ count($rapport['erreurs']) }}</strong><span>erreur(s)</span></div>
                     </div>
 
@@ -156,7 +159,7 @@
         entite.addEventListener('change', afficherColonnes);
 
         document.querySelector('[data-import-confirmer]').addEventListener('click', function (evenement) {
-            if (!window.confirm('Importer ce fichier ? Les lignes existantes (même clé) seront mises à jour.')) {
+            if (!window.confirm('Importer ce fichier ? Les lignes valides seront créées ; celles dont la clé existe déjà seront ignorées.')) {
                 evenement.preventDefault();
             }
         });
