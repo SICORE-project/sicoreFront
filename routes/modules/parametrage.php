@@ -206,3 +206,7 @@ Route::middleware(['sicore.auth', 'sicore.module:parametrage.ia.read,parametrage
         Route::delete('/parametres/syndicats/{id}', [SyndicatController::class, 'destroy'])->whereNumber('id')->middleware('sicore.permission:parametrage.syndicats.manage')->name('parametres.syndicats.destroy');
 
     });
+
+    Route::delete('/parametres/ia/destroy-multiple', [InspectionAcademieController::class, 'destroyMultiple'])
+    ->middleware('sicore.permission:parametrage.ia.manage')
+    ->name('parametres.ia.destroy-multiple');

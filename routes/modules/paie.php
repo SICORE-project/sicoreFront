@@ -43,6 +43,7 @@ Route::middleware(['sicore.auth', 'sicore.module:paie.bulletins.read'])->group(f
             'situation-affectations' => 'paie-situation-affectations',
             'montants-engages-banque' => 'paie-montants-engages-banque',
             'heures-supplementaires-interim' => 'paie-heures-supplementaires-interim',
+            'edition' => 'paie-edition',
         ];
 
         foreach ($pages as $path => $slug) {
@@ -89,4 +90,6 @@ Route::middleware(['sicore.auth', 'sicore.module:paie.bulletins.read'])->group(f
             ->whereNumber('row')
             ->name('edition-engagements.row.excel');
     });
+
+    
 });
