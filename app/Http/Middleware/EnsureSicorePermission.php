@@ -34,7 +34,7 @@ class EnsureSicorePermission
         ];
         $required = $aliases[$permission] ?? $permission;
         $permissions = array_map(fn ($slug) => $aliases[$slug] ?? $slug, $permissions);
-        if (in_array($role, ['administrateur', 'admin', 'super_administrateur', 'super_admin'], true) || in_array($required, $permissions, true)) {
+        if (in_array($role, ['super_administrateur', 'super_admin'], true) || in_array($required, $permissions, true)) {
             return true;
         }
 

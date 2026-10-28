@@ -113,6 +113,7 @@ class InterfaceAccess
                 'enseignants.index', 'enseignants.legacy.index', 'ia.teachers.show', 'ia.structure', 'ia.iefs' => 'enseignants.read',
                 'paie.montants-engages-banque', 'paie.edition-salaires-banque', 'paie.elements-saisie-dashboard', 'paie.recap-elements-corps', 'paie.cumul-enseignants-ief', 'paie.effectifs-corps', 'paie.non-generee', 'paie.edition-enseignants', 'paie.edition-fonctionnaires', 'paie.mutuelles-sante', 'paie.situation-affectations', 'paie.prime-scolaire', 'paie.reliquats', 'paie.double-flux', 'paie.directeurs-interim', 'paie.heures-supplementaires-interim',
                 'paie.bulletins', 'paie.travaux-periodiques', 'ia.payroll.show' => 'paie.bulletins.read',
+                'paie.edition' => 'paie.edition.read',
                 'paie.sommes-percues' => 'paie.sommes_percues.read',
                 'paie.etat-salaires' => 'paie.etat_salaires.read',
                 'paie.cotisations-sociales' => 'paie.cotisations.read',
