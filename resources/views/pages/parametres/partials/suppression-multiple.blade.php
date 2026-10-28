@@ -23,6 +23,8 @@
 
     var cible = @json($cible);
     var action = @json($action);
+    var cibles = @json($cibles ?? $cible);
+    var feminin = @json($feminin ?? true);
     var token = @json(csrf_token());
 
     function rowBoxes() {
@@ -81,8 +83,8 @@
       }
 
       var question = ids.length === 1
-        ? 'Supprimer définitivement cette ' + cible + ' ?'
-        : 'Supprimer définitivement ces ' + ids.length + ' ' + cible + ' ?';
+        ? 'Supprimer définitivement ' + (feminin ? 'cette ' : 'ce ') + cible + ' ?'
+        : 'Supprimer définitivement ces ' + ids.length + ' ' + cibles + ' ?';
 
       if (!window.confirm(question)) {
         return;

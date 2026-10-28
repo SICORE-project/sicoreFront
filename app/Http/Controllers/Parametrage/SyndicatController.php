@@ -11,9 +11,12 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\View\View;
+use App\Http\Controllers\Parametrage\Concerns\SupprimeEnMasse;
 
 class SyndicatController extends Controller
 {
+    use SupprimeEnMasse;
+
     public function __construct(private readonly ApiClient $apiClient) {}
 
     // method to display a listing of the syndicats
@@ -244,5 +247,20 @@ class SyndicatController extends Controller
             'error',
             $response->json('message') ?? 'Erreur lors de la suppression du syndicat.',
         );
+    }
+
+    public function destroyMultiple(Request $request): RedirectResponse
+    {
+        $supprimer = function (int $id): array {
+            try {
+                $response = $this->apiClient->delete("syndicats/{$id}");
+            } catch (ConnectionException) {
+                return ['success' => false, 'message' => 'Le service backend est momentanément indisponible.'];
+            }
+
+            return ['success' => $response->successful(), 'message' => $response->json('message')];
+        };
+
+        return $this->supprimerSelection($request, $supprimer, 'syndicat', 'parametres.syndicats.index', false);
     }
 }

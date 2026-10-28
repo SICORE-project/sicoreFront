@@ -7,9 +7,12 @@ use App\Services\Parametrage\CorpsService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
+use App\Http\Controllers\Parametrage\Concerns\SupprimeEnMasse;
 
 class CorpsController extends Controller
 {
+    use SupprimeEnMasse;
+
     public function index(Request $request, CorpsService $service): View|RedirectResponse
     {
         $result = $service->getAll(['page' => max(1, $request->integer('page', 1)), 'per_page' => 10, 'search' => $request->string('search')->trim()->toString()]);
@@ -33,5 +36,10 @@ class CorpsController extends Controller
     {
         $redirect = redirect()->route('parametres.corps.index');
         return $result['success'] ? $redirect->with('success', $result['message']) : $redirect->withInput()->withErrors($result['errors'])->with('error', $result['message']);
+    }
+
+    public function destroyMultiple(Request $request, CorpsService $service): RedirectResponse
+    {
+        return $this->supprimerSelection($request, fn (int $id) => $service->delete($id), 'corps', 'parametres.corps.index', false);
     }
 }

@@ -3,6 +3,9 @@
 @section('title', 'SICORE - Syndicats')
 
 @section('content')
+@php
+    $peutSupprimer = $canManage && \App\Support\SicoreAccess::can(request(), 'parametrage.syndicats.manage');
+@endphp
 <main class="main-content">
   <x-topbar title="Syndicats" subtitle="Paramétrage > Syndicats > Consultation" icon="fa-solid fa-people-group" />
 
@@ -33,6 +36,7 @@
         <button class="btn-primary" type="button" data-modal-open="create-syndicat-modal">
           <i class="fa-solid fa-plus" aria-hidden="true"></i> Nouveau syndicat
         </button>
+        @if ($peutSupprimer)<button class="btn-secondary btn-bulk-delete" type="button" data-bulk-delete-button disabled>Supprimer la sélection</button>@endif
       </div>@endif
     </div>
 
@@ -45,6 +49,7 @@
         <table class="table" id="syndicatsTable">
           <thead>
             <tr>
+              @if ($peutSupprimer)<th class="checkbox-cell"><input type="checkbox" data-select-all aria-label="Tout sélectionner"></th>@endif
               <th>Code</th>
               <th>Libellé</th>
               <th>Check-off</th>
@@ -55,10 +60,11 @@
           </thead>
           <tbody>
             @if ($apiError)
-              <tr><td colspan="6" class="empty-message"><x-table-empty-state :error="true">Les données n’ont pas pu être chargées.</x-table-empty-state></td></tr>
+              <tr><td colspan="{{ 6 + ($peutSupprimer ? 1 : 0) }}" class="empty-message"><x-table-empty-state :error="true">Les données n’ont pas pu être chargées.</x-table-empty-state></td></tr>
             @else
             @forelse ($syndicats as $syndicat)
               <tr>
+                @if ($peutSupprimer)<td class="checkbox-cell"><input type="checkbox" data-row-checkbox value="{{ $syndicat['id'] }}" aria-label="Sélectionner {{ $syndicat['code'] ?? '' }}"></td>@endif
                 <td>{{ $syndicat['code'] ?? '—' }}</td>
                 <td>{{ $syndicat['libelle'] ?? '—' }}</td>
                 <td>{{ isset($syndicat['montant_check_off']) ? number_format((float) $syndicat['montant_check_off'], 2, ',', ' ') . ' FCFA' : '—' }}</td>
@@ -81,7 +87,7 @@
                 </td>
               </tr>
             @empty
-              <tr><td colspan="6" class="empty-message"><x-table-empty-state>Aucun syndicat trouvé.</x-table-empty-state></td></tr>
+              <tr><td colspan="{{ 6 + ($peutSupprimer ? 1 : 0) }}" class="empty-message"><x-table-empty-state>Aucun syndicat trouvé.</x-table-empty-state></td></tr>
             @endforelse
             @endif
           </tbody>
@@ -91,6 +97,9 @@
         @include('components.pagination', ['pagination' => $syndicats])
       @endif
     </section>
+    @if ($peutSupprimer)
+@include('pages.parametres.partials.suppression-multiple', ['cible' => 'syndicat', 'action' => route('parametres.syndicats.destroy-multiple'), 'cibles' => 'syndicats', 'feminin' => false])
+@endif
   </section>
 </main>
 
