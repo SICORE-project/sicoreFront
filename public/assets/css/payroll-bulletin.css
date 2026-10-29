@@ -1,11 +1,16 @@
 /* Scoped to Gestion de la paie. Reference structure: BULLETIN BAYE.pdf. */
 .solde-canvas { background: #edf3f2; padding-top: 28px; }
 .solde-document { max-width: 1020px; margin: 0 auto; padding: 32px; color: #20332f; background: #fff; border: 1px solid #d6e3df; border-radius: 16px; box-shadow: 0 14px 45px #143d3010; font: 14px/1.5 'Segoe UI', Arial, sans-serif; }
-.solde-header { display: grid; grid-template-columns: 1fr 1.7fr 1.5fr; gap: 18px; padding: 22px 16px; border-top: 5px solid #146747; border-bottom: 1px solid #c2d9cf; border-radius: 8px 8px 0 0; background: #f1f8f4; color: #123f2e; align-items: center; }
+.solde-header { display: grid; grid-template-columns: 1fr; gap: 18px; padding: 22px 16px; border-top: 5px solid #146747; border-bottom: 1px solid #c2d9cf; border-radius: 8px 8px 0 0; background: #f1f8f4; color: #123f2e; align-items: center; }
+.solde-institution { display: grid; gap: 3px; padding-bottom: 16px; border-bottom: 1px solid #c2d9cf; }
+.solde-institution > strong { font-size: 18px; }
+.solde-institution > span { font-size: 13px; }
 .solde-header h2 { margin: 0 0 6px; font-size: 20px; line-height: 1.25; letter-spacing: .025em; font-weight: 750; }
 .solde-header > strong { font-size: 12px; line-height: 1.6; }
 .solde-header > div > strong { font-size: 12px; letter-spacing: .02em; }
 .solde-header > div { text-align: center; }
+.solde-header > .solde-institution { width: fit-content; max-width: 100%; justify-self: start; text-align: center; }
+.solde-stub-country { white-space: nowrap; }
 .solde-identity { display: grid; grid-template-columns: 1.8fr 1fr; border-bottom: 1px solid #aebfc6; }
 .solde-agent { padding: 22px 16px; }
 .solde-agent > strong { display: block; margin-bottom: 12px; font-size: 16px; color: #123f2e; letter-spacing: .015em; }
@@ -40,7 +45,9 @@
 .solde-settlement .solde-net { text-align: right; font-size: 24px; line-height: 1.3; font-weight: 750; color: #123f2e; background: #eaf3ee; padding: 12px; }
 .solde-stub { display: grid; grid-template-columns: 36% 24% 40%; margin-top: 20px; border: 1px solid #aebfc6; position: relative; }
 .solde-stub::before { content: ''; position: absolute; top: -11px; width: 100%; border-top: 1px dashed #c4d1d7; }
-.solde-stub-agent { display: grid; gap: 16px; padding: 14px; border-right: 1px solid #c4d1d7; background: #f8faf9; font-size: 12px; }
+.solde-stub-agent { display: grid; border-right: 1px solid #c4d1d7; background: #f8faf9; font-size: 12px; }
+.solde-stub-agent > strong { display: block; padding: 12px 14px; }
+.solde-stub-agent > strong + strong { border-top: 1px solid #c4d1d7; }
 .solde-stub-republic { display: flex; justify-content: space-between; gap: 10px; }
 .solde-stamp { display: flex; justify-content: space-around; padding: 10px 4px; border-right: 1px solid #c4d1d7; }
 .solde-stub-payment table th { font-size: 9px; }
@@ -53,7 +60,7 @@
 .solde-sr-only { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; }
 @media (max-width: 760px) {
   .solde-document { padding: 16px; }
-  .solde-header { grid-template-columns: 1fr 1fr; }
+  .solde-header { grid-template-columns: 1fr; }
   .solde-header > strong:last-child { grid-column: 1 / -1; }
   .solde-identity { grid-template-columns: 1fr; }
   .solde-claim { border-left: 0; border-top: 1px solid #ced8dd; }
@@ -62,36 +69,43 @@
   .solde-lines, .solde-settlement, .solde-stub { min-width: 650px; }
 }
 @media print {
-  @page solde { size: A4 portrait; margin: 10mm; @bottom-center { content: none; } }
+  @page solde { size: A4 portrait; margin: 0; }
+  .solde-document, .solde-document * { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
   body:has(.solde-page) { background: #fff !important; }
   body:has(.solde-page) .sidebar, body:has(.solde-page) .topbar, .solde-screen-note,
   body:has(.solde-page) .toast-host, body:has(.solde-page) .mobile-overlay { display: none !important; }
   .solde-page.main-content { margin: 0 !important; width: 100% !important; padding: 0 !important; }
   .solde-page, .solde-page .content-area { background: #fff !important; min-height: 0 !important; }
   .solde-canvas { padding: 0 !important; }
-  .solde-document { page: solde; width: 100%; max-width: none; padding: 0; border: 0; border-radius: 0; box-shadow: none; font-size: 8.5pt; line-height: 1.3; color: #000; }
+  .solde-document { page: solde; box-sizing: border-box; width: 100%; max-width: none; padding: 8mm; border: 0; border-radius: 0; box-shadow: none; font-size: 8.5pt; line-height: 1.25; }
   .solde-table-scroll { overflow: visible; }
   .solde-lines, .solde-settlement, .solde-stub { min-width: 0; }
-  .solde-header { grid-template-columns: 1fr 1.7fr 1.5fr; border-top-color: #000; padding: 10px 8px; }
+  .solde-header { grid-template-columns: 1fr; gap: 10px; padding: 10px 8px; }
+  .solde-institution { gap: 2px; padding-bottom: 8px; }
+  .solde-institution > strong { font-size: 11pt; }
+  .solde-institution > span { font-size: 8pt; }
   .solde-header > strong:last-child { grid-column: auto; }
   .solde-header h2 { font-size: 12pt; }
-  .solde-header { border-radius: 0; background: #fff; color: #000; }
+  .solde-header { border-radius: 0; }
   .solde-header > strong, .solde-header > div > strong { font-size: 8.5pt; }
   .solde-identity { grid-template-columns: 1.8fr 1fr; }
   .solde-agent { padding: 10px 8px; }
-  .solde-agent > strong { font-size: 10pt; margin-bottom: 7px; color: #000; }
+  .solde-agent > strong { font-size: 10pt; margin-bottom: 7px; }
   .solde-agent dl > div { font-size: 8.5pt; margin-bottom: 0; }
-  .solde-agent dt, .solde-code, .solde-gain, .solde-deduction { color: #000; }
   .solde-claim { padding: 10px 8px; border-top: 0; border-left: 1px solid #bbb; font-size: 8pt; }
   .solde-lines th, .solde-lines td { padding: 3px 6px; }
-  .solde-lines thead, .solde-lines tfoot, .solde-lines tbody tr:nth-child(even) { background: #fff; color: #000; }
-  .solde-lines thead th { color: #000; font-size: 8.5pt; }
+  .solde-lines { margin-top: 10px; }
+  .solde-lines tbody tr:first-child td { padding-top: 3px; }
+  .solde-lines tbody tr:last-child td { padding-bottom: 3px; }
+  .solde-lines thead th { font-size: 8.5pt; }
   .solde-code { font-size: 8pt; min-width: 24px; }
   .solde-lines tr, .solde-settlement, .solde-stub { break-inside: avoid; }
-  .solde-settlement .solde-net, .solde-settlement th:last-child { color: #000; background: #fff; }
   .solde-settlement .solde-net { font-size: 13pt; padding: 6px; }
   .solde-settlement th { font-size: 7.5pt; }
-  .solde-stub-agent { gap: 12px; padding: 10px; font-size: 8.5pt; background: #fff; }
-  .solde-claim { background: #fff; color: #000; }
-  .solde-footer { margin-top: 18px; padding-top: 0; font-size: 7.5pt; }
+  .solde-settlement tbody td { height: 28px; }
+  .solde-stub { margin-top: 14px; }
+  .solde-stub-net { gap: 12px; padding: 8px; }
+  .solde-stub-agent { font-size: 8.5pt; }
+  .solde-stub-agent > strong { padding: 7px 10px; }
+  .solde-footer { margin-top: 10px; padding-top: 0; font-size: 7.5pt; }
 }

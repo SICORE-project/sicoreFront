@@ -27,14 +27,18 @@
   <section class="content-area solde-canvas">
     <article class="solde-document" aria-label="Bulletin de solde {{ $data['reference'] }}">
       <header class="solde-header">
-        <strong>REPUBLIQUE<br>DU SENEGAL</strong>
+        <div class="solde-institution">
+          <strong>République du Sénégal</strong>
+          <span>Un peuple Un But Une Foi</span>
+          <span>Ministère de l'Emploi de la Formation Professionnelle Et Technique</span>
+        </div>
         <div><h2>BULLETIN DE SOLDE</h2><strong>VALIDITE : MOIS DE {{ $monthUpper }}</strong></div>
-        <strong>MATRICULE : {{ data_get($data, 'teacher.matricule') ?: '—' }}</strong>
       </header>
       <section class="solde-identity">
         <div class="solde-agent">
           <strong>{{ mb_strtoupper(data_get($data, 'teacher.name', ''), 'UTF-8') }}</strong>
           <dl>
+            <div><dt>MATRICULE :</dt><dd>{{ data_get($data, 'teacher.matricule') ?: '—' }}</dd></div>
             <div><dt>IA:</dt><dd>{{ data_get($data, 'teacher.academic_inspection') ?: '—' }}</dd></div>
             <div><dt>IDEN:</dt><dd>{{ data_get($data, 'teacher.education_inspection') ?: '—' }}</dd></div>
             <div><dt>Ecole/Etablissement :</dt><dd>{{ data_get($data, 'teacher.establishment') ?: '—' }}</dd></div>
@@ -51,7 +55,7 @@
         <table class="solde-lines">
           <colgroup><col class="solde-date-col"><col class="solde-date-col"><col><col class="solde-amount-col"><col class="solde-amount-col"></colgroup>
           <thead>
-            <tr><th colspan="2" scope="colgroup">Dates</th><th rowspan="2" scope="col"><span class="solde-sr-only">Rubriques</span></th><th rowspan="2" scope="col">Gains</th><th rowspan="2" scope="col">Retenues</th></tr>
+            <tr><th colspan="2" scope="colgroup">Dates</th><th rowspan="2" scope="col">Rubriques</th><th rowspan="2" scope="col">Gains</th><th rowspan="2" scope="col">Retenues</th></tr>
             <tr><th scope="col">Origine</th><th scope="col">Echéances</th></tr>
           </thead>
           <tbody>
@@ -78,8 +82,8 @@
         </table>
         <section class="solde-stub" aria-label="Talon du bulletin">
           <div class="solde-stub-agent">
-            <div class="solde-stub-republic"><strong>REPUBLIQUE DU<br>SENEGAL</strong><strong>{{ $bank }}</strong></div>
-            <strong>{{ mb_strtoupper(data_get($data, 'teacher.last_name', data_get($data, 'teacher.name', '')), 'UTF-8') }}<br>{{ mb_strtoupper(data_get($data, 'teacher.first_name', ''), 'UTF-8') }}</strong>
+            <strong class="solde-stub-country">REPUBLIQUE DU SENEGAL</strong>
+            <strong>{{ trim(data_get($data, 'teacher.first_name', '').' '.mb_strtoupper(data_get($data, 'teacher.last_name', ''), 'UTF-8')) ?: data_get($data, 'teacher.name', '') }}</strong>
             <strong>GESTION {{ $year }}</strong>
           </div>
           <div class="solde-stamp"><span>Visa</span><span>Timbre à date</span></div>
