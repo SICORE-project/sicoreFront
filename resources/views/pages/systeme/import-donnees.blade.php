@@ -33,7 +33,7 @@
                 <p class="info-import" role="note">
                     <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
                     Depuis Excel : « Enregistrer sous » → CSV. Les lignes valides sont importées, les lignes en erreur sont signalées sans bloquer l'import.
-                    Les lignes dont la clé existe déjà sont <strong>ignorées</strong> (aucune mise à jour, aucun doublon créé).
+                    Une ligne dont la clé existe déjà <strong>met à jour</strong> l'enregistrement (une cellule vide garde la valeur actuelle) ; sinon elle est créée.
                 </p>
 
                 <section class="form-section">
@@ -101,7 +101,9 @@
                     <div class="import-chiffres">
                         <div><strong>{{ $rapport['total'] }}</strong><span>ligne(s)</span></div>
                         <div><strong>{{ $rapport['crees'] }}</strong><span>créée(s)</span></div>
-                        <div><strong>{{ $rapport['ignores'] }}</strong><span>ignorée(s) (doublon)</span></div>
+                        <div><strong>{{ $rapport['modifies'] ?? 0 }}</strong><span>{{ ($rapport['importe'] ?? false) ? 'modifiée(s)' : 'à modifier' }}</span></div>
+                        <div><strong>{{ $rapport['inchanges'] ?? 0 }}</strong><span>inchangée(s)</span></div>
+                        <div><strong>{{ $rapport['ignores'] }}</strong><span>ignorée(s)</span></div>
                         <div class="{{ $rapport['erreurs'] ? 'texte-erreur' : '' }}"><strong>{{ count($rapport['erreurs']) }}</strong><span>erreur(s)</span></div>
                     </div>
 
@@ -159,7 +161,7 @@
         entite.addEventListener('change', afficherColonnes);
 
         document.querySelector('[data-import-confirmer]').addEventListener('click', function (evenement) {
-            if (!window.confirm('Importer ce fichier ? Les lignes valides seront créées ; celles dont la clé existe déjà seront ignorées.')) {
+            if (!window.confirm('Importer ce fichier ? Les lignes valides seront créées, et celles dont la clé existe déjà seront mises à jour.')) {
                 evenement.preventDefault();
             }
         });

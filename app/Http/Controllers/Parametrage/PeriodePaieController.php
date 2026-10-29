@@ -7,9 +7,12 @@ use App\Services\Parametrage\PeriodePaieService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
+use App\Http\Controllers\Parametrage\Concerns\SupprimeEnMasse;
 
 class PeriodePaieController extends Controller
 {
+    use SupprimeEnMasse;
+
     public function index(Request $request, PeriodePaieService $service): View|RedirectResponse
     {
         $filters = $request->validate([
@@ -70,5 +73,10 @@ class PeriodePaieController extends Controller
             'code' => ['required', 'string', 'max:20', 'regex:/^[A-Z0-9]+(?:[-_][A-Z0-9]+)*$/'],
             'libelle' => ['required', 'string', 'max:100'],
         ];
+    }
+
+    public function destroyMultiple(Request $request, PeriodePaieService $service): RedirectResponse
+    {
+        return $this->supprimerSelection($request, fn (int $id) => $service->delete($id), 'période', 'parametres.periodes-paie.index');
     }
 }

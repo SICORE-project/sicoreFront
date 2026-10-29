@@ -7,9 +7,12 @@ use App\Services\Parametrage\SpecialiteService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
+use App\Http\Controllers\Parametrage\Concerns\SupprimeEnMasse;
 
 class SpecialiteController extends Controller
 {
+    use SupprimeEnMasse;
+
     public function index(Request $request, SpecialiteService $service): View|RedirectResponse
     {
         $filters = $request->validate([
@@ -92,5 +95,10 @@ class SpecialiteController extends Controller
 
         return redirect()->route('parametres.disciplines.index')
             ->with($result['success'] ? 'success' : 'error', $result['message']);
+    }
+
+    public function destroyMultiple(Request $request, SpecialiteService $service): RedirectResponse
+    {
+        return $this->supprimerSelection($request, fn (int $id) => $service->delete($id), 'spécialité', 'parametres.disciplines.index');
     }
 }

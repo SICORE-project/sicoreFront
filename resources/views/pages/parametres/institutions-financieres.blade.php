@@ -2,6 +2,9 @@
 
 @section('title', 'SICORE - Banques')
 @section('content')
+@php
+    $peutSupprimer = \App\Support\SicoreAccess::can(request(), 'parametrage.institutions_financieres.manage');
+@endphp
 <main class="main-content">
   <header class="topbar">
     <div class="page-title-wrap">
@@ -21,7 +24,7 @@
     <div class="actions-row">
       <p class="breadcrumb">Paramétrage &gt; Banques</p>
       <div class="actions-group">
-        <button class="btn-primary" type="button" id="newInstitution" data-modal-open="institution-form-modal">+ Nouvelle banque</button>
+        <button class="btn-primary" type="button" id="newInstitution" data-modal-open="institution-form-modal">+ Nouvelle banque</button>@if ($peutSupprimer)<button class="btn-secondary btn-bulk-delete" type="button" data-bulk-delete-button disabled>Supprimer la sélection</button>@endif
       </div>
     </div>
 
@@ -39,6 +42,7 @@
       <div class="table-responsive">
         <table class="table" id="institutionsTable">
           <thead><tr>
+            @if ($peutSupprimer)<th class="checkbox-cell"><input type="checkbox" data-select-all aria-label="Tout sélectionner"></th>@endif
             <th scope="col">Nom ou libellé</th>
             <th scope="col">Téléphone</th>
             <th scope="col">Adresse</th><th scope="col">Statut</th><th scope="col" class="actions-cell">Actions</th>
@@ -52,6 +56,7 @@
                 $institutionId = data_get($institution, 'id', data_get($institution, 'uuid', 0));
               @endphp
               <tr data-institution-status="{{ $active ? 'actif' : 'inactif' }}">
+                @if ($peutSupprimer)<td class="checkbox-cell"><input type="checkbox" data-row-checkbox value="{{ $institutionId }}" aria-label="Sélectionner {{ data_get($institution, 'nom') }}"></td>@endif
                 <td>{{ data_get($institution, 'nom', data_get($institution, 'libelle', '—')) }}</td>
                 <td>{{ data_get($institution, 'telephone', '—') }}</td>
                 <td>{{ data_get($institution, 'adresse', '—') }}</td>
@@ -75,6 +80,9 @@
 
       @include('components.pagination', ['pagination' => $pagination])
     </section>
+    @if ($peutSupprimer)
+@include('pages.parametres.partials.suppression-multiple', ['cible' => 'institution financière', 'action' => route('parametres.institutions-financieres.destroy-multiple'), 'cibles' => 'institutions financières', 'feminin' => true])
+@endif
   </section>
 </main>
 

@@ -24,6 +24,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'sicore.module' => EnsureSicoreModuleAccess::class,
             'sicore.indemnites' => \App\Http\Middleware\EnsureIndemnitesSection::class,
         ]);
+        $middleware->web(append: [\App\Http\Middleware\EnsurePageAllowed::class]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

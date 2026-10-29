@@ -7,9 +7,12 @@ use App\Services\Parametrage\RubriquePaieService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
+use App\Http\Controllers\Parametrage\Concerns\SupprimeEnMasse;
 
 class RubriquePaieController extends Controller
 {
+    use SupprimeEnMasse;
+
     public function index(Request $request, RubriquePaieService $service): View|RedirectResponse
     {
         $filters = $request->validate([
@@ -80,5 +83,10 @@ class RubriquePaieController extends Controller
             'periodicite' => ['required', 'in:mensuelle,ponctuelle,annuelle'],
             'montant' => ['nullable', 'numeric', 'min:0'], // <-- Remplace 'description'
         ];
+    }
+
+    public function destroyMultiple(Request $request, RubriquePaieService $service): RedirectResponse
+    {
+        return $this->supprimerSelection($request, fn (int $id) => $service->delete($id), 'rubrique', 'parametres.rubriques-paie.index');
     }
 }

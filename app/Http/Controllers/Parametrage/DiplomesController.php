@@ -9,9 +9,12 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\View\View;
+use App\Http\Controllers\Parametrage\Concerns\SupprimeEnMasse;
 
 class DiplomesController extends Controller
 {
+    use SupprimeEnMasse;
+
     public function index(Request $request, CategorieService $categories, DiplomeService $diplomeService): View
     {
         $params = array_filter([
@@ -126,5 +129,23 @@ class DiplomesController extends Controller
             'categorie_id' => ['required', 'integer', 'min:1'],
             'salaire_brut' => ['required', 'numeric', 'min:0'],
         ]);
+    }
+
+    public function destroyMultiple(Request $request): RedirectResponse
+    {
+        $supprimer = function (int $id): array {
+            try {
+                $response = Http::acceptJson()
+                    ->withToken(session('access_token'))
+                    ->timeout(10)
+                    ->delete(config('services.backend.url').'/diplomes/'.$id);
+            } catch (\Throwable) {
+                return ['success' => false, 'message' => 'Le service des diplômes est indisponible pour le moment.'];
+            }
+
+            return ['success' => $response->successful(), 'message' => $response->json('message')];
+        };
+
+        return $this->supprimerSelection($request, $supprimer, 'diplôme', 'parametres.diplomes.index', false);
     }
 }
