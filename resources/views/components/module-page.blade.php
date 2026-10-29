@@ -94,7 +94,7 @@
                   $exportParameters = array_merge(
                     $exportParameters,
                     request()->only([
-                      'academic_year_id', 'corps_id', 'ia_id', 'ief_id', 'matricule',
+                      'academic_year_id', 'statut_enseignant_id', 'ia_id', 'ief_id', 'matricule',
                       'payment_place_id', 'training_center_id', 'tabaski_only',
                       'with_signature', 'without_service_done', 'dage_signatory',
                     ])
@@ -215,37 +215,54 @@
     @endif
 
     @if ($connected && $slug === 'paie-etat-salaires' && ! empty($moduleData['salary_statement']))
-      @include('pages.paie.partials.salary-statement', [
+      @include('pages.paie.etat-salaire.partials.salary-statement', [
         'statement' => $moduleData['salary_statement'],
       ])
     @else
     {{-- Filtre de période transmis par GET au contrôleur. --}}
+    {{-- Filtre de période transmis par GET au contrôleur. --}}
     @if ($connected)
       @if (empty($moduleData['report_catalog']))
-        @if (! empty($page['filters']))
+        @php
+            // On utilise les filtres de l'API s'ils existent (pour paie-edition), sinon ceux de la config
+            $activeFilters = !empty($moduleData['filters']) ? $moduleData['filters'] : ($page['filters'] ?? []);
+        @endphp
+        
+        @if (! empty($activeFilters))
         <form class="filter-panel" method="GET" aria-label="Filtres de la page">
-        @foreach ($page['filters'] as $index => $filter)
+        @foreach ($activeFilters as $index => $filter)
           @php
             $filterId = $slug.'-filter-'.$index;
+            $filterName = is_array($filter) ? ($filter['name'] ?? $index) : $index;
+            $filterLabel = is_array($filter) ? ($filter['label'] ?? $filterName) : $filter;
+            $filterValue = is_array($filter) ? ($filter['value'] ?? '') : '';
+            $filterOptions = is_array($filter) ? ($filter['options'] ?? []) : [];
           @endphp
           <div class="form-group">
-            <label for="{{ $filterId }}">{{ $filter['label'] }}</label>
-            <select class="form-control" id="{{ $filterId }}" name="{{ $filter['name'] }}">
-              @foreach ($filter['options'] as $option)
-                <option
-                  value="{{ $option['value'] }}"
-                  @selected((string) $option['value'] === (string) ($filter['value'] ?? ''))
-                >
-                  {{ $option['label'] }}
-                </option>
-              @endforeach
-            </select>
+            <label for="{{ $filterId }}">{{ $filterLabel }}</label>
+            
+            {{-- Si c'est le matricule, on affiche un champ texte --}}
+            @if ($filterName === 'matricule')
+                <input class="form-control" id="{{ $filterId }}" name="{{ $filterName }}" type="search" value="{{ $filterValue }}" placeholder="Saisir un matricule">
+            @else
+                <select class="form-control" id="{{ $filterId }}" name="{{ $filterName }}">
+                  <option value="">Tous</option>
+                  @foreach ($filterOptions as $option)
+                    <option
+                      value="{{ $option['value'] }}"
+                      @selected((string) $option['value'] === (string) $filterValue)
+                    >
+                      {{ $option['label'] }}
+                    </option>
+                  @endforeach
+                </select>
+            @endif
           </div>
         @endforeach
         <div class="actions-group">
           <button class="btn-secondary" type="submit">
             <i class="fa-solid fa-filter" aria-hidden="true"></i>
-            Appliquer
+            {{ $slug === 'paie-edition' ? 'Générer la paie' : 'Appliquer' }}
           </button>
         </div>
         </form>
@@ -376,16 +393,16 @@
     {{-- Tableau générique construit avec columns et rows. --}}
     <section class="table-card">
       <div class="table-responsive">
-        <table class="table" id="moduleTable" @if($slug !== 'utilisateurs') data-paginated-table @endif>
+      <table class="table" id="moduleTable" @if(!in_array($slug, ['utilisateurs', 'paie-edition'])) data-paginated-table @endif>
           <thead>
             <tr>
-              @foreach ($page['columns'] as $column)
+              @foreach ($page['columns'] ?? [] as $column)
                 <th @class(['actions-cell' => $loop->last])>{{ $column }}</th>
               @endforeach
             </tr>
           </thead>
           <tbody>
-            @forelse ($page['rows'] as $row)
+            @forelse ($page['rows'] ?? [] as $row)
               @php
                 $rowIndex = $loop->index;
                 $rowFilter = data_get($moduleData, 'row_filters.'.$rowIndex, []);
@@ -434,7 +451,7 @@
               </tr>
             @empty
               <tr class="table-empty-row">
-                <td colspan="{{ max(1, count($page['columns'])) }}" class="table-empty-cell">
+                <td colspan="{{ max(1, count($page['columns'] ?? [])) }}" class="table-empty-cell">
                   Aucune donnée disponible pour cette sélection.
                 </td>
               </tr>
@@ -442,6 +459,19 @@
           </tbody>
         </table>
       </div>
+      {{-- Boutons de validation uniquement pour la page Édition --}}
+      @if ($slug === 'paie-edition' && !empty($page['rows']))
+      <div class="edition-footer-actions" style="display: flex; align-items: center; justify-content: space-between; padding: 15px; background: #f8fafc; border-top: 1px solid #e2e8f0; margin-top: 10px;">
+        <div style="display: flex; gap: 10px;">
+          <button type="button" class="btn-primary" style="background: #4b5563; color: white;">Valider</button>
+          <button type="button" class="btn-secondary" onclick="window.print()">Imprimer</button>
+          <button type="button" class="btn-secondary">Annuler</button>
+        </div>
+        <div style="font-weight: bold; font-size: 1.1rem;">
+          Montant à engager : <span style="color: #b91c1c;">{{ number_format(collect($page['rows'])->sum(fn($row) => (float) str_replace([' ', 'FCFA', '—'], '', $row[8])), 0, ',', ' ') }}</span> FCFA
+        </div>
+      </div>
+      @endif
       <p class="empty-message">Aucune donnée trouvée.</p>
       {{--
         Pagination locale commune à toutes les pages. Le script

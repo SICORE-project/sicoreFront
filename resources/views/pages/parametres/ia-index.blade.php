@@ -5,6 +5,7 @@
 @section('content')
 @php($scopedReadOnly = $scopedReadOnly ?? false)
 @php($listRoute = $listRoute ?? 'parametres.ia.index')
+@php($peutSupprimer = ! $scopedReadOnly && \App\Support\SicoreAccess::can(request(), 'parametrage.ia.delete'))
 <main class="main-content">
   <header class="topbar">
     <div class="page-title-wrap">
@@ -40,6 +41,11 @@
       <p class="breadcrumb">Gestion du personnel &gt; Inspections d’académie</p>
       <div class="actions-group">
         @if (! $scopedReadOnly)<button class="btn-primary" type="button" data-modal-open="ia-create-modal">+ Nouvelle IA</button>@endif
+        @if ($peutSupprimer)
+          <button class="btn-secondary btn-bulk-delete" type="button" data-bulk-delete-button disabled>
+            Supprimer
+          </button>
+        @endif
       </div>
     </div>
 
@@ -66,20 +72,30 @@
       <div class="table-responsive">
         <table class="table" id="iaTable">
           <thead><tr>
+            <th class="checkbox-cell">
+              @if ($peutSupprimer)
+                <input type="checkbox" data-select-all aria-label="Tout sélectionner">
+              @endif
+            </th>
             <th>Code</th><th>Libellé</th><th>Région</th>@if (! $scopedReadOnly)<th class="actions-cell">Actions</th>@endif
           </tr></thead>
           <tbody>
             @foreach ($items as $ia)
+              @php($iaId = data_get($ia, 'id', data_get($ia, 'uuid')))
               <tr data-ia-row>
+                <td class="checkbox-cell">
+                  @if ($peutSupprimer && $iaId)
+                    <input type="checkbox" data-row-checkbox value="{{ $iaId }}" aria-label="Sélectionner {{ data_get($ia, 'code') }}">
+                  @endif
+                </td>
                 <td>{{ data_get($ia, 'code', '—') }}</td>
                 <td>{{ data_get($ia, 'libelle', data_get($ia, 'nom', '—')) }}</td>
                 <td>{{ data_get($ia, 'region.libelle', data_get($ia, 'region.nom', data_get($ia, 'region', '—'))) }}</td>
                 @if (! $scopedReadOnly)<td class="actions-cell">
-                  @php($iaId = data_get($ia, 'id', data_get($ia, 'uuid')))
                   <button class="icon-action" type="button" data-modal-open="ia-edit-modal" data-ia-edit='@json($ia)' title="Modifier" aria-label="Modifier {{ data_get($ia, 'code') }}">
                     <i class="fa-solid fa-pen-to-square" aria-hidden="true"></i>
                   </button>
-                  @if ($iaId && in_array(session('sicore_user.role_slug'), ['admin', 'super_admin'], true))
+                  @if ($iaId && $peutSupprimer)
                     <form method="POST" action="{{ route('parametres.ia.destroy', ['ia' => $iaId]) }}" class="inline-form">
                       @csrf
                       @method('DELETE')
@@ -171,6 +187,7 @@
 <style>
   #ia-create-modal .modal-dialog,
   #ia-edit-modal .modal-dialog { max-width: 920px; width: calc(100% - 32px); }
+
 </style>
 @endpush
 
@@ -222,5 +239,122 @@
 
   }());
 </script>
+
+<script>
+  (function () {
+    "use strict";
+
+    var selectAll = document.querySelector("[data-select-all]");
+    var deleteButton = document.querySelector("[data-bulk-delete-button]");
+
+    function getRowCheckboxes() {
+      return Array.prototype.slice.call(
+        document.querySelectorAll("[data-row-checkbox]"),
+      );
+    }
+
+    function updateState() {
+      var boxes = getRowCheckboxes();
+      var checked = boxes.filter(function (box) {
+        return box.checked;
+      });
+
+      if (deleteButton) {
+        deleteButton.disabled = checked.length === 0;
+        deleteButton.textContent =
+          checked.length > 0
+            ? "Supprimer la sélection (" + checked.length + ")"
+            : "Supprimer la sélection";
+      }
+
+      if (selectAll) {
+        selectAll.checked = boxes.length > 0 && checked.length === boxes.length;
+        selectAll.indeterminate = checked.length > 0 && checked.length < boxes.length;
+      }
+    }
+
+    if (selectAll) {
+      selectAll.addEventListener("change", function () {
+        getRowCheckboxes().forEach(function (box) {
+          box.checked = selectAll.checked;
+        });
+
+        updateState();
+      });
+    }
+
+    document.addEventListener("change", function (event) {
+      if (event.target.matches && event.target.matches("[data-row-checkbox]")) {
+        updateState();
+      }
+    });
+
+    if (deleteButton) {
+      deleteButton.addEventListener("click", function () {
+        var ids = getRowCheckboxes()
+          .filter(function (box) {
+            return box.checked;
+          })
+          .map(function (box) {
+            return box.value;
+          });
+
+        if (ids.length === 0) {
+          return;
+        }
+
+        var confirmation =
+          ids.length === 1
+            ? "Supprimer définitivement cette IA ?"
+            : "Supprimer définitivement ces " + ids.length + " IA ?";
+
+        if (!window.confirm(confirmation)) {
+          return;
+        }
+
+        var form = document.createElement("form");
+        form.method = "POST";
+        form.action = "{{ route('parametres.ia.destroy-multiple') }}";
+        form.style.display = "none";
+
+        var csrf = document.createElement("input");
+        csrf.type = "hidden";
+        csrf.name = "_token";
+        csrf.value = "{{ csrf_token() }}";
+        form.appendChild(csrf);
+
+        var methode = document.createElement("input");
+        methode.type = "hidden";
+        methode.name = "_method";
+        methode.value = "DELETE";
+        form.appendChild(methode);
+
+        var retour = document.createElement("input");
+        retour.type = "hidden";
+        retour.name = "retour";
+        retour.value = "{{ $listRoute }}";
+        form.appendChild(retour);
+
+        ids.forEach(function (id) {
+          var input = document.createElement("input");
+          input.type = "hidden";
+          input.name = "ids[]";
+          input.value = id;
+          form.appendChild(input);
+        });
+
+        document.body.appendChild(form);
+        form.submit();
+      });
+    }
+
+    updateState();
+
+    document.addEventListener("sicore:ajax-regions-mises-a-jour", updateState);
+  })();
+</script>
 @endpush
+@if ($peutSupprimer)
+@include('pages.parametres.partials.suppression-multiple', ['cible' => 'IA', 'action' => route('parametres.ia.destroy-multiple')])
+@endif
 @endsection

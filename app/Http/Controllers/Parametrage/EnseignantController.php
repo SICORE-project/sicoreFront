@@ -12,6 +12,8 @@ use App\Services\Parametrage\DiplomeService;
 use App\Services\Parametrage\SpecialiteService;
 use App\Services\Parametrage\LieuServiceService;
 use App\Services\Parametrage\InstitutionFinanciereService;
+use App\Services\Api\ApiClient;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -29,6 +31,7 @@ class EnseignantController extends Controller
         DiplomeService $diplomes,
         SpecialiteService $disciplines,
         InstitutionFinanciereService $institutions,
+        ApiClient $apiClient,
     ): View|RedirectResponse
     {
         $access = app(\App\Services\Organisation\InterfaceAccess::class);
@@ -38,7 +41,7 @@ class EnseignantController extends Controller
         if ($access->isDrh() && ! app(\App\Services\Organisation\OrganisationContext::class)->isScoped()) {
             return view('pages.enseignants.index', array_merge(array_fill_keys([
                 'items', 'academies', 'filterIefs', 'regionOptions', 'iefOptions', 'corpsOptions',
-                'categorieOptions', 'diplomeOptions', 'disciplineOptions', 'institutionOptions', 'statutOptions',
+                'categorieOptions', 'diplomeOptions', 'disciplineOptions', 'institutionOptions', 'statutOptions', 'syndicatOptions',
             ], []), [
                 'pagination' => ['current_page' => 1, 'last_page' => 1, 'total' => 0],
                 'error' => 'Aucun périmètre organisationnel n’est encore associé à votre compte. Les dossiers seront disponibles après son attribution.',
@@ -73,6 +76,17 @@ class EnseignantController extends Controller
         $result['diplomeOptions'] = $diplomes->options();
         $result['disciplineOptions'] = $disciplines->getActiveForSelection();
         $result['institutionOptions'] = $institutions->getAll(1, 100, ['statut' => 'actif'])['items'];
+        try {
+            $syndicatsResponse = $apiClient->get('syndicats');
+            $result['syndicatOptions'] = $syndicatsResponse->successful()
+                ? collect($syndicatsResponse->json('data') ?? $syndicatsResponse->json() ?? [])
+                    ->filter(fn (array $syndicat): bool => (bool) ($syndicat['est_actif'] ?? false))
+                    ->values()
+                    ->all()
+                : [];
+        } catch (ConnectionException) {
+            $result['syndicatOptions'] = [];
+        }
         return view('pages.enseignants.index', $result);
     }
 
@@ -239,7 +253,11 @@ class EnseignantController extends Controller
         $request->merge([
             'nombre_femmes' => $married ? ($request->input('nombre_femmes') ?? 0) : 0,
             'conjoint_travaille' => $married ? ($request->input('conjoint_travaille') ?? false) : false,
-            'nombre_parts_fiscales' => $fonctionnaire ? 1 : min(5, 2 + max(0, $request->integer('nombre_enfants')) * .5 - ($married && $request->boolean('conjoint_travaille') ? .5 : 0)),
+            'nombre_parts_fiscales' => $fonctionnaire
+                ? 1
+                : ($request->input('situation_matrimoniale') === 'celibataire'
+                    ? 2
+                    : min(5, 2 + max(0, $request->integer('nombre_enfants')) * .5 - ($married && $request->boolean('conjoint_travaille') ? .5 : 0))),
         ]);
         return $request->validate([
             'matricule' => ['bail', 'required', 'string', $fonctionnaire ? 'regex:~\A[0-9]{6}/[A-Z]\z~' : 'regex:~\A[0-9]{9}/[A-Z]\z~'],
@@ -270,8 +288,8 @@ class EnseignantController extends Controller
             'compte_bancaire' => ['required', 'array'],
             'compte_bancaire.institut_financier_id' => ['nullable', 'integer', 'min:1'],
             'compte_bancaire.code_banque' => ['required', 'string', 'size:5'],
-            'compte_bancaire.code_guichet' => ['required', 'string', 'size:5', "regex:/\A[0-9]+\z/"],
-            'compte_bancaire.numero_compte' => ['required', 'string', 'size:12'],
+            'compte_bancaire.code_guichet' => ['required', 'string', "regex:/\A[0-9]+\z/"],
+            'compte_bancaire.numero_compte' => ['required', 'string'],
             'compte_bancaire.cle_rib' => ['required', 'string', 'size:2', "regex:/\A[0-9]+\z/"],
             'compte_bancaire.iban' => ['nullable', 'string', 'max:34'],
             'compte_bancaire.bic' => ['nullable', 'string', 'max:11'],
@@ -285,6 +303,8 @@ class EnseignantController extends Controller
             'categorie_id' => ['nullable', 'integer', 'min:1'],
             'statut' => ['required', 'in:en_activite,retraite,suspension_provisoire,abandon,decede,integre,radie,cessation_paiement'],
             'est_actif' => ['required', 'boolean'],
+            'syndicat' => ['nullable', 'array'],
+            'syndicat.syndicat_id' => ['nullable', 'integer', 'min:1'],
         ], [
             'compte_bancaire.code_banque.size' => 'Le code banque doit comporter exactement 5 caractères.',
             'compte_bancaire.code_guichet.size' => 'Le code guichet doit comporter exactement 5 caractères.',
