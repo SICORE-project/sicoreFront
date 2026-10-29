@@ -66,8 +66,7 @@ return [
                     ['label' => 'Génération individuelle de la paie', 'route' => 'paie.non-generee', 'icon' => 'fa-solid fa-user-check'],
                 ],
             ],
-        ],
-        ['label' => 'Travaux périodiques',       'route' => 'paie.travaux-periodiques',    'icon' => 'fa-solid fa-list-check',           'permission' => 'paie.travaux_periodiques.read'],
+            ['label' => 'Travaux périodiques',       'route' => 'paie.travaux-periodiques',    'icon' => 'fa-solid fa-list-check',           'permission' => 'paie.travaux_periodiques.read'],
         ['label' => 'Récapitulatif par banque',  'route' => 'paie.recap-banque',           'icon' => 'fa-solid fa-building-columns',     'permission' => 'paie.recap_banque.read'],
         ['label' => 'Cotisations sociales',      'route' => 'paie.cotisations-sociales',   'icon' => 'fa-solid fa-people-group',         'permission' => 'paie.cotisations.read'],
         ['label' => 'État des salaires',         'route' => 'paie.etat-salaires',          'icon' => 'fa-solid fa-file-invoice-dollar',  'permission' => 'paie.etat_salaires.read'],
@@ -79,6 +78,8 @@ return [
         ['label' => 'Édition des délégations',   'route' => 'credits.edition-delegations', 'icon' => 'fa-solid fa-file-signature',       'permission' => 'paie.delegations.edit'],
         ['label' => 'Édition des engagements',   'route' => 'credits.edition-engagements', 'icon' => 'fa-solid fa-clipboard-check',      'permission' => 'paie.engagements.edit'], 
     ],
+        ],
+        
 
     [
         'type' => 'group',
