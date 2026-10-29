@@ -239,6 +239,120 @@
 
   }());
 </script>
+
+<script>
+  (function () {
+    "use strict";
+
+    var selectAll = document.querySelector("[data-select-all]");
+    var deleteButton = document.querySelector("[data-bulk-delete-button]");
+
+    function getRowCheckboxes() {
+      return Array.prototype.slice.call(
+        document.querySelectorAll("[data-row-checkbox]"),
+      );
+    }
+
+    function updateState() {
+      var boxes = getRowCheckboxes();
+      var checked = boxes.filter(function (box) {
+        return box.checked;
+      });
+
+      if (deleteButton) {
+        deleteButton.disabled = checked.length === 0;
+        deleteButton.textContent =
+          checked.length > 0
+            ? "Supprimer la sélection (" + checked.length + ")"
+            : "Supprimer la sélection";
+      }
+
+      if (selectAll) {
+        selectAll.checked = boxes.length > 0 && checked.length === boxes.length;
+        selectAll.indeterminate = checked.length > 0 && checked.length < boxes.length;
+      }
+    }
+
+    if (selectAll) {
+      selectAll.addEventListener("change", function () {
+        getRowCheckboxes().forEach(function (box) {
+          box.checked = selectAll.checked;
+        });
+
+        updateState();
+      });
+    }
+
+    document.addEventListener("change", function (event) {
+      if (event.target.matches && event.target.matches("[data-row-checkbox]")) {
+        updateState();
+      }
+    });
+
+    if (deleteButton) {
+      deleteButton.addEventListener("click", function () {
+        var ids = getRowCheckboxes()
+          .filter(function (box) {
+            return box.checked;
+          })
+          .map(function (box) {
+            return box.value;
+          });
+
+        if (ids.length === 0) {
+          return;
+        }
+
+        var confirmation =
+          ids.length === 1
+            ? "Supprimer définitivement cette IA ?"
+            : "Supprimer définitivement ces " + ids.length + " IA ?";
+
+        if (!window.confirm(confirmation)) {
+          return;
+        }
+
+        var form = document.createElement("form");
+        form.method = "POST";
+        form.action = "{{ route('parametres.ia.destroy-multiple') }}";
+        form.style.display = "none";
+
+        var csrf = document.createElement("input");
+        csrf.type = "hidden";
+        csrf.name = "_token";
+        csrf.value = "{{ csrf_token() }}";
+        form.appendChild(csrf);
+
+        var methode = document.createElement("input");
+        methode.type = "hidden";
+        methode.name = "_method";
+        methode.value = "DELETE";
+        form.appendChild(methode);
+
+        var retour = document.createElement("input");
+        retour.type = "hidden";
+        retour.name = "retour";
+        retour.value = "{{ $listRoute }}";
+        form.appendChild(retour);
+
+        ids.forEach(function (id) {
+          var input = document.createElement("input");
+          input.type = "hidden";
+          input.name = "ids[]";
+          input.value = id;
+          form.appendChild(input);
+        });
+
+        document.body.appendChild(form);
+        form.submit();
+      });
+    }
+
+    updateState();
+
+    document.addEventListener("sicore:ajax-regions-mises-a-jour", updateState);
+  })();
+</script>
 @endpush
 @if ($peutSupprimer)
 @include('pages.parametres.partials.suppression-multiple', ['cible' => 'IA', 'action' => route('parametres.ia.destroy-multiple')])
