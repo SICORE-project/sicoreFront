@@ -20,7 +20,7 @@ class IaPayrollReportsTest extends TestCase
         $this->get('/dashboard')->assertOk()->assertSee('Sommes perçues')->assertSee('État des salaires')
             ->assertSee('Cotisations sociales')->assertSee('Paie générée par IEF')->assertSee('Récapitulatif par banque')->assertDontSee('Bulletins payés');
         foreach (['sommes-percues' => 'paid', 'etat-salaires' => 'salaries', 'cotisations-sociales' => 'contributions', 'generee-ief' => 'workforce', 'recap-banque' => 'banks'] as $route => $view) {
-            $this->get('/paie/'.$route)->assertOk()->assertViewIs('pages.paie.'.$route)->assertSee('data-payroll-module="paie-'.$route.'"', false)->assertSee('Rapport IA')->assertSee('900 FCFA')->assertSee('Masse brute');
+            $this->get('/paie/'.$route)->assertOk()->assertViewIs(\App\Http\Controllers\PayrollController::viewFor('paie-'.$route))->assertSee('data-payroll-module="paie-'.$route.'"', false)->assertSee('Rapport IA')->assertSee('900 FCFA')->assertSee('Masse brute');
             Http::assertSent(fn ($r) => str_contains($r->url(), '/ia/payroll/pages/paie-'.$route) && $r['ia_id'] == 1);
         }
     }

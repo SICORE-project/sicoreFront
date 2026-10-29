@@ -94,7 +94,7 @@
                   $exportParameters = array_merge(
                     $exportParameters,
                     request()->only([
-                      'academic_year_id', 'corps_id', 'ia_id', 'ief_id', 'matricule',
+                      'academic_year_id', 'statut_enseignant_id', 'ia_id', 'ief_id', 'matricule',
                       'payment_place_id', 'training_center_id', 'tabaski_only',
                       'with_signature', 'without_service_done', 'dage_signatory',
                     ])
@@ -215,7 +215,7 @@
     @endif
 
     @if ($connected && $slug === 'paie-etat-salaires' && ! empty($moduleData['salary_statement']))
-      @include('pages.paie.partials.salary-statement', [
+      @include('pages.paie.etat-salaire.partials.salary-statement', [
         'statement' => $moduleData['salary_statement'],
       ])
     @else
