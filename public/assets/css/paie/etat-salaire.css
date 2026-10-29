@@ -376,6 +376,113 @@
   }
 }
 
+.salary-statement-heading {
+  margin: 0;
+  padding: 10px 16px;
+  color: #087445;
+  font-family: Verdana, Arial, sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  text-align: center;
+  letter-spacing: 0.02em;
+}
+
+/* Document ouvert seul par « Générer l’état » (pages/paie/etat-salaire/document.blade.php). */
+.salary-statement-standalone {
+  max-width: 100%;
+  padding: 16px;
+  background: #f4f7f5;
+  min-height: 100vh;
+}
+
+.salary-statement-standalone-actions {
+  position: sticky;
+  bottom: 12px;
+  z-index: 5;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 16px;
+  padding: 12px 18px;
+  border: 1px solid #d8e4de;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(9, 36, 25, 0.12);
+}
+
+.salary-statement-ordonnateur {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.salary-statement-ordonnateur > span {
+  color: #3d5249;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.salary-statement-segmented {
+  display: inline-flex;
+  padding: 3px;
+  border-radius: 999px;
+  background: #eef4f1;
+}
+
+.salary-statement-segmented input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.salary-statement-segmented span {
+  display: block;
+  min-width: 56px;
+  padding: 6px 16px;
+  border-radius: 999px;
+  color: #3d5249;
+  font-weight: 700;
+  text-align: center;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.salary-statement-segmented input:checked + span {
+  background: #087445;
+  color: #fff;
+  box-shadow: 0 1px 3px rgba(9, 36, 25, 0.2);
+}
+
+.salary-statement-segmented input:focus-visible + span {
+  outline: 2px solid #087445;
+  outline-offset: 2px;
+}
+
+.salary-statement-standalone-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.salary-statement-standalone-buttons .btn-secondary,
+.salary-statement-standalone-buttons .btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+}
+
+@media (max-width: 640px) {
+  .salary-statement-standalone-actions,
+  .salary-statement-standalone-buttons {
+    justify-content: center;
+  }
+}
+
 @media print {
   @page salaryState {
     size: A3 landscape;
@@ -398,8 +505,14 @@
   .salary-statement-page .objective-card,
   .salary-statement-page .stats-grid,
   .salary-statement-page .actions-row,
-  .salary-statement-filter {
+  .salary-statement-filter,
+  .salary-statement-standalone-actions {
     display: none !important;
+  }
+
+  .salary-statement-standalone {
+    padding: 0;
+    background: #fff;
   }
 
   .salary-statement-page .content-area {

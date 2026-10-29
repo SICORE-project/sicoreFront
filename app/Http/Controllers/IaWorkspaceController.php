@@ -26,7 +26,7 @@ class IaWorkspaceController extends Controller
             'period_id' => ['nullable', 'integer', 'min:1'], 'ief_id' => ['nullable', 'integer', 'min:1'],
             'lieu_service_id' => ['nullable', 'integer', 'min:1'],
             'engagement' => ['nullable', 'in:non_fonctionnaires'],
-            'academic_year_id' => ['nullable', 'integer'], 'corps_id' => ['nullable', 'integer'],
+            'academic_year_id' => ['nullable', 'integer'], 'corps_id' => ['nullable', 'integer'], 'statut_enseignant_id' => ['nullable', 'integer'],
             'matricule' => ['nullable', 'string', 'max:50'], 'payment_place_id' => ['nullable', 'integer'],
             'training_center_id' => ['nullable', 'integer'], 'tabaski_only' => ['nullable', 'boolean'],
             'with_signature' => ['nullable', 'boolean'], 'without_service_done' => ['nullable', 'boolean'],
@@ -91,7 +91,7 @@ class IaWorkspaceController extends Controller
             unset($cell);
         }
         unset($row);
-        return view(PayrollController::viewFor($slug), ['moduleData' => $moduleData, 'apiError' => $error]);
+        return view(PayrollController::viewFor($slug, $request->boolean('document')), ['moduleData' => $moduleData, 'apiError' => $error]);
     }
 
     public function payslip(Request $request, int $id): View

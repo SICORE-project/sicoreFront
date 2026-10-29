@@ -64,7 +64,7 @@ class PayrollController extends Controller
             $apiError = $this->apiErrorDetails($request, $exception);
         }
 
-        return view(self::viewFor($slug), compact(
+        return view(self::viewFor($slug, $request->boolean('document')), compact(
             'moduleData',
             'apiError'
         ));
@@ -72,12 +72,13 @@ class PayrollController extends Controller
 
     /**
      * Le préfixe "paie-" est retiré pour retrouver le nom du fichier Blade.
-     * L'état des salaires a son propre dossier : pages/paie/etat-salaire/.
+     * L'état des salaires a son propre dossier : pages/paie/etat-salaire/ ;
+     * avec ?document=1, il s'ouvre seul (document à imprimer, sans filtres).
      */
-    public static function viewFor(string $slug): string
+    public static function viewFor(string $slug, bool $document = false): string
     {
         if ($slug === 'paie-etat-salaires') {
-            return 'pages.paie.etat-salaire.index';
+            return $document ? 'pages.paie.etat-salaire.document' : 'pages.paie.etat-salaire.index';
         }
 
         return 'pages.paie.'.Str::after($slug, 'paie-');
@@ -164,7 +165,7 @@ class PayrollController extends Controller
         if ($slug === 'paie-etat-salaires') {
             $rules += [
                 'academic_year_id' => ['nullable', 'integer', 'min:1'],
-                'corps_id' => ['nullable', 'integer', 'min:1'],
+                'statut_enseignant_id' => ['nullable', 'integer', 'min:1'],
                 'ia_id' => ['nullable', 'integer', 'min:1'],
                 'ief_id' => ['nullable', 'integer', 'min:1'],
                 'matricule' => ['nullable', 'string', 'max:50'],
