@@ -12,9 +12,17 @@ class NavigationAccess
     public static function filter(array $items, array $user): array
     {
         $role = (string) ($user['role_slug'] ?? '');
-        $permissions = (array) ($user['permissions'] ?? []);
+        $permissions = collect((array) ($user['permissions'] ?? []))
+            ->map(fn ($permission) => is_array($permission) ? ($permission['slug'] ?? $permission['nom'] ?? null) : $permission)
+            ->filter()
+            ->values()
+            ->all();
 
-        $allowed = function (array $item) use ($role, $permissions): bool {
+        $allowed = function (array $item) use ($role, $permissions, $user): bool {
+            // Entrée réservée aux comptes rattachés à un enseignant (même pour le super admin).
+            if (! empty($item['enseignant_requis']) && empty($user['enseignant_id'])) {
+                return false;
+            }
             if ($role === 'super_admin') {
                 return true;
             }

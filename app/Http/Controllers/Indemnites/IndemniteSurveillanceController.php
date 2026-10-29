@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Indemnites;
 
+use App\Support\PaginationLignes;
+use App\Support\RetourListe;
 use App\Http\Controllers\Controller;
 use App\Services\Api\Indemnites\ConvocationService;
 use App\Services\Api\Indemnites\IndemniteSurveillanceService;
@@ -20,63 +22,35 @@ class IndemniteSurveillanceController extends Controller
 
     public function index(Request $request): View
     {
+        RetourListe::memoriser('surveillance', $request);
+
         $filtres = array_filter([
             'session' => $request->query('session'),
             'objet' => $request->query('objet'),
             'centre' => $request->query('centre'),
         ]);
 
-        $filtreActif = count($filtres) > 0;
-
         $optionsFiltres = $this->optionsFiltresPourVue($filtres);
 
-        $lignes = [];
-        $stats = [
-            'surveillants' => 0,
-            'fiches_creees' => 0,
-            'heures_surveillees' => 0,
-            'montant_total' => 0,
-        ];
+        // Liste par défaut : sans filtre, tous les résultats ; les filtres la réduisent.
+        // Le tableau est paginé par 10 lignes, et les compteurs portent sur l'ensemble.
+        $resultat = $this->convocations->liste(array_merge($filtres, ['per_page' => 100]));
 
-        $convocations = new LengthAwarePaginator([], 0, 10, 1, [
-            'path' => $request->url(),
-            'query' => $request->query(),
-        ]);
-
-        if ($filtreActif) {
-            $resultat = $this->convocations->liste(array_merge($filtres, [
-                'per_page' => 10,
-                'page' => $request->query('page', 1),
-            ]));
-
-            if (! $resultat['success']) {
-                session()->flash('error', $resultat['message'] ?? 'Impossible de charger les indemnités de surveillance.');
-            }
-
-            $meta = $resultat['success'] ? ($resultat['data'] ?? []) : [];
-            $items = $meta['data'] ?? [];
-
-            $convocations = new LengthAwarePaginator(
-                $items,
-                $meta['total'] ?? count($items),
-                $meta['per_page'] ?? 10,
-                $meta['current_page'] ?? (int) $request->query('page', 1),
-                [
-                    'path' => $request->url(),
-                    'query' => $request->query(),
-                ]
-            );
-
-            $lignes = $this->construireLignes($items, $filtres['centre'] ?? null);
-            $stats = $this->calculerStats($lignes);
+        if (! $resultat['success']) {
+            session()->flash('error', $resultat['message'] ?? 'Impossible de charger les indemnités de surveillance.');
         }
 
+        $items = $resultat['success'] ? ($resultat['data']['data'] ?? []) : [];
+
+        $lignes = $this->construireLignes($items, $filtres['centre'] ?? null);
+        $stats = $this->calculerStats($lignes);
+        $pagination = PaginationLignes::paginer($lignes, $request);
+
         return view('pages.indemnites.calcul-surveillance', [
-            'filtreActif' => $filtreActif,
             'optionsFiltres' => $optionsFiltres,
-            'lignes' => $lignes,
+            'lignes' => $pagination->items(),
             'stats' => $stats,
-            'convocations' => $convocations,
+            'pagination' => $pagination,
         ]);
     }
 
@@ -93,6 +67,10 @@ class IndemniteSurveillanceController extends Controller
     {
         $lignes = [];
 
+        // Un seul appel pour toutes les convocations de la page.
+        $lot = $this->indemniteSurveillance->surveillantsEligiblesLot(array_filter(array_column($items, 'id')));
+        $surveillantsParConvocation = $lot['success'] ? ($lot['data'] ?? []) : [];
+
         foreach ($items as $item) {
             $convocationId = $item['id'] ?? null;
 
@@ -100,8 +78,7 @@ class IndemniteSurveillanceController extends Controller
                 continue;
             }
 
-            $resultat = $this->indemniteSurveillance->surveillantsEligibles($convocationId);
-            $surveillants = $resultat['success'] ? ($resultat['data'] ?? []) : [];
+            $surveillants = $surveillantsParConvocation[$convocationId] ?? [];
 
             foreach ($surveillants as $surveillant) {
                 if ($filtreCentre && ! str_contains(

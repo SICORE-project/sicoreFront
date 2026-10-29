@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Route;
 Route::middleware(['sicore.auth', 'sicore.module:paie.bulletins.read'])->group(function (): void {
     Route::prefix('paie')->name('paie.')->group(function (): void {
         $pages = [
+            'edition' => 'paie-edition',
             'etats-presence' => 'paie-etats-presence',
             'avance-tabaski' => 'paie-avance-tabaski',
             'retenue-tabaski' => 'paie-retenue-tabaski',
@@ -42,6 +43,7 @@ Route::middleware(['sicore.auth', 'sicore.module:paie.bulletins.read'])->group(f
             'situation-affectations' => 'paie-situation-affectations',
             'montants-engages-banque' => 'paie-montants-engages-banque',
             'heures-supplementaires-interim' => 'paie-heures-supplementaires-interim',
+            'edition' => 'paie-edition',
         ];
 
         foreach ($pages as $path => $slug) {
@@ -88,4 +90,6 @@ Route::middleware(['sicore.auth', 'sicore.module:paie.bulletins.read'])->group(f
             ->whereNumber('row')
             ->name('edition-engagements.row.excel');
     });
+
+    
 });

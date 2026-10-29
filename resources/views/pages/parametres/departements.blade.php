@@ -3,6 +3,9 @@
 @section('title', 'SICORE - Départements')
 
 @section('content')
+@php
+    $peutSupprimer = \App\Support\SicoreAccess::can(request(), 'parametrage.departements.manage');
+@endphp
 
 <main class="main-content">
 
@@ -140,6 +143,7 @@
                 >
                     + Nouveau département
                 </button>
+                @if ($peutSupprimer)<button class="btn-secondary btn-bulk-delete" type="button" data-bulk-delete-button disabled>Supprimer la sélection</button>@endif
 
             </div>
 
@@ -322,6 +326,7 @@
                     <thead>
 
                         <tr>
+                            @if ($peutSupprimer)<th class="checkbox-cell"><input type="checkbox" data-select-all aria-label="Tout sélectionner"></th>@endif
                             <th>Code</th>
                             <th>Libellé</th>
                             <th>Région</th>
@@ -363,6 +368,8 @@
 
 
                             <tr data-departement-row>
+
+                                @if ($peutSupprimer)<td class="checkbox-cell"><input type="checkbox" data-row-checkbox value="{{ $departementId }}" aria-label="Sélectionner {{ $departementCode }}"></td>@endif
 
                                 <td>
                                     {{ $departementCode ?: '—' }}
@@ -507,7 +514,7 @@
 
                             <tr>
 
-                                <td colspan="5">
+                                <td colspan="{{ 5 + ($peutSupprimer ? 1 : 0) }}">
 
                                     <x-table-empty-state>
                                         Aucun département trouvé.
@@ -567,6 +574,10 @@
             @endif
 
         </section>
+
+        @if ($peutSupprimer)
+@include('pages.parametres.partials.suppression-multiple', ['cible' => 'département', 'action' => route('parametres.departements.destroy-multiple'), 'cibles' => 'départements', 'feminin' => false])
+@endif
 
     </section>
 

@@ -64,6 +64,7 @@ class EnsureSicoreAuthenticated
             'permissions' => $user['permissions'] ?? [],
             'ia_id' => $user['ia_id'] ?? null,
             'ief_id' => $user['ief_id'] ?? null,
+            'enseignant_id' => $user['enseignant_id'] ?? null,
             'acces_organisationnel' => $user['acces_organisationnel'] ?? [],
         ]));
     }

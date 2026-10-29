@@ -9,9 +9,12 @@ use App\Services\Parametrage\RegionService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
+use App\Http\Controllers\Parametrage\Concerns\SupprimeEnMasse;
 
 class CommuneController extends Controller
 {
+    use SupprimeEnMasse;
+
     public function __construct(
         private readonly CommuneService $communeService,
         private readonly RegionService $regionService,
@@ -371,5 +374,10 @@ class CommuneController extends Controller
         }
 
         return $redirect;
+    }
+
+    public function destroyMultiple(Request $request, CommuneService $service): RedirectResponse
+    {
+        return $this->supprimerSelection($request, fn (int $id) => $service->delete($id), 'commune', 'parametres.communes.index');
     }
 }

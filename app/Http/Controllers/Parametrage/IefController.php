@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Parametrage;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Parametrage\Concerns\SupprimeEnMasse;
 use App\Services\Parametrage\IefService;
 use App\Services\Parametrage\InspectionAcademieService;
 use Illuminate\Http\RedirectResponse;
@@ -11,6 +12,8 @@ use Illuminate\View\View;
 
 class IefController extends Controller
 {
+    use SupprimeEnMasse;
+
     public function index(Request $request, IefService $service, InspectionAcademieService $ias): View|RedirectResponse
     {
         $result = $service->getAll([
@@ -46,6 +49,11 @@ class IefController extends Controller
     public function destroy(int $ief, IefService $service): RedirectResponse
     {
         return $this->redirect($service->delete($ief));
+    }
+
+    public function destroyMultiple(Request $request, IefService $service): RedirectResponse
+    {
+        return $this->supprimerSelection($request, fn (int $id) => $service->delete($id), 'IEF', 'parametres.ief.index');
     }
 
     private function validated(Request $request): array

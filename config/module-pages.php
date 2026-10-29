@@ -2457,4 +2457,19 @@ return [
             ],
         ],
     ],
+
+    'paie-edition' => [
+        'title' => 'Édition de la paie',
+        'icon' => 'ED',
+        'breadcrumb' => 'Paie > Édition',
+        'objectives' => [
+            'Consulter les états de paie individuels.',
+            'Générer et imprimer les bulletins ou états préparatoires.',
+        ],
+        'actions' => [
+            'Générer la paie',
+            'Exporter',
+        ],
+        // Les 'filters', 'columns' et 'rows' sont gérés par PayrollPageService
+    ],
 ];

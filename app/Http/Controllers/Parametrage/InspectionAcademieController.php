@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Parametrage;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Parametrage\Concerns\SupprimeEnMasse;
 use App\Services\Parametrage\InspectionAcademieService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -10,6 +11,8 @@ use Illuminate\View\View;
 
 class InspectionAcademieController extends Controller
 {
+    use SupprimeEnMasse;
+
     public function create(InspectionAcademieService $service): View
     {
         return view('pages.parametres.ia-create', ['regions' => $service->regions()]);
@@ -66,6 +69,11 @@ class InspectionAcademieController extends Controller
     public function destroy(int $ia, InspectionAcademieService $service): RedirectResponse
     {
         return $this->redirectAfterSave($service->delete($ia));
+    }
+
+    public function destroyMultiple(Request $request, InspectionAcademieService $service): RedirectResponse
+    {
+        return $this->supprimerSelection($request, fn (int $id) => $service->delete($id), 'IA', 'parametres.ia.index');
     }
 
     private function validated(Request $request): array

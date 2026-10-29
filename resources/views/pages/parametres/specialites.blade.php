@@ -3,6 +3,9 @@
 @section('title', 'SICORE - Spécialités')
 
 @section('content')
+@php
+    $peutSupprimer = $canDelete;
+@endphp
 <main class="main-content">
   <header class="topbar">
     <div class="page-title-wrap"><span class="title-icon"><i class="fa-solid fa-book"></i></span><div><h1>Gestion des spécialités</h1><p>Référentiel des spécialités d’enseignement</p></div></div>
@@ -12,6 +15,7 @@
       <p class="breadcrumb">Paramétrage &gt; Spécialités</p>
       @if ($canCreate)
         <button class="btn-primary" type="button" data-modal-open="discipline-create-modal">+ Ajouter une spécialité</button>
+        @if ($peutSupprimer)<button class="btn-secondary btn-bulk-delete" type="button" data-bulk-delete-button disabled>Supprimer la sélection</button>@endif
       @endif
     </div>
 
@@ -29,6 +33,7 @@
     <section class="table-card" aria-labelledby="disciplineListTitle">
       <div class="table-card-header"><div><h2 id="disciplineListTitle">Liste des spécialités</h2><p class="table-card-subtitle">{{ $pagination['total'] }} résultat{{ $pagination['total'] > 1 ? 's' : '' }}</p></div></div>
       <div class="table-responsive"><table class="table"><thead><tr>
+        @if ($peutSupprimer)<th class="checkbox-cell"><input type="checkbox" data-select-all aria-label="Tout sélectionner"></th>@endif
         @foreach (['libelle' => 'Libellé', 'description' => 'Description', 'statut' => 'Statut'] as $field => $label)
           @php
             $nextDirection = (($filters['sort'] ?? '') === $field && ($filters['direction'] ?? 'asc') === 'asc') ? 'desc' : 'asc';
@@ -44,6 +49,7 @@
           @endphp
           @php($disciplineId = data_get($discipline, 'id', data_get($discipline, 'uuid')))
           <tr>
+            @if ($peutSupprimer)<td class="checkbox-cell"><input type="checkbox" data-row-checkbox value="{{ $disciplineId }}" aria-label="Sélectionner {{ data_get($discipline, 'libelle') }}"></td>@endif
             <td>{{ data_get($discipline, 'libelle', data_get($discipline, 'nom', '—')) }}</td>
             <td>{{ data_get($discipline, 'description', '—') ?: '—' }}</td>
             <td><span class="badge {{ $active ? 'badge-active' : 'badge-suspended' }}">{{ $active ? 'Actif' : 'Inactif' }}</span></td>
@@ -62,11 +68,14 @@
             @endif
           </tr>
         @empty
-          <tr><td colspan="{{ ($canUpdate || $canDelete) ? 4 : 3 }}" class="empty-message show"><x-table-empty-state>Aucune spécialité trouvée.</x-table-empty-state></td></tr>
+          <tr><td colspan="{{ (($canUpdate || $canDelete) ? 4 : 3) + ($peutSupprimer ? 1 : 0) }}" class="empty-message show"><x-table-empty-state>Aucune spécialité trouvée.</x-table-empty-state></td></tr>
         @endforelse
       </tbody></table></div>
       @if ($pagination['last_page'] > 1)@include('components.pagination', ['pagination' => $pagination])@endif
     </section>
+    @if ($peutSupprimer)
+@include('pages.parametres.partials.suppression-multiple', ['cible' => 'spécialité', 'action' => route('parametres.disciplines.destroy-multiple'), 'cibles' => 'spécialités', 'feminin' => true])
+@endif
   </section>
 </main>
 

@@ -18,7 +18,7 @@
 
         <div class="form-card-header">
             <div>
-                <p class="breadcrumb"><a href="{{ route('indemnites.convocations') }}">&larr; Retour à la liste</a></p>
+                <p class="breadcrumb"><x-retour-liste cle="convocations" route="indemnites.convocations" /></p>
                 <h2>Nouvelle convocation</h2>
                 <p class="breadcrumb">Création d'une convocation pour un examen de certification</p>
             </div>

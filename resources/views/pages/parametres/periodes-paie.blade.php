@@ -3,6 +3,9 @@
 @section('title', 'SICORE - Périodes de paie')
 
 @section('content')
+@php
+    $peutSupprimer = $canManage && \App\Support\SicoreAccess::can(request(), 'parametrage.periodes_paie.manage');
+@endphp
 <main class="main-content">
   <x-topbar title="Périodes de paie" subtitle="Paramétrage > Périodes de paie" icon="fa-solid fa-calendar-week" />
 
@@ -11,6 +14,7 @@
       <p class="breadcrumb">Paramétrage &gt; Périodes de paie</p>
       @if ($canManage)
         <button class="btn-primary" type="button" data-modal-open="periode-create-modal"><i class="fa-solid fa-plus" aria-hidden="true"></i> Ajouter une période</button>
+        @if ($peutSupprimer)<button class="btn-secondary btn-bulk-delete" type="button" data-bulk-delete-button disabled>Supprimer la sélection</button>@endif
       @endif
     </div>
 
@@ -31,10 +35,11 @@
       <div class="table-card-header"><div><h2 id="periodeListTitle">Liste des périodes de paie</h2><p class="table-card-subtitle">{{ $pagination['total'] }} résultat{{ $pagination['total'] > 1 ? 's' : '' }}</p></div></div>
       <div class="table-responsive">
         <table class="table">
-          <thead><tr><th>Code</th><th>Libellé</th>@if ($canManage)<th class="actions-cell">Actions</th>@endif</tr></thead>
+          <thead><tr>@if ($peutSupprimer)<th class="checkbox-cell"><input type="checkbox" data-select-all aria-label="Tout sélectionner"></th>@endif<th>Code</th><th>Libellé</th>@if ($canManage)<th class="actions-cell">Actions</th>@endif</tr></thead>
           <tbody>
             @forelse ($items as $periode)
               <tr>
+                @if ($peutSupprimer)<td class="checkbox-cell"><input type="checkbox" data-row-checkbox value="{{ data_get($periode, 'id') }}" aria-label="Sélectionner {{ data_get($periode, 'code') }}"></td>@endif
                 <td><span class="periode-code">{{ data_get($periode, 'code', '—') }}</span></td>
                 <td><strong>{{ data_get($periode, 'libelle', '—') }}</strong></td>
                 @if ($canManage)
@@ -45,7 +50,7 @@
                 @endif
               </tr>
             @empty
-              <tr><td colspan="{{ $canManage ? 3 : 2 }}" class="empty-message show"><x-table-empty-state>Aucune période de paie trouvée.</x-table-empty-state></td></tr>
+              <tr><td colspan="{{ ($canManage ? 3 : 2) + ($peutSupprimer ? 1 : 0) }}" class="empty-message show"><x-table-empty-state>Aucune période de paie trouvée.</x-table-empty-state></td></tr>
             @endforelse
           </tbody>
         </table>
@@ -54,6 +59,9 @@
         @include('components.pagination', ['pagination' => $pagination])
       @endif
     </section>
+    @if ($peutSupprimer)
+@include('pages.parametres.partials.suppression-multiple', ['cible' => 'période', 'action' => route('parametres.periodes-paie.destroy-multiple'), 'cibles' => 'périodes', 'feminin' => true])
+@endif
   </section>
 </main>
 

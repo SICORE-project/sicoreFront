@@ -3,6 +3,9 @@
 @section('title', 'SICORE - Diplômes')
 
 @section('content')
+@php
+    $peutSupprimer = \App\Support\SicoreAccess::can(request(), 'parametrage.diplomes.manage');
+@endphp
 <main class="main-content">
   <header class="topbar">
     <div class="page-title-wrap">
@@ -22,6 +25,7 @@
         <button class="btn-primary" type="button" data-modal-open="create-diplome-modal">
           <i class="fa-solid fa-plus" aria-hidden="true"></i> Ajouter un diplôme
         </button>
+        @if ($peutSupprimer)<button class="btn-secondary btn-bulk-delete" type="button" data-bulk-delete-button disabled>Supprimer la sélection</button>@endif
       </div>
     </div>
 
@@ -63,6 +67,7 @@
         <table class="table" id="diplomesTable">
           <thead>
             <tr>
+              @if ($peutSupprimer)<th class="checkbox-cell"><input type="checkbox" data-select-all aria-label="Tout sélectionner"></th>@endif
               <th>Libellé</th>
               <th>Catégorie</th>
               <th>Salaire brut</th>
@@ -72,6 +77,7 @@
           <tbody>
             @forelse ($diplomes as $diplome)
               <tr>
+                @if ($peutSupprimer)<td class="checkbox-cell"><input type="checkbox" data-row-checkbox value="{{ $diplome['id'] }}" aria-label="Sélectionner {{ $diplome['libelle'] ?? '' }}"></td>@endif
                 <td>{{ $diplome['libelle'] ?? '—' }}</td>
                 <td>{{ data_get($diplome, 'categorie.libelle', '—') }}</td>
                 <td>{{ number_format((float) ($diplome['salaire_brut'] ?? 0), 0, ',', ' ') }} FCFA</td>
@@ -92,7 +98,7 @@
               </tr>
             @empty
               <tr>
-                <td colspan="4" class="empty-message"><x-table-empty-state>Aucun diplôme trouvé.</x-table-empty-state></td>
+                <td colspan="{{ 4 + ($peutSupprimer ? 1 : 0) }}" class="empty-message"><x-table-empty-state>Aucun diplôme trouvé.</x-table-empty-state></td>
               </tr>
             @endforelse
           </tbody>
@@ -117,6 +123,9 @@
       @endphp
       @include('components.pagination', ['pagination' => $meta])
     </section>
+    @if ($peutSupprimer)
+@include('pages.parametres.partials.suppression-multiple', ['cible' => 'diplôme', 'action' => route('parametres.diplomes.destroy-multiple'), 'cibles' => 'diplômes', 'feminin' => false])
+@endif
   </section>
 </main>
 

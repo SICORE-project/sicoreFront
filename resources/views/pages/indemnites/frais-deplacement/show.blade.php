@@ -61,7 +61,7 @@
                     </div>
 
                     <div class="form-group">
-                        <label>Type de bénéficiaire</label>
+                        <label>Statut</label>
                         <p>{{ ucfirst($fiche['statut_agent'] ?? '—') }}</p>
                     </div>
 
@@ -99,10 +99,6 @@
                         <p>{{ ! empty($fiche['date_depart']) ? \Illuminate\Support\Carbon::parse($fiche['date_depart'])->format('d/m/Y') : '—' }}</p>
                     </div>
 
-                    <div class="form-group">
-                        <label>Heure de départ</label>
-                        <p>{{ $fiche['heure_depart'] ?? '—' }}</p>
-                    </div>
 
                     <div class="form-group">
                         <label>Lieu de destination</label>
@@ -527,9 +523,7 @@
 
             <div class="form-actions">
 
-                <a class="btn-secondary" href="{{ route('indemnites.frais-deplacement', ['objet' => $fiche['convocation']['objet'] ?? null]) }}">
-                    Retour à la liste
-                </a>
+                <x-retour-liste cle="frais" route="indemnites.frais-deplacement" :par-defaut="['objet' => $fiche['convocation']['objet'] ?? null]" variante="bouton" />
 
                 <a class="btn-secondary" href="{{ route('indemnites.frais-deplacement.pdf', $fiche['id']) }}">
                     <i class="fa-solid fa-download" aria-hidden="true"></i>

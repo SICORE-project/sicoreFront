@@ -1,14 +1,10 @@
 @php
   $statementRows = collect($statement['rows'] ?? []);
-  $statementColumns = collect($statement['columns'] ?? []);
   $selectedAcademicYear = request('academic_year_id');
   if (! $selectedAcademicYear) {
     $selectedAcademicYear = collect($moduleData['academic_years'] ?? [])
       ->firstWhere('label', $statement['academic_year'] ?? null)['id'] ?? null;
   }
-  $scopeLabel = $statementRows->pluck('corps')->filter()->unique()->join(', ') ?: 'Tous les corps';
-  $iaLabel = $statementRows->pluck('ia')->filter()->unique()->join(', ') ?: ($moduleData['scope_label'] ?? 'Toutes les IA');
-  $iefLabel = $statementRows->pluck('ief')->filter()->unique()->join(', ') ?: 'Toutes les IEF';
 @endphp
 
 <section class="salary-statement-workspace" aria-labelledby="salaryStatementFiltersTitle">
@@ -49,10 +45,10 @@
 
       <div class="form-group">
         <label for="salaryStatementCorps">Corps d’enseignement</label>
-        <select class="form-control" id="salaryStatementCorps" name="corps_id">
-          <option value="">Tous les corps</option>
-          @foreach (data_get($statement, 'filter_options.corps', []) as $option)
-            <option value="{{ $option['id'] }}" @selected((string) $option['id'] === (string) request('corps_id'))>{{ $option['label'] }}</option>
+        <select class="form-control" id="salaryStatementCorps" name="statut_enseignant_id">
+          <option value="">Tous les statuts</option>
+          @foreach (data_get($statement, 'filter_options.statuts', []) as $option)
+            <option value="{{ $option['id'] }}" @selected((string) $option['id'] === (string) request('statut_enseignant_id'))>{{ $option['label'] }}</option>
           @endforeach
         </select>
       </div>
@@ -106,10 +102,10 @@
 
       <div class="form-group">
         <label for="salaryStatementTrainingCenter">Centre de formation</label>
-        <select class="form-control" id="salaryStatementTrainingCenter" name="training_center_id">
+        <select class="form-control" id="salaryStatementTrainingCenter" name="training_center_id" data-salary-statement-center>
           <option value="">Tous les centres de formation</option>
           @foreach (data_get($statement, 'filter_options.training_centers', []) as $option)
-            <option value="{{ $option['id'] }}" @selected((string) $option['id'] === (string) request('training_center_id'))>{{ $option['label'] }}</option>
+            <option value="{{ $option['id'] }}" data-ia-id="{{ $option['ia_id'] ?? '' }}" data-ief-id="{{ $option['ief_id'] ?? '' }}" @selected((string) $option['id'] === (string) request('training_center_id'))>{{ $option['label'] }}</option>
           @endforeach
         </select>
       </div>
@@ -125,91 +121,11 @@
 
     <div class="salary-statement-filter-actions">
       <a class="btn-secondary" href="{{ route('paie.etat-salaires') }}"><i class="fa-solid fa-rotate-left" aria-hidden="true"></i> Réinitialiser</a>
-      <button class="btn-primary" type="submit"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i> Consulter l’état</button>
-      <button class="btn-secondary" type="button" onclick="window.print()"><i class="fa-solid fa-print" aria-hidden="true"></i> Imprimer</button>
+      <button class="btn-secondary" type="submit"><i class="fa-solid fa-filter" aria-hidden="true"></i> Appliquer les filtres</button>
+      <button class="btn-primary" type="submit" name="document" value="1" formtarget="_blank"><i class="fa-solid fa-file-lines" aria-hidden="true"></i> Générer l’état</button>
     </div>
   </form>
 
-  <article class="salary-statement-document">
-    <header class="salary-statement-official-header">
-      <div class="salary-statement-republic">
-        <img src="{{ asset('assets/images/flag-senegal.svg') }}" alt="Drapeau du Sénégal">
-        <div><strong>République du Sénégal</strong><span>Un Peuple · Un But · Une Foi</span></div>
-      </div>
-      <div class="salary-statement-title">
-        <span>Ministère de l’Emploi et de la Formation Professionnelle et Technique</span>
-        <h2>État des salaires</h2>
-        <strong>{{ mb_strtoupper($statement['period_label'] ?? '') }}</strong>
-      </div>
-      <div class="salary-statement-edition-meta">
-        <span>Année académique</span><strong>{{ $statement['academic_year'] ?? 'Non renseignée' }}</strong><small>Édité le {{ $statement['generated_at'] ?? '' }}</small>
-      </div>
-    </header>
-
-    <section class="salary-statement-scope" aria-label="Périmètre de l’état">
-      <div><span>Corps</span><strong>{{ $scopeLabel }}</strong></div>
-      <div><span>Inspection académique</span><strong>{{ $iaLabel }}</strong></div>
-      <div><span>IEF</span><strong>{{ $iefLabel }}</strong></div>
-      <div><span>Effectif</span><strong>{{ $statementRows->count() }} agent(s)</strong></div>
-      <div><span>Unité</span><strong>Franc CFA (FCFA)</strong></div>
-    </section>
-
-    <div class="salary-statement-table-wrap">
-      <table class="salary-statement-table">
-        <thead><tr>
-          @foreach ($statementColumns as $column)
-            <th @class(['salary-statement-amount' => ! empty($column['amount'])])>{{ $column['label'] }}</th>
-          @endforeach
-        </tr></thead>
-        <tbody>
-          @forelse ($statementRows as $row)
-            <tr>
-              @foreach ($statementColumns as $column)
-                @php
-                  $key = $column['key'];
-                  $value = ! empty($column['amount']) ? ($row[$key.'_display'] ?? '0') : ($row[$key] ?? '');
-                @endphp
-                <td @class(['salary-statement-amount' => ! empty($column['amount'])])>
-                  @if ($key === 'payment_status_label')
-                    <span class="badge badge-{{ $row['payment_status_variant'] ?? 'pending' }}">{{ $value }}</span>
-                  @elseif ($key === 'signature')
-                    <span class="salary-statement-signature-line" aria-label="Zone d’émargement"></span>
-                  @else
-                    {{ $value }}
-                  @endif
-                </td>
-              @endforeach
-            </tr>
-          @empty
-            <tr><td class="salary-statement-empty" colspan="{{ max(1, $statementColumns->count()) }}">Aucun bulletin ne correspond aux critères sélectionnés.</td></tr>
-          @endforelse
-        </tbody>
-        @if ($statementRows->isNotEmpty())
-          <tfoot><tr>
-            @foreach ($statementColumns as $column)
-              @php $key = $column['key']; @endphp
-              <td @class(['salary-statement-amount' => ! empty($column['amount'])])>
-                @if ($key === 'first_name') TOTAL GÉNÉRAL
-                @elseif (! empty($column['amount'])) {{ data_get($statement, 'totals.'.$key, '0') }}
-                @endif
-              </td>
-            @endforeach
-          </tr></tfoot>
-        @endif
-      </table>
-    </div>
-
-    <footer class="salary-statement-footer">
-      <div>
-        @if (! empty($statement['service_done']))
-          <strong>Certification du service fait</strong><span>Les éléments portés sur le présent état correspondent aux bulletins calculés pour la période.</span>
-        @else
-          <strong>État édité sans mention de service fait</strong><span>Option d’impression sélectionnée par l’utilisateur.</span>
-        @endif
-      </div>
-      <div class="salary-statement-signatory"><span>Visa et signature</span><strong>{{ $statement['signatory'] ?? 'Le responsable habilité de la paie' }}</strong></div>
-    </footer>
-  </article>
 </section>
 
 @push('scripts')
@@ -217,14 +133,25 @@
     document.addEventListener('DOMContentLoaded', () => {
       const ia = document.querySelector('[data-salary-statement-ia]');
       const ief = document.querySelector('[data-salary-statement-ief]');
+      const center = document.querySelector('[data-salary-statement-center]');
       if (!ia || !ief) return;
+      const refreshCenters = () => {
+        if (!center) return;
+        Array.from(center.options).forEach((option, index) => {
+          if (index > 0) option.hidden = (ia.value !== '' && option.dataset.iaId !== ia.value)
+            || (ief.value !== '' && option.dataset.iefId !== ief.value);
+        });
+        if (center.options[center.selectedIndex]?.hidden) center.value = '';
+      };
       const refreshIefs = () => {
         Array.from(ief.options).forEach((option, index) => {
           if (index > 0) option.hidden = ia.value !== '' && option.dataset.iaId !== ia.value;
         });
         if (ief.options[ief.selectedIndex]?.hidden) ief.value = '';
+        refreshCenters();
       };
       ia.addEventListener('change', refreshIefs);
+      ief.addEventListener('change', refreshCenters);
       refreshIefs();
     });
   </script>

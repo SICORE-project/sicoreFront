@@ -108,7 +108,7 @@
     if (field.type === "academic_inspection") return "Sélectionner une IA…";
     if (field.type === "education_inspection") return "Sélectionner une IEF…";
     if (field.type === "academic_year") return "Sélectionner une année académique…";
-    if (field.type === "teaching_statuses") return "Sélectionner un statut enseignant…";
+    if (field.type === "teaching_statuses") return "Sélectionner un statut…";
     if (field.type === "payroll_month") return "Sélectionner un mois…";
     return "Sélectionner…";
   }

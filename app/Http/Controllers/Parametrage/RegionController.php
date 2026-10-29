@@ -7,9 +7,12 @@ use App\Services\Parametrage\RegionService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
+use App\Http\Controllers\Parametrage\Concerns\SupprimeEnMasse;
 
 class RegionController extends Controller
 {
+    use SupprimeEnMasse;
+
     public function index(Request $request, RegionService $service): View|RedirectResponse
     {
         $result = $service->getAll(
@@ -145,5 +148,10 @@ class RegionController extends Controller
                 'error',
                 $result['message']
             );
+    }
+
+    public function destroyMultiple(Request $request, RegionService $service): RedirectResponse
+    {
+        return $this->supprimerSelection($request, fn (int $id) => $service->delete($id), 'région', 'parametres.regions.index');
     }
 }

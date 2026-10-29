@@ -47,6 +47,7 @@ class PayrollController extends Controller
             return app(IaWorkspaceController::class)->payroll($request, $slug);
         }
         $filters = $this->scopedFilters($this->validatedPageFilters($request, $slug));
+              
 
         try {
             // Le backend renvoie statistiques, filtres, colonnes, lignes et actions.
@@ -64,11 +65,24 @@ class PayrollController extends Controller
             $apiError = $this->apiErrorDetails($request, $exception);
         }
 
-        // Le préfixe "paie-" est retiré pour retrouver le nom du fichier Blade.
-        return view('pages.paie.'.Str::after($slug, 'paie-'), compact(
+        return view(self::viewFor($slug, $request->boolean('document')), compact(
             'moduleData',
             'apiError'
         ));
+    }
+
+    /**
+     * Le préfixe "paie-" est retiré pour retrouver le nom du fichier Blade.
+     * L'état des salaires a son propre dossier : pages/paie/etat-salaire/ ;
+     * avec ?document=1, il s'ouvre seul (document à imprimer, sans filtres).
+     */
+    public static function viewFor(string $slug, bool $document = false): string
+    {
+        if ($slug === 'paie-etat-salaires') {
+            return $document ? 'pages.paie.etat-salaire.document' : 'pages.paie.etat-salaire.index';
+        }
+
+        return 'pages.paie.'.Str::after($slug, 'paie-');
     }
 
     /**
@@ -149,10 +163,12 @@ class PayrollController extends Controller
             'period_id' => ['nullable', 'integer', 'min:1'],
         ];
 
-        if ($slug === 'paie-etat-salaires') {
+        // On ajoute 'paie-edition' à la condition existante
+        if (in_array($slug, ['paie-etat-salaires', 'paie-edition'], true)) {
             $rules += [
                 'academic_year_id' => ['nullable', 'integer', 'min:1'],
                 'corps_id' => ['nullable', 'integer', 'min:1'],
+                'statuts_enseignant_id' => ['nullable', 'integer', 'min:1'], 
                 'ia_id' => ['nullable', 'integer', 'min:1'],
                 'ief_id' => ['nullable', 'integer', 'min:1'],
                 'matricule' => ['nullable', 'string', 'max:50'],

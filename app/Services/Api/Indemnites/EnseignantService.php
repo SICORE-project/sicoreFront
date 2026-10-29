@@ -30,6 +30,15 @@ class EnseignantService
         ];
     }
 
+    /**
+     * Coordonnées bancaires de plusieurs enseignants : [id => code_banque, code_guichet,
+     * numero_compte_bancaire, cle_rib, complet].
+     */
+    public function coordonneesBancaires(array $ids): array
+    {
+        return $this->wrap($this->api->get('enseignants/coordonnees-bancaires', ['ids' => array_values($ids)]));
+    }
+
     public function trouver(int|string $id): array
     {
         return $this->wrap($this->api->get("enseignants/{$id}"));

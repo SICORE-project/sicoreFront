@@ -3,6 +3,9 @@
 @section('title', 'SICORE - Régions')
 
 @section('content')
+@php
+    $peutSupprimer = \App\Support\SicoreAccess::can(request(), 'parametrage.regions.manage');
+@endphp
 
 <main class="main-content">
 
@@ -148,6 +151,7 @@
                 >
                     + Nouvelle région
                 </button>
+                @if ($peutSupprimer)<button class="btn-secondary btn-bulk-delete" type="button" data-bulk-delete-button disabled>Supprimer la sélection</button>@endif
 
             </div>
 
@@ -297,6 +301,7 @@
                     <thead>
 
                         <tr>
+                            @if ($peutSupprimer)<th class="checkbox-cell"><input type="checkbox" data-select-all aria-label="Tout sélectionner"></th>@endif
                             <th>Code</th>
                             <th>Libellé</th>
                             <th>Statut</th>
@@ -334,6 +339,8 @@
 
 
                             <tr data-region-row>
+
+                                @if ($peutSupprimer)<td class="checkbox-cell"><input type="checkbox" data-row-checkbox value="{{ $regionId }}" aria-label="Sélectionner {{ $regionCode }}"></td>@endif
 
                                 {{-- CODE --}}
                                 <td>
@@ -433,7 +440,7 @@
 
                             <tr>
 
-                                <td colspan="4">
+                                <td colspan="{{ 4 + ($peutSupprimer ? 1 : 0) }}">
 
                                     <x-table-empty-state>
                                         Aucune région trouvée.
@@ -495,6 +502,10 @@
             @endif
 
         </section>
+
+        @if ($peutSupprimer)
+@include('pages.parametres.partials.suppression-multiple', ['cible' => 'région', 'action' => route('parametres.regions.destroy-multiple'), 'cibles' => 'régions', 'feminin' => true])
+@endif
 
     </section>
 

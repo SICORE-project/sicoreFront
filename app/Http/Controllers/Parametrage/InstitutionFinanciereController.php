@@ -8,9 +8,12 @@ use App\Services\Parametrage\InstitutionFinanciereService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
+use App\Http\Controllers\Parametrage\Concerns\SupprimeEnMasse;
 
 class InstitutionFinanciereController extends Controller
 {
+    use SupprimeEnMasse;
+
     public function index(Request $request, InstitutionFinanciereService $service, CompteBancaireEnseignantService $bankAccounts): View|RedirectResponse
     {
         $result = $service->getAll(max(1, $request->integer('page', 1)), 10, [
@@ -169,11 +172,12 @@ class InstitutionFinanciereController extends Controller
             'enseignant_id' => ['required', 'integer'],
             'institut_financier_id' => ['required', 'integer'],
             'numero_compte' => ['required', 'string', 'max:100'],
-            'rib' => ['required', 'string', 'max:100'],
+            'rib' => ['required', 'string', 'size:24'],
             'est_actif' => ['required', 'boolean'],
         ], [
             'required' => 'Le champ :attribute est obligatoire.',
             'boolean' => 'Le statut du compte bancaire est invalide.',
+            'rib.size' => 'Le RIB complet doit comporter exactement 24 caractères.',
         ]);
 
         $teacherId = (int) $data['enseignant_id'];
@@ -200,5 +204,10 @@ class InstitutionFinanciereController extends Controller
 
         return redirect()->route('parametres.institutions-financieres')
             ->with('success', $result['message']);
+    }
+
+    public function destroyMultiple(Request $request, InstitutionFinanciereService $service): RedirectResponse
+    {
+        return $this->supprimerSelection($request, fn (int $id) => $service->delete($id), 'institution financière', 'parametres.institutions-financieres');
     }
 }

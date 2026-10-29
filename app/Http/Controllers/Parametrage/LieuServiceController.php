@@ -9,9 +9,12 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\View\View;
+use App\Http\Controllers\Parametrage\Concerns\SupprimeEnMasse;
 
 class LieuServiceController extends Controller
 {
+    use SupprimeEnMasse;
+
     public function index(Request $request, LieuServiceService $service, InspectionAcademieService $academieService): View|RedirectResponse
     {
         $filters = $request->validate([
@@ -200,5 +203,10 @@ class LieuServiceController extends Controller
         }
 
         return redirect()->route('parametres.lieux-service.index')->with('success', $result['message']);
+    }
+
+    public function destroyMultiple(Request $request, LieuServiceService $service): RedirectResponse
+    {
+        return $this->supprimerSelection($request, fn (int $id) => $service->delete($id), 'établissement', 'parametres.lieux-service.index', false);
     }
 }

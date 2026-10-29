@@ -3,6 +3,9 @@
 @section('title', 'SICORE - Communes')
 
 @section('content')
+@php
+    $peutSupprimer = \App\Support\SicoreAccess::can(request(), 'parametrage.communes.manage');
+@endphp
 
 <main class="main-content">
 
@@ -152,6 +155,7 @@
                 >
                     + Nouvelle commune
                 </button>
+                @if ($peutSupprimer)<button class="btn-secondary btn-bulk-delete" type="button" data-bulk-delete-button disabled>Supprimer la sélection</button>@endif
 
             </div>
 
@@ -403,6 +407,7 @@
                     <thead>
 
                         <tr>
+                            @if ($peutSupprimer)<th class="checkbox-cell"><input type="checkbox" data-select-all aria-label="Tout sélectionner"></th>@endif
                             <th>Code</th>
                             <th>Libellé</th>
                             <th>Région</th>
@@ -462,6 +467,8 @@
 
 
                             <tr data-commune-row>
+
+                                @if ($peutSupprimer)<td class="checkbox-cell"><input type="checkbox" data-row-checkbox value="{{ $communeId }}" aria-label="Sélectionner {{ $communeCode }}"></td>@endif
 
                                 <td>
                                     {{ $communeCode ?: '—' }}
@@ -616,7 +623,7 @@
 
                             <tr>
 
-                                <td colspan="6">
+                                <td colspan="{{ 6 + ($peutSupprimer ? 1 : 0) }}">
 
                                     <x-table-empty-state>
                                         Aucune commune trouvée.
@@ -678,6 +685,10 @@
             @endif
 
         </section>
+
+        @if ($peutSupprimer)
+@include('pages.parametres.partials.suppression-multiple', ['cible' => 'commune', 'action' => route('parametres.communes.destroy-multiple'), 'cibles' => 'communes', 'feminin' => true])
+@endif
 
     </section>
 

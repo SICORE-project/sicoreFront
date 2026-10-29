@@ -91,9 +91,21 @@ class InterfaceAccess
 
     public function allowsRoute(string $route): bool
     {
-        if ($this->isTeacher()) return in_array($route, ['dashboard', 'logout', 'teacher.profile', 'teacher.payslips', 'teacher.pdf'], true);
+        if ($this->isTeacher()) {
+            return in_array($route, ['dashboard', 'logout', 'teacher.profile', 'teacher.payslips', 'teacher.pdf'], true)
+                || str_starts_with($route, 'indemnites.mes-pieces');
+        }
         if ($this->isDecpc() && ! in_array($route, ['dashboard', 'logout'], true)
             && ! app(OrganisationContext::class)->isScoped()) return false;
+
+        if ($this->isDecpc()) {
+            return match (true) {
+                in_array($route, ['dashboard', 'logout'], true) => true,
+                str_starts_with($route, 'indemnites.convocations') => $this->allows('convocations.read'),
+                str_starts_with($route, 'indemnites.pieces-justificatives') => $this->allows('pieces.read'),
+                default => false,
+            };
+        }
 
         if ($this->isIa()) {
             if (in_array($route, ['dashboard', 'logout'], true)) return true;
@@ -101,11 +113,18 @@ class InterfaceAccess
                 'enseignants.index', 'enseignants.legacy.index', 'ia.teachers.show', 'ia.structure', 'ia.iefs' => 'enseignants.read',
                 'paie.montants-engages-banque', 'paie.edition-salaires-banque', 'paie.elements-saisie-dashboard', 'paie.recap-elements-corps', 'paie.cumul-enseignants-ief', 'paie.effectifs-corps', 'paie.non-generee', 'paie.edition-enseignants', 'paie.edition-fonctionnaires', 'paie.mutuelles-sante', 'paie.situation-affectations', 'paie.prime-scolaire', 'paie.reliquats', 'paie.double-flux', 'paie.directeurs-interim', 'paie.heures-supplementaires-interim',
                 'paie.bulletins', 'paie.travaux-periodiques', 'ia.payroll.show' => 'paie.bulletins.read',
+                'paie.edition' => 'paie.edition.read',
                 'paie.sommes-percues' => 'paie.sommes_percues.read',
                 'paie.etat-salaires' => 'paie.etat_salaires.read',
                 'paie.cotisations-sociales' => 'paie.cotisations.read',
                 'paie.generee-ief' => 'paie.effectifs_ief.read',
                 'paie.recap-banque' => 'paie.recap_banque.read',
+                'paie.etats-presence' => 'paie.jours_travailles.read',
+                'paie.avance-tabaski' => 'paie.avance_tabaski.read',
+                'paie.retenue-tabaski' => 'paie.retenue_tabaski.read',
+                'paie.retenues-rappel' => 'paie.retenue_rappel.read',
+                'paie.exemptions' => 'paie.exemptions.read',
+                'paie.fermeture-periode' => 'paie.cloture.read',
                 'ia.payroll.export' => 'paie.bulletins.export',
                 default => null,
             };
@@ -126,11 +145,17 @@ class InterfaceAccess
 
     public function navigation(array $items): array
     {
-        if ($this->isTeacher()) return [
-            ['type'=>'link', 'label'=>'Tableau de bord', 'icon'=>'fa-solid fa-gauge-high', 'route'=>'dashboard'],
-            ['type'=>'link', 'label'=>'Mes informations', 'icon'=>'fa-solid fa-user', 'route'=>'teacher.profile'],
-            ['type'=>'link', 'label'=>'Mes bulletins de salaire', 'icon'=>'fa-solid fa-file-invoice', 'route'=>'teacher.payslips'],
-        ];
+        if ($this->isTeacher()) {
+            $links = [
+                ['type'=>'link', 'label'=>'Tableau de bord', 'icon'=>'fa-solid fa-gauge-high', 'route'=>'dashboard'],
+                ['type'=>'link', 'label'=>'Mes informations', 'icon'=>'fa-solid fa-user', 'route'=>'teacher.profile'],
+                ['type'=>'link', 'label'=>'Mes bulletins de salaire', 'icon'=>'fa-solid fa-file-invoice', 'route'=>'teacher.payslips'],
+            ];
+            if (session('sicore_user.enseignant_id') && $this->allows('mes_pieces.read')) {
+                $links[] = ['type'=>'link', 'label'=>'Mes pièces', 'icon'=>'fa-solid fa-folder-open', 'route'=>'indemnites.mes-pieces'];
+            }
+            return $links;
+        }
         if (! $this->usesPermissions()) return $items;
 
         $visible = [];

@@ -8,9 +8,12 @@ use App\Services\Parametrage\RegionService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
+use App\Http\Controllers\Parametrage\Concerns\SupprimeEnMasse;
 
 class DepartementController extends Controller
 {
+    use SupprimeEnMasse;
+
     /*
     |--------------------------------------------------------------------------
     | LISTE
@@ -262,5 +265,10 @@ class DepartementController extends Controller
                 'error',
                 $result['message']
             );
+    }
+
+    public function destroyMultiple(Request $request, DepartementService $service): RedirectResponse
+    {
+        return $this->supprimerSelection($request, fn (int $id) => $service->delete($id), 'département', 'parametres.departements.index', false);
     }
 }

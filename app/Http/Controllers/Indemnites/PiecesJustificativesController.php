@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Indemnites;
 
+use App\Support\PaginationLignes;
 use App\Http\Controllers\Controller;
 use App\Services\Api\Indemnites\ConvocationService;
 use App\Services\Api\Indemnites\PieceJustificativeService;
@@ -29,6 +30,9 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  */
 class PiecesJustificativesController extends Controller
 {
+    /** Pièces déjà chargées pour la page : [convocation_id => [enseignant_id => pièces]]. */
+    private array $piecesPrechargees = [];
+
     /**
      * Les 5 types de pièces déposées manuellement (voir
      * DeposerLotPiecesJustificativesRequest côté back) — le 6e type,
@@ -37,7 +41,7 @@ class PiecesJustificativesController extends Controller
      */
     private const TYPES_MANUELS = [
         'service_fait' => 'Service fait',
-        'ordre_mission' => 'Ordre de mission',
+        'ordre_mission' => 'Ordre de mission (recto-verso)',
         'rapport_mission' => 'Rapport de mission',
         'bulletin_salaire' => 'Bulletin de salaire',
         'accuse_reception' => 'Accusé de réception',
@@ -74,62 +78,27 @@ class PiecesJustificativesController extends Controller
             'centre' => $request->query('centre'),
         ]);
 
-        $filtreActif = count($filtres) > 0;
-
         $optionsFiltres = $this->optionsFiltresPourVue($filtres);
 
-        $membres = [];
-        $stats = [
-            'total_dossiers' => 0,
-            'sessions_avec_pieces' => 0,
-            'sessions_sans_pieces' => 0,
-            'pieces_rejetees' => 0,
-        ];
+        // Liste par défaut : sans filtre, tous les résultats ; les filtres la réduisent.
+        // Le tableau est paginé par 10 lignes, et les compteurs portent sur l'ensemble.
+        $resultat = $this->convocations->liste(array_merge($filtres, ['per_page' => 100]));
 
-        // Paginator vide par defaut (filtre inactif : la vue n'affiche pas
-        // le tableau, mais boucle quand meme sur $convocations->... plus
-        // bas dans la pagination — un LengthAwarePaginator vide evite tout
-        // "Call to a member function on null").
-        $convocations = new LengthAwarePaginator([], 0, 10, 1, [
-            'path' => $request->url(),
-            'query' => $request->query(),
-        ]);
-
-        if ($filtreActif) {
-            $resultat = $this->convocations->liste(array_merge($filtres, [
-                'per_page' => 10,
-                'page' => $request->query('page', 1),
-            ]));
-
-            if (! $resultat['success']) {
-                session()->flash('error', $resultat['message'] ?? 'Impossible de charger les dossiers.');
-            }
-
-            $meta = $resultat['success'] ? ($resultat['data'] ?? []) : [];
-            $items = $meta['data'] ?? [];
-
-            $convocations = new LengthAwarePaginator(
-                $items,
-                $meta['total'] ?? count($items),
-                $meta['per_page'] ?? 10,
-                $meta['current_page'] ?? (int) $request->query('page', 1),
-                [
-                    'path' => $request->url(),
-                    'query' => $request->query(),
-                ]
-            );
-
-            $membres = $this->construireMembres($items, $filtres['centre'] ?? null);
-
-            $stats = $this->calculerStats($membres);
+        if (! $resultat['success']) {
+            session()->flash('error', $resultat['message'] ?? 'Impossible de charger les dossiers.');
         }
 
+        $items = $resultat['success'] ? ($resultat['data']['data'] ?? []) : [];
+
+        $membres = $this->construireMembres($items, $filtres['centre'] ?? null);
+        $stats = $this->calculerStats($membres);
+        $pagination = PaginationLignes::paginer($membres, $request);
+
         return view('pages.indemnites.pieces-justificatives', [
-            'filtreActif' => $filtreActif,
             'optionsFiltres' => $optionsFiltres,
-            'membres' => $membres,
+            'membres' => $pagination->items(),
             'stats' => $stats,
-            'convocations' => $convocations,
+            'pagination' => $pagination,
         ]);
     }
 
@@ -167,6 +136,8 @@ class PiecesJustificativesController extends Controller
     {
         $membres = [];
 
+        $this->precharger($items);
+
         foreach ($items as $item) {
             $centres = $item['centres'] ?? [];
 
@@ -180,6 +151,7 @@ class PiecesJustificativesController extends Controller
 
                 $centreCommun = [
                     'convocation_id' => $item['id'] ?? null,
+                    'date_fin' => $item['date_fin'] ?? null,
                     'centre_id' => $centre['id'] ?? null,
                     'centre' => $centre['centre'] ?? null,
                     'objet' => $item['objet'] ?? null,
@@ -248,6 +220,7 @@ class PiecesJustificativesController extends Controller
         $complet = collect($dossier)->every(fn ($piece) => ! empty($piece['statut']) && $piece['statut'] !== 'rejete');
 
         return array_merge($centreCommun, [
+            'depot_ouvert' => self::depotOuvert($centreCommun['date_fin'] ?? null),
             'enseignant_id' => $enseignantId,
             'nom' => $enseignant['nom'] ?? null,
             'prenom' => $enseignant['prenom'] ?? null,
@@ -301,6 +274,34 @@ class PiecesJustificativesController extends Controller
     }
 
     /**
+     * Charge en UN seul appel les pièces de toutes les convocations de la page, rangées par
+     * convocation puis par enseignant (l'ordre renvoyé par l'API est conservé, comme avec
+     * l'ancien appel par membre).
+     */
+    private function precharger(array $items): void
+    {
+        $ids = array_values(array_filter(array_column($items, 'id')));
+
+        if ($ids === []) {
+            return;
+        }
+
+        $resultat = $this->pieces->liste(['convocation_ids' => $ids, 'per_page' => 5000]);
+
+        if (! $resultat['success']) {
+            return;
+        }
+
+        foreach ($ids as $id) {
+            $this->piecesPrechargees[$id] = [];
+        }
+
+        foreach ($resultat['data']['data'] ?? $resultat['data'] ?? [] as $piece) {
+            $this->piecesPrechargees[$piece['convocation_id']][$piece['enseignant_id']][] = $piece;
+        }
+    }
+
+    /**
      * Construit les 6 lignes du dossier (une par type attendu, meme si non
      * deposee — les 5 manuels + le dossier de convocation auto-rattache)
      * pour un membre — voir modal "Voir le dossier" cote vue.
@@ -309,7 +310,16 @@ class PiecesJustificativesController extends Controller
     {
         $parType = [];
 
-        if ($convocationId && $enseignantId) {
+        if ($convocationId && $enseignantId && isset($this->piecesPrechargees[$convocationId])) {
+            // Pièces de toute la page déjà chargées en un seul appel (voir precharger()).
+            foreach ($this->piecesPrechargees[$convocationId][$enseignantId] ?? [] as $piece) {
+                $type = $piece['type'] ?? null;
+
+                if ($type && array_key_exists($type, self::TYPES_TOUS)) {
+                    $parType[$type] = $piece;
+                }
+            }
+        } elseif ($convocationId && $enseignantId) {
             // PAS de filtre centre_id ici : les pieces (service fait, ordre
             // de mission, bulletin de salaire...) sont attachees a la
             // PERSONNE pour cette convocation, pas a un centre precis — un
@@ -406,11 +416,11 @@ class PiecesJustificativesController extends Controller
             'convocation_id' => ['required', 'integer'],
             'enseignant_id' => ['required', 'integer'],
             'centre_id' => ['nullable', 'integer'],
-            'service_fait' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:100'],
-            'ordre_mission' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:100'],
-            'rapport_mission' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:100'],
-            'bulletin_salaire' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:100'],
-            'accuse_reception' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:100'],
+            'service_fait' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:1024'],
+            'ordre_mission' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:1024'],
+            'rapport_mission' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:1024'],
+            'bulletin_salaire' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:1024'],
+            'accuse_reception' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:1024'],
         ]);
 
         $donnees = array_filter([
@@ -454,11 +464,11 @@ class PiecesJustificativesController extends Controller
             'convocation_id' => ['required', 'integer'],
             'enseignant_id' => ['required', 'integer'],
             'centre_id' => ['nullable', 'integer'],
-            'service_fait' => ['sometimes', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:100'],
-            'ordre_mission' => ['sometimes', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:100'],
-            'rapport_mission' => ['sometimes', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:100'],
-            'bulletin_salaire' => ['sometimes', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:100'],
-            'accuse_reception' => ['sometimes', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:100'],
+            'service_fait' => ['sometimes', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:1024'],
+            'ordre_mission' => ['sometimes', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:1024'],
+            'rapport_mission' => ['sometimes', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:1024'],
+            'bulletin_salaire' => ['sometimes', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:1024'],
+            'accuse_reception' => ['sometimes', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:1024'],
         ]);
 
         $donnees = array_filter([
@@ -538,5 +548,15 @@ class PiecesJustificativesController extends Controller
             'Content-Type' => $reponse->header('Content-Type') ?: 'application/octet-stream',
             'Content-Disposition' => $reponse->header('Content-Disposition'),
         ]));
+    }
+
+    /** Dépôt possible une fois l'examen terminé (lendemain de la date de fin de la convocation). */
+    public static function depotOuvert(?string $dateFin): bool
+    {
+        if (! config('sicore.depot_apres_examen', true) || ! $dateFin) {
+            return true;
+        }
+
+        return now()->startOfDay()->gt(\Illuminate\Support\Carbon::parse($dateFin)->startOfDay());
     }
 }

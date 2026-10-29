@@ -3,6 +3,9 @@
 @section('title', 'SICORE - Rubriques de paie')
 
 @section('content')
+@php
+    $peutSupprimer = $canManage && \App\Support\SicoreAccess::can(request(), 'paie.rubriques.manage');
+@endphp
 <main class="main-content">
   <x-topbar title="Rubriques de paie" subtitle="Paramétrage > Rubriques de paie" icon="fa-solid fa-list-ul" />
 
@@ -17,6 +20,7 @@
       <p class="breadcrumb">Paramétrage &gt; Rubriques de paie</p>
       @if ($canManage)
         <button class="btn-primary" type="button" data-modal-open="rubrique-create-modal"><i class="fa-solid fa-plus" aria-hidden="true"></i> Ajouter une rubrique</button>
+        @if ($peutSupprimer)<button class="btn-secondary btn-bulk-delete" type="button" data-bulk-delete-button disabled>Supprimer la sélection</button>@endif
       @endif
     </div>
 
@@ -56,7 +60,7 @@
       <div class="table-responsive">
         <table class="table">
           {{-- En-tête mis à jour --}}
-          <thead><tr><th>Code</th><th>Libellé</th><th>Type</th><th>Périodicité</th><th>Montant</th>@if ($canManage)<th class="actions-cell">Actions</th>@endif</tr></thead>
+          <thead><tr>@if ($peutSupprimer)<th class="checkbox-cell"><input type="checkbox" data-select-all aria-label="Tout sélectionner"></th>@endif<th>Code</th><th>Libellé</th><th>Type</th><th>Périodicité</th><th>Montant</th>@if ($canManage)<th class="actions-cell">Actions</th>@endif</tr></thead>
           <tbody>
             @forelse ($items as $rubrique)
               @php
@@ -64,6 +68,7 @@
                 $type = data_get($rubrique, 'type');
               @endphp
               <tr>
+                @if ($peutSupprimer)<td class="checkbox-cell"><input type="checkbox" data-row-checkbox value="{{ $rubriqueId }}" aria-label="Sélectionner {{ data_get($rubrique, 'code') }}"></td>@endif
                 <td><span class="rubrique-code">{{ data_get($rubrique, 'code', '—') }}</span></td>
                 <td><strong>{{ data_get($rubrique, 'libelle', '—') }}</strong></td>
                 <td><span class="rubrique-type rubrique-type--{{ $type === 'gain' ? 'gain' : 'retenue' }}"><i class="fa-solid {{ $type === 'gain' ? 'fa-arrow-up' : 'fa-arrow-down' }}" aria-hidden="true"></i> {{ $type === 'gain' ? 'Gain' : 'Retenue' }}</span></td>
@@ -78,7 +83,7 @@
                 @endif
               </tr>
             @empty
-              <tr><td colspan="{{ $canManage ? 6 : 5 }}" class="empty-message show"><x-table-empty-state>Aucune rubrique de paie trouvée.</x-table-empty-state></td></tr>
+              <tr><td colspan="{{ ($canManage ? 6 : 5) + ($peutSupprimer ? 1 : 0) }}" class="empty-message show"><x-table-empty-state>Aucune rubrique de paie trouvée.</x-table-empty-state></td></tr>
             @endforelse
           </tbody>
         </table>
@@ -87,6 +92,9 @@
         @include('components.pagination', ['pagination' => $pagination])
       @endif
     </section>
+    @if ($peutSupprimer)
+@include('pages.parametres.partials.suppression-multiple', ['cible' => 'rubrique', 'action' => route('parametres.rubriques-paie.destroy-multiple'), 'cibles' => 'rubriques', 'feminin' => true])
+@endif
   </section>
 </main>
 

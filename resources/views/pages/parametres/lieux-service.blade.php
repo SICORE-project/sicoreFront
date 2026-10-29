@@ -1,6 +1,9 @@
 @extends('layouts.app')
 @section('title', 'SICORE - Établissements')
 @section('content')
+@php
+    $peutSupprimer = \App\Support\SicoreAccess::can(request(), 'parametrage.lieux_service.manage');
+@endphp
 <main class="main-content">
   <header class="topbar">
     <div class="page-title-wrap">
@@ -10,7 +13,7 @@
     </div>
   </header>
   <section class="content-area">
-    <div class="actions-row"><p class="breadcrumb">Paramétrage &gt; Établissements</p><div class="actions-group"><button class="btn-primary" type="button" data-modal-open="lieu-service-create-modal">+ Nouvel établissement</button></div></div>
+    <div class="actions-row"><p class="breadcrumb">Paramétrage &gt; Établissements</p><div class="actions-group"><button class="btn-primary" type="button" data-modal-open="lieu-service-create-modal">+ Nouvel établissement</button>@if ($peutSupprimer)<button class="btn-secondary btn-bulk-delete" type="button" data-bulk-delete-button disabled>Supprimer la sélection</button>@endif</div></div>
     <form class="filter-panel parametrage-filters" id="lieuFilterForm" method="GET" action="{{ route('parametres.lieux-service.index') }}" aria-label="Filtres des établissements">
       <input type="hidden" name="per_page" value="{{ $pagination['per_page'] }}">
       <div class="form-group">
@@ -39,7 +42,7 @@
     <section class="table-card" aria-labelledby="lieuxTitle">
       <div class="table-card-header"><div><h2 id="lieuxTitle">Liste des établissements</h2><p class="table-card-subtitle">{{ $pagination['total'] }} résultat{{ $pagination['total'] > 1 ? 's' : '' }}</p></div></div>
       <div class="table-responsive"><table class="table" id="lieuxTable">
-        <thead><tr><th>Nom de l’établissement</th><th>IA</th><th>IEF</th><th>Téléphone</th><th>Actions</th></tr></thead>
+        <thead><tr>@if ($peutSupprimer)<th class="checkbox-cell"><input type="checkbox" data-select-all aria-label="Tout sélectionner"></th>@endif<th>Nom de l’établissement</th><th>IA</th><th>IEF</th><th>Téléphone</th><th>Actions</th></tr></thead>
         <tbody>@foreach ($items as $lieu)
           @php
             $lieuId = data_get($lieu, 'id', data_get($lieu, 'uuid'));
@@ -56,6 +59,7 @@
             ];
           @endphp
           <tr>
+            @if ($peutSupprimer)<td class="checkbox-cell"><input type="checkbox" data-row-checkbox value="{{ $lieuId }}" aria-label="Sélectionner {{ $editPayload['libelle'] }}"></td>@endif
             <td>{{ $editPayload['libelle'] }}</td>
             <td>{{ $detailPayload['ia'] ?? '—' }}</td>
             <td>{{ $detailPayload['ief'] ?? '—' }}</td>
@@ -82,6 +86,9 @@
         @include('components.pagination', ['pagination' => $pagination, 'pageSizeControl' => true])
       @endif
     </section>
+    @if ($peutSupprimer)
+@include('pages.parametres.partials.suppression-multiple', ['cible' => 'établissement', 'action' => route('parametres.lieux-service.destroy-multiple'), 'cibles' => 'établissements', 'feminin' => false])
+@endif
   </section>
 </main>
 

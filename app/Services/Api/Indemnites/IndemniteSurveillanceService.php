@@ -30,6 +30,18 @@ class IndemniteSurveillanceService
         ];
     }
 
+    /**
+     * Surveillants éligibles de plusieurs convocations en un seul appel : [convocation_id => données].
+     *
+     * @param  array<int, int|string>  $convocationIds
+     */
+    public function surveillantsEligiblesLot(array $convocationIds): array
+    {
+        return $this->wrap($this->api->get('indemnite-surveillance/surveillants-eligibles-lot', [
+            'convocation_ids' => array_values($convocationIds),
+        ]));
+    }
+
     public function surveillantsEligibles(int|string $convocationId, int|string|null $centreId = null): array
     {
         return $this->wrap($this->api->get('indemnite-surveillance/surveillants-eligibles', array_filter([

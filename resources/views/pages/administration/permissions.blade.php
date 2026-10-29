@@ -280,10 +280,12 @@
                     <input type="text" id="permission-slug" name="slug" class="form-control" maxlength="100" placeholder="groupe.module.action" autocomplete="off">
                 </div>
 
-                <p style="font-size:13px; color:#6b7280; margin: 0 0 20px;">
-                    Le slug (<code>groupe.module.action</code>) est construit automatiquement. Une permission n'a d'effet que si une route
-                    la réclame dans le code avec ce même slug.
-                </p>
+                <p style="font-size:13px; color:#6b7280; margin: 0 0 12px;">Le slug (<code>groupe.module.action</code>) est construit automatiquement.</p>
+                <div role="note" style="background:#fff7ed; border-left:4px solid #f59e0b; border-radius:6px; padding:10px 12px; margin: 0 0 20px; font-size:13px; color:#7c2d12; line-height:1.5;">
+                    <strong>Attention.</strong> Une permission n'a d'effet que si le code de l'application la vérifie (route, menu ou règle de profil) avec ce même slug.
+                    Créée ici, elle n'existe que dans cette base : pour qu'elle existe aussi chez l'équipe et en production, elle doit être déclarée dans
+                    <code>config/permissions.php</code> puis synchronisée avec <code>php artisan permissions:sync</code>.
+                </div>
 
                 <div class="form-group" style="margin-bottom: 20px;">
                     <label for="permission-description">Description</label>

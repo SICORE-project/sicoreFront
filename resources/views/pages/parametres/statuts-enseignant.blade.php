@@ -9,21 +9,21 @@
     <p class="breadcrumb">Paramétrage &gt; Statuts enseignants</p>
     <div class="corps-toolbar">
       <form id="corpsFilterForm" method="GET" action="{{ route('parametres.statuts-enseignant.index') }}">
-        <label class="sr-only" for="corpsSearch">Rechercher un statut enseignant</label>
+        <label class="sr-only" for="corpsSearch">Rechercher un statut</label>
         <input class="form-control" id="corpsSearch" name="search" type="search" value="{{ request('search') }}" placeholder="Rechercher par libellé…">
       </form>
       @if(request('search'))<a class="btn-secondary" href="{{ route('parametres.statuts-enseignant.index') }}">Réinitialiser</a>@endif
-      <button class="btn-primary" type="button" data-modal-open="corps-create-modal"><i class="fa-solid fa-plus" aria-hidden="true"></i> Nouveau statut enseignant</button>
+      <button class="btn-primary" type="button" data-modal-open="corps-create-modal"><i class="fa-solid fa-plus" aria-hidden="true"></i> Nouveau statut</button>
     </div>
     @if($error) <div class="alert alert-error">{{ $error }}</div> @endif
     <section class="table-card"><div class="table-card-header"><div><h2>Liste des statuts enseignants</h2><p class="table-card-subtitle">{{ $pagination['total'] }} enregistrement{{ $pagination['total'] > 1 ? 's' : '' }}</p></div></div><div class="table-responsive"><table class="table"><thead><tr><th>Libellé</th><th class="actions-cell">Actions</th></tr></thead><tbody>
       @forelse($items as $item)<tr><td>{{ data_get($item,'libelle','—') }}</td><td class="actions-cell"><button class="icon-action" type="button" data-modal-open="corps-edit-modal" data-corps-edit='@json($item)' title="Modifier"><i class="fa-solid fa-pen-to-square"></i></button>@if(in_array(session('sicore_user.role_slug'),['admin','super_admin'],true))<form class="inline-form" method="POST" action="{{ route('parametres.statuts-enseignant.destroy',data_get($item,'id')) }}">@csrf @method('DELETE')<button class="icon-action delete" type="submit" title="Supprimer"><i class="fa-solid fa-trash-can"></i></button></form>@endif</td></tr>
-      @empty<tr><td colspan="2" class="empty-message"><x-table-empty-state>Aucun statut enseignant trouvé.</x-table-empty-state></td></tr>@endforelse
+      @empty<tr><td colspan="2" class="empty-message"><x-table-empty-state>Aucun statut trouvé.</x-table-empty-state></td></tr>@endforelse
     </tbody></table></div><nav class="pagination">@for($page=1;$page<=$pagination['last_page'];$page++)<a class="page-btn {{ $page===$pagination['current_page']?'active':'' }}" href="{{ route('parametres.statuts-enseignant.index',array_merge(request()->except('page'),['page'=>$page])) }}">{{ $page }}</a>@endfor</nav></section>
   </section>
 </main>
-<x-module-indemnite type="modal" id="corps-create-modal" title="Créer un statut enseignant"><form class="teacher-form" method="POST" action="{{ route('parametres.statuts-enseignant.store') }}">@csrf<div class="form-grid form-grid--balanced"><div class="form-group"><label for="corpsLibelle">Libellé *</label><input class="form-control" id="corpsLibelle" name="libelle" maxlength="50" required></div></div><div class="form-actions"><button class="btn-secondary" type="button" data-modal-close>Annuler</button><button class="btn-primary" type="submit">Créer</button></div></form></x-module-indemnite>
-<x-module-indemnite type="modal" id="corps-edit-modal" title="Modifier un statut enseignant"><form class="teacher-form" id="corpsEditForm" method="POST">@csrf @method('PUT')<div class="form-grid form-grid--balanced"><div class="form-group"><label for="corpsEditLibelle">Libellé *</label><input class="form-control" id="corpsEditLibelle" name="libelle" maxlength="50" required></div></div><div class="form-actions"><button class="btn-secondary" type="button" data-modal-close>Annuler</button><button class="btn-primary" type="submit">Enregistrer</button></div></form></x-module-indemnite>
+<x-module-indemnite type="modal" id="corps-create-modal" title="Créer un statut"><form class="teacher-form" method="POST" action="{{ route('parametres.statuts-enseignant.store') }}">@csrf<div class="form-grid form-grid--balanced"><div class="form-group"><label for="corpsLibelle">Libellé *</label><input class="form-control" id="corpsLibelle" name="libelle" maxlength="50" required></div></div><div class="form-actions"><button class="btn-secondary" type="button" data-modal-close>Annuler</button><button class="btn-primary" type="submit">Créer</button></div></form></x-module-indemnite>
+<x-module-indemnite type="modal" id="corps-edit-modal" title="Modifier un statut"><form class="teacher-form" id="corpsEditForm" method="POST">@csrf @method('PUT')<div class="form-grid form-grid--balanced"><div class="form-group"><label for="corpsEditLibelle">Libellé *</label><input class="form-control" id="corpsEditLibelle" name="libelle" maxlength="50" required></div></div><div class="form-actions"><button class="btn-secondary" type="button" data-modal-close>Annuler</button><button class="btn-primary" type="submit">Enregistrer</button></div></form></x-module-indemnite>
 @endsection
 @push('styles')
 <style>

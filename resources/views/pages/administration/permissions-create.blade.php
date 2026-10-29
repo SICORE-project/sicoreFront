@@ -18,10 +18,12 @@
                     @error('nom') <p style="color:#dc2626; font-size:12px; margin-top:4px;">{{ $message }}</p> @enderror
                 </div>
 
-                <p style="font-size:13px; color:#6b7280; margin: 0 0 20px;">
-                    Une permission n'a d'effet que si une route la réclame dans le code
-                    (<code>->middleware('permission:votre.slug')</code>). Utilisez le slug exact prévu par l'équipe technique.
-                </p>
+                <p style="font-size:13px; color:#6b7280; margin: 0 0 12px;">Utilisez le slug exact prévu par l'équipe technique.</p>
+                <div role="note" style="background:#fff7ed; border-left:4px solid #f59e0b; border-radius:6px; padding:10px 12px; margin: 0 0 20px; font-size:13px; color:#7c2d12; line-height:1.5;">
+                    <strong>Attention.</strong> Une permission n'a d'effet que si le code de l'application la vérifie (route, menu ou règle de profil) avec ce même slug.
+                    Créée ici, elle n'existe que dans cette base : pour qu'elle existe aussi chez l'équipe et en production, elle doit être déclarée dans
+                    <code>config/permissions.php</code> puis synchronisée avec <code>php artisan permissions:sync</code>.
+                </div>
                 <div class="form-group" style="margin-bottom: 20px;">
                     <label for="slug">Slug (identifiant technique)</label>
                     <input type="text" id="slug" name="slug" value="{{ old('slug') }}" class="form-control" placeholder="ex. rapports.export — laissé vide : généré depuis le nom">
