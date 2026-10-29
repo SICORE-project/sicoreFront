@@ -393,16 +393,16 @@
     {{-- Tableau générique construit avec columns et rows. --}}
     <section class="table-card">
       <div class="table-responsive">
-        <table class="table" id="moduleTable" @if($slug !== 'utilisateurs') data-paginated-table @endif>
+      <table class="table" id="moduleTable" @if(!in_array($slug, ['utilisateurs', 'paie-edition'])) data-paginated-table @endif>
           <thead>
             <tr>
-              @foreach ($page['columns'] as $column)
+              @foreach ($page['columns'] ?? [] as $column)
                 <th @class(['actions-cell' => $loop->last])>{{ $column }}</th>
               @endforeach
             </tr>
           </thead>
           <tbody>
-            @forelse ($page['rows'] as $row)
+            @forelse ($page['rows'] ?? [] as $row)
               @php
                 $rowIndex = $loop->index;
                 $rowFilter = data_get($moduleData, 'row_filters.'.$rowIndex, []);
@@ -451,7 +451,7 @@
               </tr>
             @empty
               <tr class="table-empty-row">
-                <td colspan="{{ max(1, count($page['columns'])) }}" class="table-empty-cell">
+                <td colspan="{{ max(1, count($page['columns'] ?? [])) }}" class="table-empty-cell">
                   Aucune donnée disponible pour cette sélection.
                 </td>
               </tr>
@@ -459,6 +459,19 @@
           </tbody>
         </table>
       </div>
+      {{-- Boutons de validation uniquement pour la page Édition --}}
+      @if ($slug === 'paie-edition' && !empty($page['rows']))
+      <div class="edition-footer-actions" style="display: flex; align-items: center; justify-content: space-between; padding: 15px; background: #f8fafc; border-top: 1px solid #e2e8f0; margin-top: 10px;">
+        <div style="display: flex; gap: 10px;">
+          <button type="button" class="btn-primary" style="background: #4b5563; color: white;">Valider</button>
+          <button type="button" class="btn-secondary" onclick="window.print()">Imprimer</button>
+          <button type="button" class="btn-secondary">Annuler</button>
+        </div>
+        <div style="font-weight: bold; font-size: 1.1rem;">
+          Montant à engager : <span style="color: #b91c1c;">{{ number_format(collect($page['rows'])->sum(fn($row) => (float) str_replace([' ', 'FCFA', '—'], '', $row[8])), 0, ',', ' ') }}</span> FCFA
+        </div>
+      </div>
+      @endif
       <p class="empty-message">Aucune donnée trouvée.</p>
       {{--
         Pagination locale commune à toutes les pages. Le script
