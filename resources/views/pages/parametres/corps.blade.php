@@ -1,6 +1,9 @@
 @extends('layouts.app')
 @section('title', 'SICORE - Corps enseignants')
 @section('content')
+@php
+    $peutSupprimer = \App\Support\SicoreAccess::can(request(), 'parametrage.corps.manage');
+@endphp
 <main class="main-content">
   <header class="topbar"><div class="page-title-wrap"><button class="mobile-menu-btn" type="button" data-sidebar-toggle aria-label="Ouvrir le menu">&#9776;</button><span class="title-icon"><i class="fa-solid fa-users-line"></i></span><div><h1>Corps enseignants</h1><p>Gestion du référentiel des corps</p></div></div></header>
   <section class="content-area">
@@ -13,13 +16,16 @@
         <input class="form-control" id="corpsSearch" name="search" type="search" value="{{ request('search') }}" placeholder="Rechercher par sigle ou libellé…">
       </form>
       @if(request('search'))<a class="btn-secondary" href="{{ route('parametres.corps.index') }}">Réinitialiser</a>@endif
-      <button class="btn-primary" type="button" data-modal-open="corps-create-modal"><i class="fa-solid fa-plus" aria-hidden="true"></i> Nouveau corps</button>
+      <button class="btn-primary" type="button" data-modal-open="corps-create-modal"><i class="fa-solid fa-plus" aria-hidden="true"></i> Nouveau corps</button>@if ($peutSupprimer)<button class="btn-secondary btn-bulk-delete" type="button" data-bulk-delete-button disabled>Supprimer la sélection</button>@endif
     </div>
     @if($error) <div class="alert alert-error">{{ $error }}</div> @endif
-    <section class="table-card"><div class="table-card-header"><div><h2>Liste des corps</h2><p class="table-card-subtitle">{{ $pagination['total'] }} enregistrement{{ $pagination['total'] > 1 ? 's' : '' }}</p></div></div><div class="table-responsive"><table class="table"><thead><tr><th>Sigle</th><th>Libellé</th><th class="actions-cell">Actions</th></tr></thead><tbody>
-      @forelse($items as $item)<tr><td>{{ data_get($item,'code','—') }}</td><td>{{ data_get($item,'libelle','—') }}</td><td class="actions-cell"><button class="icon-action" type="button" data-modal-open="corps-edit-modal" data-corps-edit='@json($item)' title="Modifier"><i class="fa-solid fa-pen-to-square"></i></button>@if(in_array(session('sicore_user.role_slug'),['admin','super_admin'],true))<form class="inline-form" method="POST" action="{{ route('parametres.corps.destroy',data_get($item,'id')) }}">@csrf @method('DELETE')<button class="icon-action delete" type="submit" title="Supprimer"><i class="fa-solid fa-trash-can"></i></button></form>@endif</td></tr>
-      @empty<tr><td colspan="3" class="empty-message"><x-table-empty-state>Aucun corps trouvé.</x-table-empty-state></td></tr>@endforelse
+    <section class="table-card"><div class="table-card-header"><div><h2>Liste des corps</h2><p class="table-card-subtitle">{{ $pagination['total'] }} enregistrement{{ $pagination['total'] > 1 ? 's' : '' }}</p></div></div><div class="table-responsive"><table class="table"><thead><tr>@if ($peutSupprimer)<th class="checkbox-cell"><input type="checkbox" data-select-all aria-label="Tout sélectionner"></th>@endif<th>Sigle</th><th>Libellé</th><th class="actions-cell">Actions</th></tr></thead><tbody>
+      @forelse($items as $item)<tr>@if ($peutSupprimer)<td class="checkbox-cell"><input type="checkbox" data-row-checkbox value="{{ data_get($item,'id') }}" aria-label="Sélectionner {{ data_get($item,'code') }}"></td>@endif<td>{{ data_get($item,'code','—') }}</td><td>{{ data_get($item,'libelle','—') }}</td><td class="actions-cell"><button class="icon-action" type="button" data-modal-open="corps-edit-modal" data-corps-edit='@json($item)' title="Modifier"><i class="fa-solid fa-pen-to-square"></i></button>@if(in_array(session('sicore_user.role_slug'),['admin','super_admin'],true))<form class="inline-form" method="POST" action="{{ route('parametres.corps.destroy',data_get($item,'id')) }}">@csrf @method('DELETE')<button class="icon-action delete" type="submit" title="Supprimer"><i class="fa-solid fa-trash-can"></i></button></form>@endif</td></tr>
+      @empty<tr><td colspan="{{ 3 + ($peutSupprimer ? 1 : 0) }}" class="empty-message"><x-table-empty-state>Aucun corps trouvé.</x-table-empty-state></td></tr>@endforelse
     </tbody></table></div><nav class="pagination">@for($page=1;$page<=$pagination['last_page'];$page++)<a class="page-btn {{ $page===$pagination['current_page']?'active':'' }}" href="{{ route('parametres.corps.index',array_merge(request()->except('page'),['page'=>$page])) }}">{{ $page }}</a>@endfor</nav></section>
+@if ($peutSupprimer)
+@include('pages.parametres.partials.suppression-multiple', ['cible' => 'corps', 'action' => route('parametres.corps.destroy-multiple'), 'feminin' => false])
+@endif
   </section>
 </main>
 <x-module-indemnite type="modal" id="corps-create-modal" title="Créer un corps enseignant"><form class="teacher-form" method="POST" action="{{ route('parametres.corps.store') }}">@csrf<div class="form-grid form-grid--balanced"><div class="form-group"><label for="corpsCode">Sigle *</label><input class="form-control" id="corpsCode" name="code" maxlength="20" required></div><div class="form-group"><label for="corpsLibelle">Libellé *</label><input class="form-control" id="corpsLibelle" name="libelle" maxlength="100" required></div></div><div class="form-actions"><button class="btn-secondary" type="button" data-modal-close>Annuler</button><button class="btn-primary" type="submit">Créer</button></div></form></x-module-indemnite>

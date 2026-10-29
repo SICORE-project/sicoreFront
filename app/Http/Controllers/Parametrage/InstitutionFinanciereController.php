@@ -8,9 +8,12 @@ use App\Services\Parametrage\InstitutionFinanciereService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
+use App\Http\Controllers\Parametrage\Concerns\SupprimeEnMasse;
 
 class InstitutionFinanciereController extends Controller
 {
+    use SupprimeEnMasse;
+
     public function index(Request $request, InstitutionFinanciereService $service, CompteBancaireEnseignantService $bankAccounts): View|RedirectResponse
     {
         $result = $service->getAll(max(1, $request->integer('page', 1)), 10, [
@@ -201,5 +204,10 @@ class InstitutionFinanciereController extends Controller
 
         return redirect()->route('parametres.institutions-financieres')
             ->with('success', $result['message']);
+    }
+
+    public function destroyMultiple(Request $request, InstitutionFinanciereService $service): RedirectResponse
+    {
+        return $this->supprimerSelection($request, fn (int $id) => $service->delete($id), 'institution financière', 'parametres.institutions-financieres');
     }
 }

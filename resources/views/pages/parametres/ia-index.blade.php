@@ -5,7 +5,7 @@
 @section('content')
 @php($scopedReadOnly = $scopedReadOnly ?? false)
 @php($listRoute = $listRoute ?? 'parametres.ia.index')
-@php($peutSupprimer = ! $scopedReadOnly && in_array(session('sicore_user.role_slug'), ['admin', 'super_admin'], true))
+@php($peutSupprimer = ! $scopedReadOnly && \App\Support\SicoreAccess::can(request(), 'parametrage.ia.delete'))
 <main class="main-content">
   <header class="topbar">
     <div class="page-title-wrap">
@@ -95,7 +95,7 @@
                   <button class="icon-action" type="button" data-modal-open="ia-edit-modal" data-ia-edit='@json($ia)' title="Modifier" aria-label="Modifier {{ data_get($ia, 'code') }}">
                     <i class="fa-solid fa-pen-to-square" aria-hidden="true"></i>
                   </button>
-                  @if ($iaId && in_array(session('sicore_user.role_slug'), ['admin', 'super_admin'], true))
+                  @if ($iaId && $peutSupprimer)
                     <form method="POST" action="{{ route('parametres.ia.destroy', ['ia' => $iaId]) }}" class="inline-form">
                       @csrf
                       @method('DELETE')
@@ -188,19 +188,6 @@
   #ia-create-modal .modal-dialog,
   #ia-edit-modal .modal-dialog { max-width: 920px; width: calc(100% - 32px); }
 
-  .checkbox-cell { width: 40px; text-align: center; }
-
-  .btn-bulk-delete {
-    color: #b91c1c;
-    border-color: #fca5a5;
-  }
-
-  .btn-bulk-delete:disabled {
-    color: inherit;
-    border-color: inherit;
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
 </style>
 @endpush
 
@@ -367,4 +354,7 @@
   })();
 </script>
 @endpush
+@if ($peutSupprimer)
+@include('pages.parametres.partials.suppression-multiple', ['cible' => 'IA', 'action' => route('parametres.ia.destroy-multiple')])
+@endif
 @endsection
