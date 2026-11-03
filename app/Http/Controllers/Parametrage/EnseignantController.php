@@ -239,7 +239,7 @@ class EnseignantController extends Controller
         $fonctionnaire = in_array(mb_strtolower(trim($status['libelle'] ?? '')), ['fonctionnaire', 'fonctionnaires'], true)
             || in_array(mb_strtolower(trim($status['code'] ?? '')), ['fonctionnaire', 'fonc'], true);
         if (! $fonctionnaire) {
-            $request->merge(['indice' => null, 'corps_id' => null]);
+            $request->merge(['indice' => null]);
         } else {
             $request->merge(array_fill_keys(['salaire_brut', 'date_recrutement',
                 'annee_recrutement', 'diplome_id', 'categorie_id', 'date_fin_contrat', 'observations'], null));

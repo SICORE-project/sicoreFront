@@ -1127,9 +1127,9 @@ document.addEventListener('DOMContentLoaded', function () {
     group.hidden = !official || !identityVisible;
     group.style.display = group.hidden ? 'none' : '';
     corps.required = official;
-    corps.disabled = !official;
+    corps.disabled = !status.value;
     if (!official) {
-      corps.value = '';
+      assignStatusCorps(status, corps);
       corps.classList.remove('is-invalid');
     }
     ['salaire', 'date-recrutement', 'generation', 'diplome', 'statut', 'observations'].forEach(function (name) {
@@ -1263,9 +1263,7 @@ document.addEventListener('DOMContentLoaded', function () {
     Array.from(select.options).forEach(function (option, index) {
       if (index === 0) { return; }
       var matches = categoryIds.has(String(option.value))
-        // Les contractuels n'ont pas de corps sélectionné : dans ce cas le
-        // diplôme détermine déjà la catégorie, il ne faut pas filtrer par corps.
-        && (!corpsId || String(option.dataset.corpsId || '') === String(corpsId));
+        && !!corpsId && String(option.dataset.corpsId || '') === String(corpsId);
       option.hidden = !matches;
       option.disabled = !matches;
       if (matches) { available++; }
@@ -1275,7 +1273,22 @@ document.addEventListener('DOMContentLoaded', function () {
       : (available ? 'Sélectionner une catégorie' : 'Aucune catégorie pour ce diplôme');
   }
 
+  function assignStatusCorps(status, corps) {
+    var contractuel = isContractuelStatus(status);
+    var vacataire = isVacataireStatus(status);
+    if (!contractuel && !vacataire) return;
+    var match = Array.from(corps.options).find(function (option) {
+      var code = String(option.dataset.corpsCode || '').trim().toLowerCase();
+      return contractuel ? code === 'pc'
+        : ['vac', 'vacataire'].includes(code) || option.textContent.trim().toLowerCase() === 'vacataire';
+    });
+    corps.value = match ? match.value : '';
+    corps.disabled = false;
+    if (match) { match.disabled = false; match.hidden = false; }
+  }
+
   function updateCreateCategorieVisibility() {
+    assignStatusCorps(createStatus, createCorps);
     var contractuel = isContractuelStatus(createStatus);
     var visible = createStep === 2 && contractuel;
     createCategorieField.hidden = !visible;
@@ -1446,6 +1459,7 @@ document.addEventListener('DOMContentLoaded', function () {
   var editStep = 1;
 
   function updateEditCategorieVisibility() {
+    assignStatusCorps(editStatus, editCorps);
     var visible = isContractuelStatus(editStatus);
     editCategorieField.hidden = !visible;
     editCategorieField.style.display = visible ? '' : 'none';
