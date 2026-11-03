@@ -123,7 +123,7 @@
     </section>
   </main>
 
-<x-module-indemnite type="modal" id="teacher-create-modal" title="Ajouter un enseignant" :open="$errors->getBag('default')->any()">
+<x-module-indemnite type="modal" id="teacher-create-modal" title="Ajouter un enseignant" :open="$errors->getBag('default')->any() && !old('_editing_id')">
   <form class="teacher-form" method="POST" action="{{ route('enseignants.store') }}" novalidate>
     @csrf
     @if ($errors->any())
@@ -232,7 +232,7 @@
       <div class="form-group"><label for="teacher-parts">Nombre de parts</label><input class="form-control" id="teacher-parts" name="nombre_parts_fiscales" type="number" step="0.5" min="1" max="5" value="{{ old('nombre_parts_fiscales', 1) }}" readonly></div>
       <div class="form-group"><label for="teacher-conjoint-travaille">Le conjoint travaille</label><select class="form-control" id="teacher-conjoint-travaille" name="conjoint_travaille"><option value="0">Non</option><option value="1" @selected(old('conjoint_travaille') == 1)>Oui</option></select></div>
       <div class="form-group full"><label for="teacher-observations">Observations</label><textarea class="form-control" id="teacher-observations" name="observations">{{ old('observations') }}</textarea></div>
-      <div class="form-group"><label for="teacher-banque">Banque</label><div class="teacher-select-create"><select class="form-control" id="teacher-banque" name="compte_bancaire[institut_financier_id]"><option value="">Sélectionner une banque</option>@foreach($institutionOptions as $institution)<option value="{{ data_get($institution, 'id') }}">{{ data_get($institution, 'libelle', data_get($institution, 'nom')) }}</option>@endforeach</select><button class="icon-action" type="button" data-referentiel-open="banque" data-referentiel-target="teacher-banque" title="Ajouter une banque" aria-label="Ajouter une banque"><i class="fa-solid fa-plus"></i></button></div></div>
+      <div class="form-group"><label for="teacher-banque">Banque</label><div class="teacher-select-create"><select class="form-control" id="teacher-banque" name="compte_bancaire[institut_financier_id]"><option value="">Sélectionner une banque</option>@foreach($institutionOptions as $institution)<option value="{{ data_get($institution, 'id') }}" data-code-banque="{{ data_get($institution, 'code_banque', '') }}">{{ data_get($institution, 'libelle', data_get($institution, 'nom')) }}</option>@endforeach</select><button class="icon-action" type="button" data-referentiel-open="banque" data-referentiel-target="teacher-banque" title="Ajouter une banque" aria-label="Ajouter une banque"><i class="fa-solid fa-plus"></i></button></div></div>
       <div class="form-group"><label for="teacher-code-banque">Code banque <span class="required">*</span></label><input class="form-control" id="teacher-code-banque" name="compte_bancaire[code_banque]" minlength="5" maxlength="5" required value="{{ old('compte_bancaire.code_banque') }}"></div>
       <div class="form-group"><label for="teacher-code-guichet">Code guichet <span class="required">*</span></label><input class="form-control" id="teacher-code-guichet" name="compte_bancaire[code_guichet]" minlength="5" maxlength="5" required value="{{ old('compte_bancaire.code_guichet') }}"></div>
       <div class="form-group"><label for="teacher-numero-compte">Numéro de compte <span class="required">*</span></label><input class="form-control" id="teacher-numero-compte" name="compte_bancaire[numero_compte]" minlength="12" maxlength="12" required value="{{ old('compte_bancaire.numero_compte') }}"></div>
@@ -364,10 +364,17 @@
   <div class="form-actions"><button class="btn-secondary" type="button" data-modal-close>Fermer</button></div>
 </x-module-indemnite>
 
-<x-module-indemnite type="modal" id="teacher-edit-modal" title="Modifier un enseignant">
+<x-module-indemnite type="modal" id="teacher-edit-modal" title="Modifier un enseignant" :open="$errors->any() && old('_editing_id')">
   <form class="teacher-form" method="POST" id="teacher-edit-form" data-action-template="{{ route('enseignants.update', ['enseignant' => '__id__']) }}" novalidate>
     @csrf
     @method('PUT')
+    <input type="hidden" name="_editing_id" id="edit-teacher-id" value="{{ old('_editing_id') }}">
+    @if ($errors->any() && old('_editing_id'))
+      <div class="teacher-error-summary" role="alert" tabindex="-1">
+        <strong>Veuillez corriger les erreurs suivantes :</strong>
+        <ul>@foreach ($errors->all() as $message)<li>{{ $message }}</li>@endforeach</ul>
+      </div>
+    @endif
     <div class="wizard-progress" aria-label="Progression de la modification">
       <button class="wizard-step active" type="button" data-edit-step="1"><span class="wizard-step-number">1</span><i class="fa-solid fa-address-card wizard-step-icon" aria-hidden="true"></i><span>Identité</span></button>
       <button class="wizard-step" type="button" data-edit-step="2"><span class="wizard-step-number">2</span><i class="fa-solid fa-briefcase wizard-step-icon" aria-hidden="true"></i><span>Carrière</span></button>
@@ -419,7 +426,7 @@
         <div class="form-group"><label for="edit-teacher-telephone">Téléphone <span class="required">*</span></label><input class="form-control" id="edit-teacher-telephone" name="telephone" maxlength="20" required></div>
         <div class="form-group"><label for="edit-teacher-date-naissance">Date de naissance</label><input class="form-control" id="edit-teacher-date-naissance" name="date_naissance" type="date" required max="{{ now()->subYears(18)->format('Y-m-d') }}" aria-describedby="edit-teacher-date-naissance-error"><span class="teacher-birth-error" id="edit-teacher-date-naissance-error" role="alert" hidden></span></div>
 
-        <div class="form-group"><label for="edit-teacher-banque">Banque</label><div class="teacher-select-create"><select class="form-control" id="edit-teacher-banque" name="compte_bancaire[institut_financier_id]"><option value="">Sélectionner une banque</option>@foreach($institutionOptions as $institution)<option value="{{ data_get($institution, 'id') }}">{{ data_get($institution, 'libelle', data_get($institution, 'nom')) }}</option>@endforeach</select><button class="icon-action" type="button" data-referentiel-open="banque" data-referentiel-target="edit-teacher-banque" title="Ajouter une banque" aria-label="Ajouter une banque"><i class="fa-solid fa-plus"></i></button></div></div>
+        <div class="form-group"><label for="edit-teacher-banque">Banque</label><div class="teacher-select-create"><select class="form-control" id="edit-teacher-banque" name="compte_bancaire[institut_financier_id]"><option value="">Sélectionner une banque</option>@foreach($institutionOptions as $institution)<option value="{{ data_get($institution, 'id') }}" data-code-banque="{{ data_get($institution, 'code_banque', '') }}">{{ data_get($institution, 'libelle', data_get($institution, 'nom')) }}</option>@endforeach</select><button class="icon-action" type="button" data-referentiel-open="banque" data-referentiel-target="edit-teacher-banque" title="Ajouter une banque" aria-label="Ajouter une banque"><i class="fa-solid fa-plus"></i></button></div></div>
         <div class="form-group"><label for="edit-teacher-code-banque">Code banque <span class="required">*</span></label><input class="form-control" id="edit-teacher-code-banque" name="compte_bancaire[code_banque]" minlength="5" maxlength="5" required></div>
         <div class="form-group"><label for="edit-teacher-code-guichet">Code guichet <span class="required">*</span></label><input class="form-control" id="edit-teacher-code-guichet" name="compte_bancaire[code_guichet]" maxlength="5" required></div>
         <div class="form-group"><label for="edit-teacher-numero-compte">Numéro de compte <span class="required">*</span></label><input class="form-control" id="edit-teacher-numero-compte" name="compte_bancaire[numero_compte]" maxlength="12" required></div>
@@ -567,6 +574,18 @@
 <script>
 document.addEventListener('DOMContentLoaded', function () {
   var pageConfig = document.getElementById('teacher-page-config').dataset;
+  ['teacher-', 'edit-teacher-'].forEach(function (prefix) {
+    var banque = document.getElementById(prefix + 'banque');
+    var code = document.getElementById(prefix + 'code-banque');
+    if (!banque || !code) return;
+    banque.addEventListener('change', function () {
+      code.value = banque.selectedOptions[0]?.dataset.codeBanque || '';
+      code.setCustomValidity('');
+      code.classList.remove('is-invalid');
+      code.setAttribute('aria-invalid', 'false');
+      code.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+  });
   function isFonctionnaireCorpsValue(corps) {
     if (!corps) { return false; }
     var label = String(corps.libelle || '').trim().toLowerCase();
@@ -869,6 +888,7 @@ document.addEventListener('DOMContentLoaded', function () {
       if (type === 'corps' || type === 'statut_enseignant') { option.dataset.corpsCode = item.code || ''; }
       if (type === 'statut_enseignant') { option.dataset.fonctionnaire = isFonctionnaireCorpsValue(item) ? '1' : '0'; }
       if (type === 'categorie') { option.dataset.corpsId = item.corps_id || (item.corps && item.corps.id) || ''; }
+      if (type === 'banque') { option.dataset.codeBanque = item.code_banque || ''; }
       if (type === 'diplome') {
         option.dataset.salaireBrut = item.salaire_brut ?? '';
         option.dataset.categorieId = item.categorie_id || (item.categorie && item.categorie.id) || '';
@@ -1128,8 +1148,8 @@ document.addEventListener('DOMContentLoaded', function () {
     group.style.display = group.hidden ? 'none' : '';
     corps.required = official;
     corps.disabled = !official;
+    assignStatusCorps(status, corps);
     if (!official) {
-      assignStatusCorps(status, corps);
       corps.classList.remove('is-invalid');
     }
     ['salaire', 'date-recrutement', 'generation', 'diplome', 'statut', 'observations'].forEach(function (name) {
@@ -1276,7 +1296,20 @@ document.addEventListener('DOMContentLoaded', function () {
   function assignStatusCorps(status, corps) {
     var contractuel = isContractuelStatus(status);
     var vacataire = isVacataireStatus(status);
-    if (!contractuel && !vacataire) return;
+    if (!contractuel && !vacataire) {
+      if (isFonctionnaireCorps(status)) {
+        Array.from(corps.options).forEach(function (option) {
+          var code = String(option.dataset.corpsCode || '').trim().toLowerCase();
+          var reserved = ['pc', 'vac', 'vacataire'].includes(code)
+            || option.textContent.trim().toLowerCase() === 'vacataire';
+          option.disabled = reserved;
+          option.hidden = reserved;
+        });
+        corps.disabled = false;
+        corps.required = true;
+      }
+      return;
+    }
     var match = Array.from(corps.options).find(function (option) {
       var code = String(option.dataset.corpsCode || '').trim().toLowerCase();
       return contractuel ? code === 'pc'
@@ -1533,6 +1566,7 @@ document.addEventListener('DOMContentLoaded', function () {
     button.addEventListener('click', function () {
       var teacher = JSON.parse(button.dataset.editTeacher);
       editForm.action = editForm.dataset.actionTemplate.replace('__id__', teacher.id);
+      document.getElementById('edit-teacher-id').value = teacher.id;
       document.getElementById('edit-teacher-indice').value = teacher.indice ?? '';
       document.getElementById('edit-teacher-matricule').value = teacher.matricule || '';
       document.getElementById('edit-teacher-nom').value = teacher.nom || '';
@@ -1648,6 +1682,22 @@ document.addEventListener('DOMContentLoaded', function () {
     applyTeacherStatus('edit-teacher-');
     if (!validateAllEditSteps()) { event.preventDefault(); }
   });
+  var previousEdit = @json(old('_editing_id'));
+  if (previousEdit) {
+    var previousInput = @json(session()->getOldInput());
+    var button = Array.from(document.querySelectorAll('[data-edit-teacher]')).find(function (candidate) {
+      return String(JSON.parse(candidate.dataset.editTeacher).id) === String(previousEdit);
+    });
+    if (button) button.click();
+    editForm.action = editForm.dataset.actionTemplate.replace('__id__', previousEdit);
+    editForm.querySelectorAll('input, select, textarea').forEach(function (field) {
+      if (['_token', '_method'].includes(field.name)) return;
+      var keys = field.name.replace(/\]/g, '').split('[');
+      var value = keys.reduce(function (item, key) { return item == null ? undefined : item[key]; }, previousInput);
+      if (value !== undefined) field.value = value == null ? '' : value;
+    });
+    showEditStep(1);
+  }
 });
 </script>
 @endpush
