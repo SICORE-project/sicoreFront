@@ -15,16 +15,8 @@
         <label for="syndicatSearch">Rechercher</label>
         <input class="form-control" id="syndicatSearch" name="search" type="search" value="{{ $search }}" placeholder="Code ou libellé…">
       </div>
-      <div class="form-group">
-        <label for="syndicatStatus">Statut</label>
-        <select class="form-control" id="syndicatStatus" name="est_actif">
-          <option value="" @selected($statut === '')>Tous les statuts</option>
-          <option value="1" @selected($statut === '1')>Actifs</option>
-          <option value="0" @selected($statut === '0')>Inactifs</option>
-        </select>
-      </div>
       <div class="actions-group syndicats-filter-actions">
-        @if ($search !== '' || $statut !== '')
+        @if ($search !== '')
           <a class="btn-secondary" href="{{ route('parametres.syndicats.index') }}">Réinitialiser</a>
         @endif
       </div>
@@ -54,13 +46,13 @@
               <th>Libellé</th>
               <th>Check-off</th>
               <th>Œuvre sociale</th>
-              <th>Statut</th>
+
               <th class="actions-cell">Actions</th>
             </tr>
           </thead>
           <tbody>
             @if ($apiError)
-              <tr><td colspan="{{ 6 + ($peutSupprimer ? 1 : 0) }}" class="empty-message"><x-table-empty-state :error="true">Les données n’ont pas pu être chargées.</x-table-empty-state></td></tr>
+              <tr><td colspan="{{ 5 + ($peutSupprimer ? 1 : 0) }}" class="empty-message"><x-table-empty-state :error="true">Les données n’ont pas pu être chargées.</x-table-empty-state></td></tr>
             @else
             @forelse ($syndicats as $syndicat)
               <tr>
@@ -69,11 +61,6 @@
                 <td>{{ $syndicat['libelle'] ?? '—' }}</td>
                 <td>{{ isset($syndicat['montant_check_off']) ? number_format((float) $syndicat['montant_check_off'], 2, ',', ' ') . ' FCFA' : '—' }}</td>
                 <td>{{ isset($syndicat['montant_oeuvre_sociale']) ? number_format((float) $syndicat['montant_oeuvre_sociale'], 2, ',', ' ') . ' FCFA' : '—' }}</td>
-                <td>
-                  <span class="badge {{ ! empty($syndicat['est_actif']) ? 'badge-active' : 'badge-inactive' }}">
-                    {{ ! empty($syndicat['est_actif']) ? 'Actif' : 'Inactif' }}
-                  </span>
-                </td>
                 <td class="actions-cell">
                   <button class="icon-action" type="button" data-modal-open="show-syndicat-{{ $syndicat['id'] }}" title="Consulter" aria-label="Consulter {{ $syndicat['libelle'] ?? '' }}"><i class="fa-solid fa-eye" aria-hidden="true"></i></button>
                   @if ($canManage)
@@ -87,7 +74,7 @@
                 </td>
               </tr>
             @empty
-              <tr><td colspan="{{ 6 + ($peutSupprimer ? 1 : 0) }}" class="empty-message"><x-table-empty-state>Aucun syndicat trouvé.</x-table-empty-state></td></tr>
+              <tr><td colspan="{{ 5 + ($peutSupprimer ? 1 : 0) }}" class="empty-message"><x-table-empty-state>Aucun syndicat trouvé.</x-table-empty-state></td></tr>
             @endforelse
             @endif
           </tbody>
@@ -122,7 +109,6 @@
       <div><i class="fa-solid fa-people-group" aria-hidden="true"></i><span>Libellé</span><strong>{{ $syndicat['libelle'] ?? '—' }}</strong></div>
       <div><i class="fa-solid fa-money-check-dollar" aria-hidden="true"></i><span>Check-off</span><strong>{{ isset($syndicat['montant_check_off']) ? number_format((float) $syndicat['montant_check_off'], 2, ',', ' ').' FCFA' : '—' }}</strong></div>
       <div><i class="fa-solid fa-hand-holding-heart" aria-hidden="true"></i><span>Œuvre sociale</span><strong>{{ isset($syndicat['montant_oeuvre_sociale']) ? number_format((float) $syndicat['montant_oeuvre_sociale'], 2, ',', ' ').' FCFA' : '—' }}</strong></div>
-      <div><i class="fa-solid fa-circle-check" aria-hidden="true"></i><span>Statut</span><strong><span class="badge {{ ! empty($syndicat['est_actif']) ? 'badge-active' : 'badge-inactive' }}">{{ ! empty($syndicat['est_actif']) ? 'Actif' : 'Inactif' }}</span></strong></div>
       <div><i class="fa-solid fa-user-group" aria-hidden="true"></i><span>Enseignants adhérents</span><strong>{{ $nombreAdherents ?? '—' }}</strong></div>
     </div>
     @if ($nombreAdherents === null)<p class="detail-hint">Le nombre d’adhérents n’est pas encore fourni par l’API.</p>@endif
@@ -156,14 +142,6 @@
           <input class="form-control {{ $isEditing && $errors->has('montant_oeuvre_sociale') ? 'is-invalid' : '' }}" id="edit-oeuvre-{{ $syndicat['id'] }}" name="montant_oeuvre_sociale" type="number" min="0" max="9999999999.99" step="0.01" value="{{ $isEditing ? old('montant_oeuvre_sociale') : ($syndicat['montant_oeuvre_sociale'] ?? '') }}">
           @if ($isEditing)@error('montant_oeuvre_sociale')<div class="invalid-feedback">{{ $message }}</div>@enderror @endif
         </div>
-        <div class="form-group syndicat-status-field">
-          <label for="edit-status-{{ $syndicat['id'] }}">Statut *</label>
-          <select class="form-control {{ $isEditing && $errors->has('est_actif') ? 'is-invalid' : '' }}" id="edit-status-{{ $syndicat['id'] }}" name="est_actif" required>
-            <option value="1" @selected((string) ($isEditing ? old('est_actif') : (int) $syndicat['est_actif']) === '1')>Actif</option>
-            <option value="0" @selected((string) ($isEditing ? old('est_actif') : (int) $syndicat['est_actif']) === '0')>Inactif</option>
-          </select>
-          @if ($isEditing)@error('est_actif')<div class="invalid-feedback">{{ $message }}</div>@enderror @endif
-        </div>
       </div>
       <div class="form-actions">
         <button class="btn-secondary" type="button" data-modal-close>Annuler</button>
@@ -187,7 +165,6 @@
   #create-syndicat-modal .form-actions,
   [id^="edit-syndicat-"] .form-actions,
   [id^="show-syndicat-"] .form-actions { margin-top: 4px; padding-top: 18px; border-top: 1px solid #e2e8f0; }
-  .syndicat-status-field { grid-column: 1 / -1; max-width: 320px; }
   .form-alert { margin: 12px 0; padding: 12px 16px; border-radius: 8px; background: #fef2f2; color: #b91c1c; }
   .syndicats-filters { width: 100%; margin-bottom: 20px; }
   .syndicats-filters > .form-group:first-child { flex: 1 1 auto; min-width: 280px; }
@@ -205,7 +182,6 @@
     #create-syndicat-modal .modal-dialog,
     [id^="edit-syndicat-"] .modal-dialog,
     [id^="show-syndicat-"] .modal-dialog { width: calc(100% - 20px); }
-    .syndicat-status-field { max-width: none; }
     .syndicat-detail-grid { grid-template-columns: 1fr; }
   }
 </style>
