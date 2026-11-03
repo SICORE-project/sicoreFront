@@ -24,8 +24,13 @@
 
     <form class="filter-panel parametrage-filters" method="GET" action="{{ route('parametres.annees-academiques.index') }}" data-annee-filters>
       <div class="form-group">
-        <label for="anneeSearch">Rechercher</label>
-        <input class="form-control" id="anneeSearch" name="search" type="search" value="{{ $filters['search'] ?? '' }}" placeholder="Rechercher par libellé…" autocomplete="off">
+        <label for="anneeLibelleFilter">Année académique</label>
+        <select class="form-control" id="anneeLibelleFilter" name="libelle">
+          <option value="">Toutes les années</option>
+          @foreach ($libelles as $libelle)
+            <option value="{{ $libelle }}" @selected(($filters['libelle'] ?? '') === $libelle)>{{ $libelle }}</option>
+          @endforeach
+        </select>
       </div>
       <div class="form-group">
         <label for="anneeStatus">Statut</label>
@@ -43,7 +48,7 @@
       <div class="table-card-header"><div><h2>Liste des années académiques</h2><p class="table-card-subtitle">{{ $annees->total() }} résultat{{ $annees->total() > 1 ? 's' : '' }}</p></div></div>
       <div class="table-responsive">
         <table class="table">
-          <thead><tr><th>Libellé</th><th>Période</th><th>Observations</th><th>Statut</th><th class="actions-cell">Actions</th></tr></thead>
+          <thead><tr><th>Libellé</th><th>Période</th><th>Statut</th><th class="actions-cell">Actions</th></tr></thead>
           <tbody>
             @forelse ($annees as $annee)
               @php
@@ -56,7 +61,6 @@
               <tr>
                 <td><strong>{{ data_get($annee, 'libelle', '—') }}</strong></td>
                 <td>{{ $start ? date('d/m/Y', strtotime($start)) : '—' }} au {{ $end ? date('d/m/Y', strtotime($end)) : '—' }}</td>
-                <td class="annee-observation" title="{{ data_get($annee, 'observations') }}">{{ data_get($annee, 'observations', '—') ?: '—' }}</td>
                 <td>
                   @if ($closed)<span class="badge badge-inactive">Clôturée</span>
                   @elseif ($active)<span class="badge badge-active">Active</span>
@@ -78,7 +82,7 @@
                 </td>
               </tr>
             @empty
-              <tr><td colspan="5" class="empty-message show"><x-table-empty-state>Aucune année académique trouvée.</x-table-empty-state></td></tr>
+              <tr><td colspan="4" class="empty-message show"><x-table-empty-state>Aucune année académique trouvée.</x-table-empty-state></td></tr>
             @endforelse
           </tbody>
         </table>
@@ -98,7 +102,6 @@
       <div class="form-group full"><label for="anneeLibelle">Libellé <span class="required">*</span></label><input class="form-control" id="anneeLibelle" name="libelle" value="{{ old('libelle') }}" maxlength="100" placeholder="Ex. 2026-2027" required>@error('libelle')<span class="invalid-feedback">{{ $message }}</span>@enderror</div>
       <div class="form-group"><label for="anneeDateDebut">Date de début <span class="required">*</span></label><input class="form-control" id="anneeDateDebut" name="date_debut" type="date" value="{{ old('date_debut') }}" required>@error('date_debut')<span class="invalid-feedback">{{ $message }}</span>@enderror</div>
       <div class="form-group"><label for="anneeDateFin">Date de fin <span class="required">*</span></label><input class="form-control" id="anneeDateFin" name="date_fin" type="date" value="{{ old('date_fin') }}" required>@error('date_fin')<span class="invalid-feedback">{{ $message }}</span>@enderror</div>
-      <div class="form-group full"><label for="anneeObservations">Observations</label><textarea class="form-control" id="anneeObservations" name="observations" rows="4" maxlength="1000">{{ old('observations') }}</textarea>@error('observations')<span class="invalid-feedback">{{ $message }}</span>@enderror</div>
     </div>
     <div class="form-actions"><button class="btn-secondary" type="button" data-modal-close>Annuler</button><button class="btn-primary" type="submit" data-create-submit>Ajouter</button></div>
   </form>
@@ -112,7 +115,6 @@
       <div class="form-group full"><label for="anneeUpdateLibelle">Libellé <span class="required">*</span></label><input class="form-control" id="anneeUpdateLibelle" name="libelle" maxlength="100" required>@error('libelle', 'updateAnnee')<span class="invalid-feedback">{{ $message }}</span>@enderror</div>
       <div class="form-group"><label for="anneeUpdateDateDebut">Date de début <span class="required">*</span></label><input class="form-control" id="anneeUpdateDateDebut" name="date_debut" type="date" required>@error('date_debut', 'updateAnnee')<span class="invalid-feedback">{{ $message }}</span>@enderror</div>
       <div class="form-group"><label for="anneeUpdateDateFin">Date de fin <span class="required">*</span></label><input class="form-control" id="anneeUpdateDateFin" name="date_fin" type="date" required>@error('date_fin', 'updateAnnee')<span class="invalid-feedback">{{ $message }}</span>@enderror</div>
-      <div class="form-group full"><label for="anneeUpdateObservations">Observations</label><textarea class="form-control" id="anneeUpdateObservations" name="observations" rows="4" maxlength="1000"></textarea>@error('observations', 'updateAnnee')<span class="invalid-feedback">{{ $message }}</span>@enderror</div>
     </div>
     <div class="form-actions"><button class="btn-secondary" type="button" data-modal-close>Annuler</button><button class="btn-primary" type="submit" data-update-submit>Enregistrer</button></div>
   </form>
@@ -124,7 +126,6 @@
   #annee-create-modal .modal-dialog, #annee-update-modal .modal-dialog { width: calc(100% - 32px); max-width: 900px; }
   #annee-create-modal .teacher-form, #annee-update-modal .teacher-form { padding-inline: 0; padding-bottom: 0; }
   #annee-create-modal .form-actions, #annee-update-modal .form-actions { padding-top: 18px; border-top: 1px solid #e2e8f0; }
-  .annee-observation { max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 </style>
 @endpush
 
@@ -132,10 +133,9 @@
 <script>
   (function () {
     var filterForm = document.querySelector('[data-annee-filters]');
-    var searchInput = document.getElementById('anneeSearch');
+    var libelleInput = document.getElementById('anneeLibelleFilter');
     var statusInput = document.getElementById('anneeStatus');
-    var timer;
-    searchInput.addEventListener('input', function () { clearTimeout(timer); timer = setTimeout(function () { filterForm.requestSubmit(); }, 400); });
+    libelleInput.addEventListener('change', function () { filterForm.requestSubmit(); });
     statusInput.addEventListener('change', function () { filterForm.requestSubmit(); });
 
     var updateForm = document.getElementById('anneeUpdateForm');
@@ -145,7 +145,6 @@
       document.getElementById('anneeUpdateLibelle').value = item.libelle || '';
       document.getElementById('anneeUpdateDateDebut').value = dateValue(item.date_debut);
       document.getElementById('anneeUpdateDateFin').value = dateValue(item.date_fin);
-      document.getElementById('anneeUpdateObservations').value = item.observations || '';
     }
     document.querySelectorAll('[data-annee-edit]').forEach(function (button) {
       button.addEventListener('click', function () { fillUpdateForm(JSON.parse(button.dataset.anneeEdit)); });
@@ -173,7 +172,6 @@
       document.getElementById('anneeUpdateLibelle').value = @json(old('libelle'));
       document.getElementById('anneeUpdateDateDebut').value = @json(old('date_debut'));
       document.getElementById('anneeUpdateDateFin').value = @json(old('date_fin'));
-      document.getElementById('anneeUpdateObservations').value = @json(old('observations'));
     @endif
   }());
 </script>
