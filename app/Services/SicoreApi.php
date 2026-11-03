@@ -43,7 +43,10 @@ class SicoreApi implements SicoreApiClientInterface
     public function me(string $token): array
     {
         return $this->json($this->guard(
-            fn (): Response => $this->client($token)->get('/me')
+            fn (): Response => $this->client($token)
+                ->timeout(5)
+                ->retry(1, 0, throw: false)
+                ->get('/me')
         ));
     }
 

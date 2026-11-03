@@ -55,8 +55,8 @@
     var visible = official && !status.closest('.form-group').hidden;
     group.hidden = !visible;
     group.style.setProperty('display', visible ? '' : 'none', visible ? '' : 'important');
-    corps.disabled = !status.value;
-    corps.required = !!status.value;
+    corps.disabled = !official;
+    corps.required = official;
     var contractuel = label === 'contractuel' || code === 'contractuel';
     var vacataire = /vacat/.test(label) || /vac/.test(code);
     if (!official) corps.value = '';

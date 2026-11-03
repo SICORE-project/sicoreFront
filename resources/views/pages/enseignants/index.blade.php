@@ -86,11 +86,11 @@
               <tr>
                 <th>Enseignant</th>
                 <th>Matricule</th>
-                <th>Corps</th>
+                <!-- <th>Corps</th> -->
                 <th>Statut</th>
                 <th>E-mail</th>
                 <th>Téléphone</th>
-                <th>Situation</th>
+                <!-- <th>Situation</th> -->
                 <th class="actions-cell">Actions</th>
               </tr>
             </thead>
@@ -99,11 +99,11 @@
               <tr>
                 <td><span class="teacher-list-name">{{ trim(data_get($teacher, 'prenom', '').' '.data_get($teacher, 'nom', '')) ?: '—' }} @if(data_get($teacher, 'is_online')) @include('components.online-indicator') @endif</span></td>
                 <td><span class="teacher-list-matricule">{{ data_get($teacher, 'matricule') ?: '—' }}</span></td>
-                <td>{{ data_get($teacher, 'corps.libelle') ?: '—' }}</td>
+                <!-- <td>{{ data_get($teacher, 'corps.libelle') ?: '—' }}</td> -->
                 <td>{{ data_get($teacher, 'statut_enseignant.libelle') ?: 'Non renseigné' }}</td>
                 <td>{{ data_get($teacher, 'email') ?: '—' }}</td>
                 <td>{{ data_get($teacher, 'telephone') ?: '—' }}</td>
-                <td><span class="badge {{ data_get($teacher, 'est_actif') ? 'badge-active' : 'badge-suspended' }}">{{ data_get($teacher, 'statut_libelle') ?: data_get($teacher, 'statut', '—') }}</span></td>
+                <!-- <td><span class="badge {{ data_get($teacher, 'est_actif') ? 'badge-active' : 'badge-suspended' }}">{{ data_get($teacher, 'statut_libelle') ?: data_get($teacher, 'statut', '—') }}</span></td> -->
                 <td class="actions-cell"><button class="icon-action" type="button" title="Voir les détails" aria-label="Voir les détails de {{ data_get($teacher, 'prenom') }} {{ data_get($teacher, 'nom') }}" data-modal-open="teacher-view-modal" data-view-teacher='@json($teacher)'><i class="fa-solid fa-eye" aria-hidden="true"></i></button><button class="icon-action" type="button" title="Modifier" data-edit-teacher='@json($teacher)'><i class="fa-solid fa-pen" aria-hidden="true"></i></button><form method="POST" action="{{ route('enseignants.destroy', data_get($teacher, 'id')) }}" class="inline-form" onsubmit="return confirm('Voulez-vous supprimer cet enseignant ?');">@csrf @method('DELETE')<button class="icon-action icon-action-danger" type="submit" title="Supprimer"><i class="fa-solid fa-trash" aria-hidden="true"></i></button></form></td>
               </tr>
               @empty
@@ -328,7 +328,7 @@
         <div><dt>Prise de service</dt><dd data-teacher-detail="date_prise_service" data-format="date">Non renseigné</dd></div>
         <div><dt>Fin du contrat</dt><dd data-teacher-detail="date_fin_contrat" data-format="date">Non renseigné</dd></div>
         <div><dt>Année de recrutement</dt><dd data-teacher-detail="annee_recrutement" data-format="text">Non renseigné</dd></div>
-        <div><dt>Statut</dt><dd data-teacher-detail="statut_libelle" data-format="text">Non renseigné</dd></div>
+        <!-- <div><dt>Statut</dt><dd data-teacher-detail="statut_libelle" data-format="text">Non renseigné</dd></div> -->
         <div><dt>Actif</dt><dd data-teacher-detail="est_actif" data-format="bool">Non renseigné</dd></div>
       </dl></section>
       <section class="teacher-detail-card"><div class="teacher-detail-title"><h4>Compte bancaire</h4></div><dl class="teacher-detail-list">
@@ -1127,7 +1127,7 @@ document.addEventListener('DOMContentLoaded', function () {
     group.hidden = !official || !identityVisible;
     group.style.display = group.hidden ? 'none' : '';
     corps.required = official;
-    corps.disabled = !status.value;
+    corps.disabled = !official;
     if (!official) {
       assignStatusCorps(status, corps);
       corps.classList.remove('is-invalid');
@@ -1283,7 +1283,8 @@ document.addEventListener('DOMContentLoaded', function () {
         : ['vac', 'vacataire'].includes(code) || option.textContent.trim().toLowerCase() === 'vacataire';
     });
     corps.value = match ? match.value : '';
-    corps.disabled = false;
+    corps.disabled = true;
+    corps.required = false;
     if (match) { match.disabled = false; match.hidden = false; }
   }
 

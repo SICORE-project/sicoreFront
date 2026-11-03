@@ -65,6 +65,13 @@ class EnseignantController extends Controller
             $request->session()->forget(['access_token', 'sicore_user']);
             return redirect()->route('login')->with('warning', $result['error']);
         }
+        if ($result['error'] !== null) {
+            return view('pages.enseignants.index', array_merge($result, array_fill_keys([
+                'academies', 'filterIefs', 'regionOptions', 'iefOptions', 'corpsOptions',
+                'categorieOptions', 'diplomeOptions', 'disciplineOptions', 'institutionOptions',
+                'statutOptions', 'syndicatOptions',
+            ], [])));
+        }
         $iaResult = $academies->getAll(1, 100);
         $result['academies'] = $iaResult['items'];
         $result['filterIefs'] = $request->filled('ia_id') ? $academies->getIefs($request->integer('ia_id'))['items'] : [];
