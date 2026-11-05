@@ -29,7 +29,8 @@ class SpecialiteService
             return [...$this->empty($page, 'Votre session backend a expiré. Veuillez vous reconnecter.'), 'unauthorized' => true];
         }
         if (! $response->successful()) {
-            return $this->empty($page, $response->json('message', 'Impossible de charger les spécialités.'));
+            return $this->empty($page, $response->json('message', 'Impossible de charger les spécialités
+            \.'));
         }
 
         $payload = $response->json();

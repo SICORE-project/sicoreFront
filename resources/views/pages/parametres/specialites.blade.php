@@ -14,7 +14,7 @@
     <div class="actions-row">
       <p class="breadcrumb">Paramétrage &gt; Spécialités</p>
       @if ($canCreate)
-        <button class="btn-primary" type="button" data-modal-open="discipline-create-modal">+ Ajouter une spécialité</button>
+        <button class="btn-primary" type="button" data-modal-open="discipline-create-modal">+ Ajouter une disciplines</button>
         @if ($peutSupprimer)<button class="btn-secondary btn-bulk-delete" type="button" data-bulk-delete-button disabled>Supprimer la sélection</button>@endif
       @endif
     </div>
@@ -34,7 +34,7 @@
       <div class="table-card-header"><div><h2 id="disciplineListTitle">Liste des spécialités</h2><p class="table-card-subtitle">{{ $pagination['total'] }} résultat{{ $pagination['total'] > 1 ? 's' : '' }}</p></div></div>
       <div class="table-responsive"><table class="table"><thead><tr>
         @if ($peutSupprimer)<th class="checkbox-cell"><input type="checkbox" data-select-all aria-label="Tout sélectionner"></th>@endif
-        @foreach (['libelle' => 'Libellé', 'description' => 'Description', 'statut' => 'Statut'] as $field => $label)
+        @foreach (['libelle' => 'Libellé', 'statut' => 'Statut'] as $field => $label)
           @php
             $nextDirection = (($filters['sort'] ?? '') === $field && ($filters['direction'] ?? 'asc') === 'asc') ? 'desc' : 'asc';
           @endphp
@@ -51,7 +51,7 @@
           <tr>
             @if ($peutSupprimer)<td class="checkbox-cell"><input type="checkbox" data-row-checkbox value="{{ $disciplineId }}" aria-label="Sélectionner {{ data_get($discipline, 'libelle') }}"></td>@endif
             <td>{{ data_get($discipline, 'libelle', data_get($discipline, 'nom', '—')) }}</td>
-            <td>{{ data_get($discipline, 'description', '—') ?: '—' }}</td>
+           
             <td><span class="badge {{ $active ? 'badge-active' : 'badge-suspended' }}">{{ $active ? 'Actif' : 'Inactif' }}</span></td>
             @if ($canUpdate || $canDelete)
               <td class="actions-cell">
@@ -80,7 +80,7 @@
 </main>
 
 @if ($canCreate)
-<x-module-indemnite type="modal" id="discipline-create-modal" title="Ajouter une spécialité">
+<x-module-indemnite type="modal" id="discipline-create-modal" title="Ajouter une discipline">
   <form class="teacher-form" id="disciplineCreateForm" method="POST" action="{{ route('parametres.disciplines.store') }}">
     @csrf
     <div class="form-grid form-grid--balanced">
@@ -92,11 +92,11 @@
 
 
 
-      <div class="form-group full">
+      <!--div class="form-group full">
         <label for="disciplineDescription">Description</label>
         <textarea class="form-control" id="disciplineDescription" name="description" rows="4" maxlength="500" placeholder="Ajoutez une courte description de la spécialité…">{{ old('description') }}</textarea>
         @error('description')<span class="field-error" role="alert">{{ $message }}</span>@enderror
-      </div>
+      </div-->
     </div>
 
     <div class="form-actions">

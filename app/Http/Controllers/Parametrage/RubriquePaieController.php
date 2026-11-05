@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Parametrage;
 
 use App\Http\Controllers\Controller;
 use App\Services\Parametrage\RubriquePaieService;
+use App\Services\Parametrage\StatutEnseignantService; // <-- IMPORTANT
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -13,16 +14,19 @@ class RubriquePaieController extends Controller
 {
     use SupprimeEnMasse;
 
-    public function index(Request $request, RubriquePaieService $service): View|RedirectResponse
+    // On injecte StatutEnseignantService ici
+    public function index(Request $request, RubriquePaieService $service, StatutEnseignantService $statutService): View|RedirectResponse
     {
         $filters = $request->validate([
             'search' => ['nullable', 'string', 'max:100'],
             'type' => ['nullable', 'in:gain,retenue'],
             'periodicite' => ['nullable', 'in:mensuelle,ponctuelle,annuelle'],
+            'statut_enseignant_id' => ['nullable', 'integer'], 
             'page' => ['nullable', 'integer', 'min:1'],
         ]);
 
         $result = $service->paginate($filters);
+
         if ($result['unauthorized']) {
             $request->session()->invalidate();
             $request->session()->regenerateToken();
@@ -30,14 +34,23 @@ class RubriquePaieController extends Controller
             return redirect()->route('login')->with('warning', $result['error']);
         }
 
-        $canManage = \App\Support\SicoreAccess::can($request, 'paie.rubriques.manage');
+        // On utilise le service existant
+        $statutsResult = $statutService->getAll();
+        $statuts = $statutsResult['items'] ?? [];
+
+        $canManage = \App\Support\SicoreAccess::can(
+            $request,
+            'paie.rubriques.manage'
+        );
 
         return view('pages.parametres.rubriques-paie', $result + [
             'filters' => $filters,
             'canManage' => $canManage,
+            'statuts' => $statuts,
         ]);
     }
-
+    
+    // ... le reste (store, update, rules, etc.) ne change pas
     public function store(Request $request, RubriquePaieService $service): RedirectResponse
     {
         $result = $service->create($request->validate($this->rules()));
@@ -81,7 +94,8 @@ class RubriquePaieController extends Controller
             'libelle' => ['required', 'string', 'max:100'],
             'type' => ['required', 'in:gain,retenue'],
             'periodicite' => ['required', 'in:mensuelle,ponctuelle,annuelle'],
-            'montant' => ['nullable', 'numeric', 'min:0'], // <-- Remplace 'description'
+            'montant' => ['nullable', 'numeric', 'min:0'],
+            'statut_enseignant_id' => ['required', 'integer'],
         ];
     }
 

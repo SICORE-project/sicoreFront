@@ -137,7 +137,7 @@ return [
             ['label' => 'Corps', 'route' => 'parametres.corps.index', 'icon' => 'fa-solid fa-users-line', 'permission' => 'parametrage.corps.read'],
             ['label' => 'Catégories', 'route' => 'parametres.categories.index', 'icon' => 'fa-solid fa-layer-group', 'permission' => 'parametrage.categories.read'],
             ['label' => 'Banques', 'route' => 'parametres.institutions-financieres', 'icon' => 'fa-solid fa-building-columns', 'permission' => 'parametrage.institutions_financieres.read'],
-            ['label' => 'Spécialités', 'route' => 'parametres.disciplines.index', 'icon' => 'fa-solid fa-book-open', 'permission' => 'parametrage.disciplines.read'],
+            ['label' => 'Disciplines', 'route' => 'parametres.disciplines.index', 'icon' => 'fa-solid fa-book-open', 'permission' => 'parametrage.disciplines.read'],
             ['label' => 'Syndicats', 'route' => 'parametres.syndicats.index', 'icon' => 'fa-solid fa-handshake', 'permission' => 'parametrage.syndicats.read'],
             ['label' => 'Année académique', 'route' => 'parametres.annees-academiques.index', 'icon' => 'fa-solid fa-calendar-days', 'permission' => 'parametrage.annees_academiques.read'],
             ['label' => 'Période de paie', 'route' => 'parametres.periodes-paie.index', 'icon' => 'fa-solid fa-calendar-week', 'permission' => 'parametrage.periodes_paie.read'],

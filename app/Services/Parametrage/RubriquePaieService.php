@@ -18,6 +18,7 @@ class RubriquePaieService
                 'search' => $filters['search'] ?? null,
                 'type' => $filters['type'] ?? null,
                 'periodicite' => $filters['periodicite'] ?? null,
+                'statut_enseignant_id' => $filters['statut_enseignant_id'] ?? null, // <-- AJOUT ICI
                 'page' => $page,
                 'per_page' => 10,
             ], fn ($value) => $value !== null && $value !== ''));
