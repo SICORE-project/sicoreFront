@@ -1404,9 +1404,8 @@ document.addEventListener('DOMContentLoaded', function () {
     wives.required = false;
     children.required = true;
     if (!married) { wives.value = '0'; spouse.value = '0'; }
-    var spouseWorks = married && spouse.value === '1';
     var single = document.getElementById('teacher-couple').value === 'celibataire';
-    document.getElementById('teacher-parts').value = single ? 2 : Math.min(5, 2 + (Number(children.value) || 0) * .5 - (spouseWorks ? .5 : 0));
+    document.getElementById('teacher-parts').value = Math.min(5, (single ? 1 : 2) + Math.max(0, Number(children.value) || 0) * .5);
     applyTeacherStatus('teacher-');
   }
   function refreshCreateTeacherStatus() {
@@ -1651,9 +1650,8 @@ document.addEventListener('DOMContentLoaded', function () {
     wives.required = false;
     children.required = true;
     if (!married) { wives.value = '0'; spouse.value = '0'; }
-    var spouseWorks = married && spouse.value === '1';
     var single = document.getElementById('edit-teacher-couple').value === 'celibataire';
-    document.getElementById('edit-teacher-parts').value = single ? 2 : Math.min(5, 2 + (Number(children.value) || 0) * .5 - (spouseWorks ? .5 : 0));
+    document.getElementById('edit-teacher-parts').value = Math.min(5, (single ? 1 : 2) + Math.max(0, Number(children.value) || 0) * .5);
     applyTeacherStatus('edit-teacher-');
   }
   document.getElementById('edit-teacher-couple').addEventListener('change', calculateEditParts);

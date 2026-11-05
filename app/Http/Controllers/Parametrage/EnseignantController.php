@@ -262,9 +262,7 @@ class EnseignantController extends Controller
             'conjoint_travaille' => $married ? ($request->input('conjoint_travaille') ?? false) : false,
             'nombre_parts_fiscales' => $fonctionnaire
                 ? 1
-                : ($request->input('situation_matrimoniale') === 'celibataire'
-                    ? 2
-                    : min(5, 2 + max(0, $request->integer('nombre_enfants')) * .5 - ($married && $request->boolean('conjoint_travaille') ? .5 : 0))),
+                : min(5, ($request->input('situation_matrimoniale') === 'celibataire' ? 1 : 2) + max(0, $request->integer('nombre_enfants')) * .5),
         ]);
         return $request->validate([
             'matricule' => ['bail', 'required', 'string', $fonctionnaire ? 'regex:~\A[0-9]{6}/[A-Z]\z~' : 'regex:~\A[0-9]{9}/[A-Z]\z~'],
