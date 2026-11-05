@@ -8,6 +8,45 @@
     <input class="form-control" id="{{ $prefix }}Code" name="code" value="{{ $oldValue('code') }}" maxlength="20" placeholder="Ex. SALAIRE_BASE" required>
     @if ($bag) @error('code', $bag)<span class="invalid-feedback">{{ $message }}</span>@enderror @else @error('code')<span class="invalid-feedback">{{ $message }}</span>@enderror @endif
   </div>
+
+  <div class="form-group">
+    <label for="{{ $prefix }}StatutEnseignant">
+        Statut enseignant
+    </label>
+
+    <select
+        class="form-control"
+        id="{{ $prefix }}StatutEnseignant"
+        name="statut_enseignant_id"
+        required
+    >
+        <option value="" disabled @selected(!$oldValue('statut_enseignant_id', $isUpdate ? ($rubrique['statut_enseignant_id'] ?? '') : ''))>-- Choisir un statut --</option>
+
+        @foreach($statuts ?? [] as $statut)
+            {{-- On exclut le fonctionnaire --}}
+            @if(($statut['code'] ?? '') !== 'FONCTIONNAIRE')
+                <option
+                    value="{{ $statut['id'] }}"
+                    @selected(
+                        (string) $oldValue('statut_enseignant_id', $isUpdate ? ($rubrique['statut_enseignant_id'] ?? '') : '') === (string) $statut['id']
+                    )
+                >
+                    {{ $statut['code'] ?? '' }} — {{ $statut['libelle'] ?? '' }}
+                </option>
+            @endif
+        @endforeach
+    </select>
+
+    @if ($bag)
+        @error('statut_enseignant_id', $bag)
+            <span class="invalid-feedback">{{ $message }}</span>
+        @enderror
+    @else
+        @error('statut_enseignant_id')
+            <span class="invalid-feedback">{{ $message }}</span>
+        @enderror
+    @endif
+</div>
   <div class="form-group">
     <label for="{{ $prefix }}Libelle">Libellé <span class="required">*</span></label>
     <input class="form-control" id="{{ $prefix }}Libelle" name="libelle" value="{{ $oldValue('libelle') }}" maxlength="100" placeholder="Ex. Salaire de base" required>

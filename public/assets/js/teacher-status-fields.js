@@ -57,8 +57,21 @@
     group.style.setProperty('display', visible ? '' : 'none', visible ? '' : 'important');
     corps.disabled = !official;
     corps.required = official;
+    var contractuel = label === 'contractuel' || code === 'contractuel';
+    var vacataire = /vacat/.test(label) || /vac/.test(code);
+    if (!official) corps.value = '';
+    Array.from(corps.options).forEach(function (item) {
+      if (!item.value) return;
+      var bodyCode = String(item.dataset.corpsCode || '').trim().toLowerCase();
+      var bodyLabel = item.textContent.trim().toLowerCase();
+      var pc = bodyCode === 'pc';
+      var vac = ['vac', 'vacataire'].includes(bodyCode) || bodyLabel === 'vacataire';
+      item.disabled = official ? (pc || vac) : !(contractuel ? pc : vacataire && vac);
+      item.hidden = item.disabled;
+      if (!official && !item.disabled) corps.value = item.value;
+    });
+    if (official && corps.selectedOptions[0]?.disabled) corps.value = '';
     if (!official) {
-      corps.value = '';
       corps.setCustomValidity('');
       corps.classList.remove('is-invalid');
       corps.setAttribute('aria-invalid', 'false');

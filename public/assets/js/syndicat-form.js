@@ -8,9 +8,13 @@
     var submitButton = form.querySelector("[data-submit-button]");
     var originalButtonHtml = submitButton.innerHTML;
     var timers = new WeakMap();
+    var checks = new WeakMap();
     var submitted = false;
 
     async function checkUniqueness(input) {
+      if (submitted) return;
+      var checkId = (checks.get(input) || 0) + 1;
+      checks.set(input, checkId);
       var value = input.value.trim();
       var feedback = document.getElementById(input.name + "-feedback");
       input.setCustomValidity("");
@@ -20,10 +24,11 @@
         var url = new URL(form.dataset.uniquenessUrl, window.location.origin);
         url.searchParams.set("field", input.name);
         url.searchParams.set("value", value);
-        var response = await fetch(url, { headers: { Accept: "application/json" } });
+        var response = await fetch(url, { cache: "no-store", headers: { Accept: "application/json" } });
         if (!response.ok) return;
 
         var result = await response.json();
+        if (submitted || checks.get(input) !== checkId || input.value.trim() !== value) return;
         if (result.available === false) {
           input.setCustomValidity(result.message);
           input.classList.add("is-invalid");
@@ -39,6 +44,7 @@
 
     form.querySelectorAll("[data-unique-field]").forEach(function (input) {
       input.addEventListener("input", function () {
+        checks.set(input, (checks.get(input) || 0) + 1);
         clearTimeout(timers.get(input));
         input.setCustomValidity("");
         input.classList.remove("is-invalid");
@@ -54,6 +60,10 @@
         return;
       }
       submitted = true;
+      form.querySelectorAll("[data-unique-field]").forEach(function (input) {
+        clearTimeout(timers.get(input));
+        checks.set(input, (checks.get(input) || 0) + 1);
+      });
       submitButton.disabled = true;
       submitButton.setAttribute("aria-busy", "true");
       submitButton.textContent = "Enregistrement…";

@@ -30,8 +30,8 @@ class InstitutionFinanciereController extends Controller
             return redirect()->route('login')->with('warning', $result['error']);
         }
 
-        $result['teachers'] = $bankAccounts->getTeachers();
-        $result['availableInstitutions'] = $service->getAll(1, 100)['items'];
+        $result['teachers'] = $request->ajax() ? [] : $bankAccounts->getTeachers();
+        $result['availableInstitutions'] = $request->ajax() ? [] : $service->getAll(1, 100)['items'];
 
         $items = collect($result['items']);
         $isActive = static function (array $institution): bool {
@@ -51,20 +51,17 @@ class InstitutionFinanciereController extends Controller
     public function store(Request $request, InstitutionFinanciereService $service): RedirectResponse
     {
         $data = $request->validate([
-            'nom' => ['required', 'string', 'max:150'],
+            'libelle' => ['required', 'string', 'max:150'],
             'sigle' => ['required', 'string', 'max:30'],
-            'type_institution' => ['required', 'string', 'max:100'],
-            'adresse' => ['nullable', 'string', 'max:255'],
-            'telephone' => ['nullable', 'string', 'max:20'],
-            'email' => ['nullable', 'email', 'max:100'],
+            'code_banque' => ['required', 'string', 'max:10'],
+            'guichets' => ['nullable', 'array'],
+            'guichets.*.code' => ['required', 'string', 'max:10', 'distinct'],
+            'guichets.*.libelle' => ['required', 'string', 'max:255'],
         ], [
             'required' => 'Le champ :attribute est obligatoire.',
-            'email' => 'L’adresse e-mail doit être valide.',
         ]);
-
-        $data['libelle'] = $data['nom'];
         $data['est_actif'] = true;
-        unset($data['nom']);
+
 
         $result = $service->create($data);
 
@@ -91,19 +88,16 @@ class InstitutionFinanciereController extends Controller
     public function update(Request $request, string $institution, InstitutionFinanciereService $service): RedirectResponse
     {
         $data = $request->validate([
-            'nom' => ['required', 'string', 'max:150'],
+            'libelle' => ['required', 'string', 'max:150'],
             'sigle' => ['required', 'string', 'max:30'],
-            'type_institution' => ['required', 'string', 'max:100'],
-            'adresse' => ['nullable', 'string', 'max:255'],
-            'telephone' => ['nullable', 'string', 'max:20'],
-            'email' => ['nullable', 'email', 'max:100'],
+            'code_banque' => ['required', 'string', 'max:10'],
+            'guichets' => ['nullable', 'array'],
+            'guichets.*.code' => ['required', 'string', 'max:10', 'distinct'],
+            'guichets.*.libelle' => ['required', 'string', 'max:255'],
         ], [
             'required' => 'Le champ :attribute est obligatoire.',
-            'email' => 'L’adresse e-mail doit être valide.',
         ]);
 
-        $data['libelle'] = $data['nom'];
-        unset($data['nom']);
 
         $result = $service->update($institution, $data);
 
