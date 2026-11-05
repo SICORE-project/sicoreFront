@@ -14,12 +14,12 @@ class AnneeAcademiqueController extends Controller
     public function index(Request $request, AnneeAcademiqueService $service): View|RedirectResponse
     {
         $filters = $request->validate([
-            'search' => ['nullable', 'string', 'max:100'],
+            'libelle' => ['nullable', 'string', 'max:100'],
             'statut' => ['nullable', 'in:active,inactive,closed'],
             'page' => ['nullable', 'integer', 'min:1'],
         ]);
 
-        $result = $service->getAll($filters['search'] ?? null);
+        $result = $service->getAll();
         if ($result['unauthorized']) {
             $request->session()->invalidate();
             $request->session()->regenerateToken();
@@ -34,7 +34,12 @@ class AnneeAcademiqueController extends Controller
             'closed' => $allItems->where('est_cloturee', true)->count(),
         ];
 
-        $items = $allItems->when($filters['statut'] ?? null, function ($items, string $status) {
+        // Le menu déroulant liste toutes les années, quel que soit le filtre appliqué.
+        $libelles = $allItems->pluck('libelle')->filter()->unique()->values();
+
+        $items = $allItems->when($filters['libelle'] ?? null, function ($items, string $libelle) {
+            return $items->where('libelle', $libelle);
+        })->when($filters['statut'] ?? null, function ($items, string $status) {
             return $items->filter(fn (array $item): bool => match ($status) {
                 'active' => (bool) ($item['est_active'] ?? false),
                 'closed' => (bool) ($item['est_cloturee'] ?? false),
@@ -56,6 +61,7 @@ class AnneeAcademiqueController extends Controller
             'annees' => $paginator,
             'error' => $result['error'],
             'filters' => $filters,
+            'libelles' => $libelles,
             'stats' => $stats,
         ]);
     }
@@ -120,7 +126,6 @@ class AnneeAcademiqueController extends Controller
             'libelle' => ['required', 'string', 'max:100'],
             'date_debut' => ['required', 'date'],
             'date_fin' => ['required', 'date', 'after:date_debut'],
-            'observations' => ['nullable', 'string', 'max:1000'],
         ];
     }
 
