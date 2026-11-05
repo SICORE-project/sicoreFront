@@ -7,6 +7,11 @@
 
   <div class="form-grid form-grid--balanced">
     <div class="form-group">
+      <label for="code">Code <span class="required">*</span></label>
+      <input class="form-control @error('code') is-invalid @enderror" id="code" name="code" type="text" value="{{ old('code') }}" maxlength="20" required data-unique-field aria-describedby="code-feedback">
+      <div class="invalid-feedback" id="code-feedback" aria-live="polite">@error('code'){{ $message }}@enderror</div>
+    </div>
+    <div class="form-group">
       <label for="libelle">Libellé <span class="required">*</span></label>
       <input class="form-control @error('libelle') is-invalid @enderror" id="libelle" name="libelle" type="text" value="{{ old('libelle') }}" maxlength="100" placeholder="Ex. Syndicat des enseignants" required autofocus data-unique-field aria-describedby="libelle-feedback">
       <div class="invalid-feedback" id="libelle-feedback" aria-live="polite">@error('libelle'){{ $message }}@enderror</div>
@@ -24,14 +29,6 @@
       @error('montant_oeuvre_sociale')<div class="invalid-feedback">{{ $message }}</div>@enderror
     </div>
 
-    <div class="form-group syndicat-status-field">
-      <label for="est_actif">Statut <span class="required">*</span></label>
-      <select class="form-control @error('est_actif') is-invalid @enderror" id="est_actif" name="est_actif" required>
-        <option value="1" @selected(old('est_actif', '1') === '1')>Actif</option>
-        <option value="0" @selected(old('est_actif') === '0')>Inactif</option>
-      </select>
-      @error('est_actif')<div class="invalid-feedback">{{ $message }}</div>@enderror
-    </div>
   </div>
 
   <div class="form-actions">
