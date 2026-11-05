@@ -65,6 +65,13 @@ class EnseignantController extends Controller
             $request->session()->forget(['access_token', 'sicore_user']);
             return redirect()->route('login')->with('warning', $result['error']);
         }
+        if ($result['error'] !== null) {
+            return view('pages.enseignants.index', array_merge($result, array_fill_keys([
+                'academies', 'filterIefs', 'regionOptions', 'iefOptions', 'corpsOptions',
+                'categorieOptions', 'diplomeOptions', 'disciplineOptions', 'institutionOptions',
+                'statutOptions', 'syndicatOptions',
+            ], [])));
+        }
         $iaResult = $academies->getAll(1, 100);
         $result['academies'] = $iaResult['items'];
         $result['filterIefs'] = $request->filled('ia_id') ? $academies->getIefs($request->integer('ia_id'))['items'] : [];
@@ -239,7 +246,7 @@ class EnseignantController extends Controller
         $fonctionnaire = in_array(mb_strtolower(trim($status['libelle'] ?? '')), ['fonctionnaire', 'fonctionnaires'], true)
             || in_array(mb_strtolower(trim($status['code'] ?? '')), ['fonctionnaire', 'fonc'], true);
         if (! $fonctionnaire) {
-            $request->merge(['indice' => null, 'corps_id' => null]);
+            $request->merge(['indice' => null]);
         } else {
             $request->merge(array_fill_keys(['salaire_brut', 'date_recrutement',
                 'annee_recrutement', 'diplome_id', 'categorie_id', 'date_fin_contrat', 'observations'], null));
@@ -255,9 +262,7 @@ class EnseignantController extends Controller
             'conjoint_travaille' => $married ? ($request->input('conjoint_travaille') ?? false) : false,
             'nombre_parts_fiscales' => $fonctionnaire
                 ? 1
-                : ($request->input('situation_matrimoniale') === 'celibataire'
-                    ? 2
-                    : min(5, 2 + max(0, $request->integer('nombre_enfants')) * .5 - ($married && $request->boolean('conjoint_travaille') ? .5 : 0))),
+                : min(5, ($request->input('situation_matrimoniale') === 'celibataire' ? 1 : 2) + max(0, $request->integer('nombre_enfants')) * .5),
         ]);
         return $request->validate([
             'matricule' => ['bail', 'required', 'string', $fonctionnaire ? 'regex:~\A[0-9]{6}/[A-Z]\z~' : 'regex:~\A[0-9]{9}/[A-Z]\z~'],
