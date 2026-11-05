@@ -16,17 +16,12 @@
 
   <section class="content-area">
     <form class="filter-panel parametrage-filters institution-filters" id="institutionFilterForm" method="GET" action="{{ route('parametres.institutions-financieres') }}">
-      <div class="form-group"><label for="institutionSearch">Rechercher</label><input class="form-control" id="institutionSearch" name="search" type="search" value="{{ request('search') }}" placeholder="Libellé ou sigle"></div>
-      <div class="form-group"><label for="institutionTypeFilter">Type</label><input class="form-control" id="institutionTypeFilter" name="type_institution" value="{{ request('type_institution') }}" placeholder="Banque, microfinance..."></div>
-      <div class="form-group"><label for="institutionStatusFilter">Statut</label><select class="form-control" id="institutionStatusFilter" name="est_actif"><option value="">Tous les statuts</option><option value="1" @selected(request('est_actif') === '1')>Actives</option><option value="0" @selected(request('est_actif') === '0')>Inactives</option></select></div>
-    </form>
-
-    <div class="actions-row">
-      <p class="breadcrumb">Paramétrage &gt; Banques</p>
+      <div class="form-group"><label for="institutionSearch">Rechercher</label><input class="form-control" id="institutionSearch" name="search" type="search" value="{{ request('search') }}" placeholder="Libellé, sigle ou code banque"></div>
       <div class="actions-group">
-        <button class="btn-primary" type="button" id="newInstitution" data-modal-open="institution-form-modal">+ Nouvelle banque</button>@if ($peutSupprimer)<button class="btn-secondary btn-bulk-delete" type="button" data-bulk-delete-button disabled>Supprimer la sélection</button>@endif
-      </div>
-    </div>
+        <button class="btn-primary" type="button" id="newInstitution" data-modal-open="institution-form-modal">+ Nouvelle banque</button>
+      </div>    </form>
+
+    
 
     @if ($error)
       <div class="alert alert-error" role="alert">{{ $error }}</div>
@@ -43,24 +38,29 @@
         <table class="table" id="institutionsTable">
           <thead><tr>
             @if ($peutSupprimer)<th class="checkbox-cell"><input type="checkbox" data-select-all aria-label="Tout sélectionner"></th>@endif
-            <th scope="col">Nom ou libellé</th>
-            <th scope="col">Téléphone</th>
-            <th scope="col">Adresse</th><th scope="col">Statut</th><th scope="col" class="actions-cell">Actions</th>
+            <th scope="col">Sigle</th>
+            <th scope="col">Libellé</th>
+            <th scope="col">Code banque (Lg 5 c)</th>
+            <!-- <th scope="col">Guichets</th>
+            <th scope="col">Statut</th> -->
+            <th scope="col" class="actions-cell">Actions</th>
           </tr></thead>
           <tbody>
             @foreach ($items as $institution)
               @php
-                $status = data_get($institution, 'statut', data_get($institution, 'status', data_get($institution, 'actif', data_get($institution, 'active', data_get($institution, 'is_active', data_get($institution, 'est_actif'))))));
+                $status = data_get($institution, 'est_actif', data_get($institution, 'statut', data_get($institution, 'status', data_get($institution, 'actif', data_get($institution, 'is_active')))));
                 $normalizedStatus = is_string($status) ? mb_strtolower(trim($status)) : $status;
                 $active = in_array($normalizedStatus, [true, 1, '1', 'actif', 'active', 'true', 'oui', 'yes'], true);
                 $institutionId = data_get($institution, 'id', data_get($institution, 'uuid', 0));
+                $guichets = data_get($institution, 'guichets', []);
               @endphp
               <tr data-institution-status="{{ $active ? 'actif' : 'inactif' }}">
-                @if ($peutSupprimer)<td class="checkbox-cell"><input type="checkbox" data-row-checkbox value="{{ $institutionId }}" aria-label="Sélectionner {{ data_get($institution, 'nom') }}"></td>@endif
-                <td>{{ data_get($institution, 'nom', data_get($institution, 'libelle', '—')) }}</td>
-                <td>{{ data_get($institution, 'telephone', '—') }}</td>
-                <td>{{ data_get($institution, 'adresse', '—') }}</td>
-                <td><span class="badge {{ $active ? 'badge-active' : 'badge-suspended' }}">{{ $active ? 'Actif' : 'Inactif' }}</span></td>
+                @if ($peutSupprimer)<td class="checkbox-cell"><input type="checkbox" data-row-checkbox value="{{ $institutionId }}" aria-label="Sélectionner {{ data_get($institution, 'libelle') }}"></td>@endif
+                <td>{{ data_get($institution, 'sigle', '—') }}</td>
+                <td>{{ data_get($institution, 'libelle', '—') }}</td>
+                <td>{{ data_get($institution, 'code_banque', '—') }}</td>
+                <!-- <td>{{ is_array($guichets) ? count($guichets) : 0 }}</td> -->
+                <!-- <td><span class="badge {{ $active ? 'badge-active' : 'badge-suspended' }}">{{ $active ? 'Actif' : 'Inactif' }}</span></td> -->
                 <td class="actions-cell">
                   <button class="icon-action" type="button" title="Consulter" data-modal-open="view-institution-modal" data-institution-view='@json($institution)'><i class="fa-solid fa-eye"></i></button>
                   <button class="icon-action" type="button" title="Modifier" data-modal-open="institution-form-modal" data-update-url="{{ route('parametres.institutions-financieres.update', ['institution' => $institutionId]) }}" data-institution-edit='@json($institution)'><i class="fa-solid fa-pen-to-square"></i></button>
@@ -68,7 +68,7 @@
                   <form class="inline-form" method="POST" action="{{ route('parametres.institutions-financieres.destroy', ['institution' => $institutionId]) }}">
                     @csrf
                     @method('DELETE')
-                    <button class="icon-action delete" type="submit" title="Supprimer" aria-label="Supprimer {{ data_get($institution, 'nom', data_get($institution, 'libelle', 'cette institution')) }}"><i class="fa-solid fa-trash-can"></i></button>
+                    <button class="icon-action delete" type="submit" title="Supprimer" aria-label="Supprimer {{ data_get($institution, 'libelle', 'cette banque') }}"><i class="fa-solid fa-trash-can"></i></button>
                   </form>
                 </td>
               </tr>
@@ -86,22 +86,29 @@
   </section>
 </main>
 
+{{-- ================= MODALE DÉTAILS ================= --}}
 <x-module-indemnite type="modal" id="view-institution-modal" title="Détails de la banque">
   <div class="institution-detail-hero">
     <span class="institution-detail-logo"><i class="fa-solid fa-building-columns"></i></span>
-    <div><span class="institution-detail-kicker">Fiche banque</span><h3 data-view-field="nom">—</h3></div>
+    <div><span class="institution-detail-kicker">Fiche banque</span><h3 data-view-field="libelle">—</h3></div>
   </div>
   <div class="form-grid form-grid--balanced institution-details">
     <div class="institution-detail-item"><span class="detail-icon"><i class="fa-solid fa-signature"></i></span><div><label>Sigle</label><p data-view-field="sigle">—</p></div></div>
-    <div class="institution-detail-item"><span class="detail-icon"><i class="fa-solid fa-landmark"></i></span><div><label>Type de banque</label><p data-view-field="type">—</p></div></div>
-    <div class="institution-detail-item"><span class="detail-icon"><i class="fa-solid fa-circle-check"></i></span><div><label>Statut</label><p data-view-field="statut">—</p></div></div>
-    <div class="institution-detail-item"><span class="detail-icon"><i class="fa-solid fa-phone"></i></span><div><label>Téléphone</label><p data-view-field="telephone">—</p></div></div>
-    <div class="institution-detail-item"><span class="detail-icon"><i class="fa-solid fa-envelope"></i></span><div><label>E-mail</label><p data-view-field="email">—</p></div></div>
-    <div class="institution-detail-item full"><span class="detail-icon"><i class="fa-solid fa-location-dot"></i></span><div><label>Adresse</label><p data-view-field="adresse">—</p></div></div>
+    <div class="institution-detail-item"><span class="detail-icon"><i class="fa-solid fa-hashtag"></i></span><div><label>Code banque (Lg 5 c)</label><p data-view-field="code_banque">—</p></div></div>
+    <!-- <div class="institution-detail-item"><span class="detail-icon"><i class="fa-solid fa-circle-check"></i></span><div><label>Statut</label><p data-view-field="statut">—</p></div></div> -->
   </div>
+
+  <div class="institution-guichets-block">
+    <h4><i class="fa-solid fa-door-open"></i> Guichets</h4>
+    <ul class="institution-guichets-list" data-view-field="guichets">
+      <li class="institution-guichets-empty">Aucun guichet</li>
+    </ul>
+  </div>
+
   <div class="form-actions"><button class="btn-secondary" type="button" data-modal-close>Fermer</button></div>
 </x-module-indemnite>
 
+{{-- ================= MODALE FORMULAIRE ================= --}}
 <x-module-indemnite type="modal" id="institution-form-modal" title="Banque" :open="$errors->any() || session()->has('institution_form_open')">
   <form id="institutionForm" class="teacher-form" method="POST" action="{{ route('parametres.institutions-financieres.store') }}" data-create-url="{{ route('parametres.institutions-financieres.store') }}">
     @csrf
@@ -111,18 +118,27 @@
     @endif
     <div class="form-grid form-grid--balanced">
       <div class="form-group"><label for="institutionSigle">Sigle <span class="required" aria-hidden="true">*</span></label><input class="form-control" id="institutionSigle" name="sigle" value="{{ old('sigle') }}" maxlength="30" required aria-required="true"></div>
-      <div class="form-group full"><label for="institutionNom">Nom ou libellé <span class="required" aria-hidden="true">*</span></label><input class="form-control" id="institutionNom" name="nom" value="{{ old('nom') }}" maxlength="255" required aria-required="true"></div>
-      <div class="form-group"><label for="institutionType">Type de banque <span class="required" aria-hidden="true">*</span></label><input class="form-control" id="institutionType" name="type_institution" value="{{ old('type_institution') }}" maxlength="100" required aria-required="true"></div>
-      <div class="form-group"><label for="institutionTelephone">Téléphone <span class="form-optional">(facultatif)</span></label><input class="form-control" id="institutionTelephone" name="telephone" type="tel" value="{{ old('telephone') }}" maxlength="30"></div>
-      <div class="form-group"><label for="institutionEmail">E-mail <span class="form-optional">(facultatif)</span></label><input class="form-control" id="institutionEmail" name="email" type="email" value="{{ old('email') }}" maxlength="255"></div>
-      <div class="form-group full"><label for="institutionAdresse">Adresse <span class="form-optional">(facultatif)</span></label><textarea class="form-control" id="institutionAdresse" name="adresse" rows="2" maxlength="500">{{ old('adresse') }}</textarea></div>
+      <div class="form-group"><label for="institutionCodeBanque">Code banque(Lg 5 c) <span class="required" aria-hidden="true">*</span></label><input class="form-control" id="institutionCodeBanque" name="code_banque" value="{{ old('code_banque') }}" maxlength="10" required aria-required="true"></div>
+      <div class="form-group full"><label for="institutionLibelle">Libellé <span class="required" aria-hidden="true">*</span></label><input class="form-control" id="institutionLibelle" name="libelle" value="{{ old('libelle') }}" maxlength="255" required aria-required="true"></div>
+      <!-- <div class="form-group"><label for="institutionType">Type de banque <span class="required" aria-hidden="true">*</span></label><input class="form-control" id="institutionType" name="type_institution" value="{{ old('type_institution') }}" maxlength="100" required aria-required="true"></div> -->
     </div>
+
+    {{-- Guichets (code + libelle) --}}
+    <div class="institution-guichets-block">
+      <h4><i class="fa-solid fa-door-open"></i> Guichets</h4>
+      <p class="form-hint">Chaque guichet a un code unique par banque et un libellé.</p>
+      <div id="guichetsRows"></div>
+      <button class="btn-secondary" type="button" id="addGuichetRow"><i class="fa-solid fa-plus"></i> Ajouter un guichet</button>
+    </div>
+
     <div class="form-actions">
       <button class="btn-secondary" type="button" data-modal-close>Annuler</button>
       <button class="btn-primary" type="submit">Enregistrer</button>
     </div>
   </form>
 </x-module-indemnite>
+
+{{-- Modale compte bancaire enseignant inchangée --}}
 <x-module-indemnite type="modal" id="teacher-bank-account-modal" title="Associer une banque à un enseignant" :open="$errors->bankAccount->any() || session()->has('bank_account_form_open')">
   <p class="breadcrumb">Créer un compte bancaire distinct rattaché à l’enseignant.</p>
   <form class="teacher-form" method="POST" action="{{ route('parametres.comptes-bancaires-enseignants.store') }}">
@@ -151,7 +167,7 @@
               $bankId = data_get($institution, 'id', data_get($institution, 'uuid'));
             @endphp
             @if ($bankIsActive && $bankId)
-              <option value="{{ $bankId }}" @selected((string) old('institut_financier_id') === (string) $bankId)>{{ data_get($institution, 'nom', data_get($institution, 'libelle')) }} ({{ data_get($institution, 'sigle') }})</option>
+              <option value="{{ $bankId }}" @selected((string) old('institut_financier_id') === (string) $bankId)>{{ data_get($institution, 'libelle') }} ({{ data_get($institution, 'sigle') }})</option>
             @endif
           @endforeach
         </select>
@@ -164,10 +180,11 @@
   </form>
 </x-module-indemnite>
 @endsection
+
 @push('styles')
 <style>
   .institution-filters { align-items: end; padding: 20px; border: 1px solid #e2e8f0; border-radius: 16px; background: linear-gradient(135deg, #fff, #f8fafc); box-shadow: 0 8px 24px rgba(15, 23, 42, .05); }
-  .filter-panel.parametrage-filters.institution-filters { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+  .filter-panel.parametrage-filters.institution-filters { grid-template-columns: minmax(0, 1fr) auto; gap: 20px; }
   .institution-filters .form-group { min-width: 0; }
   @media (max-width: 600px) { .filter-panel.parametrage-filters.institution-filters { grid-template-columns: minmax(0, 1fr); } }
   #institution-form-modal .modal-dialog,
@@ -184,26 +201,80 @@
   .institution-detail-item label { display: block; margin-bottom: 3px; color: #64748b; font-size: 12px; font-weight: 700; text-transform: uppercase; }
   .institution-detail-item p { min-height: auto; margin: 0; padding: 0; border: 0; background: transparent; color: #0f172a; font-weight: 600; overflow-wrap: anywhere; }
   #institutionsTable .actions-cell { white-space: nowrap; }
+
+  .institution-guichets-block { margin-top: 22px; padding: 18px; border: 1px dashed #cbd5e1; border-radius: 14px; background: #f8fafc; }
+  .institution-guichets-block h4 { display: flex; align-items: center; gap: 8px; margin: 0 0 8px; color: #0f172a; font-size: 15px; }
+  .institution-guichets-block .form-hint { margin: 0 0 12px; color: #64748b; font-size: 13px; }
+  .institution-guichets-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+  .institution-guichets-list li { display: flex; gap: 10px; padding: 8px 12px; border-radius: 10px; background: #fff; border: 1px solid #e2e8f0; font-size: 14px; }
+  .institution-guichets-list li code { font-weight: 700; color: #047857; background: #ecfdf5; padding: 2px 6px; border-radius: 6px; }
+  .institution-guichets-empty { color: #94a3b8; font-style: italic; background: transparent !important; border: 0 !important; }
+  .guichet-row { display: grid; grid-template-columns: 120px 1fr 40px; gap: 10px; align-items: center; margin-bottom: 8px; }
+  .guichet-row .icon-action.delete { color: #dc2626; }
 </style>
 @endpush
+
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function () {
   const table = document.getElementById('institutionsTable');
-  const statusFilter = document.getElementById('institutionStatusFilter');
+
   const filterForm = document.getElementById('institutionFilterForm');
   const searchInput = document.getElementById('institutionSearch');
-  const typeInput = document.getElementById('institutionTypeFilter');
-  if (!table || !statusFilter) return;
+  if (!table || !searchInput) return;
 
-  let filterTimer;
-  [searchInput, typeInput].forEach(function (input) {
-    input.addEventListener('input', function () {
-      window.clearTimeout(filterTimer);
-      filterTimer = window.setTimeout(function () { filterForm.requestSubmit(); }, 400);
-    });
+  const card = table.closest('.table-card');
+  const initialCard = card.innerHTML;
+  const initialUrl = new URL(window.location.href);
+  let pendingSearch;
+  let requestId = 0;
+  const cache = new Map();
+  if (!initialUrl.searchParams.get('search')) cache.set('', initialCard);
+
+  async function filterBanks() {
+    const id = ++requestId;
+    pendingSearch?.abort();
+    const term = searchInput.value.trim();
+    const url = new URL(filterForm.action);
+    if (term) url.searchParams.set('search', term);
+    if (!term && !initialUrl.searchParams.get('search')) {
+      const page = initialUrl.searchParams.get('page');
+      if (page) url.searchParams.set('page', page);
+    }
+    if (cache.has(term)) {
+      card.innerHTML = cache.get(term);
+      card.removeAttribute('aria-busy');
+      history.replaceState(null, '', url);
+      return;
+    }
+    pendingSearch = new AbortController();
+    card.setAttribute('aria-busy', 'true');
+    try {
+      const response = await fetch(url, {
+        signal: pendingSearch.signal,
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+      });
+      if (!response.ok) throw new Error('Recherche indisponible');
+      if (response.redirected) { window.location.assign(response.url); return; }
+      const page = new DOMParser().parseFromString(await response.text(), 'text/html');
+      const result = page.querySelector('#institutionsTable')?.closest('.table-card');
+      if (!result || id !== requestId) return;
+      cache.set(term, result.innerHTML);
+      card.innerHTML = result.innerHTML;
+      history.replaceState(null, '', url);
+    } catch (error) {
+      if (error.name !== 'AbortError' && id === requestId) {
+        window.location.assign(url);
+      }
+    } finally {
+      if (id === requestId) card.removeAttribute('aria-busy');
+    }
+  }
+  searchInput.addEventListener('input', filterBanks);
+  filterForm.addEventListener('submit', function (event) {
+    event.preventDefault();
+    filterBanks();
   });
-
   const valueOf = (institution, ...keys) => {
     for (const key of keys) {
       const value = key.split('.').reduce((item, part) => item && item[part], institution);
@@ -211,64 +282,108 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     return '—';
   };
-  const isActive = (institution) => {
-    const value = valueOf(institution, 'statut', 'status', 'actif', 'active', 'is_active', 'est_actif');
-    return [true, 1, '1', 'actif', 'active', 'true', 'oui', 'yes'].includes(typeof value === 'string' ? value.trim().toLowerCase() : value);
-  };
+  // const isActive = (institution) => {
+  //   const value = valueOf(institution, 'est_actif', 'statut', 'status', 'actif', 'active', 'is_active');
+  //   return [true, 1, '1', 'actif', 'active', 'true', 'oui', 'yes'].includes(typeof value === 'string' ? value.trim().toLowerCase() : value);
+  // };
 
-  document.querySelectorAll('[data-institution-view]').forEach(function (button) {
-    button.addEventListener('click', function () {
+  // ---------- Modale Détails ----------
+  document.addEventListener('click', function (event) {
+      const button = event.target.closest('[data-institution-view]');
+      if (!button) return;
+      document.getElementById('view-institution-modal').hidden = false;
       const institution = JSON.parse(button.dataset.institutionView);
       const values = {
         sigle: valueOf(institution, 'sigle'),
-        nom: valueOf(institution, 'nom', 'libelle'),
-        type: valueOf(institution, 'type.nom', 'type_institution', 'type'),
-        telephone: valueOf(institution, 'telephone'),
-        email: valueOf(institution, 'email'),
-        adresse: valueOf(institution, 'adresse'),
-        statut: isActive(institution) ? 'Actif' : 'Inactif'
+        libelle: valueOf(institution, 'libelle'),
+        code_banque: valueOf(institution, 'code_banque'),
       };
       Object.entries(values).forEach(([field, value]) => {
         const target = document.querySelector('[data-view-field="' + field + '"]');
         if (target) target.textContent = value;
       });
-    });
+
+      // Guichets
+      const list = document.querySelector('[data-view-field="guichets"]');
+      list.innerHTML = '';
+      const guichets = Array.isArray(institution.guichets) ? institution.guichets : [];
+      if (!guichets.length) {
+        list.innerHTML = '<li class="institution-guichets-empty">Aucun guichet</li>';
+      } else {
+        guichets.forEach(function (g) {
+          const li = document.createElement('li');
+          const code = document.createElement('code');
+          code.textContent = g.code || '—';
+          const label = document.createElement('span');
+          label.textContent = g.libelle || '—';
+          li.append(code, label);
+          list.appendChild(li);
+        });
+      }
   });
 
+  // ---------- Formulaire ----------
   const form = document.getElementById('institutionForm');
   const methodOverride = document.getElementById('institutionMethod');
   const newButton = document.getElementById('newInstitution');
-  const setField = (id, value) => { document.getElementById(id).value = value === '—' ? '' : value; };
+  const setField = (id, value) => {
+    const el = document.getElementById(id);
+    if (el) el.value = value === '—' ? '' : value;
+  };
+
+  const guichetsRows = document.getElementById('guichetsRows');
+  const addGuichetRowButton = document.getElementById('addGuichetRow');
+  let nextGuichetIndex = 0;
+
+  function addGuichetRow(code = '', libelle = '') {
+    const index = nextGuichetIndex++;
+    const row = document.createElement('div');
+    row.className = 'guichet-row';
+    row.innerHTML =
+      '<input class="form-control" name="guichets[' + index + '][code]" placeholder="Code" maxlength="10" required>' +
+      '<input class="form-control" name="guichets[' + index + '][libelle]" placeholder="Libellé" maxlength="255" required>' +
+      '<button type="button" class="icon-action delete" title="Retirer"><i class="fa-solid fa-xmark"></i></button>';
+    row.querySelector('button').addEventListener('click', () => row.remove());
+    row.querySelectorAll('input')[0].value = code;
+    row.querySelectorAll('input')[1].value = libelle;
+    guichetsRows.appendChild(row);
+  }
+
+  function resetGuichets(guichets) {
+    guichetsRows.innerHTML = '';
+    nextGuichetIndex = 0;
+    if (Array.isArray(guichets) && guichets.length) {
+      guichets.forEach(g => addGuichetRow(g.code, g.libelle));
+    }
+  }
+
+  addGuichetRowButton.addEventListener('click', () => addGuichetRow());
+  resetGuichets(@json(array_values(old('guichets', []))));
+
   newButton.addEventListener('click', function () {
     form.dataset.mode = 'create';
     form.action = form.dataset.createUrl;
     methodOverride.disabled = true;
     form.reset();
+    resetGuichets([]);
     document.querySelector('#institution-form-modal-title [data-modal-title-text]').textContent = 'Nouvelle banque';
   });
-  document.querySelectorAll('[data-institution-edit]').forEach(function (button) {
-    button.addEventListener('click', function () {
+
+  document.addEventListener('click', function (event) {
+      const button = event.target.closest('[data-institution-edit]');
+      if (!button) return;
+      document.getElementById('institution-form-modal').hidden = false;
       form.dataset.mode = 'edit';
       form.action = button.dataset.updateUrl;
       methodOverride.disabled = false;
       const institution = JSON.parse(button.dataset.institutionEdit);
       document.querySelector('#institution-form-modal-title [data-modal-title-text]').textContent = 'Modifier la banque';
       setField('institutionSigle', valueOf(institution, 'sigle'));
-      setField('institutionNom', valueOf(institution, 'nom', 'libelle'));
-      setField('institutionType', valueOf(institution, 'type.nom', 'type_institution', 'type'));
-      setField('institutionTelephone', valueOf(institution, 'telephone'));
-      setField('institutionEmail', valueOf(institution, 'email'));
-      setField('institutionAdresse', valueOf(institution, 'adresse'));
-    });
+      setField('institutionLibelle', valueOf(institution, 'libelle'));
+      setField('institutionCodeBanque', valueOf(institution, 'code_banque'));
+      // setField('institutionType', valueOf(institution, 'type.nom', 'type_institution', 'type'));
+      resetGuichets(institution.guichets || []);
   });
-
-
-
-  statusFilter.addEventListener('change', function () {
-    filterForm.requestSubmit();
-  });
-
-
 });
 </script>
 @endpush
