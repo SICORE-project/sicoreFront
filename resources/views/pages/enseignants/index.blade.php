@@ -225,7 +225,6 @@
       <div class="form-group"><label for="teacher-lieu-service">Établissement</label><div class="teacher-select-create"><select class="form-control" id="teacher-lieu-service" name="lieu_service_id" disabled data-etablissements-url="{{ route('enseignants.etablissements') }}"><option value="">Sélectionner d’abord une IEF</option></select>@if ($drhAccess->allowsRoute('enseignants.referentiels.store'))<button class="icon-action" type="button" data-referentiel-open="lieu_service" data-referentiel-target="teacher-lieu-service" title="Ajouter un établissement" aria-label="Ajouter un établissement"><i class="fa-solid fa-plus"></i></button>@endif</div></div>
       <div class="form-group"><label for="teacher-salaire">Salaire brut</label><input class="form-control" id="teacher-salaire" name="salaire_brut" type="number" min="0" step="1" value="{{ old('salaire_brut') }}" readonly></div>
       <div class="form-group"><label for="teacher-generation">Année de recrutement</label><input class="form-control" id="teacher-generation" name="annee_recrutement" type="number" min="1900" max="{{ now()->year }}" value="{{ old('annee_recrutement') }}"></div>
-      <div class="form-group" data-create-contract-field hidden><label for="teacher-date-fin-contrat">Fin du contrat <span class="required">*</span></label><input class="form-control" id="teacher-date-fin-contrat" name="date_fin_contrat" type="date" value="{{ old('date_fin_contrat') }}"></div>
       <div class="form-group"><label for="teacher-couple">Situation matrimoniale</label><select class="form-control" id="teacher-couple" name="situation_matrimoniale" required><option value="celibataire">Célibataire</option><option value="marie" @selected(old('situation_matrimoniale') === 'marie')>Marié(e)</option><option value="veuf" @selected(old('situation_matrimoniale') === 'veuf')>Veuf/Veuve</option><option value="divorce" @selected(old('situation_matrimoniale') === 'divorce')>Divorcé(e)</option></select></div>
       <div class="form-group"><label for="teacher-enfants">Nombre d’enfants <span class="required">*</span></label><input class="form-control" id="teacher-enfants" name="nombre_enfants" type="number" min="0" value="{{ old('nombre_enfants') }}" required></div>
       <div class="form-group"><label for="teacher-femmes">Nombre de femme(s) <span class="optional-label">(facultatif)</span></label><input class="form-control" id="teacher-femmes" name="nombre_femmes" type="number" min="0" value="{{ old('nombre_femmes') }}"></div>
@@ -410,7 +409,6 @@
       <div class="form-group"><label for="edit-teacher-lieu-service">Établissement</label><div class="teacher-select-create"><select class="form-control" id="edit-teacher-lieu-service" name="lieu_service_id" disabled data-etablissements-url="{{ route('enseignants.etablissements') }}"><option value="">Sélectionner d’abord une IEF</option></select>@if ($drhAccess->allowsRoute('enseignants.referentiels.store'))<button class="icon-action" type="button" data-referentiel-open="lieu_service" data-referentiel-target="edit-teacher-lieu-service" title="Ajouter un établissement" aria-label="Ajouter un établissement"><i class="fa-solid fa-plus"></i></button>@endif</div></div>
       <div class="form-group"><label for="edit-teacher-salaire">Salaire brut</label><input class="form-control" id="edit-teacher-salaire" name="salaire_brut" type="number" min="0" readonly></div>
       <div class="form-group"><label for="edit-teacher-generation">Année de recrutement</label><input class="form-control" id="edit-teacher-generation" name="annee_recrutement" type="number" min="1900" max="{{ now()->year }}"></div>
-      <div class="form-group" data-edit-contract-field hidden><label for="edit-teacher-date-fin-contrat">Fin du contrat <span class="required">*</span></label><input class="form-control" id="edit-teacher-date-fin-contrat" name="date_fin_contrat" type="date"></div>
       <div class="form-group full"><label for="edit-teacher-observations">Observations</label><textarea class="form-control" id="edit-teacher-observations" name="observations"></textarea></div>
     </div></div></section>
     <section class="wizard-panel" data-edit-panel="3" hidden><div class="form-section"><h3>Situation matrimoniale et parts</h3><div class="form-grid">
@@ -1132,7 +1130,7 @@ document.addEventListener('DOMContentLoaded', function () {
   var createStep = 1;
   var createGroups = [
     ['teacher-statut-enseignant', 'teacher-corps', 'teacher-matricule', 'teacher-indice', 'teacher-cni', 'teacher-nom', 'teacher-prenom', 'teacher-date-naissance', 'teacher-lieu-naissance', 'teacher-genre'],
-    ['teacher-ia', 'teacher-ief', 'teacher-lieu-service', 'teacher-diplome', 'teacher-syndicat', 'teacher-categorie', 'teacher-salaire', 'teacher-discipline', 'teacher-date-recrutement', 'teacher-date-fin-contrat', 'teacher-generation', 'teacher-statut', 'teacher-observations'],
+    ['teacher-ia', 'teacher-ief', 'teacher-lieu-service', 'teacher-diplome', 'teacher-syndicat', 'teacher-categorie', 'teacher-salaire', 'teacher-discipline', 'teacher-date-recrutement', 'teacher-generation', 'teacher-statut', 'teacher-observations'],
     ['teacher-couple', 'teacher-conjoint-travaille', 'teacher-enfants', 'teacher-femmes', 'teacher-parts'],
     ['teacher-email', 'teacher-telephone', 'teacher-banque', 'teacher-code-banque', 'teacher-code-guichet', 'teacher-numero-compte', 'teacher-cle-rib']
   ];
@@ -1192,7 +1190,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   var editFieldGroups = {
     1: ['edit-teacher-statut-enseignant', 'edit-teacher-corps', 'edit-teacher-matricule', 'edit-teacher-indice', 'edit-teacher-cni', 'edit-teacher-nom', 'edit-teacher-prenom', 'edit-teacher-date-naissance', 'edit-teacher-lieu-naissance', 'edit-teacher-genre'],
-    2: ['edit-teacher-ia', 'edit-teacher-ief', 'edit-teacher-lieu-service', 'edit-teacher-diplome', 'edit-teacher-syndicat', 'edit-teacher-categorie', 'edit-teacher-salaire', 'edit-teacher-discipline', 'edit-teacher-date-recrutement', 'edit-teacher-date-fin-contrat', 'edit-teacher-generation', 'edit-teacher-statut', 'edit-teacher-observations'],
+    2: ['edit-teacher-ia', 'edit-teacher-ief', 'edit-teacher-lieu-service', 'edit-teacher-diplome', 'edit-teacher-syndicat', 'edit-teacher-categorie', 'edit-teacher-salaire', 'edit-teacher-discipline', 'edit-teacher-date-recrutement', 'edit-teacher-generation', 'edit-teacher-statut', 'edit-teacher-observations'],
     3: ['edit-teacher-couple', 'edit-teacher-conjoint-travaille', 'edit-teacher-enfants', 'edit-teacher-femmes', 'edit-teacher-parts'],
     4: ['edit-teacher-email', 'edit-teacher-telephone', 'edit-teacher-banque', 'edit-teacher-code-banque', 'edit-teacher-code-guichet', 'edit-teacher-numero-compte', 'edit-teacher-cle-rib']
   };
@@ -1332,12 +1330,6 @@ document.addEventListener('DOMContentLoaded', function () {
     filterCategories(createCategorie, createCorps.value, document.getElementById('teacher-diplome'));
     var selected = createCategorie.selectedOptions[0];
     if (!contractuel || (selected && selected.hidden)) { createCategorie.value = ''; createCategorie.classList.remove('is-invalid'); }
-    var contractField = document.querySelector('[data-create-contract-field]');
-    var contractInput = document.getElementById('teacher-date-fin-contrat');
-    contractField.hidden = !visible;
-    contractField.style.display = visible ? '' : 'none';
-    contractInput.required = contractuel;
-    contractInput.disabled = !contractuel;
   }
 
   function validateCreateStep(step) {
@@ -1501,12 +1493,6 @@ document.addEventListener('DOMContentLoaded', function () {
     filterCategories(editCategorie, editCorps.value, document.getElementById('edit-teacher-diplome'));
     var selected = editCategorie.selectedOptions[0];
     if (!visible || (selected && selected.hidden)) { editCategorie.value = ''; editCategorie.classList.remove('is-invalid'); }
-    var contractField = document.querySelector('[data-edit-contract-field]');
-    var contractInput = document.getElementById('edit-teacher-date-fin-contrat');
-    contractField.hidden = !visible;
-    contractField.style.display = visible ? '' : 'none';
-    contractInput.required = visible;
-    contractInput.disabled = !visible;
   }
 
   function loadEditIefs(iaId, selectedId, selectedLieuId) {
@@ -1591,7 +1577,6 @@ document.addEventListener('DOMContentLoaded', function () {
       document.getElementById('edit-teacher-discipline').value = teacher.discipline ? teacher.discipline.id : '';
       document.getElementById('edit-teacher-salaire').value = teacher.salaire_brut || '';
       document.getElementById('edit-teacher-generation').value = teacher.annee_recrutement || '';
-      document.getElementById('edit-teacher-date-fin-contrat').value = teacher.date_fin_contrat || '';
       document.getElementById('edit-teacher-observations').value = teacher.observations || '';
       document.getElementById('edit-teacher-couple').value = teacher.situation_matrimoniale || (teacher.est_en_couple ? 'marie' : 'celibataire');
       document.getElementById('edit-teacher-enfants').value = teacher.nombre_enfants ?? '';
@@ -1618,13 +1603,12 @@ document.addEventListener('DOMContentLoaded', function () {
   });
   editStatus.addEventListener('change', function () {
     // Les valeurs liées à l'ancien statut ne doivent pas être soumises avec
-    // les règles du nouveau statut (matricule, indice/corps, catégorie et fin de contrat).
+    // les règles du nouveau statut (matricule, indice/corps, catégorie).
     document.getElementById('edit-teacher-matricule').value = '';
     document.getElementById('edit-teacher-indice').value = '';
     editCorps.value = '';
     editCategorie.value = '';
-    document.getElementById('edit-teacher-date-fin-contrat').value = '';
-    editForm.querySelectorAll('#edit-teacher-matricule, #edit-teacher-indice, #edit-teacher-corps, #edit-teacher-categorie, #edit-teacher-date-fin-contrat').forEach(function (field) {
+    editForm.querySelectorAll('#edit-teacher-matricule, #edit-teacher-indice, #edit-teacher-corps, #edit-teacher-categorie').forEach(function (field) {
       field.setCustomValidity('');
       field.classList.remove('is-invalid');
       field.setAttribute('aria-invalid', 'false');

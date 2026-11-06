@@ -37,8 +37,8 @@ class TeacherContractuelTest extends TestCase
             ->assertSee('data-salaire-brut="250000" data-categorie-id="2"', false)
             ->assertSee('id="teacher-categorie" name="categorie_id"', false)
             ->assertSee('id="edit-teacher-categorie" name="categorie_id"', false)
-            ->assertSee('id="teacher-date-fin-contrat" name="date_fin_contrat"', false)
-            ->assertSee('id="edit-teacher-date-fin-contrat" name="date_fin_contrat"', false);
+            ->assertDontSee('name="date_fin_contrat"', false)
+            ->assertDontSee('edit-teacher-date-fin-contrat', false);
     }
 
     public static function operations(): array
