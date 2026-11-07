@@ -122,44 +122,7 @@
   </x-module-indemnite>
 
   <x-module-indemnite type="modal" id="view-user-modal" title="Détails de l’utilisateur">
-    <div class="user-detail-cards">
-      <section class="user-detail-card"><dl>
-        <div><dt>Nom complet</dt><dd id="view-user-name">—</dd></div>
-        <div><dt>Matricule</dt><dd id="view-user-matricule">—</dd></div>
-      </dl></section>
-      <section class="user-detail-card"><dl>
-        <div><dt>Adresse e-mail</dt><dd id="view-user-email">—</dd></div>
-        <div><dt>Téléphone</dt><dd id="view-user-phone">—</dd></div>
-      </dl></section>
-      <section class="user-detail-card"><dl>
-        <div><dt>Date de naissance</dt><dd id="view-user-birth-date">—</dd></div>
-        <div><dt>Lieu de naissance</dt><dd id="view-user-birth-place">—</dd></div>
-      </dl></section>
-      <section class="user-detail-card"><dl>
-        <div><dt>Genre</dt><dd id="view-user-gender">—</dd></div>
-        <div><dt>Adresse</dt><dd id="view-user-address">—</dd></div>
-      </dl></section>
-      <section class="user-detail-card"><dl>
-        <div><dt>Fonction</dt><dd id="view-user-function">—</dd></div>
-        <div><dt>Établissement</dt><dd id="view-user-etablissement">—</dd></div>
-      </dl></section>
-      <section class="user-detail-card"><dl>
-        <div><dt>IA</dt><dd id="view-user-ia">—</dd></div>
-        <div><dt>IEF</dt><dd id="view-user-ief">—</dd></div>
-      </dl></section>
-      <section class="user-detail-card"><dl>
-        <div><dt>Rôle</dt><dd id="view-user-role">—</dd></div>
-        <div><dt>Statut</dt><dd id="view-user-status">—</dd></div>
-      </dl></section>
-      <section class="user-detail-card"><dl>
-        <div><dt>Identifiant du compte</dt><dd id="view-user-id">—</dd></div>
-        <div><dt>Structure</dt><dd id="view-user-structure">—</dd></div>
-      </dl></section>
-      <section class="user-detail-card"><dl>
-        <div><dt>Créé le</dt><dd id="view-user-created-at">—</dd></div>
-        <div><dt>Dernière connexion (heure de Dakar)</dt><dd id="view-user-last-login">Non enregistrée</dd></div>
-      </dl></section>
-    </div>
+    @include('pages.administration.utilisateurs.profile')
     <div class="form-actions"><button class="btn-secondary" type="button" data-modal-close>Fermer</button></div>
   </x-module-indemnite>
 
@@ -230,6 +193,9 @@
 @endsection
 
 @push('styles')
+<link rel="stylesheet" href="{{ asset('assets/css/teacher-profile.css') }}?v={{ filemtime(public_path('assets/css/teacher-profile.css')) }}">
+<style>#view-user-modal .modal-dialog { width: min(920px, calc(100% - 32px)); }</style>
+
   <style>
     .user-status-toggle { border: 0; cursor: pointer; font: inherit; font-weight: 700; }
     .user-status-toggle:hover { filter: brightness(.94); }
@@ -275,6 +241,8 @@
 @endpush
 
 @push('scripts')
+<script src="{{ asset('assets/js/user-profile.js') }}?v={{ filemtime(public_path('assets/js/user-profile.js')) }}"></script>
+
   <script src="{{ asset('assets/js/user-filters.js') }}" defer></script>
   <script>
     document.addEventListener('DOMContentLoaded', function () {
@@ -686,25 +654,7 @@
           const user = JSON.parse(button.dataset.user);
 
           if (action === 'view') {
-            document.getElementById('view-user-id').textContent = user.id || '—';
-            document.getElementById('view-user-name').textContent = user.nom_complet || `${user.prenom || ''} ${user.nom || ''}`.trim() || '—';
-            document.getElementById('view-user-email').textContent = user.email || '—';
-            document.getElementById('view-user-matricule').textContent = user.matricule || '—';
-            document.getElementById('view-user-ia').textContent = user.affectation?.ia || '—';
-            document.getElementById('view-user-ief').textContent = user.affectation?.ief || '—';
-            document.getElementById('view-user-etablissement').textContent = user.affectation?.etablissement || '—';
-            document.getElementById('view-user-phone').textContent = user.telephone || '—';
-            document.getElementById('view-user-gender').textContent = user.genre || '—';
-            document.getElementById('view-user-birth-date').textContent = user.date_naiss || '—';
-            document.getElementById('view-user-birth-place').textContent = user.lieu_naissance || '—';
-            document.getElementById('view-user-address').textContent = user.adresse || '—';
-            document.getElementById('view-user-role').textContent = user.role?.nom || '—';
-            document.getElementById('view-user-structure').textContent = [user.lieu_service?.code, user.lieu_service?.libelle].filter(Boolean).join(' — ') || 'Aucune structure';
-            document.getElementById('view-user-status').textContent = user.statut !== 'actif'
-                ? 'Suspendu'
-                : (user.enseignant_id && !user.password_defined ? 'En attente de vérification' : 'Actif');
-            document.getElementById('view-user-created-at').textContent = user.created_at || '—';
-            document.getElementById('view-user-last-login').textContent = user.derniere_connexion || 'Non enregistrée';
+            window.renderUserProfile(viewModal, user);
             openModal(viewModal);
             return;
           }
