@@ -75,4 +75,16 @@ class IaWorkspaceTest extends TestCase
         $this->post('/login', ['email' => 'ia@example.test', 'password' => 'secret123', 'next' => '/paie/bulletins'])
             ->assertRedirect(route('dashboard'))->assertSessionHas('sicore_user.ia_id', 1);
     }
+    public function test_teacher_detail_uses_shared_profile(): void
+    {
+        Http::fake(['*/ia/enseignants/3*' => Http::response(['data' => [
+            'id' => 3, 'prenom' => 'Awa', 'nom' => 'Diop',
+            'cni' => '1234567890123', 'ief' => ['libelle' => 'IEF Dakar'],
+        ]])]);
+        $this->get('/ia/enseignants/3')->assertOk()
+            ->assertViewIs('pages.ia.teacher-show')
+            ->assertSee('teacher-profile-hero', false)
+            ->assertSee('data-teacher-detail="cni"', false)
+            ->assertSee('teacher-profile.js', false);
+    }
 }

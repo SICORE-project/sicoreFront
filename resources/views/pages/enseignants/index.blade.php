@@ -277,86 +277,7 @@
 </x-module-indemnite>
 
 <x-module-indemnite type="modal" id="teacher-view-modal" title="Détails de l’enseignant">
-  <div class="teacher-profile">
-    <header class="teacher-profile-hero">
-      <div class="teacher-profile-avatar" data-view-initials>EN</div>
-      <div class="teacher-profile-heading">
-        <p class="teacher-profile-eyebrow">Fiche enseignant</p>
-        <h3 data-view-full-name>—</h3>
-        <div class="teacher-profile-meta"><span data-view-matricule>—</span><span class="teacher-profile-status" data-view-status>—</span></div>
-      </div>
-    </header>
-
-    <div class="teacher-profile-grid">
-      <section class="teacher-detail-card"><div class="teacher-detail-title"><h4>Identité</h4></div><dl class="teacher-detail-list">
-        <div><dt>Nom</dt><dd data-teacher-detail="nom" data-format="text">Non renseigné</dd></div>
-        <div data-view-indice hidden><dt>Indice</dt><dd data-teacher-detail="indice">Non renseigné</dd></div>
-        <div><dt>Prénom</dt><dd data-teacher-detail="prenom" data-format="text">Non renseigné</dd></div>
-        <div><dt>Carte d’identité</dt><dd data-teacher-detail="cni" data-format="text">Non renseigné</dd></div>
-        <div><dt>Genre</dt><dd data-teacher-detail="genre" data-format="text">Non renseigné</dd></div>
-        <div><dt>Date de naissance</dt><dd data-teacher-detail="date_naissance" data-format="date">Non renseigné</dd></div>
-        <div><dt>Lieu de naissance</dt><dd data-teacher-detail="lieu_naissance" data-format="text">Non renseigné</dd></div>
-      </dl></section>
-      <section class="teacher-detail-card"><div class="teacher-detail-title"><h4>Coordonnées</h4></div><dl class="teacher-detail-list">
-        <div><dt>E-mail</dt><dd data-teacher-detail="email" data-format="text">Non renseigné</dd></div>
-        <div><dt>Téléphone</dt><dd data-teacher-detail="telephone" data-format="text">Non renseigné</dd></div>
-
-      </dl></section>
-      <section class="teacher-detail-card"><div class="teacher-detail-title"><h4>Situation matrimoniale</h4></div><dl class="teacher-detail-list">
-        <div><dt>Situation matrimoniale</dt><dd data-teacher-detail="situation_matrimoniale" data-format="matrimonial">Non renseigné</dd></div>
-        <div><dt>Nombre d’enfants</dt><dd data-teacher-detail="nombre_enfants" data-format="text">Non renseigné</dd></div>
-        <div><dt>Nombre de femmes</dt><dd data-teacher-detail="nombre_femmes" data-format="text">Non renseigné</dd></div>
-        <div><dt>Conjoint en activité</dt><dd data-teacher-detail="conjoint_travaille" data-format="bool">Non renseigné</dd></div>
-        <div><dt>Parts fiscales</dt><dd data-teacher-detail="nombre_parts_fiscales" data-format="text">Non renseigné</dd></div>
-      </dl></section>
-      <section class="teacher-detail-card"><div class="teacher-detail-title"><h4>Affectation et qualification</h4></div><dl class="teacher-detail-list">
-        <div><dt>Inspection académique</dt><dd data-teacher-detail="ia.libelle" data-format="text">Non renseigné</dd></div>
-        <div><dt>IEF</dt><dd data-teacher-detail="ief.libelle" data-format="text">Non renseigné</dd></div>
-        <div><dt>Établissement</dt><dd data-teacher-detail="lieu_service.libelle" data-format="text">Non renseigné</dd></div>
-        <div><dt>Statut</dt><dd data-teacher-detail="statut_enseignant.libelle" data-format="text">Non renseigné</dd></div>
-        <div><dt>Corps</dt><dd data-teacher-detail="corps.libelle" data-format="text">Non renseigné</dd></div>
-        <div><dt>Diplôme</dt><dd data-teacher-detail="diplome.libelle" data-format="text">Non renseigné</dd></div>
-        <div><dt>Catégorie</dt><dd data-teacher-detail="categorie.libelle" data-format="text">Non renseigné</dd></div>
-        <div><dt>Spécialité</dt><dd data-teacher-detail="discipline.libelle" data-format="text">Non renseigné</dd></div>
-      </dl></section>
-      <section class="teacher-detail-card"><div class="teacher-detail-title"><h4>Contrat et rémunération</h4></div><dl class="teacher-detail-list">
-        <div><dt>Salaire brut</dt><dd data-teacher-detail="salaire_brut" data-format="money">Non renseigné</dd></div>
-        <div><dt>Recrutement</dt><dd data-teacher-detail="date_recrutement" data-format="date">Non renseigné</dd></div>
-        <div><dt>Prise de service</dt><dd data-teacher-detail="date_prise_service" data-format="date">Non renseigné</dd></div>
-        <div><dt>Fin du contrat</dt><dd data-teacher-detail="date_fin_contrat" data-format="date">Non renseigné</dd></div>
-        <div><dt>Année de recrutement</dt><dd data-teacher-detail="annee_recrutement" data-format="text">Non renseigné</dd></div>
-        <!-- <div><dt>Statut</dt><dd data-teacher-detail="statut_libelle" data-format="text">Non renseigné</dd></div> -->
-        <div><dt>Actif</dt><dd data-teacher-detail="est_actif" data-format="bool">Non renseigné</dd></div>
-      </dl></section>
-      <section class="teacher-detail-card"><div class="teacher-detail-title"><h4>Compte bancaire</h4></div><dl class="teacher-detail-list">
-        <div><dt>Banque</dt><dd data-teacher-detail="compte_bancaire.institut_financier.libelle" data-format="text">Non renseigné</dd></div>
-        <div><dt>Titulaire</dt><dd data-teacher-detail="compte_bancaire.titulaire_compte" data-format="text">Non renseigné</dd></div>
-        <div><dt>Numéro de compte</dt><dd data-teacher-detail="compte_bancaire.numero_compte" data-format="text">Non renseigné</dd></div>
-        <div><dt>Code banque</dt><dd data-teacher-detail="compte_bancaire.code_banque" data-format="text">Non renseigné</dd></div>
-        <div><dt>Code guichet</dt><dd data-teacher-detail="compte_bancaire.code_guichet" data-format="text">Non renseigné</dd></div>
-        <div><dt>Clé RIB</dt><dd data-teacher-detail="compte_bancaire.cle_rib" data-format="text">Non renseigné</dd></div>
-
-      </dl></section>
-      <section class="teacher-detail-card"><div class="teacher-detail-title"><h4>Syndicat</h4></div><dl class="teacher-detail-list">
-        <div><dt>Libellé</dt><dd data-teacher-detail="syndicat.libelle" data-format="text">Non renseigné</dd></div>
-        <div><dt>Check-off (FCFA)</dt><dd data-teacher-detail="syndicat.montant_check_off" data-format="money-number">Non renseigné</dd></div>
-        <div><dt>Œuvre sociale (FCFA)</dt><dd data-teacher-detail="syndicat.montant_oeuvre_sociale" data-format="money-number">Non renseigné</dd></div>
-        <div><dt>Créé le</dt><dd data-teacher-detail="syndicat.created_at" data-format="date">Non renseigné</dd></div>
-        <div><dt>Modifié le</dt><dd data-teacher-detail="syndicat.updated_at" data-format="date">Non renseigné</dd></div>
-      </dl></section>
-      <section class="teacher-detail-card"><div class="teacher-detail-title"><h4>Mutuelle</h4></div><dl class="teacher-detail-list">
-        <div><dt>Nom</dt><dd data-teacher-detail="mutuelle.nom" data-format="text">Non renseigné</dd></div>
-        <div><dt>Sigle</dt><dd data-teacher-detail="mutuelle.sigle" data-format="text">Non renseigné</dd></div>
-        <div><dt>Affiliation</dt><dd data-teacher-detail="mutuelle.numero_affiliation" data-format="text">Non renseigné</dd></div>
-        <div><dt>Adhésion</dt><dd data-teacher-detail="mutuelle.date_adhesion" data-format="text">Non renseigné</dd></div>
-        <div><dt>Résiliation</dt><dd data-teacher-detail="mutuelle.date_resiliation" data-format="text">Non renseigné</dd></div>
-      </dl></section>
-      <section class="teacher-detail-card"><div class="teacher-detail-title"><h4>Informations complémentaires</h4></div><dl class="teacher-detail-list">
-        <div><dt>Création du dossier</dt><dd data-teacher-detail="created_at" data-format="date">Non renseigné</dd></div>
-        <div><dt>Dernière modification</dt><dd data-teacher-detail="updated_at" data-format="date">Non renseigné</dd></div>
-      </dl></section>
-    </div>
-  </div>
+  @include('pages.enseignants.partials.profile')
   <div class="form-actions"><button class="btn-secondary" type="button" data-modal-close>Fermer</button></div>
 </x-module-indemnite>
 
@@ -448,6 +369,7 @@
 @endsection
 
 @push('styles')
+<link rel="stylesheet" href="{{ asset('assets/css/teacher-profile.css') }}?v={{ filemtime(public_path('assets/css/teacher-profile.css')) }}">
 <style>
   .teacher-form:not(:has(select[name="statut_enseignant_id"] option[data-fonctionnaire="1"]:checked)) [data-teacher-corps-field] {
     display: none !important;
@@ -518,43 +440,11 @@
   .teacher-select-create { display: flex; align-items: center; gap: 6px; }
   .teacher-select-create .form-control { min-width: 0; flex: 1; }
   .teacher-select-create .icon-action { flex: 0 0 34px; }
-  .teacher-profile-hero { display: flex; align-items: center; gap: 18px; padding: 22px; margin-bottom: 18px; border-radius: 18px; color: #fff; background: linear-gradient(135deg, var(--primary), #0f766e); box-shadow: 0 16px 35px rgba(15, 118, 110, .18); }
-  .teacher-profile-avatar { display: grid; place-items: center; width: 72px; height: 72px; flex: 0 0 72px; border: 3px solid rgba(255,255,255,.55); border-radius: 22px; color: var(--primary); background: #fff; font-size: 23px; font-weight: 900; letter-spacing: .04em; }
-  .teacher-profile-heading { min-width: 0; }
-  .teacher-profile-eyebrow { margin: 0 0 3px; color: rgba(255,255,255,.78); font-size: 11px; font-weight: 800; letter-spacing: .13em; text-transform: uppercase; }
-  .teacher-profile-heading h3 { margin: 0; color: #fff; font-size: clamp(20px, 3vw, 28px); }
-  .teacher-profile-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 9px; margin-top: 8px; font-size: 13px; }
-  .teacher-profile-meta[hidden], .teacher-profile-meta [hidden] { display: none !important; }
-  .teacher-profile-meta > span:first-child { font-weight: 700; }
-  .teacher-profile-status { padding: 4px 9px; border: 1px solid rgba(255,255,255,.35); border-radius: 999px; background: rgba(255,255,255,.16); font-size: 11px; font-weight: 800; }
-  .teacher-profile-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
-  .teacher-detail-card { padding: 12px; border: 1px solid #e2e8f0; border-radius: 12px; background: #fff; box-shadow: 0 7px 22px rgba(15, 23, 42, .05); }
-  .teacher-detail-card[hidden] { display: none !important; }
-  .teacher-detail-card-wide { grid-column: 1 / -1; }
-  .teacher-detail-title { display: flex; align-items: center; gap: 9px; padding-bottom: 12px; border-bottom: 1px solid #eef2f7; }
-  .teacher-detail-title i { display: grid; place-items: center; width: 31px; height: 31px; border-radius: 9px; color: var(--primary); background: #ecfdf5; }
-  .teacher-detail-title h4 { margin: 0; color: #0f172a; font-size: 14px; }
-  .teacher-detail-list { display: grid; gap: 0; margin: 8px 0 0; }
-  .teacher-detail-list > div { display: grid; grid-template-columns: minmax(120px, .8fr) minmax(0, 1.2fr); gap: 10px; padding: 6px 0; border-bottom: 1px dashed #e2e8f0; }
-  .teacher-detail-list[hidden], .teacher-detail-list > [hidden] { display: none !important; }
-  .teacher-detail-list > div:last-child { border-bottom: 0; }
-  .teacher-detail-list dt { color: #64748b; font-size: 12px; font-weight: 700; }
-  .teacher-detail-list dd { margin: 0; overflow-wrap: anywhere; color: #0f172a; font-size: 12px; font-weight: 500; text-align: left; white-space: pre-wrap; }
-  .teacher-detail-list a { color: var(--primary); text-decoration: none; }
-  .teacher-detail-contact { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
-  .teacher-detail-contact > div { display: block; padding: 8px 0; border: 0; }
-  .teacher-detail-contact dd { margin-top: 5px; text-align: left; }
-  @media (max-width: 680px) {
-    .teacher-profile-hero { align-items: flex-start; padding: 17px; }
-    .teacher-profile-avatar { width: 58px; height: 58px; flex-basis: 58px; border-radius: 17px; font-size: 18px; }
-    .teacher-profile-grid { grid-template-columns: 1fr; }
-    .teacher-detail-card-wide { grid-column: auto; }
-    .teacher-detail-contact { grid-template-columns: 1fr; gap: 0; }
-  }
 </style>
 @endpush
 
 @push('scripts')
+<script src="{{ asset('assets/js/teacher-profile.js') }}?v={{ filemtime(public_path('assets/js/teacher-profile.js')) }}"></script>
 <script type="application/json" id="teacher-validation-errors">@json(['editing' => (bool) old('_editing_id'), 'errors' => $errors->messages()])</script>
 <script src="{{ asset('assets/js/teacher-live-identity.js') }}?v={{ filemtime(public_path('assets/js/teacher-live-identity.js')) }}"></script>
 <script src="{{ asset('assets/js/teacher-validation.js') }}?v={{ filemtime(public_path('assets/js/teacher-validation.js')) }}"></script>
@@ -981,64 +871,6 @@ document.addEventListener('DOMContentLoaded', function () {
       })
       .catch(function (error) { window.alert(error.message); })
       .finally(function () { submit.disabled = false; });
-  });
-
-  function teacherValue(teacher, path, fallback) {
-    var value = path.split('.').reduce(function (current, key) { return current && current[key] !== undefined ? current[key] : null; }, teacher);
-    return value === null || value === undefined || value === '' ? (fallback === undefined ? '—' : fallback) : value;
-  }
-
-  function teacherDate(value) {
-    if (!value) { return '—'; }
-    var parts = String(value).slice(0, 10).split('-');
-    return parts.length === 3 ? parts[2] + '/' + parts[1] + '/' + parts[0] : value;
-  }
-
-  document.querySelectorAll('[data-view-teacher]').forEach(function (button) {
-    button.addEventListener('click', function () {
-      var teacher = JSON.parse(button.dataset.viewTeacher);
-      var modal = document.getElementById('teacher-view-modal');
-      var firstName = teacherValue(teacher, 'prenom', '');
-      var lastName = teacherValue(teacher, 'nom', '');
-      var fullName = (firstName + ' ' + lastName).trim() || 'Enseignant';
-      var initials = ((firstName.charAt(0) || '') + (lastName.charAt(0) || '')).toUpperCase() || 'EN';
-      var statuses = { en_activite: 'En activité', retraite: 'Retraité', suspension_provisoire: 'Suspension provisoire', abandon: 'Abandon', decede: 'Décédé', integre: 'Intégré', radie: 'Radié', cessation_paiement: 'Cessation de paiement' };
-      modal.querySelector('[data-view-initials]').textContent = initials;
-      modal.querySelector('[data-view-full-name]').textContent = fullName;
-      var matricule = teacherValue(teacher, 'matricule', '');
-      var matriculeField = modal.querySelector('[data-view-matricule]');
-      matriculeField.hidden = matricule === '';
-      matriculeField.textContent = matricule === '' ? '' : 'Matricule : ' + matricule;
-      var status = statuses[teacher.statut] || teacherValue(teacher, 'statut', '');
-      var statusField = modal.querySelector('[data-view-status]');
-      statusField.hidden = status === '';
-      statusField.textContent = status;
-      modal.querySelector('.teacher-profile-meta').hidden = matriculeField.hidden && statusField.hidden;
-      var showIndice = isFonctionnaireCorpsValue(teacher.statut_enseignant);
-      modal.querySelector('[data-view-indice]').hidden = !showIndice;
-      modal.querySelectorAll('[data-teacher-detail]').forEach(function (field) {
-        var value = teacherValue(teacher, field.dataset.teacherDetail, 'Non renseigné');
-        var assignedValue = teacherValue(teacher, field.dataset.teacherDetail, '');
-        var detailRow = field.closest('.teacher-detail-list > div');
-        if (detailRow) {
-          detailRow.hidden = assignedValue === '' || assignedValue === null || assignedValue === undefined
-            || (typeof assignedValue === 'string' && assignedValue.trim() === '')
-            || (field.dataset.teacherDetail === 'indice' && !showIndice);
-        }
-        if (value !== 'Non renseigné') {
-          if (field.dataset.format === 'date') { value = teacherDate(value); }
-          if (field.dataset.format === 'matrimonial') { value = ({ celibataire: 'Célibataire', marie: 'Marié(e)', veuf: 'Veuf/Veuve', divorce: 'Divorcé(e)' })[value] || value; }
-          if (field.dataset.format === 'bool') { value = value === true || value === 1 || value === '1' ? 'Oui' : 'Non'; }
-          if (field.dataset.format === 'money') { value = Number(value).toLocaleString('fr-FR') + ' FCFA'; }
-          if (field.dataset.format === 'money-number') { value = Number(value).toLocaleString('fr-FR', { maximumFractionDigits: 0 }); }
-        }
-        field.textContent = value;
-      });
-      modal.querySelectorAll('.teacher-detail-card').forEach(function (card) {
-        var rows = Array.from(card.querySelectorAll('.teacher-detail-list > div'));
-        card.hidden = rows.length > 0 && rows.every(function (row) { return row.hidden; });
-      });
-    });
   });
 
   var ia = document.querySelector('[data-teacher-ia]');

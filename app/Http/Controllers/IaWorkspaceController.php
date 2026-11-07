@@ -61,7 +61,7 @@ class IaWorkspaceController extends Controller
     public function teacher(Request $request, int $id): View
     {
         [$data, $error] = $this->get('ia/enseignants/'.$id, $this->filters($request));
-        return view('pages.ia.detail', ['record' => $data['data'] ?? [], 'error' => $error,
+        return view('pages.ia.teacher-show', ['record' => $data['data'] ?? [], 'error' => $error,
             'title' => 'Dossier enseignant', 'backRoute' => 'enseignants.index', 'scopeLabel' => $this->organisation->label(),
             'fields' => ['matricule' => 'Matricule', 'prenom' => 'Prénom', 'nom' => 'Nom', 'statut' => 'Statut',
                 'type_engagement' => 'Engagement', 'date_prise_service' => 'Date de prise de service']]);
