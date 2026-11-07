@@ -235,8 +235,24 @@ class EnseignantController extends Controller
         return $this->redirect($service->delete($enseignant));
     }
 
+    public function checkIdentity(Request $request, \App\Services\Api\ApiClient $api)
+    {
+        $data = $request->validate([
+            'field' => ['required', 'in:cni,matricule,indice,email'],
+            'value' => ['required', 'string', 'max:100'],
+            'id' => ['nullable', 'integer', 'min:1'],
+        ]);
+        try {
+            $response = $api->post('admin/personnel/enseignants/check-identity', $data);
+            return response()->json($response->json() ?? [], $response->status());
+        } catch (\Illuminate\Http\Client\ConnectionException $exception) {
+            return response()->json(['message' => 'Vérification indisponible. Veuillez réessayer.'], 503);
+        }
+    }
+
     private function validated(Request $request): array
     {
+        $request->merge(['compte_bancaire' => \App\Support\TeacherRib::prepare($request->input('compte_bancaire'))]);
         $request->validate(['statut_enseignant_id' => ['required', 'integer', 'min:1']]);
         $result = app(\App\Services\Parametrage\StatutEnseignantService::class)->find($request->integer('statut_enseignant_id'));
         if (! $result['success'] || ! is_array($result['data'])) {
@@ -292,9 +308,9 @@ class EnseignantController extends Controller
             'observations' => ['nullable', 'string'],
             'compte_bancaire' => ['required', 'array'],
             'compte_bancaire.institut_financier_id' => ['nullable', 'integer', 'min:1'],
-            'compte_bancaire.code_banque' => ['required', 'string', 'size:5'],
-            'compte_bancaire.code_guichet' => ['required', 'string', "regex:/\A[0-9]+\z/"],
-            'compte_bancaire.numero_compte' => ['required', 'string'],
+            'compte_bancaire.code_banque' => ['required', 'string', 'size:5', 'regex:/\ASN[0-9]{3}\z/'],
+            'compte_bancaire.code_guichet' => ['required', 'string', 'size:5', "regex:/\A[0-9]+\z/"],
+            'compte_bancaire.numero_compte' => ['required', 'string', 'size:12', 'regex:/\A[0-9]{12}\z/'],
             'compte_bancaire.cle_rib' => ['required', 'string', 'size:2', "regex:/\A[0-9]+\z/"],
             'compte_bancaire.iban' => ['nullable', 'string', 'max:34'],
             'compte_bancaire.bic' => ['nullable', 'string', 'max:11'],

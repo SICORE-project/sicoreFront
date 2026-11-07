@@ -59,6 +59,7 @@ class InterfaceAccess
         $teacherRoutes = [
             'enseignants.legacy.index' => ['enseignants.read', 'personnel.consulter'],
             'enseignants.legacy.create' => ['enseignants.create', 'personnel.creer'],
+            'enseignants.check-identity' => ['enseignants.create', 'enseignants.update'],
             'enseignants.iefs' => ['enseignants.read', 'personnel.consulter'],
             'enseignants.etablissements' => ['enseignants.read', 'personnel.consulter'],
             'enseignants.referentiels.store' => ['parametrage.modifier'],

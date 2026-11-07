@@ -9,6 +9,7 @@
     annee_recrutement: /^[0-9]*$/,
     nombre_enfants: /^[0-9]*$/,
     nombre_femmes: /^[0-9]*$/,
+    'compte_bancaire[numero_compte]': /^[0-9]*$/,
     'compte_bancaire[code_guichet]': /^[0-9]*$/,
     'compte_bancaire[cle_rib]': /^[0-9]*$/
   };

@@ -231,10 +231,10 @@
       <div class="form-group"><label for="teacher-conjoint-travaille">Le conjoint travaille</label><select class="form-control" id="teacher-conjoint-travaille" name="conjoint_travaille"><option value="0">Non</option><option value="1" @selected(old('conjoint_travaille') == 1)>Oui</option></select></div>
       <div class="form-group full"><label for="teacher-observations">Observations</label><textarea class="form-control" id="teacher-observations" name="observations">{{ old('observations') }}</textarea></div>
       <div class="form-group"><label for="teacher-banque">Banque</label><div class="teacher-select-create"><select class="form-control" id="teacher-banque" name="compte_bancaire[institut_financier_id]"><option value="">Sélectionner une banque</option>@foreach($institutionOptions as $institution)<option value="{{ data_get($institution, 'id') }}" data-code-banque="{{ data_get($institution, 'code_banque', '') }}">{{ data_get($institution, 'libelle', data_get($institution, 'nom')) }}</option>@endforeach</select><button class="icon-action" type="button" data-referentiel-open="banque" data-referentiel-target="teacher-banque" title="Ajouter une banque" aria-label="Ajouter une banque"><i class="fa-solid fa-plus"></i></button></div></div>
-      <div class="form-group"><label for="teacher-code-banque">Code banque <span class="required">*</span></label><input class="form-control" id="teacher-code-banque" name="compte_bancaire[code_banque]" minlength="5" maxlength="5" required value="{{ old('compte_bancaire.code_banque') }}"></div>
-      <div class="form-group"><label for="teacher-code-guichet">Code guichet <span class="required">*</span></label><input class="form-control" id="teacher-code-guichet" name="compte_bancaire[code_guichet]" minlength="5" maxlength="5" required value="{{ old('compte_bancaire.code_guichet') }}"></div>
-      <div class="form-group"><label for="teacher-numero-compte">Numéro de compte <span class="required">*</span></label><input class="form-control" id="teacher-numero-compte" name="compte_bancaire[numero_compte]" minlength="12" maxlength="12" required value="{{ old('compte_bancaire.numero_compte') }}"></div>
-      <div class="form-group"><label for="teacher-cle-rib">Clé RIB <span class="required">*</span></label><input class="form-control" id="teacher-cle-rib" name="compte_bancaire[cle_rib]" minlength="2" maxlength="2" required value="{{ old('compte_bancaire.cle_rib') }}"></div>
+      <div class="form-group"><label for="teacher-code-banque">Code banque <span class="required">*</span></label><input class="form-control" id="teacher-code-banque" name="compte_bancaire[code_banque]" pattern="SN[0-9]{3}" title="SN suivi de 3 chiffres" minlength="5" maxlength="5" required value="{{ old('compte_bancaire.code_banque') }}"></div>
+      <div class="form-group"><label for="teacher-code-guichet">Code guichet <span class="required">*</span></label><input class="form-control" id="teacher-code-guichet" name="compte_bancaire[code_guichet]" pattern="[0-9]{5}" inputmode="numeric" minlength="5" maxlength="5" required value="{{ old('compte_bancaire.code_guichet') }}"></div>
+      <div class="form-group"><label for="teacher-numero-compte">Numéro de compte <span class="required">*</span></label><input class="form-control" id="teacher-numero-compte" name="compte_bancaire[numero_compte]" pattern="[0-9]{12}" inputmode="numeric" minlength="12" maxlength="12" required value="{{ old('compte_bancaire.numero_compte') }}"></div>
+      <div class="form-group"><label for="teacher-cle-rib">Clé RIB <span class="required">*</span></label><input class="form-control" id="teacher-cle-rib" name="compte_bancaire[cle_rib]" readonly pattern="[0-9]{2}" placeholder="Calcul automatique" minlength="2" maxlength="2" required value="{{ old('compte_bancaire.cle_rib') }}"></div>
     </div>
     <input type="hidden" name="est_actif" value="1">
 
@@ -423,10 +423,10 @@
         <div class="form-group"><label for="edit-teacher-date-naissance">Date de naissance</label><input class="form-control" id="edit-teacher-date-naissance" name="date_naissance" type="date" required max="{{ now()->subYears(18)->format('Y-m-d') }}" aria-describedby="edit-teacher-date-naissance-error"><span class="teacher-birth-error" id="edit-teacher-date-naissance-error" role="alert" hidden></span></div>
 
         <div class="form-group"><label for="edit-teacher-banque">Banque</label><div class="teacher-select-create"><select class="form-control" id="edit-teacher-banque" name="compte_bancaire[institut_financier_id]"><option value="">Sélectionner une banque</option>@foreach($institutionOptions as $institution)<option value="{{ data_get($institution, 'id') }}" data-code-banque="{{ data_get($institution, 'code_banque', '') }}">{{ data_get($institution, 'libelle', data_get($institution, 'nom')) }}</option>@endforeach</select><button class="icon-action" type="button" data-referentiel-open="banque" data-referentiel-target="edit-teacher-banque" title="Ajouter une banque" aria-label="Ajouter une banque"><i class="fa-solid fa-plus"></i></button></div></div>
-        <div class="form-group"><label for="edit-teacher-code-banque">Code banque <span class="required">*</span></label><input class="form-control" id="edit-teacher-code-banque" name="compte_bancaire[code_banque]" minlength="5" maxlength="5" required></div>
-        <div class="form-group"><label for="edit-teacher-code-guichet">Code guichet <span class="required">*</span></label><input class="form-control" id="edit-teacher-code-guichet" name="compte_bancaire[code_guichet]" maxlength="5" required></div>
-        <div class="form-group"><label for="edit-teacher-numero-compte">Numéro de compte <span class="required">*</span></label><input class="form-control" id="edit-teacher-numero-compte" name="compte_bancaire[numero_compte]" maxlength="12" required></div>
-        <div class="form-group"><label for="edit-teacher-cle-rib">Clé RIB <span class="required">*</span></label><input class="form-control" id="edit-teacher-cle-rib" name="compte_bancaire[cle_rib]" minlength="2" maxlength="2" required></div>
+        <div class="form-group"><label for="edit-teacher-code-banque">Code banque <span class="required">*</span></label><input class="form-control" id="edit-teacher-code-banque" name="compte_bancaire[code_banque]" pattern="SN[0-9]{3}" title="SN suivi de 3 chiffres" minlength="5" maxlength="5" required></div>
+        <div class="form-group"><label for="edit-teacher-code-guichet">Code guichet <span class="required">*</span></label><input class="form-control" id="edit-teacher-code-guichet" name="compte_bancaire[code_guichet]" pattern="[0-9]{5}" inputmode="numeric" minlength="5" maxlength="5" required></div>
+        <div class="form-group"><label for="edit-teacher-numero-compte">Numéro de compte <span class="required">*</span></label><input class="form-control" id="edit-teacher-numero-compte" name="compte_bancaire[numero_compte]" pattern="[0-9]{12}" inputmode="numeric" minlength="12" maxlength="12" required></div>
+        <div class="form-group"><label for="edit-teacher-cle-rib">Clé RIB <span class="required">*</span></label><input class="form-control" id="edit-teacher-cle-rib" name="compte_bancaire[cle_rib]" readonly pattern="[0-9]{2}" placeholder="Calcul automatique" minlength="2" maxlength="2" required></div>
       </div></div>
     </section>
     <input type="hidden" name="est_actif" value="1">
@@ -471,6 +471,8 @@
 
   [data-teacher-indice-field][hidden], [data-view-indice][hidden] { display: none !important; }
   .teacher-form .is-invalid, input[name="date_naissance"].is-invalid { border-color: #dc2626; background-color: #fff5f5; box-shadow: 0 0 0 2px #dc26261a; }
+  .teacher-field-error { display: block; color: #b91c1c; font-size: .875rem; line-height: 1.4; margin-top: 5px; }
+  .teacher-field-error[hidden] { display: none; }
   .teacher-identity-error, .teacher-birth-error { color: #b91c1c; font-size: .875rem; line-height: 1.4; }
 
   .filter-panel.teacher-filters { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
@@ -556,11 +558,16 @@
 @endpush
 
 @push('scripts')
+<script type="application/json" id="teacher-validation-errors">@json(['editing' => (bool) old('_editing_id'), 'errors' => $errors->messages()])</script>
+<script src="{{ asset('assets/js/teacher-live-identity.js') }}?v={{ filemtime(public_path('assets/js/teacher-live-identity.js')) }}"></script>
+<script src="{{ asset('assets/js/teacher-validation.js') }}?v={{ filemtime(public_path('assets/js/teacher-validation.js')) }}"></script>
+<script src="{{ asset('assets/js/teacher-rib.js') }}?v={{ filemtime(public_path('assets/js/teacher-rib.js')) }}"></script>
 <script src="{{ asset('assets/js/teacher-field-rules.js') }}?v={{ filemtime(public_path('assets/js/teacher-field-rules.js')) }}"></script>
 <script src="{{ asset('assets/js/teacher-status-fields.js') }}?v={{ filemtime(public_path('assets/js/teacher-status-fields.js')) }}"></script>
   {{-- Gestion de la dépendance IA → IEF sur cette page. --}}
 <script src="{{ asset('assets/js/charts.js') }}" defer></script>
 <div id="teacher-page-config" hidden
+  data-check-identity-url="{{ route('enseignants.check-identity') }}"
   data-referentiel-url="{{ route('enseignants.referentiels.store') }}"
   data-referentiel-rules="{{ json_encode(config('teacher_referentiels')) }}"
   data-iefs-url="{{ route('enseignants.iefs') }}"
@@ -1339,6 +1346,7 @@ document.addEventListener('DOMContentLoaded', function () {
       if (field.disabled || (!field.required && !field.value)) {
         field.classList.remove('is-invalid');
         field.setAttribute('aria-invalid', 'false');
+        window.validateTeacherField(field, '');
         return;
       }
       var value = field.value ? field.value.trim() : '';
@@ -1348,7 +1356,7 @@ document.addEventListener('DOMContentLoaded', function () {
       if (!invalid && field.type === 'date' && field.id === 'teacher-date-naissance') { invalid = value > field.max; }
       field.classList.toggle('is-invalid', invalid);
       field.setAttribute('aria-invalid', invalid ? 'true' : 'false');
-      if (invalid) { valid = false; }
+      if (!window.validateTeacherField(field) || invalid) { valid = false; }
     });
     if (!valid) {
       var firstInvalid = createGroups[step - 1].map(function (id) { return document.getElementById(id); }).find(function (field) { return field && field.classList.contains('is-invalid'); });
@@ -1522,6 +1530,7 @@ document.addEventListener('DOMContentLoaded', function () {
       if (field.disabled || (!field.required && !field.value)) {
         field.classList.remove('is-invalid');
         field.setAttribute('aria-invalid', 'false');
+        window.validateTeacherField(field, '');
         return;
       }
       var value = field.value ? field.value.trim() : '';
@@ -1529,7 +1538,7 @@ document.addEventListener('DOMContentLoaded', function () {
       var invalid = !value || !field.validity.valid;
       if (!invalid && field.type === 'email') { invalid = !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value); }
       field.classList.toggle('is-invalid', invalid);
-      if (invalid) { valid = false; }
+      if (!window.validateTeacherField(field) || invalid) { valid = false; }
     });
     if (!valid) { panel.querySelector('.is-invalid').focus(); }
     return valid;
@@ -1585,6 +1594,7 @@ document.addEventListener('DOMContentLoaded', function () {
       document.getElementById('edit-teacher-code-guichet').value = account.code_guichet || '';
       document.getElementById('edit-teacher-numero-compte').value = account.numero_compte || '';
       document.getElementById('edit-teacher-cle-rib').value = account.cle_rib || '';
+      document.getElementById('edit-teacher-code-banque').dispatchEvent(new Event('input', { bubbles: true }));
       applyDiplomeSalary(document.getElementById('edit-teacher-diplome'), editStatus, editCategorie, document.getElementById('edit-teacher-salaire'));
       calculateEditParts();
       loadEditIefs(editIa.value, teacher.ief ? teacher.ief.id : '', teacher.lieu_service ? teacher.lieu_service.id : '');
