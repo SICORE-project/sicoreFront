@@ -265,7 +265,7 @@ class EnseignantController extends Controller
             $request->merge(['indice' => null]);
         } else {
             $request->merge(array_fill_keys(['salaire_brut', 'date_recrutement',
-                'annee_recrutement', 'diplome_id', 'categorie_id', 'date_fin_contrat', 'observations'], null));
+                'annee_recrutement', 'diplome_id', 'categorie_id', 'date_fin_contrat'], null));
             $request->merge(['statut' => 'en_activite', 'nombre_enfants' => 0, 'nombre_femmes' => 0,
                 'est_en_couple' => false, 'situation_matrimoniale' => null, 'nombre_parts_fiscales' => 1]);
         }
@@ -305,7 +305,6 @@ class EnseignantController extends Controller
             'nombre_femmes' => ['nullable', 'integer', 'min:0'],
             'nombre_parts_fiscales' => ['required', 'numeric', 'min:1', 'max:5'],
             'conjoint_travaille' => ['nullable', 'boolean'],
-            'observations' => ['nullable', 'string'],
             'compte_bancaire' => ['required', 'array'],
             'compte_bancaire.institut_financier_id' => ['nullable', 'integer', 'min:1'],
             'compte_bancaire.code_banque' => ['required', 'string', 'size:5', 'regex:/\ASN[0-9]{3}\z/'],
