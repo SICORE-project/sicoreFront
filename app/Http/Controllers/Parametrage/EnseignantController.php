@@ -168,6 +168,14 @@ class EnseignantController extends Controller
             $page++;
         } while ($page <= $result['pagination']['last_page']);
 
+        // L'IEF synchronisee est un lieu de service administratif, pas un etablissement.
+        $items = array_values(array_filter($items, static function (array $item): bool {
+            $code = strtoupper(trim((string) ($item['code'] ?? '')));
+            $iefCode = strtoupper(trim((string) data_get($item, 'ief.code', '')));
+            return ! str_starts_with($code, 'ORG-IEF-')
+                && ! ($code !== '' && $iefCode !== '' && $code === $iefCode);
+        }));
+
         return response()->json(['items' => $items, 'error' => null]);
     }
 

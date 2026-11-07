@@ -1069,7 +1069,7 @@ document.addEventListener('DOMContentLoaded', function () {
           if (String(item.ief_id) === iefId) { items.set(id, item); }
         });
         select.replaceChildren(new Option(items.size ? 'Sélectionner un établissement' : 'Aucun établissement pour cette IEF', ''));
-        items.forEach(function (item) { select.add(new Option(item.libelle || item.nom, item.id)); });
+        items.forEach(function (item) { select.add(new Option(item.libelle, item.id)); });
         select.value = currentValue;
         select.disabled = false;
       })
