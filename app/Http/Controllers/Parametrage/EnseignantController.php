@@ -150,12 +150,27 @@ class EnseignantController extends Controller
 
     public function ieFs(Request $request, InspectionAcademieService $academies): \Illuminate\Http\JsonResponse
     {
+        if (app(\App\Services\Organisation\InterfaceAccess::class)->isIa()) {
+            $response = app(ApiClient::class)->get('ia/teacher-options');
+            abort_unless($response->successful(), $response->status());
+            return response()->json(['items' => $response->json('data.iefOptions', []), 'error' => null]);
+        }
+
         $result = $academies->getIefs($request->integer('ia_id'));
         return response()->json(['items' => $result['items'], 'error' => $result['error']]);
     }
 
     public function etablissements(Request $request, LieuServiceService $lieux): JsonResponse
     {
+        if (app(\App\Services\Organisation\InterfaceAccess::class)->isIa()) {
+            $response = app(ApiClient::class)->get('ia/teacher-options');
+            abort_unless($response->successful(), $response->status());
+            $items = collect($response->json('data.etablissements', []))->filter(fn ($item) =>
+                (int) ($item['ief_id'] ?? 0) === $request->integer('ief_id')
+                && ! str_starts_with((string) ($item['code'] ?? ''), 'ORG-IEF-'))->values();
+            return response()->json(['items' => $items, 'error' => null]);
+        }
+
         $filters = $request->validate(['ief_id' => ['required', 'integer', 'min:1']]);
         $items = [];
         $page = 1;
@@ -177,6 +192,23 @@ class EnseignantController extends Controller
         }));
 
         return response()->json(['items' => $items, 'error' => null]);
+    }
+
+    public function submissions(Request $request, ApiClient $api): View
+    {
+        abort_unless(app(\App\Services\Organisation\InterfaceAccess::class)->isSuperAdmin(), 403);
+        $response = $api->get('admin/personnel/enseignants/submissions', $request->only('page'));
+        abort_unless($response->successful(), $response->status());
+        return view('pages.enseignants.submissions', ['data' => $response->json('data', []), 'error' => null, 'reviewing' => true]);
+    }
+
+    public function approveSubmission(Request $request, int $id, ApiClient $api): RedirectResponse
+    {
+        abort_unless(app(\App\Services\Organisation\InterfaceAccess::class)->isSuperAdmin(), 403);
+        $response = $api->post('admin/personnel/enseignants/submissions/'.$id.'/approve', []);
+        if (! $response->successful()) return back()->withErrors($response->json('errors', []))
+            ->with('error', $response->json('message', 'Validation impossible.'));
+        return back()->with('success', $response->json('message'));
     }
 
     public function create(): View
@@ -251,7 +283,9 @@ class EnseignantController extends Controller
             'id' => ['nullable', 'integer', 'min:1'],
         ]);
         try {
-            $response = $api->post('admin/personnel/enseignants/check-identity', $data);
+            $endpoint = app(\App\Services\Organisation\InterfaceAccess::class)->isIa()
+                ? 'ia/enseignants/check-identity' : 'admin/personnel/enseignants/check-identity';
+            $response = $api->post($endpoint, $data);
             return response()->json($response->json() ?? [], $response->status());
         } catch (\Illuminate\Http\Client\ConnectionException $exception) {
             return response()->json(['message' => 'Vérification indisponible. Veuillez réessayer.'], 503);

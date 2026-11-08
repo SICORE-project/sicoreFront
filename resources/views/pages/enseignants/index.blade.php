@@ -26,6 +26,13 @@
     />
 
     <section class="content-area">
+      @if (!empty($iaSubmissionForm))
+        <p>Le dossier sera transmis à la DAGE pour validation avant son ajout à la liste.</p>
+        @if(session('error'))<p class="alert alert-danger">{{ session('error') }}</p>@endif
+        <a class="btn-secondary" href="{{ route('enseignants.index') }}">Retour aux enseignants</a>
+        <button class="btn-primary" type="button" data-modal-open="teacher-create-modal">Ouvrir le formulaire</button>
+      @else
+
       @if ($drhAccess->isDrh())
         <p class="breadcrumb">Périmètre : {{ app(\App\Services\Organisation\OrganisationContext::class)->label() }}</p>
       @endif
@@ -39,6 +46,7 @@
             <i class="fa-solid fa-file-excel" aria-hidden="true"></i>
             Exporter Excel
           </a>
+          @if ($drhAccess->isSuperAdmin())<a class="btn-secondary" href="{{ route('enseignants.submissions') }}">Dossiers IA à valider</a>@endif
           <button class="btn-primary" type="button" data-modal-open="teacher-create-modal">
             <i class="fa-solid fa-user-plus" aria-hidden="true"></i>
             Ajouter un enseignant
@@ -120,11 +128,12 @@
           </nav>
         @endif
       </section>
+      @endif
     </section>
   </main>
 
-<x-module-indemnite type="modal" id="teacher-create-modal" title="Ajouter un enseignant" :open="$errors->getBag('default')->any() && !old('_editing_id')">
-  <form class="teacher-form" method="POST" action="{{ route('enseignants.store') }}" novalidate>
+<x-module-indemnite type="modal" id="teacher-create-modal" title="Ajouter un enseignant" :open="!empty($iaSubmissionForm) || ($errors->getBag('default')->any() && !old('_editing_id'))">
+  <form class="teacher-form" method="POST" action="{{ !empty($iaSubmissionForm) ? route('ia.teachers.submit') : route('enseignants.store') }}" novalidate>
     @csrf
     @if ($errors->any())
       <div class="teacher-error-summary" role="alert" tabindex="-1">
@@ -241,7 +250,7 @@
       <button class="btn-secondary" type="button" data-modal-close>Annuler</button>
       <button class="btn-secondary" type="button" data-create-prev hidden>Précédent</button>
       <button class="btn-primary" type="button" data-create-next>Suivant</button>
-      <button class="btn-primary" type="submit" data-create-submit hidden><i class="fa-solid fa-floppy-disk" aria-hidden="true"></i> Enregistrer</button>
+      <button class="btn-primary" type="submit" data-create-submit hidden><i class="fa-solid fa-floppy-disk" aria-hidden="true"></i> {{ !empty($iaSubmissionForm) ? 'Soumettre à la DAGE' : 'Enregistrer' }}</button>
     </div>
   </form>
 </x-module-indemnite>
@@ -369,6 +378,7 @@
 @endsection
 
 @push('styles')
+@if (!empty($iaSubmissionForm))<style>#teacher-create-modal [data-referentiel-open] { display: none; }</style>@endif
 <link rel="stylesheet" href="{{ asset('assets/css/teacher-profile.css') }}?v={{ filemtime(public_path('assets/css/teacher-profile.css')) }}">
 <style>
   .teacher-form:not(:has(select[name="statut_enseignant_id"] option[data-fonctionnaire="1"]:checked)) [data-teacher-corps-field] {
@@ -464,6 +474,15 @@
 <script>
 document.addEventListener('DOMContentLoaded', function () {
   var pageConfig = document.getElementById('teacher-page-config').dataset;
+  @if (!empty($iaSubmissionForm))
+  setTimeout(function () {
+    var academy = document.getElementById('teacher-ia');
+    if (!academy.value) {
+      academy.value = @json((string) data_get($academies, '0.id'));
+      loadTeacherHierarchy(academy, document.getElementById('teacher-ief'), pageConfig.oldIef, pageConfig.oldLieuService);
+    }
+  }, 0);
+  @endif
   ['teacher-', 'edit-teacher-'].forEach(function (prefix) {
     var banque = document.getElementById(prefix + 'banque');
     var code = document.getElementById(prefix + 'code-banque');
@@ -630,6 +649,7 @@ document.addEventListener('DOMContentLoaded', function () {
   var filterSearch = document.getElementById('filter-teacher-search');
   var filterTimer;
   var focusKey = 'teacher-filter-focus';
+  if (filterForm && filterSearch) {
   try {
     var savedFocus = JSON.parse(sessionStorage.getItem(focusKey) || 'null');
     sessionStorage.removeItem(focusKey);
@@ -663,6 +683,7 @@ document.addEventListener('DOMContentLoaded', function () {
       try { sessionStorage.setItem(focusKey, JSON.stringify({ value: filterSearch.value, start: filterSearch.selectionStart, end: filterSearch.selectionEnd })); } catch (error) {}
     }
   });
+  }
   document.querySelectorAll('input[name="cni"]').forEach(function (input) {
     input.addEventListener('input', function () {
       var cursor = input.selectionStart;

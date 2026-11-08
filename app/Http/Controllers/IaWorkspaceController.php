@@ -58,6 +58,38 @@ class IaWorkspaceController extends Controller
         ]);
     }
 
+    public function createTeacher(Request $request): View
+    {
+        $this->filters($request);
+        [$response, $error] = $this->get('ia/teacher-options', []);
+        abort_if($error !== null, 503, $error ?? '');
+        $options = $response['data'] ?? [];
+        return view('pages.enseignants.index', array_merge($options, [
+            'items' => [], 'pagination' => ['current_page' => 1, 'last_page' => 1, 'total' => 0],
+            'filterIefs' => $options['iefOptions'] ?? [], 'error' => null, 'iaSubmissionForm' => true,
+        ]));
+    }
+
+    public function submitTeacher(Request $request)
+    {
+        $this->filters($request);
+        try {
+            $response = $this->api->post('ia/teacher-submissions', $request->except(['_token', '_method']));
+        } catch (ConnectionException $exception) {
+            return back()->withInput()->with('error', 'Le service est indisponible. Veuillez réessayer.');
+        }
+        if (! $response->successful()) return back()->withInput()->withErrors($response->json('errors', []))
+            ->with('error', $response->json('message', 'Soumission impossible.'));
+        return redirect()->route('ia.teachers.submissions')->with('success', $response->json('message'));
+    }
+
+    public function submissions(Request $request): View
+    {
+        $this->filters($request);
+        [$response, $error] = $this->get('ia/teacher-submissions', $request->only('page'));
+        return view('pages.enseignants.submissions', ['data' => $response['data'] ?? [], 'error' => $error, 'reviewing' => false]);
+    }
+
     public function teacher(Request $request, int $id): View
     {
         [$data, $error] = $this->get('ia/enseignants/'.$id, $this->filters($request));
