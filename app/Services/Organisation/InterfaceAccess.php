@@ -56,6 +56,7 @@ class InterfaceAccess
         $explicit = config('interface-permissions.routes', []);
         if (isset($explicit[$route])) return array_unique([$route, ...(array) $explicit[$route]]);
 
+        if ($route === 'utilisateurs.directions.store') return ['parametrage.lieux_service.manage'];
         $teacherRoutes = [
             'enseignants.legacy.index' => ['enseignants.read', 'personnel.consulter'],
             'enseignants.legacy.create' => ['enseignants.create', 'personnel.creer'],

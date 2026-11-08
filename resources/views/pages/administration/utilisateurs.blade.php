@@ -72,6 +72,7 @@
 
         <div class="form-group" id="national-structure-group" @if(!old('role_id') || old('perimetre', 'national') !== 'national') hidden @endif>
           <label for="lieu_service_id">Direction de rattachement <span class="required">*</span></label>
+          <div class="user-direction-control">
           <select class="form-control @error('lieu_service_id') is-invalid @enderror" id="lieu_service_id" name="lieu_service_id">
             <option value="">Sélectionner une direction</option>
             @foreach(($organisation['national'] ?? []) as $structure)
@@ -80,6 +81,10 @@
               @endif
             @endforeach
           </select>
+          @if (\App\Support\SicoreAccess::can(request(), 'parametrage.lieux_service.manage'))
+            <button class="icon-action user-direction-add" type="button" data-modal-open="direction-create-modal" title="Ajouter une direction" aria-label="Ajouter une direction"><i class="fa-solid fa-plus" aria-hidden="true"></i></button>
+          @endif
+          </div>
           @error('lieu_service_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
         </div>
 
@@ -118,6 +123,20 @@
           <i class="fa-solid fa-floppy-disk" aria-hidden="true"></i> Enregistrer
         </button>
       </div>
+    </form>
+  </x-module-indemnite>
+
+  <x-module-indemnite type="modal" id="direction-create-modal" title="Ajouter une direction centrale">
+    <form id="direction-create-form" action="{{ route('utilisateurs.directions.store') }}" method="POST">
+      @csrf
+      <p>La direction sera disponible dans la liste selon le rôle choisi.</p>
+      <div class="form-grid">
+        <div class="form-group"><label for="direction-code">Code *</label><input class="form-control" id="direction-code" name="code" maxlength="20" pattern="[A-Z0-9_-]+" title="Lettres majuscules, chiffres, tirets ou tirets bas" required></div>
+        <div class="form-group"><label for="direction-libelle">Libellé *</label><input class="form-control" id="direction-libelle" name="libelle" maxlength="100" required></div>
+        <div class="form-group"><label for="direction-type">Type *</label><select class="form-control" id="direction-type" name="type" required><option value="">Sélectionner un type</option>@foreach(['CI', 'DAGE', 'DRH', 'DECPC'] as $type)<option value="{{ $type }}">{{ $type }}</option>@endforeach</select></div>
+      </div>
+      <p id="direction-create-error" class="invalid-feedback" role="alert" hidden></p>
+      <div class="form-actions"><button class="btn-secondary" type="button" data-modal-close>Annuler</button><button class="btn-primary" type="submit">Enregistrer la direction</button></div>
     </form>
   </x-module-indemnite>
 
@@ -193,6 +212,12 @@
 @endsection
 
 @push('styles')
+<style>
+  #createUserForm .form-grid { align-items: start; }
+  .user-direction-control { display: flex; align-items: center; gap: 8px; }
+  .user-direction-control > select { flex: 1; min-width: 0; }
+  .user-direction-add { flex: 0 0 42px; width: 42px; height: 42px; }
+</style>
 <link rel="stylesheet" href="{{ asset('assets/css/teacher-profile.css') }}?v={{ filemtime(public_path('assets/css/teacher-profile.css')) }}">
 <style>#view-user-modal .modal-dialog { width: min(920px, calc(100% - 32px)); }</style>
 
@@ -241,6 +266,7 @@
 @endpush
 
 @push('scripts')
+<script src="{{ asset('assets/js/user-direction.js') }}?v={{ filemtime(public_path('assets/js/user-direction.js')) }}"></script>
 <script src="{{ asset('assets/js/user-profile.js') }}?v={{ filemtime(public_path('assets/js/user-profile.js')) }}"></script>
 
   <script src="{{ asset('assets/js/user-filters.js') }}" defer></script>
@@ -254,13 +280,17 @@
       const emailError = document.getElementById('email-error');
       const hierarchy = @json($organisation['regional'] ?? []);
       const nationalStructures = @json($organisation['national'] ?? []);
+      document.addEventListener('direction-created', function (event) {
+        const existingIndex = nationalStructures.findIndex(item => String(item.id) === String(event.detail.id));
+        if (existingIndex === -1) nationalStructures.push(event.detail);
+        else nationalStructures[existingIndex] = event.detail;
+        applyRoleStructureRules();
+        if (Array.from(national.options).some(option => String(option.value) === String(event.detail.id))) national.value = String(event.detail.id);
+        national.dispatchEvent(new Event('change', { bubbles: true }));
+      });
       function compatibleNationalStructure(item, slug) {
-        const type = String(item.type || item.code || '').toUpperCase();
-        if (slug === 'super_admin' || slug === 'admin') return ['CI', 'DAGE'].includes(type);
-        if (slug === 'agent_decpc') return type === 'DECPC';
-        if (slug === 'agent_drh') return type === 'DRH';
-        if (slug === 'gestionnaire_ia') return type === 'IA';
-        return ['CI', 'DAGE'].includes(type);
+        const option = Array.from(document.querySelectorAll('#role_id option, #edit-user-role option')).find(option => option.dataset.roleSlug === slug);
+        return window.UserDirections.allowedTypes(slug, JSON.parse(option?.dataset.structureTypes || '[]')).includes(String(item.type || item.code || '').toUpperCase());
       }
 
       const iaOptionsUrl = @json(route('utilisateurs.ia-options'));
@@ -517,6 +547,7 @@
       const editStructure = document.getElementById('edit-user-structure');
       const editStructureLabel = document.getElementById('edit-user-structure-label');
       const editStructures = @json($structures);
+      document.addEventListener('direction-created', event => editStructures.push(event.detail));
       const usersBaseUrl = @json(route('utilisateurs.index'));
       const deleteForm = document.getElementById('delete-user-form');
       const toggleForm = document.getElementById('toggle-user-status-form');
