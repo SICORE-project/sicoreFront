@@ -7,7 +7,7 @@
         <section class="objective-card"><h2>{{ $scopeLabel }}</h2><p>Périmètre : {{ $scopeLabel }}</p></section>
         @if ($error)<p class="alert alert-warning" role="alert">{{ $error }}</p>@endif
         <section class="panel">
-            <div class="panel-header"><h2>Enseignants</h2></div>
+            <div class="panel-header"><h2>Enseignants</h2><div class="actions-group"><a class="btn-primary" href="{{ route('ia.teachers.create') }}">Ajouter un enseignant</a><a class="btn-secondary" href="{{ route('ia.teachers.submissions') }}">Mes soumissions</a></div></div>
             <form method="get" class="ia-filters">
                 @if (($filters['engagement'] ?? '') === 'non_fonctionnaires')
                     <input type="hidden" name="engagement" value="non_fonctionnaires">

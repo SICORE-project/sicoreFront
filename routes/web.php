@@ -60,6 +60,9 @@ Route::middleware('sicore.auth')->group(function (): void {
     Route::get('/mon-espace/bulletins/{id}/pdf', [\App\Http\Controllers\TeacherPersonalController::class, 'pdf'])->whereNumber('id')->name('teacher.pdf');
     Route::get('/ia/structure', [\App\Http\Controllers\IaWorkspaceController::class, 'references'])->name('ia.structure');
     Route::get('/ia/iefs', [\App\Http\Controllers\IaWorkspaceController::class, 'references'])->name('ia.iefs');
+    Route::get('/ia/enseignants/nouveau', [\App\Http\Controllers\IaWorkspaceController::class, 'createTeacher'])->name('ia.teachers.create');
+    Route::post('/ia/enseignants/soumissions', [\App\Http\Controllers\IaWorkspaceController::class, 'submitTeacher'])->name('ia.teachers.submit');
+    Route::get('/ia/enseignants/soumissions', [\App\Http\Controllers\IaWorkspaceController::class, 'submissions'])->name('ia.teachers.submissions');
     Route::get('/ia/enseignants/{id}', [\App\Http\Controllers\IaWorkspaceController::class, 'teacher'])->whereNumber('id')->name('ia.teachers.show');
     Route::get('/ia/paie/export', [\App\Http\Controllers\IaWorkspaceController::class, 'export'])->name('ia.payroll.export');
     Route::get('/ia/paie/{id}', [\App\Http\Controllers\IaWorkspaceController::class, 'payslip'])->whereNumber('id')->name('ia.payroll.show');

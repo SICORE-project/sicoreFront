@@ -52,7 +52,6 @@ class UserController extends Controller
             return [
                 (!empty($user['is_online']) ? '<span class="user-presence-prefix">'.view('components.online-indicator')->render().'</span>' : '')
                     . e($fullName !== '' ? $fullName : (string) data_get($user, 'email', '—')),
-                e(data_get($user, 'matricule') ?: '—'),
                 e(is_string($role) ? $role : '—'),
                 $isActive
                     ? ($awaitingVerification
@@ -66,7 +65,7 @@ class UserController extends Controller
         $options = $this->userService->userFilterOptions($request->only(['ia_id', 'ief_id']));
         $listError = $response['error'] ?? $options['error'] ?? null;
         config()->set('module-pages.utilisateurs.filter_options', $options['data']);
-        config()->set('module-pages.utilisateurs.columns', ['Nom complet', 'Matricule', 'Profil', 'Statut', 'Actions']);
+        config()->set('module-pages.utilisateurs.columns', ['Nom complet', 'Profil', 'Statut', 'Actions']);
         config()->set('module-pages.utilisateurs.rows', $rows);
         config()->set('module-pages.utilisateurs.pagination', $pagination);
         config()->set('module-pages.utilisateurs.actions', [
@@ -123,6 +122,21 @@ class UserController extends Controller
             'pages.administration.utilisateurs.create',
             compact('roles')
         );
+    }
+
+    public function storeDirection(Request $request, \App\Services\Api\ApiClient $api)
+    {
+        $data = $request->validate([
+            'code' => ['required', 'string', 'max:20', 'regex:/\A[A-Z0-9_-]+\z/'],
+            'libelle' => ['required', 'string', 'max:100'],
+            'type' => ['required', 'in:CI,DAGE,DRH,DECPC'],
+        ]);
+        try {
+            $response = $api->post('parametrage/directions', $data);
+            return response()->json($response->json() ?? [], $response->status());
+        } catch (\Illuminate\Http\Client\ConnectionException $exception) {
+            return response()->json(['message' => 'Le service est indisponible. Veuillez réessayer.'], 503);
+        }
     }
 
     public function store(Request $request)
