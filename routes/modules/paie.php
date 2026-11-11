@@ -27,7 +27,6 @@ Route::middleware(['sicore.auth', 'sicore.module:paie.bulletins.read'])->group(f
             'generee-ief' => 'paie-generee-ief',
             'fermeture-periode' => 'paie-fermeture-periode',
             'edition-salaires-banque' => 'paie-edition-salaires-banque',
-            'bulletins' => 'paie-bulletins',
             'effectifs-corps' => 'paie-effectifs-corps',
             'non-generee' => 'paie-non-generee',
             'sommes-percues' => 'paie-sommes-percues',
@@ -45,6 +44,8 @@ Route::middleware(['sicore.auth', 'sicore.module:paie.bulletins.read'])->group(f
             'heures-supplementaires-interim' => 'paie-heures-supplementaires-interim',
             'edition' => 'paie-edition',
         ];
+
+        Route::get('/bulletins', [\App\Http\Controllers\PayrollBulletinController::class, 'index'])->name('bulletins');
 
         foreach ($pages as $path => $slug) {
             Route::get('/'.$path, [PayrollController::class, 'show'])
