@@ -39,4 +39,15 @@ class UserFiltersTest extends TestCase
         Http::fake(['*' => Http::response(['message' => 'Accès interdit'], 403)]);
         $this->getJson(route('utilisateurs.filter-options', ['ia_id' => 1]))->assertForbidden()->assertJsonPath('message', 'Accès interdit');
     }
+    public function test_user_profile_uses_creation_fields_and_shared_presentation(): void
+    {
+        $this->view('pages.administration.utilisateurs.show', ['user' => [
+            'id' => 1, 'nom' => 'Diop', 'prenom' => 'Awa', 'email' => 'awa@example.com',
+        ]])->assertSee('teacher-profile-hero', false)
+            ->assertSee('data-user-field="nom"', false)
+            ->assertSee('data-user-field="telephone"', false)
+            ->assertSee('data-user-field="direction"', false)
+            ->assertDontSee('data-user-field="fonction"', false)
+            ->assertDontSee('data-user-field="password"', false);
+    }
 }

@@ -72,6 +72,7 @@
 
         <div class="form-group" id="national-structure-group" @if(!old('role_id') || old('perimetre', 'national') !== 'national') hidden @endif>
           <label for="lieu_service_id">Direction de rattachement <span class="required">*</span></label>
+          <div class="user-direction-control">
           <select class="form-control @error('lieu_service_id') is-invalid @enderror" id="lieu_service_id" name="lieu_service_id">
             <option value="">Sélectionner une direction</option>
             @foreach(($organisation['national'] ?? []) as $structure)
@@ -80,6 +81,10 @@
               @endif
             @endforeach
           </select>
+          @if (\App\Support\SicoreAccess::can(request(), 'parametrage.lieux_service.manage'))
+            <button class="icon-action user-direction-add" type="button" data-modal-open="direction-create-modal" title="Ajouter une direction" aria-label="Ajouter une direction"><i class="fa-solid fa-plus" aria-hidden="true"></i></button>
+          @endif
+          </div>
           @error('lieu_service_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
         </div>
 
@@ -121,45 +126,22 @@
     </form>
   </x-module-indemnite>
 
+  <x-module-indemnite type="modal" id="direction-create-modal" title="Ajouter une direction centrale">
+    <form id="direction-create-form" action="{{ route('utilisateurs.directions.store') }}" method="POST">
+      @csrf
+      <p>La direction sera disponible dans la liste selon le rôle choisi.</p>
+      <div class="form-grid">
+        <div class="form-group"><label for="direction-code">Code *</label><input class="form-control" id="direction-code" name="code" maxlength="20" pattern="[A-Z0-9_-]+" title="Lettres majuscules, chiffres, tirets ou tirets bas" required></div>
+        <div class="form-group"><label for="direction-libelle">Libellé *</label><input class="form-control" id="direction-libelle" name="libelle" maxlength="100" required></div>
+        <div class="form-group"><label for="direction-type">Type *</label><select class="form-control" id="direction-type" name="type" required><option value="">Sélectionner un type</option>@foreach(['CI', 'DAGE', 'DRH', 'DECPC'] as $type)<option value="{{ $type }}">{{ $type }}</option>@endforeach</select></div>
+      </div>
+      <p id="direction-create-error" class="invalid-feedback" role="alert" hidden></p>
+      <div class="form-actions"><button class="btn-secondary" type="button" data-modal-close>Annuler</button><button class="btn-primary" type="submit">Enregistrer la direction</button></div>
+    </form>
+  </x-module-indemnite>
+
   <x-module-indemnite type="modal" id="view-user-modal" title="Détails de l’utilisateur">
-    <div class="user-detail-cards">
-      <section class="user-detail-card"><dl>
-        <div><dt>Nom complet</dt><dd id="view-user-name">—</dd></div>
-        <div><dt>Matricule</dt><dd id="view-user-matricule">—</dd></div>
-      </dl></section>
-      <section class="user-detail-card"><dl>
-        <div><dt>Adresse e-mail</dt><dd id="view-user-email">—</dd></div>
-        <div><dt>Téléphone</dt><dd id="view-user-phone">—</dd></div>
-      </dl></section>
-      <section class="user-detail-card"><dl>
-        <div><dt>Date de naissance</dt><dd id="view-user-birth-date">—</dd></div>
-        <div><dt>Lieu de naissance</dt><dd id="view-user-birth-place">—</dd></div>
-      </dl></section>
-      <section class="user-detail-card"><dl>
-        <div><dt>Genre</dt><dd id="view-user-gender">—</dd></div>
-        <div><dt>Adresse</dt><dd id="view-user-address">—</dd></div>
-      </dl></section>
-      <section class="user-detail-card"><dl>
-        <div><dt>Fonction</dt><dd id="view-user-function">—</dd></div>
-        <div><dt>Établissement</dt><dd id="view-user-etablissement">—</dd></div>
-      </dl></section>
-      <section class="user-detail-card"><dl>
-        <div><dt>IA</dt><dd id="view-user-ia">—</dd></div>
-        <div><dt>IEF</dt><dd id="view-user-ief">—</dd></div>
-      </dl></section>
-      <section class="user-detail-card"><dl>
-        <div><dt>Rôle</dt><dd id="view-user-role">—</dd></div>
-        <div><dt>Statut</dt><dd id="view-user-status">—</dd></div>
-      </dl></section>
-      <section class="user-detail-card"><dl>
-        <div><dt>Identifiant du compte</dt><dd id="view-user-id">—</dd></div>
-        <div><dt>Structure</dt><dd id="view-user-structure">—</dd></div>
-      </dl></section>
-      <section class="user-detail-card"><dl>
-        <div><dt>Créé le</dt><dd id="view-user-created-at">—</dd></div>
-        <div><dt>Dernière connexion (heure de Dakar)</dt><dd id="view-user-last-login">Non enregistrée</dd></div>
-      </dl></section>
-    </div>
+    @include('pages.administration.utilisateurs.profile')
     <div class="form-actions"><button class="btn-secondary" type="button" data-modal-close>Fermer</button></div>
   </x-module-indemnite>
 
@@ -230,6 +212,15 @@
 @endsection
 
 @push('styles')
+<style>
+  #createUserForm .form-grid { align-items: start; }
+  .user-direction-control { display: flex; align-items: center; gap: 8px; }
+  .user-direction-control > select { flex: 1; min-width: 0; }
+  .user-direction-add { flex: 0 0 42px; width: 42px; height: 42px; }
+</style>
+<link rel="stylesheet" href="{{ asset('assets/css/teacher-profile.css') }}?v={{ filemtime(public_path('assets/css/teacher-profile.css')) }}">
+<style>#view-user-modal .modal-dialog { width: min(920px, calc(100% - 32px)); }</style>
+
   <style>
     .user-status-toggle { border: 0; cursor: pointer; font: inherit; font-weight: 700; }
     .user-status-toggle:hover { filter: brightness(.94); }
@@ -275,6 +266,9 @@
 @endpush
 
 @push('scripts')
+<script src="{{ asset('assets/js/user-direction.js') }}?v={{ filemtime(public_path('assets/js/user-direction.js')) }}"></script>
+<script src="{{ asset('assets/js/user-profile.js') }}?v={{ filemtime(public_path('assets/js/user-profile.js')) }}"></script>
+
   <script src="{{ asset('assets/js/user-filters.js') }}" defer></script>
   <script>
     document.addEventListener('DOMContentLoaded', function () {
@@ -286,13 +280,17 @@
       const emailError = document.getElementById('email-error');
       const hierarchy = @json($organisation['regional'] ?? []);
       const nationalStructures = @json($organisation['national'] ?? []);
+      document.addEventListener('direction-created', function (event) {
+        const existingIndex = nationalStructures.findIndex(item => String(item.id) === String(event.detail.id));
+        if (existingIndex === -1) nationalStructures.push(event.detail);
+        else nationalStructures[existingIndex] = event.detail;
+        applyRoleStructureRules();
+        if (Array.from(national.options).some(option => String(option.value) === String(event.detail.id))) national.value = String(event.detail.id);
+        national.dispatchEvent(new Event('change', { bubbles: true }));
+      });
       function compatibleNationalStructure(item, slug) {
-        const type = String(item.type || item.code || '').toUpperCase();
-        if (slug === 'super_admin' || slug === 'admin') return ['CI', 'DAGE'].includes(type);
-        if (slug === 'agent_decpc') return type === 'DECPC';
-        if (slug === 'agent_drh') return type === 'DRH';
-        if (slug === 'gestionnaire_ia') return type === 'IA';
-        return ['CI', 'DAGE'].includes(type);
+        const option = Array.from(document.querySelectorAll('#role_id option, #edit-user-role option')).find(option => option.dataset.roleSlug === slug);
+        return window.UserDirections.allowedTypes(slug, JSON.parse(option?.dataset.structureTypes || '[]')).includes(String(item.type || item.code || '').toUpperCase());
       }
 
       const iaOptionsUrl = @json(route('utilisateurs.ia-options'));
@@ -549,6 +547,7 @@
       const editStructure = document.getElementById('edit-user-structure');
       const editStructureLabel = document.getElementById('edit-user-structure-label');
       const editStructures = @json($structures);
+      document.addEventListener('direction-created', event => editStructures.push(event.detail));
       const usersBaseUrl = @json(route('utilisateurs.index'));
       const deleteForm = document.getElementById('delete-user-form');
       const toggleForm = document.getElementById('toggle-user-status-form');
@@ -686,25 +685,7 @@
           const user = JSON.parse(button.dataset.user);
 
           if (action === 'view') {
-            document.getElementById('view-user-id').textContent = user.id || '—';
-            document.getElementById('view-user-name').textContent = user.nom_complet || `${user.prenom || ''} ${user.nom || ''}`.trim() || '—';
-            document.getElementById('view-user-email').textContent = user.email || '—';
-            document.getElementById('view-user-matricule').textContent = user.matricule || '—';
-            document.getElementById('view-user-ia').textContent = user.affectation?.ia || '—';
-            document.getElementById('view-user-ief').textContent = user.affectation?.ief || '—';
-            document.getElementById('view-user-etablissement').textContent = user.affectation?.etablissement || '—';
-            document.getElementById('view-user-phone').textContent = user.telephone || '—';
-            document.getElementById('view-user-gender').textContent = user.genre || '—';
-            document.getElementById('view-user-birth-date').textContent = user.date_naiss || '—';
-            document.getElementById('view-user-birth-place').textContent = user.lieu_naissance || '—';
-            document.getElementById('view-user-address').textContent = user.adresse || '—';
-            document.getElementById('view-user-role').textContent = user.role?.nom || '—';
-            document.getElementById('view-user-structure').textContent = [user.lieu_service?.code, user.lieu_service?.libelle].filter(Boolean).join(' — ') || 'Aucune structure';
-            document.getElementById('view-user-status').textContent = user.statut !== 'actif'
-                ? 'Suspendu'
-                : (user.enseignant_id && !user.password_defined ? 'En attente de vérification' : 'Actif');
-            document.getElementById('view-user-created-at').textContent = user.created_at || '—';
-            document.getElementById('view-user-last-login').textContent = user.derniere_connexion || 'Non enregistrée';
+            window.renderUserProfile(viewModal, user);
             openModal(viewModal);
             return;
           }

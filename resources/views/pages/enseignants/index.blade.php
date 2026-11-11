@@ -26,6 +26,13 @@
     />
 
     <section class="content-area">
+      @if (!empty($iaSubmissionForm))
+        <p>Le dossier sera transmis à la DAGE pour validation avant son ajout à la liste.</p>
+        @if(session('error'))<p class="alert alert-danger">{{ session('error') }}</p>@endif
+        <a class="btn-secondary" href="{{ route('enseignants.index') }}">Retour aux enseignants</a>
+        <button class="btn-primary" type="button" data-modal-open="teacher-create-modal">Ouvrir le formulaire</button>
+      @else
+
       @if ($drhAccess->isDrh())
         <p class="breadcrumb">Périmètre : {{ app(\App\Services\Organisation\OrganisationContext::class)->label() }}</p>
       @endif
@@ -39,6 +46,7 @@
             <i class="fa-solid fa-file-excel" aria-hidden="true"></i>
             Exporter Excel
           </a>
+          @if ($drhAccess->isSuperAdmin())<a class="btn-secondary" href="{{ route('enseignants.submissions') }}">Dossiers IA à valider</a>@endif
           <button class="btn-primary" type="button" data-modal-open="teacher-create-modal">
             <i class="fa-solid fa-user-plus" aria-hidden="true"></i>
             Ajouter un enseignant
@@ -120,11 +128,12 @@
           </nav>
         @endif
       </section>
+      @endif
     </section>
   </main>
 
-<x-module-indemnite type="modal" id="teacher-create-modal" title="Ajouter un enseignant" :open="$errors->getBag('default')->any() && !old('_editing_id')">
-  <form class="teacher-form" method="POST" action="{{ route('enseignants.store') }}" novalidate>
+<x-module-indemnite type="modal" id="teacher-create-modal" title="Ajouter un enseignant" :open="!empty($iaSubmissionForm) || ($errors->getBag('default')->any() && !old('_editing_id'))">
+  <form class="teacher-form" method="POST" action="{{ !empty($iaSubmissionForm) ? route('ia.teachers.submit') : route('enseignants.store') }}" novalidate>
     @csrf
     @if ($errors->any())
       <div class="teacher-error-summary" role="alert" tabindex="-1">
@@ -224,19 +233,16 @@
       <div class="form-group"><label for="teacher-discipline">Spécialité</label><div class="teacher-select-create"><select class="form-control" id="teacher-discipline" name="discipline_id"><option value="">Sélectionner une spécialité</option>@foreach($disciplineOptions as $discipline)<option value="{{ data_get($discipline, 'id') }}">{{ data_get($discipline, 'libelle', data_get($discipline, 'nom')) }}</option>@endforeach</select>@if ($drhAccess->allowsRoute('enseignants.referentiels.store'))<button class="icon-action" type="button" data-referentiel-open="discipline" data-referentiel-target="teacher-discipline" title="Ajouter une spécialité" aria-label="Ajouter une spécialité"><i class="fa-solid fa-plus"></i></button>@endif</div></div>
       <div class="form-group"><label for="teacher-lieu-service">Établissement</label><div class="teacher-select-create"><select class="form-control" id="teacher-lieu-service" name="lieu_service_id" disabled data-etablissements-url="{{ route('enseignants.etablissements') }}"><option value="">Sélectionner d’abord une IEF</option></select>@if ($drhAccess->allowsRoute('enseignants.referentiels.store'))<button class="icon-action" type="button" data-referentiel-open="lieu_service" data-referentiel-target="teacher-lieu-service" title="Ajouter un établissement" aria-label="Ajouter un établissement"><i class="fa-solid fa-plus"></i></button>@endif</div></div>
       <div class="form-group"><label for="teacher-salaire">Salaire brut</label><input class="form-control" id="teacher-salaire" name="salaire_brut" type="number" min="0" step="1" value="{{ old('salaire_brut') }}" readonly></div>
-      <div class="form-group"><label for="teacher-generation">Année de recrutement</label><input class="form-control" id="teacher-generation" name="annee_recrutement" type="number" min="1900" max="{{ now()->year }}" value="{{ old('annee_recrutement') }}"></div>
-      <div class="form-group" data-create-contract-field hidden><label for="teacher-date-fin-contrat">Fin du contrat <span class="required">*</span></label><input class="form-control" id="teacher-date-fin-contrat" name="date_fin_contrat" type="date" value="{{ old('date_fin_contrat') }}"></div>
-      <div class="form-group"><label for="teacher-couple">Situation matrimoniale</label><select class="form-control" id="teacher-couple" name="situation_matrimoniale" required><option value="celibataire">Célibataire</option><option value="marie" @selected(old('situation_matrimoniale') === 'marie')>Marié(e)</option><option value="veuf" @selected(old('situation_matrimoniale') === 'veuf')>Veuf/Veuve</option><option value="divorce" @selected(old('situation_matrimoniale') === 'divorce')>Divorcé(e)</option></select></div>
+      <div class="form-group"><label for="teacher-couple">Situation matrimoniale</label><select class="form-control" id="teacher-couple" name="situation_matrimoniale" required><option value="celibataire">Célibataire</option><option value="marie" @selected(old('situation_matrimoniale') === 'marie')>Marié(e)</option></select></div>
       <div class="form-group"><label for="teacher-enfants">Nombre d’enfants <span class="required">*</span></label><input class="form-control" id="teacher-enfants" name="nombre_enfants" type="number" min="0" value="{{ old('nombre_enfants') }}" required></div>
       <div class="form-group"><label for="teacher-femmes">Nombre de femme(s) <span class="optional-label">(facultatif)</span></label><input class="form-control" id="teacher-femmes" name="nombre_femmes" type="number" min="0" value="{{ old('nombre_femmes') }}"></div>
       <div class="form-group"><label for="teacher-parts">Nombre de parts</label><input class="form-control" id="teacher-parts" name="nombre_parts_fiscales" type="number" step="0.5" min="1" max="5" value="{{ old('nombre_parts_fiscales', 1) }}" readonly></div>
       <div class="form-group"><label for="teacher-conjoint-travaille">Le conjoint travaille</label><select class="form-control" id="teacher-conjoint-travaille" name="conjoint_travaille"><option value="0">Non</option><option value="1" @selected(old('conjoint_travaille') == 1)>Oui</option></select></div>
-      <div class="form-group full"><label for="teacher-observations">Observations</label><textarea class="form-control" id="teacher-observations" name="observations">{{ old('observations') }}</textarea></div>
       <div class="form-group"><label for="teacher-banque">Banque</label><div class="teacher-select-create"><select class="form-control" id="teacher-banque" name="compte_bancaire[institut_financier_id]"><option value="">Sélectionner une banque</option>@foreach($institutionOptions as $institution)<option value="{{ data_get($institution, 'id') }}" data-code-banque="{{ data_get($institution, 'code_banque', '') }}">{{ data_get($institution, 'libelle', data_get($institution, 'nom')) }}</option>@endforeach</select><button class="icon-action" type="button" data-referentiel-open="banque" data-referentiel-target="teacher-banque" title="Ajouter une banque" aria-label="Ajouter une banque"><i class="fa-solid fa-plus"></i></button></div></div>
-      <div class="form-group"><label for="teacher-code-banque">Code banque <span class="required">*</span></label><input class="form-control" id="teacher-code-banque" name="compte_bancaire[code_banque]" minlength="5" maxlength="5" required value="{{ old('compte_bancaire.code_banque') }}"></div>
-      <div class="form-group"><label for="teacher-code-guichet">Code guichet <span class="required">*</span></label><input class="form-control" id="teacher-code-guichet" name="compte_bancaire[code_guichet]" minlength="5" maxlength="5" required value="{{ old('compte_bancaire.code_guichet') }}"></div>
-      <div class="form-group"><label for="teacher-numero-compte">Numéro de compte <span class="required">*</span></label><input class="form-control" id="teacher-numero-compte" name="compte_bancaire[numero_compte]" minlength="12" maxlength="12" required value="{{ old('compte_bancaire.numero_compte') }}"></div>
-      <div class="form-group"><label for="teacher-cle-rib">Clé RIB <span class="required">*</span></label><input class="form-control" id="teacher-cle-rib" name="compte_bancaire[cle_rib]" minlength="2" maxlength="2" required value="{{ old('compte_bancaire.cle_rib') }}"></div>
+      <div class="form-group"><label for="teacher-code-banque">Code banque <span class="required">*</span></label><input class="form-control" id="teacher-code-banque" name="compte_bancaire[code_banque]" pattern="SN[0-9]{3}" title="SN suivi de 3 chiffres" minlength="5" maxlength="5" required value="{{ old('compte_bancaire.code_banque') }}"></div>
+      <div class="form-group"><label for="teacher-code-guichet">Code guichet <span class="required">*</span></label><input class="form-control" id="teacher-code-guichet" name="compte_bancaire[code_guichet]" pattern="[0-9]{5}" inputmode="numeric" minlength="5" maxlength="5" required value="{{ old('compte_bancaire.code_guichet') }}"></div>
+      <div class="form-group"><label for="teacher-numero-compte">Numéro de compte <span class="required">*</span></label><input class="form-control" id="teacher-numero-compte" name="compte_bancaire[numero_compte]" pattern="[0-9]{12}" inputmode="numeric" minlength="12" maxlength="12" required value="{{ old('compte_bancaire.numero_compte') }}"></div>
+      <div class="form-group"><label for="teacher-cle-rib">Clé RIB <span class="required">*</span></label><input class="form-control" id="teacher-cle-rib" name="compte_bancaire[cle_rib]" readonly pattern="[0-9]{2}" placeholder="Calcul automatique" minlength="2" maxlength="2" required value="{{ old('compte_bancaire.cle_rib') }}"></div>
     </div>
     <input type="hidden" name="est_actif" value="1">
 
@@ -244,7 +250,7 @@
       <button class="btn-secondary" type="button" data-modal-close>Annuler</button>
       <button class="btn-secondary" type="button" data-create-prev hidden>Précédent</button>
       <button class="btn-primary" type="button" data-create-next>Suivant</button>
-      <button class="btn-primary" type="submit" data-create-submit hidden><i class="fa-solid fa-floppy-disk" aria-hidden="true"></i> Enregistrer</button>
+      <button class="btn-primary" type="submit" data-create-submit hidden><i class="fa-solid fa-floppy-disk" aria-hidden="true"></i> {{ !empty($iaSubmissionForm) ? 'Soumettre à la DAGE' : 'Enregistrer' }}</button>
     </div>
   </form>
 </x-module-indemnite>
@@ -280,87 +286,7 @@
 </x-module-indemnite>
 
 <x-module-indemnite type="modal" id="teacher-view-modal" title="Détails de l’enseignant">
-  <div class="teacher-profile">
-    <header class="teacher-profile-hero">
-      <div class="teacher-profile-avatar" data-view-initials>EN</div>
-      <div class="teacher-profile-heading">
-        <p class="teacher-profile-eyebrow">Fiche enseignant</p>
-        <h3 data-view-full-name>—</h3>
-        <div class="teacher-profile-meta"><span data-view-matricule>—</span><span class="teacher-profile-status" data-view-status>—</span></div>
-      </div>
-    </header>
-
-    <div class="teacher-profile-grid">
-      <section class="teacher-detail-card"><div class="teacher-detail-title"><h4>Identité</h4></div><dl class="teacher-detail-list">
-        <div><dt>Nom</dt><dd data-teacher-detail="nom" data-format="text">Non renseigné</dd></div>
-        <div data-view-indice hidden><dt>Indice</dt><dd data-teacher-detail="indice">Non renseigné</dd></div>
-        <div><dt>Prénom</dt><dd data-teacher-detail="prenom" data-format="text">Non renseigné</dd></div>
-        <div><dt>Carte d’identité</dt><dd data-teacher-detail="cni" data-format="text">Non renseigné</dd></div>
-        <div><dt>Genre</dt><dd data-teacher-detail="genre" data-format="text">Non renseigné</dd></div>
-        <div><dt>Date de naissance</dt><dd data-teacher-detail="date_naissance" data-format="date">Non renseigné</dd></div>
-        <div><dt>Lieu de naissance</dt><dd data-teacher-detail="lieu_naissance" data-format="text">Non renseigné</dd></div>
-      </dl></section>
-      <section class="teacher-detail-card"><div class="teacher-detail-title"><h4>Coordonnées</h4></div><dl class="teacher-detail-list">
-        <div><dt>E-mail</dt><dd data-teacher-detail="email" data-format="text">Non renseigné</dd></div>
-        <div><dt>Téléphone</dt><dd data-teacher-detail="telephone" data-format="text">Non renseigné</dd></div>
-
-      </dl></section>
-      <section class="teacher-detail-card"><div class="teacher-detail-title"><h4>Situation matrimoniale</h4></div><dl class="teacher-detail-list">
-        <div><dt>Situation matrimoniale</dt><dd data-teacher-detail="situation_matrimoniale" data-format="matrimonial">Non renseigné</dd></div>
-        <div><dt>Nombre d’enfants</dt><dd data-teacher-detail="nombre_enfants" data-format="text">Non renseigné</dd></div>
-        <div><dt>Nombre de femmes</dt><dd data-teacher-detail="nombre_femmes" data-format="text">Non renseigné</dd></div>
-        <div><dt>Conjoint en activité</dt><dd data-teacher-detail="conjoint_travaille" data-format="bool">Non renseigné</dd></div>
-        <div><dt>Parts fiscales</dt><dd data-teacher-detail="nombre_parts_fiscales" data-format="text">Non renseigné</dd></div>
-      </dl></section>
-      <section class="teacher-detail-card"><div class="teacher-detail-title"><h4>Affectation et qualification</h4></div><dl class="teacher-detail-list">
-        <div><dt>Inspection académique</dt><dd data-teacher-detail="ia.libelle" data-format="text">Non renseigné</dd></div>
-        <div><dt>IEF</dt><dd data-teacher-detail="ief.libelle" data-format="text">Non renseigné</dd></div>
-        <div><dt>Établissement</dt><dd data-teacher-detail="lieu_service.libelle" data-format="text">Non renseigné</dd></div>
-        <div><dt>Statut</dt><dd data-teacher-detail="statut_enseignant.libelle" data-format="text">Non renseigné</dd></div>
-        <div><dt>Corps</dt><dd data-teacher-detail="corps.libelle" data-format="text">Non renseigné</dd></div>
-        <div><dt>Diplôme</dt><dd data-teacher-detail="diplome.libelle" data-format="text">Non renseigné</dd></div>
-        <div><dt>Catégorie</dt><dd data-teacher-detail="categorie.libelle" data-format="text">Non renseigné</dd></div>
-        <div><dt>Spécialité</dt><dd data-teacher-detail="discipline.libelle" data-format="text">Non renseigné</dd></div>
-      </dl></section>
-      <section class="teacher-detail-card"><div class="teacher-detail-title"><h4>Contrat et rémunération</h4></div><dl class="teacher-detail-list">
-        <div><dt>Salaire brut</dt><dd data-teacher-detail="salaire_brut" data-format="money">Non renseigné</dd></div>
-        <div><dt>Recrutement</dt><dd data-teacher-detail="date_recrutement" data-format="date">Non renseigné</dd></div>
-        <div><dt>Prise de service</dt><dd data-teacher-detail="date_prise_service" data-format="date">Non renseigné</dd></div>
-        <div><dt>Fin du contrat</dt><dd data-teacher-detail="date_fin_contrat" data-format="date">Non renseigné</dd></div>
-        <div><dt>Année de recrutement</dt><dd data-teacher-detail="annee_recrutement" data-format="text">Non renseigné</dd></div>
-        <!-- <div><dt>Statut</dt><dd data-teacher-detail="statut_libelle" data-format="text">Non renseigné</dd></div> -->
-        <div><dt>Actif</dt><dd data-teacher-detail="est_actif" data-format="bool">Non renseigné</dd></div>
-      </dl></section>
-      <section class="teacher-detail-card"><div class="teacher-detail-title"><h4>Compte bancaire</h4></div><dl class="teacher-detail-list">
-        <div><dt>Banque</dt><dd data-teacher-detail="compte_bancaire.institut_financier.libelle" data-format="text">Non renseigné</dd></div>
-        <div><dt>Titulaire</dt><dd data-teacher-detail="compte_bancaire.titulaire_compte" data-format="text">Non renseigné</dd></div>
-        <div><dt>Numéro de compte</dt><dd data-teacher-detail="compte_bancaire.numero_compte" data-format="text">Non renseigné</dd></div>
-        <div><dt>Code banque</dt><dd data-teacher-detail="compte_bancaire.code_banque" data-format="text">Non renseigné</dd></div>
-        <div><dt>Code guichet</dt><dd data-teacher-detail="compte_bancaire.code_guichet" data-format="text">Non renseigné</dd></div>
-        <div><dt>Clé RIB</dt><dd data-teacher-detail="compte_bancaire.cle_rib" data-format="text">Non renseigné</dd></div>
-
-      </dl></section>
-      <section class="teacher-detail-card"><div class="teacher-detail-title"><h4>Syndicat</h4></div><dl class="teacher-detail-list">
-        <div><dt>Libellé</dt><dd data-teacher-detail="syndicat.libelle" data-format="text">Non renseigné</dd></div>
-        <div><dt>Check-off (FCFA)</dt><dd data-teacher-detail="syndicat.montant_check_off" data-format="money-number">Non renseigné</dd></div>
-        <div><dt>Œuvre sociale (FCFA)</dt><dd data-teacher-detail="syndicat.montant_oeuvre_sociale" data-format="money-number">Non renseigné</dd></div>
-        <div><dt>Créé le</dt><dd data-teacher-detail="syndicat.created_at" data-format="date">Non renseigné</dd></div>
-        <div><dt>Modifié le</dt><dd data-teacher-detail="syndicat.updated_at" data-format="date">Non renseigné</dd></div>
-      </dl></section>
-      <section class="teacher-detail-card"><div class="teacher-detail-title"><h4>Mutuelle</h4></div><dl class="teacher-detail-list">
-        <div><dt>Nom</dt><dd data-teacher-detail="mutuelle.nom" data-format="text">Non renseigné</dd></div>
-        <div><dt>Sigle</dt><dd data-teacher-detail="mutuelle.sigle" data-format="text">Non renseigné</dd></div>
-        <div><dt>Affiliation</dt><dd data-teacher-detail="mutuelle.numero_affiliation" data-format="text">Non renseigné</dd></div>
-        <div><dt>Adhésion</dt><dd data-teacher-detail="mutuelle.date_adhesion" data-format="text">Non renseigné</dd></div>
-        <div><dt>Résiliation</dt><dd data-teacher-detail="mutuelle.date_resiliation" data-format="text">Non renseigné</dd></div>
-      </dl></section>
-      <section class="teacher-detail-card"><div class="teacher-detail-title"><h4>Informations complémentaires</h4></div><dl class="teacher-detail-list">
-        <div><dt>Observations</dt><dd data-teacher-detail="observations" data-format="text">Non renseigné</dd></div>
-        <div><dt>Création du dossier</dt><dd data-teacher-detail="created_at" data-format="date">Non renseigné</dd></div>
-        <div><dt>Dernière modification</dt><dd data-teacher-detail="updated_at" data-format="date">Non renseigné</dd></div>
-      </dl></section>
-    </div>
-  </div>
+  @include('pages.enseignants.partials.profile')
   <div class="form-actions"><button class="btn-secondary" type="button" data-modal-close>Fermer</button></div>
 </x-module-indemnite>
 
@@ -409,12 +335,9 @@
       <div class="form-group"><label for="edit-teacher-discipline">Spécialité</label><div class="teacher-select-create"><select class="form-control" id="edit-teacher-discipline" name="discipline_id"><option value="">Sélectionner une spécialité</option>@foreach($disciplineOptions as $discipline)<option value="{{ data_get($discipline, 'id') }}">{{ data_get($discipline, 'libelle', data_get($discipline, 'nom')) }}</option>@endforeach</select>@if ($drhAccess->allowsRoute('enseignants.referentiels.store'))<button class="icon-action" type="button" data-referentiel-open="discipline" data-referentiel-target="edit-teacher-discipline" title="Ajouter une spécialité" aria-label="Ajouter une spécialité"><i class="fa-solid fa-plus"></i></button>@endif</div></div>
       <div class="form-group"><label for="edit-teacher-lieu-service">Établissement</label><div class="teacher-select-create"><select class="form-control" id="edit-teacher-lieu-service" name="lieu_service_id" disabled data-etablissements-url="{{ route('enseignants.etablissements') }}"><option value="">Sélectionner d’abord une IEF</option></select>@if ($drhAccess->allowsRoute('enseignants.referentiels.store'))<button class="icon-action" type="button" data-referentiel-open="lieu_service" data-referentiel-target="edit-teacher-lieu-service" title="Ajouter un établissement" aria-label="Ajouter un établissement"><i class="fa-solid fa-plus"></i></button>@endif</div></div>
       <div class="form-group"><label for="edit-teacher-salaire">Salaire brut</label><input class="form-control" id="edit-teacher-salaire" name="salaire_brut" type="number" min="0" readonly></div>
-      <div class="form-group"><label for="edit-teacher-generation">Année de recrutement</label><input class="form-control" id="edit-teacher-generation" name="annee_recrutement" type="number" min="1900" max="{{ now()->year }}"></div>
-      <div class="form-group" data-edit-contract-field hidden><label for="edit-teacher-date-fin-contrat">Fin du contrat <span class="required">*</span></label><input class="form-control" id="edit-teacher-date-fin-contrat" name="date_fin_contrat" type="date"></div>
-      <div class="form-group full"><label for="edit-teacher-observations">Observations</label><textarea class="form-control" id="edit-teacher-observations" name="observations"></textarea></div>
     </div></div></section>
     <section class="wizard-panel" data-edit-panel="3" hidden><div class="form-section"><h3>Situation matrimoniale et parts</h3><div class="form-grid">
-      <div class="form-group"><label for="edit-teacher-couple">Situation matrimoniale</label><select class="form-control" id="edit-teacher-couple" name="situation_matrimoniale" required><option value="celibataire">Célibataire</option><option value="marie" @selected(old('situation_matrimoniale') === 'marie')>Marié(e)</option><option value="veuf" @selected(old('situation_matrimoniale') === 'veuf')>Veuf/Veuve</option><option value="divorce" @selected(old('situation_matrimoniale') === 'divorce')>Divorcé(e)</option></select></div>
+      <div class="form-group"><label for="edit-teacher-couple">Situation matrimoniale</label><select class="form-control" id="edit-teacher-couple" name="situation_matrimoniale" required><option value="celibataire">Célibataire</option><option value="marie" @selected(old('situation_matrimoniale') === 'marie')>Marié(e)</option></select></div>
       <div class="form-group"><label for="edit-teacher-enfants">Nombre d’enfants <span class="required">*</span></label><input class="form-control" id="edit-teacher-enfants" name="nombre_enfants" type="number" min="0" required></div>
       <div class="form-group"><label for="edit-teacher-femmes">Nombre de femme(s) <span class="optional-label">(facultatif)</span></label><input class="form-control" id="edit-teacher-femmes" name="nombre_femmes" type="number" min="0"></div>
       <div class="form-group"><label for="edit-teacher-parts">Nombre de parts</label><input class="form-control" id="edit-teacher-parts" name="nombre_parts_fiscales" type="number" step="0.5" min="1" max="5" readonly></div>
@@ -427,10 +350,10 @@
         <div class="form-group"><label for="edit-teacher-date-naissance">Date de naissance</label><input class="form-control" id="edit-teacher-date-naissance" name="date_naissance" type="date" required max="{{ now()->subYears(18)->format('Y-m-d') }}" aria-describedby="edit-teacher-date-naissance-error"><span class="teacher-birth-error" id="edit-teacher-date-naissance-error" role="alert" hidden></span></div>
 
         <div class="form-group"><label for="edit-teacher-banque">Banque</label><div class="teacher-select-create"><select class="form-control" id="edit-teacher-banque" name="compte_bancaire[institut_financier_id]"><option value="">Sélectionner une banque</option>@foreach($institutionOptions as $institution)<option value="{{ data_get($institution, 'id') }}" data-code-banque="{{ data_get($institution, 'code_banque', '') }}">{{ data_get($institution, 'libelle', data_get($institution, 'nom')) }}</option>@endforeach</select><button class="icon-action" type="button" data-referentiel-open="banque" data-referentiel-target="edit-teacher-banque" title="Ajouter une banque" aria-label="Ajouter une banque"><i class="fa-solid fa-plus"></i></button></div></div>
-        <div class="form-group"><label for="edit-teacher-code-banque">Code banque <span class="required">*</span></label><input class="form-control" id="edit-teacher-code-banque" name="compte_bancaire[code_banque]" minlength="5" maxlength="5" required></div>
-        <div class="form-group"><label for="edit-teacher-code-guichet">Code guichet <span class="required">*</span></label><input class="form-control" id="edit-teacher-code-guichet" name="compte_bancaire[code_guichet]" maxlength="5" required></div>
-        <div class="form-group"><label for="edit-teacher-numero-compte">Numéro de compte <span class="required">*</span></label><input class="form-control" id="edit-teacher-numero-compte" name="compte_bancaire[numero_compte]" maxlength="12" required></div>
-        <div class="form-group"><label for="edit-teacher-cle-rib">Clé RIB <span class="required">*</span></label><input class="form-control" id="edit-teacher-cle-rib" name="compte_bancaire[cle_rib]" minlength="2" maxlength="2" required></div>
+        <div class="form-group"><label for="edit-teacher-code-banque">Code banque <span class="required">*</span></label><input class="form-control" id="edit-teacher-code-banque" name="compte_bancaire[code_banque]" pattern="SN[0-9]{3}" title="SN suivi de 3 chiffres" minlength="5" maxlength="5" required></div>
+        <div class="form-group"><label for="edit-teacher-code-guichet">Code guichet <span class="required">*</span></label><input class="form-control" id="edit-teacher-code-guichet" name="compte_bancaire[code_guichet]" pattern="[0-9]{5}" inputmode="numeric" minlength="5" maxlength="5" required></div>
+        <div class="form-group"><label for="edit-teacher-numero-compte">Numéro de compte <span class="required">*</span></label><input class="form-control" id="edit-teacher-numero-compte" name="compte_bancaire[numero_compte]" pattern="[0-9]{12}" inputmode="numeric" minlength="12" maxlength="12" required></div>
+        <div class="form-group"><label for="edit-teacher-cle-rib">Clé RIB <span class="required">*</span></label><input class="form-control" id="edit-teacher-cle-rib" name="compte_bancaire[cle_rib]" readonly pattern="[0-9]{2}" placeholder="Calcul automatique" minlength="2" maxlength="2" required></div>
       </div></div>
     </section>
     <input type="hidden" name="est_actif" value="1">
@@ -455,6 +378,8 @@
 @endsection
 
 @push('styles')
+@if (!empty($iaSubmissionForm))<style>#teacher-create-modal [data-referentiel-open] { display: none; }</style>@endif
+<link rel="stylesheet" href="{{ asset('assets/css/teacher-profile.css') }}?v={{ filemtime(public_path('assets/css/teacher-profile.css')) }}">
 <style>
   .teacher-form:not(:has(select[name="statut_enseignant_id"] option[data-fonctionnaire="1"]:checked)) [data-teacher-corps-field] {
     display: none !important;
@@ -475,6 +400,8 @@
 
   [data-teacher-indice-field][hidden], [data-view-indice][hidden] { display: none !important; }
   .teacher-form .is-invalid, input[name="date_naissance"].is-invalid { border-color: #dc2626; background-color: #fff5f5; box-shadow: 0 0 0 2px #dc26261a; }
+  .teacher-field-error { display: block; color: #b91c1c; font-size: .875rem; line-height: 1.4; margin-top: 5px; }
+  .teacher-field-error[hidden] { display: none; }
   .teacher-identity-error, .teacher-birth-error { color: #b91c1c; font-size: .875rem; line-height: 1.4; }
 
   .filter-panel.teacher-filters { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
@@ -523,48 +450,21 @@
   .teacher-select-create { display: flex; align-items: center; gap: 6px; }
   .teacher-select-create .form-control { min-width: 0; flex: 1; }
   .teacher-select-create .icon-action { flex: 0 0 34px; }
-  .teacher-profile-hero { display: flex; align-items: center; gap: 18px; padding: 22px; margin-bottom: 18px; border-radius: 18px; color: #fff; background: linear-gradient(135deg, var(--primary), #0f766e); box-shadow: 0 16px 35px rgba(15, 118, 110, .18); }
-  .teacher-profile-avatar { display: grid; place-items: center; width: 72px; height: 72px; flex: 0 0 72px; border: 3px solid rgba(255,255,255,.55); border-radius: 22px; color: var(--primary); background: #fff; font-size: 23px; font-weight: 900; letter-spacing: .04em; }
-  .teacher-profile-heading { min-width: 0; }
-  .teacher-profile-eyebrow { margin: 0 0 3px; color: rgba(255,255,255,.78); font-size: 11px; font-weight: 800; letter-spacing: .13em; text-transform: uppercase; }
-  .teacher-profile-heading h3 { margin: 0; color: #fff; font-size: clamp(20px, 3vw, 28px); }
-  .teacher-profile-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 9px; margin-top: 8px; font-size: 13px; }
-  .teacher-profile-meta[hidden], .teacher-profile-meta [hidden] { display: none !important; }
-  .teacher-profile-meta > span:first-child { font-weight: 700; }
-  .teacher-profile-status { padding: 4px 9px; border: 1px solid rgba(255,255,255,.35); border-radius: 999px; background: rgba(255,255,255,.16); font-size: 11px; font-weight: 800; }
-  .teacher-profile-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
-  .teacher-detail-card { padding: 12px; border: 1px solid #e2e8f0; border-radius: 12px; background: #fff; box-shadow: 0 7px 22px rgba(15, 23, 42, .05); }
-  .teacher-detail-card[hidden] { display: none !important; }
-  .teacher-detail-card-wide { grid-column: 1 / -1; }
-  .teacher-detail-title { display: flex; align-items: center; gap: 9px; padding-bottom: 12px; border-bottom: 1px solid #eef2f7; }
-  .teacher-detail-title i { display: grid; place-items: center; width: 31px; height: 31px; border-radius: 9px; color: var(--primary); background: #ecfdf5; }
-  .teacher-detail-title h4 { margin: 0; color: #0f172a; font-size: 14px; }
-  .teacher-detail-list { display: grid; gap: 0; margin: 8px 0 0; }
-  .teacher-detail-list > div { display: grid; grid-template-columns: minmax(120px, .8fr) minmax(0, 1.2fr); gap: 10px; padding: 6px 0; border-bottom: 1px dashed #e2e8f0; }
-  .teacher-detail-list[hidden], .teacher-detail-list > [hidden] { display: none !important; }
-  .teacher-detail-list > div:last-child { border-bottom: 0; }
-  .teacher-detail-list dt { color: #64748b; font-size: 12px; font-weight: 700; }
-  .teacher-detail-list dd { margin: 0; overflow-wrap: anywhere; color: #0f172a; font-size: 12px; font-weight: 500; text-align: left; white-space: pre-wrap; }
-  .teacher-detail-list a { color: var(--primary); text-decoration: none; }
-  .teacher-detail-contact { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
-  .teacher-detail-contact > div { display: block; padding: 8px 0; border: 0; }
-  .teacher-detail-contact dd { margin-top: 5px; text-align: left; }
-  @media (max-width: 680px) {
-    .teacher-profile-hero { align-items: flex-start; padding: 17px; }
-    .teacher-profile-avatar { width: 58px; height: 58px; flex-basis: 58px; border-radius: 17px; font-size: 18px; }
-    .teacher-profile-grid { grid-template-columns: 1fr; }
-    .teacher-detail-card-wide { grid-column: auto; }
-    .teacher-detail-contact { grid-template-columns: 1fr; gap: 0; }
-  }
 </style>
 @endpush
 
 @push('scripts')
+<script src="{{ asset('assets/js/teacher-profile.js') }}?v={{ filemtime(public_path('assets/js/teacher-profile.js')) }}"></script>
+<script type="application/json" id="teacher-validation-errors">@json(['editing' => (bool) old('_editing_id'), 'errors' => $errors->messages()])</script>
+<script src="{{ asset('assets/js/teacher-live-identity.js') }}?v={{ filemtime(public_path('assets/js/teacher-live-identity.js')) }}"></script>
+<script src="{{ asset('assets/js/teacher-validation.js') }}?v={{ filemtime(public_path('assets/js/teacher-validation.js')) }}"></script>
+<script src="{{ asset('assets/js/teacher-rib.js') }}?v={{ filemtime(public_path('assets/js/teacher-rib.js')) }}"></script>
 <script src="{{ asset('assets/js/teacher-field-rules.js') }}?v={{ filemtime(public_path('assets/js/teacher-field-rules.js')) }}"></script>
 <script src="{{ asset('assets/js/teacher-status-fields.js') }}?v={{ filemtime(public_path('assets/js/teacher-status-fields.js')) }}"></script>
   {{-- Gestion de la dépendance IA → IEF sur cette page. --}}
 <script src="{{ asset('assets/js/charts.js') }}" defer></script>
 <div id="teacher-page-config" hidden
+  data-check-identity-url="{{ route('enseignants.check-identity') }}"
   data-referentiel-url="{{ route('enseignants.referentiels.store') }}"
   data-referentiel-rules="{{ json_encode(config('teacher_referentiels')) }}"
   data-iefs-url="{{ route('enseignants.iefs') }}"
@@ -574,6 +474,15 @@
 <script>
 document.addEventListener('DOMContentLoaded', function () {
   var pageConfig = document.getElementById('teacher-page-config').dataset;
+  @if (!empty($iaSubmissionForm))
+  setTimeout(function () {
+    var academy = document.getElementById('teacher-ia');
+    if (!academy.value) {
+      academy.value = @json((string) data_get($academies, '0.id'));
+      loadTeacherHierarchy(academy, document.getElementById('teacher-ief'), pageConfig.oldIef, pageConfig.oldLieuService);
+    }
+  }, 0);
+  @endif
   ['teacher-', 'edit-teacher-'].forEach(function (prefix) {
     var banque = document.getElementById(prefix + 'banque');
     var code = document.getElementById(prefix + 'code-banque');
@@ -740,6 +649,7 @@ document.addEventListener('DOMContentLoaded', function () {
   var filterSearch = document.getElementById('filter-teacher-search');
   var filterTimer;
   var focusKey = 'teacher-filter-focus';
+  if (filterForm && filterSearch) {
   try {
     var savedFocus = JSON.parse(sessionStorage.getItem(focusKey) || 'null');
     sessionStorage.removeItem(focusKey);
@@ -773,6 +683,7 @@ document.addEventListener('DOMContentLoaded', function () {
       try { sessionStorage.setItem(focusKey, JSON.stringify({ value: filterSearch.value, start: filterSearch.selectionStart, end: filterSearch.selectionEnd })); } catch (error) {}
     }
   });
+  }
   document.querySelectorAll('input[name="cni"]').forEach(function (input) {
     input.addEventListener('input', function () {
       var cursor = input.selectionStart;
@@ -983,64 +894,6 @@ document.addEventListener('DOMContentLoaded', function () {
       .finally(function () { submit.disabled = false; });
   });
 
-  function teacherValue(teacher, path, fallback) {
-    var value = path.split('.').reduce(function (current, key) { return current && current[key] !== undefined ? current[key] : null; }, teacher);
-    return value === null || value === undefined || value === '' ? (fallback === undefined ? '—' : fallback) : value;
-  }
-
-  function teacherDate(value) {
-    if (!value) { return '—'; }
-    var parts = String(value).slice(0, 10).split('-');
-    return parts.length === 3 ? parts[2] + '/' + parts[1] + '/' + parts[0] : value;
-  }
-
-  document.querySelectorAll('[data-view-teacher]').forEach(function (button) {
-    button.addEventListener('click', function () {
-      var teacher = JSON.parse(button.dataset.viewTeacher);
-      var modal = document.getElementById('teacher-view-modal');
-      var firstName = teacherValue(teacher, 'prenom', '');
-      var lastName = teacherValue(teacher, 'nom', '');
-      var fullName = (firstName + ' ' + lastName).trim() || 'Enseignant';
-      var initials = ((firstName.charAt(0) || '') + (lastName.charAt(0) || '')).toUpperCase() || 'EN';
-      var statuses = { en_activite: 'En activité', retraite: 'Retraité', suspension_provisoire: 'Suspension provisoire', abandon: 'Abandon', decede: 'Décédé', integre: 'Intégré', radie: 'Radié', cessation_paiement: 'Cessation de paiement' };
-      modal.querySelector('[data-view-initials]').textContent = initials;
-      modal.querySelector('[data-view-full-name]').textContent = fullName;
-      var matricule = teacherValue(teacher, 'matricule', '');
-      var matriculeField = modal.querySelector('[data-view-matricule]');
-      matriculeField.hidden = matricule === '';
-      matriculeField.textContent = matricule === '' ? '' : 'Matricule : ' + matricule;
-      var status = statuses[teacher.statut] || teacherValue(teacher, 'statut', '');
-      var statusField = modal.querySelector('[data-view-status]');
-      statusField.hidden = status === '';
-      statusField.textContent = status;
-      modal.querySelector('.teacher-profile-meta').hidden = matriculeField.hidden && statusField.hidden;
-      var showIndice = isFonctionnaireCorpsValue(teacher.statut_enseignant);
-      modal.querySelector('[data-view-indice]').hidden = !showIndice;
-      modal.querySelectorAll('[data-teacher-detail]').forEach(function (field) {
-        var value = teacherValue(teacher, field.dataset.teacherDetail, 'Non renseigné');
-        var assignedValue = teacherValue(teacher, field.dataset.teacherDetail, '');
-        var detailRow = field.closest('.teacher-detail-list > div');
-        if (detailRow) {
-          detailRow.hidden = assignedValue === '' || assignedValue === null || assignedValue === undefined
-            || (typeof assignedValue === 'string' && assignedValue.trim() === '')
-            || (field.dataset.teacherDetail === 'indice' && !showIndice);
-        }
-        if (value !== 'Non renseigné') {
-          if (field.dataset.format === 'date') { value = teacherDate(value); }
-          if (field.dataset.format === 'matrimonial') { value = ({ celibataire: 'Célibataire', marie: 'Marié(e)', veuf: 'Veuf/Veuve', divorce: 'Divorcé(e)' })[value] || value; }
-          if (field.dataset.format === 'bool') { value = value === true || value === 1 || value === '1' ? 'Oui' : 'Non'; }
-          if (field.dataset.format === 'money') { value = Number(value).toLocaleString('fr-FR') + ' FCFA'; }
-          if (field.dataset.format === 'money-number') { value = Number(value).toLocaleString('fr-FR', { maximumFractionDigits: 0 }); }
-        }
-        field.textContent = value;
-      });
-      modal.querySelectorAll('.teacher-detail-card').forEach(function (card) {
-        var rows = Array.from(card.querySelectorAll('.teacher-detail-list > div'));
-        card.hidden = rows.length > 0 && rows.every(function (row) { return row.hidden; });
-      });
-    });
-  });
-
   var ia = document.querySelector('[data-teacher-ia]');
   var ief = document.querySelector('[data-teacher-ief]');
 
@@ -1069,7 +922,7 @@ document.addEventListener('DOMContentLoaded', function () {
           if (String(item.ief_id) === iefId) { items.set(id, item); }
         });
         select.replaceChildren(new Option(items.size ? 'Sélectionner un établissement' : 'Aucun établissement pour cette IEF', ''));
-        items.forEach(function (item) { select.add(new Option(item.libelle || item.nom, item.id)); });
+        items.forEach(function (item) { select.add(new Option(item.libelle, item.id)); });
         select.value = currentValue;
         select.disabled = false;
       })
@@ -1132,7 +985,7 @@ document.addEventListener('DOMContentLoaded', function () {
   var createStep = 1;
   var createGroups = [
     ['teacher-statut-enseignant', 'teacher-corps', 'teacher-matricule', 'teacher-indice', 'teacher-cni', 'teacher-nom', 'teacher-prenom', 'teacher-date-naissance', 'teacher-lieu-naissance', 'teacher-genre'],
-    ['teacher-ia', 'teacher-ief', 'teacher-lieu-service', 'teacher-diplome', 'teacher-syndicat', 'teacher-categorie', 'teacher-salaire', 'teacher-discipline', 'teacher-date-recrutement', 'teacher-date-fin-contrat', 'teacher-generation', 'teacher-statut', 'teacher-observations'],
+    ['teacher-ia', 'teacher-ief', 'teacher-lieu-service', 'teacher-diplome', 'teacher-syndicat', 'teacher-categorie', 'teacher-salaire', 'teacher-discipline', 'teacher-date-recrutement', 'teacher-statut'],
     ['teacher-couple', 'teacher-conjoint-travaille', 'teacher-enfants', 'teacher-femmes', 'teacher-parts'],
     ['teacher-email', 'teacher-telephone', 'teacher-banque', 'teacher-code-banque', 'teacher-code-guichet', 'teacher-numero-compte', 'teacher-cle-rib']
   ];
@@ -1152,7 +1005,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (!official) {
       corps.classList.remove('is-invalid');
     }
-    ['salaire', 'date-recrutement', 'generation', 'diplome', 'statut', 'observations'].forEach(function (name) {
+    ['salaire', 'date-recrutement', 'diplome', 'statut'].forEach(function (name) {
       var field = document.getElementById(prefix + name);
       if (!field) return;
       field.disabled = official;
@@ -1192,7 +1045,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   var editFieldGroups = {
     1: ['edit-teacher-statut-enseignant', 'edit-teacher-corps', 'edit-teacher-matricule', 'edit-teacher-indice', 'edit-teacher-cni', 'edit-teacher-nom', 'edit-teacher-prenom', 'edit-teacher-date-naissance', 'edit-teacher-lieu-naissance', 'edit-teacher-genre'],
-    2: ['edit-teacher-ia', 'edit-teacher-ief', 'edit-teacher-lieu-service', 'edit-teacher-diplome', 'edit-teacher-syndicat', 'edit-teacher-categorie', 'edit-teacher-salaire', 'edit-teacher-discipline', 'edit-teacher-date-recrutement', 'edit-teacher-date-fin-contrat', 'edit-teacher-generation', 'edit-teacher-statut', 'edit-teacher-observations'],
+    2: ['edit-teacher-ia', 'edit-teacher-ief', 'edit-teacher-lieu-service', 'edit-teacher-diplome', 'edit-teacher-syndicat', 'edit-teacher-categorie', 'edit-teacher-salaire', 'edit-teacher-discipline', 'edit-teacher-date-recrutement', 'edit-teacher-statut'],
     3: ['edit-teacher-couple', 'edit-teacher-conjoint-travaille', 'edit-teacher-enfants', 'edit-teacher-femmes', 'edit-teacher-parts'],
     4: ['edit-teacher-email', 'edit-teacher-telephone', 'edit-teacher-banque', 'edit-teacher-code-banque', 'edit-teacher-code-guichet', 'edit-teacher-numero-compte', 'edit-teacher-cle-rib']
   };
@@ -1332,12 +1185,6 @@ document.addEventListener('DOMContentLoaded', function () {
     filterCategories(createCategorie, createCorps.value, document.getElementById('teacher-diplome'));
     var selected = createCategorie.selectedOptions[0];
     if (!contractuel || (selected && selected.hidden)) { createCategorie.value = ''; createCategorie.classList.remove('is-invalid'); }
-    var contractField = document.querySelector('[data-create-contract-field]');
-    var contractInput = document.getElementById('teacher-date-fin-contrat');
-    contractField.hidden = !visible;
-    contractField.style.display = visible ? '' : 'none';
-    contractInput.required = contractuel;
-    contractInput.disabled = !contractuel;
   }
 
   function validateCreateStep(step) {
@@ -1349,6 +1196,7 @@ document.addEventListener('DOMContentLoaded', function () {
       if (field.disabled || (!field.required && !field.value)) {
         field.classList.remove('is-invalid');
         field.setAttribute('aria-invalid', 'false');
+        window.validateTeacherField(field, '');
         return;
       }
       var value = field.value ? field.value.trim() : '';
@@ -1358,7 +1206,7 @@ document.addEventListener('DOMContentLoaded', function () {
       if (!invalid && field.type === 'date' && field.id === 'teacher-date-naissance') { invalid = value > field.max; }
       field.classList.toggle('is-invalid', invalid);
       field.setAttribute('aria-invalid', invalid ? 'true' : 'false');
-      if (invalid) { valid = false; }
+      if (!window.validateTeacherField(field) || invalid) { valid = false; }
     });
     if (!valid) {
       var firstInvalid = createGroups[step - 1].map(function (id) { return document.getElementById(id); }).find(function (field) { return field && field.classList.contains('is-invalid'); });
@@ -1501,12 +1349,6 @@ document.addEventListener('DOMContentLoaded', function () {
     filterCategories(editCategorie, editCorps.value, document.getElementById('edit-teacher-diplome'));
     var selected = editCategorie.selectedOptions[0];
     if (!visible || (selected && selected.hidden)) { editCategorie.value = ''; editCategorie.classList.remove('is-invalid'); }
-    var contractField = document.querySelector('[data-edit-contract-field]');
-    var contractInput = document.getElementById('edit-teacher-date-fin-contrat');
-    contractField.hidden = !visible;
-    contractField.style.display = visible ? '' : 'none';
-    contractInput.required = visible;
-    contractInput.disabled = !visible;
   }
 
   function loadEditIefs(iaId, selectedId, selectedLieuId) {
@@ -1538,6 +1380,7 @@ document.addEventListener('DOMContentLoaded', function () {
       if (field.disabled || (!field.required && !field.value)) {
         field.classList.remove('is-invalid');
         field.setAttribute('aria-invalid', 'false');
+        window.validateTeacherField(field, '');
         return;
       }
       var value = field.value ? field.value.trim() : '';
@@ -1545,7 +1388,7 @@ document.addEventListener('DOMContentLoaded', function () {
       var invalid = !value || !field.validity.valid;
       if (!invalid && field.type === 'email') { invalid = !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value); }
       field.classList.toggle('is-invalid', invalid);
-      if (invalid) { valid = false; }
+      if (!window.validateTeacherField(field) || invalid) { valid = false; }
     });
     if (!valid) { panel.querySelector('.is-invalid').focus(); }
     return valid;
@@ -1590,9 +1433,6 @@ document.addEventListener('DOMContentLoaded', function () {
       document.getElementById('edit-teacher-statut').value = teacher.statut || 'en_activite';
       document.getElementById('edit-teacher-discipline').value = teacher.discipline ? teacher.discipline.id : '';
       document.getElementById('edit-teacher-salaire').value = teacher.salaire_brut || '';
-      document.getElementById('edit-teacher-generation').value = teacher.annee_recrutement || '';
-      document.getElementById('edit-teacher-date-fin-contrat').value = teacher.date_fin_contrat || '';
-      document.getElementById('edit-teacher-observations').value = teacher.observations || '';
       document.getElementById('edit-teacher-couple').value = teacher.situation_matrimoniale || (teacher.est_en_couple ? 'marie' : 'celibataire');
       document.getElementById('edit-teacher-enfants').value = teacher.nombre_enfants ?? '';
       document.getElementById('edit-teacher-femmes').value = teacher.nombre_femmes === null || teacher.nombre_femmes === undefined ? '' : teacher.nombre_femmes;
@@ -1603,6 +1443,7 @@ document.addEventListener('DOMContentLoaded', function () {
       document.getElementById('edit-teacher-code-guichet').value = account.code_guichet || '';
       document.getElementById('edit-teacher-numero-compte').value = account.numero_compte || '';
       document.getElementById('edit-teacher-cle-rib').value = account.cle_rib || '';
+      document.getElementById('edit-teacher-code-banque').dispatchEvent(new Event('input', { bubbles: true }));
       applyDiplomeSalary(document.getElementById('edit-teacher-diplome'), editStatus, editCategorie, document.getElementById('edit-teacher-salaire'));
       calculateEditParts();
       loadEditIefs(editIa.value, teacher.ief ? teacher.ief.id : '', teacher.lieu_service ? teacher.lieu_service.id : '');
@@ -1618,13 +1459,12 @@ document.addEventListener('DOMContentLoaded', function () {
   });
   editStatus.addEventListener('change', function () {
     // Les valeurs liées à l'ancien statut ne doivent pas être soumises avec
-    // les règles du nouveau statut (matricule, indice/corps, catégorie et fin de contrat).
+    // les règles du nouveau statut (matricule, indice/corps, catégorie).
     document.getElementById('edit-teacher-matricule').value = '';
     document.getElementById('edit-teacher-indice').value = '';
     editCorps.value = '';
     editCategorie.value = '';
-    document.getElementById('edit-teacher-date-fin-contrat').value = '';
-    editForm.querySelectorAll('#edit-teacher-matricule, #edit-teacher-indice, #edit-teacher-corps, #edit-teacher-categorie, #edit-teacher-date-fin-contrat').forEach(function (field) {
+    editForm.querySelectorAll('#edit-teacher-matricule, #edit-teacher-indice, #edit-teacher-corps, #edit-teacher-categorie').forEach(function (field) {
       field.setCustomValidity('');
       field.classList.remove('is-invalid');
       field.setAttribute('aria-invalid', 'false');

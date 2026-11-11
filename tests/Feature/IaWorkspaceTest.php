@@ -75,4 +75,41 @@ class IaWorkspaceTest extends TestCase
         $this->post('/login', ['email' => 'ia@example.test', 'password' => 'secret123', 'next' => '/paie/bulletins'])
             ->assertRedirect(route('dashboard'))->assertSessionHas('sicore_user.ia_id', 1);
     }
+    public function test_teacher_detail_uses_shared_profile(): void
+    {
+        Http::fake(['*/ia/enseignants/3*' => Http::response(['data' => [
+            'id' => 3, 'prenom' => 'Awa', 'nom' => 'Diop',
+            'cni' => '1234567890123', 'ief' => ['libelle' => 'IEF Dakar'],
+        ]])]);
+        $this->get('/ia/enseignants/3')->assertOk()
+            ->assertViewIs('pages.ia.teacher-show')
+            ->assertSee('teacher-profile-hero', false)
+            ->assertSee('data-teacher-detail="cni"', false)
+            ->assertSee('teacher-profile.js', false);
+    }
+    public function test_ia_can_open_creation_form_and_submit_for_validation(): void
+    {
+        $options = array_fill_keys(['statutOptions', 'corpsOptions', 'categorieOptions', 'diplomeOptions',
+            'disciplineOptions', 'institutionOptions', 'syndicatOptions', 'regionOptions', 'iefOptions'], []);
+        $options['academies'] = [['id' => 1, 'libelle' => 'Dakar']];
+        Http::fake([
+            '*/ia/teacher-options*' => Http::response(['data' => $options]),
+            '*/ia/teacher-submissions' => Http::response(['message' => 'Dossier soumis.'], 201),
+        ]);
+        $this->get(route('ia.teachers.create'))->assertOk()
+            ->assertSee(route('ia.teachers.submit'), false)->assertSee('teacher-create-modal', false);
+        $this->post(route('ia.teachers.submit'), ['ia_id' => 1, 'nom' => 'Diop'])
+            ->assertRedirect(route('ia.teachers.submissions'));
+        Http::assertSent(fn ($request) => $request->method() === 'POST' && str_ends_with($request->url(), '/ia/teacher-submissions'));
+        Http::assertNotSent(fn ($request) => str_contains($request->url(), '/admin/personnel/enseignants'));
+    }
+
+    public function test_ia_submission_page_does_not_offer_approval(): void
+    {
+        Http::fake(['*/ia/teacher-submissions*' => Http::response(['data' => ['data' => [
+            ['id' => 1, 'matricule' => '123456789/A', 'status' => 'pending', 'payload' => ['nom' => 'Diop', 'prenom' => 'Awa']],
+        ]]])]);
+        $this->get(route('ia.teachers.submissions'))->assertOk()
+            ->assertSee('En attente de validation')->assertDontSee('>Valider</button>', false);
+    }
 }
