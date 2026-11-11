@@ -19,6 +19,26 @@
   </header>
 
   <section class="content-area">
+    @if (!empty($stats))
+      <div class="stats-grid four">
+        <article class="stat-card">
+          <div><p class="stat-label">Diplômes</p><p class="stat-value">{{ number_format((int) ($stats['total'] ?? 0), 0, ',', ' ') }}</p><p class="stat-note">Tous les diplômes</p></div>
+          <span class="stat-icon green"><i class="fa-solid fa-graduation-cap" aria-hidden="true"></i></span>
+        </article>
+        <article class="stat-card">
+          <div><p class="stat-label">Catégories couvertes</p><p class="stat-value">{{ number_format((int) ($stats['categories'] ?? 0), 0, ',', ' ') }}</p><p class="stat-note">Catégories avec diplômes</p></div>
+          <span class="stat-icon purple"><i class="fa-solid fa-layer-group" aria-hidden="true"></i></span>
+        </article>
+        <article class="stat-card">
+          <div><p class="stat-label">Salaire brut moyen</p><p class="stat-value">{{ number_format((float) ($stats['salaire_moyen'] ?? 0), 0, ',', ' ') }} <small>FCFA</small></p><p class="stat-note">Moyenne des diplômes</p></div>
+          <span class="stat-icon blue"><i class="fa-solid fa-money-bill-wave" aria-hidden="true"></i></span>
+        </article>
+        <article class="stat-card">
+          <div><p class="stat-label">Salaire brut maximum</p><p class="stat-value">{{ number_format((float) ($stats['salaire_max'] ?? 0), 0, ',', ' ') }} <small>FCFA</small></p><p class="stat-note">Diplôme le mieux rémunéré</p></div>
+          <span class="stat-icon yellow"><i class="fa-solid fa-coins" aria-hidden="true"></i></span>
+        </article>
+      </div>
+    @endif
     <div class="actions-row">
       <p class="breadcrumb">Administration &gt; Paramétrage &gt; Diplômes</p>
       <div class="actions-group">
