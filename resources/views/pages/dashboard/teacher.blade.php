@@ -16,7 +16,9 @@
   @endforeach
   @if ($dashboard['cards'])
     {{-- Même design que les pages de paramétrage (IA, IEF…). --}}
-    @php($iconColors = ['green', 'blue', 'yellow', 'purple'])
+    @php
+      $iconColors = ['green', 'blue', 'yellow', 'purple'];
+    @endphp
     <section class="stats-grid four" aria-label="Mes indicateurs de paie">
       @foreach ($dashboard['cards'] as $card)
         <article class="stat-card">
