@@ -8,6 +8,26 @@
 <section class="content-area">
   @if(session('success'))<div class="alert alert-success">{{ session('success') }}</div>@endif @if(session('error'))<div class="alert alert-error">{{ session('error') }}</div>@endif
   @if($errors->any())<div class="alert alert-error">@foreach($errors->all() as $message)<p>{{ $message }}</p>@endforeach</div>@endif
+  @if (!empty($stats))
+    <div class="stats-grid four">
+      <article class="stat-card">
+        <div><p class="stat-label">Catégories</p><p class="stat-value">{{ number_format((int) ($stats['total'] ?? 0), 0, ',', ' ') }}</p><p class="stat-note">Toutes les catégories</p></div>
+        <span class="stat-icon green"><i class="fa-solid fa-layer-group" aria-hidden="true"></i></span>
+      </article>
+      <article class="stat-card">
+        <div><p class="stat-label">Catégories actives</p><p class="stat-value">{{ number_format((int) ($stats['actives'] ?? 0), 0, ',', ' ') }}</p><p class="stat-note">Utilisables</p></div>
+        <span class="stat-icon blue"><i class="fa-solid fa-circle-check" aria-hidden="true"></i></span>
+      </article>
+      <article class="stat-card">
+        <div><p class="stat-label">Corps couverts</p><p class="stat-value">{{ number_format((int) ($stats['corps'] ?? 0), 0, ',', ' ') }}</p><p class="stat-note">Corps avec catégories</p></div>
+        <span class="stat-icon purple"><i class="fa-solid fa-users-line" aria-hidden="true"></i></span>
+      </article>
+      <article class="stat-card">
+        <div><p class="stat-label">Diplômes rattachés</p><p class="stat-value">{{ number_format((int) ($stats['diplomes'] ?? 0), 0, ',', ' ') }}</p><p class="stat-note">Liés à une catégorie</p></div>
+        <span class="stat-icon yellow"><i class="fa-solid fa-graduation-cap" aria-hidden="true"></i></span>
+      </article>
+    </div>
+  @endif
   <p class="breadcrumb">Paramétrage &gt; Catégories</p>
   <div class="categorie-toolbar">
     <form id="categorieFilterForm" method="GET" action="{{ route('parametres.categories.index') }}">
