@@ -1,12 +1,17 @@
 @php
   $analytics = $dashboard['analytics'] ?? ['history' => [], 'distributions' => []];
   $palette = ['#007451', '#e4c600', '#10dba1', '#ffa51c', '#748296', '#7b61a8', '#249db2'];
+  // Couleur de l'icône des cartes selon le groupe (même design que les pages de paramétrage).
+  $iconColors = ['Administration' => 'green', 'Personnel' => 'blue', 'Paie' => 'yellow', 'Crédits' => 'purple'];
 @endphp
 <div class="sa-dashboard">
   <header class="sa-heading"><div><span class="sa-eyebrow">ADMINISTRATION CENTRALE</span><h1>{{ $dashboard['title'] }}</h1><p>Bonjour {{ $dashboard['name'] }}. Une vue d’ensemble de votre plateforme.</p></div><span class="sa-updated"><i class="fa-solid fa-circle-check" aria-hidden="true"></i> Actualisé le {{ \Carbon\Carbon::parse($dashboard['updated_at'])->format('d/m à H:i') }}</span></header>
-  <div class="sa-metrics">
+  <div class="stats-grid four">
     @foreach ($dashboard['cards'] as $card)
-      <article class="sa-metric"><div><span>{{ $card['label'] }}</span><i class="fa-solid {{ $card['icon'] }}" aria-hidden="true"></i></div><strong>{{ number_format((float) $card['value'], 0, ',', ' ') }} <small>{{ $card['unit'] }}</small></strong><p><span class="sa-dot"></span>{{ $card['group'] ?? 'Vue globale' }}</p></article>
+      <article class="stat-card">
+        <div><p class="stat-label">{{ $card['label'] }}</p><p class="stat-value">{{ number_format((float) $card['value'], 0, ',', ' ') }}@if ($card['unit']) <small>{{ $card['unit'] }}</small>@endif</p><p class="stat-note">{{ $card['group'] ?? 'Vue globale' }}</p></div>
+        <span class="stat-icon {{ $iconColors[$card['group'] ?? ''] ?? 'green' }}"><i class="fa-solid {{ $card['icon'] }}" aria-hidden="true"></i></span>
+      </article>
     @endforeach
   </div>
   <div class="sa-chart-grid">
