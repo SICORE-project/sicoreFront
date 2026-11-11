@@ -26,20 +26,16 @@
       </header>
 
       @if ($dashboard['cards'])
-        @foreach (collect($dashboard['cards'])->groupBy(fn ($card) => $card['group'] ?? 'Vos indicateurs') as $group => $cards)
-        <section class="dashboard-metric-group" aria-label="{{ $group }}">
-          <h2>{{ $group }}</h2>
-          <div class="dashboard-metrics">
-          @foreach ($cards as $card)
-            <article class="dashboard-metric">
-              <span class="dashboard-metric-icon"><i class="fa-solid {{ $card['icon'] }}" aria-hidden="true"></i></span>
-              <p>{{ $card['label'] }}</p>
-              <strong>{{ number_format((float) $card['value'], 0, ',', ' ') }} @if ($card['unit'])<small>{{ $card['unit'] }}</small>@endif</strong>
+        {{-- Même design que les pages de paramétrage (IA, IEF…). --}}
+        @php($iconColors = ['Administration' => 'green', 'Personnel' => 'blue', 'Paie' => 'yellow', 'Crédits' => 'purple', 'Référentiels' => 'green'])
+        <div class="stats-grid four">
+          @foreach ($dashboard['cards'] as $card)
+            <article class="stat-card">
+              <div><p class="stat-label">{{ $card['label'] }}</p><p class="stat-value">{{ number_format((float) $card['value'], 0, ',', ' ') }}@if ($card['unit']) <small>{{ $card['unit'] }}</small>@endif</p><p class="stat-note">{{ $card['group'] ?? 'Vos indicateurs' }}</p></div>
+              <span class="stat-icon {{ $iconColors[$card['group'] ?? ''] ?? 'green' }}"><i class="fa-solid {{ $card['icon'] }}" aria-hidden="true"></i></span>
             </article>
           @endforeach
-          </div>
-        </section>
-        @endforeach
+        </div>
       @endif
 
       <div class="dashboard-workspace">
