@@ -640,11 +640,11 @@ return [
         'title' => 'État des salaires',
         'icon' => 'ES',
         'breadcrumb' => 'Gestion de la paie > État des salaires',
-        'objectives' => [
-            'Éditer l’état mensuel détaillé des salaires à partir des bulletins calculés.',
-            'Contrôler chaque rubrique de gain, retenue et cotisation avant paiement.',
-            'Produire une édition filtrée, imprimable et exportable pour la traçabilité.',
-        ],
+        // 'objectives' => [
+        //     'Éditer l’état mensuel détaillé des salaires à partir des bulletins calculés.',
+        //     'Contrôler chaque rubrique de gain, retenue et cotisation avant paiement.',
+        //     'Produire une édition filtrée, imprimable et exportable pour la traçabilité.',
+        // ],
         'helpTitle' => 'Lecture de l’état des salaires',
         'helpText' => 'Le salaire catégoriel regroupe le salaire de base et ses augmentations historiques. Le brut ajoute les primes, indemnités et rappels ; le net déduit ensuite les cotisations et retenues détaillées.',
         'stats' => [
