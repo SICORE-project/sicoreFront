@@ -36,6 +36,7 @@ class CorpsService
                 'last_page' => max(1, (int) $response->json('data.last_page', 1)),
                 'total' => (int) $response->json('data.total', 0),
             ],
+            'stats' => (array) $response->json('stats', []),
             'error' => null,
             'unauthorized' => false,
         ];
