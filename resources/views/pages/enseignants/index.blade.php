@@ -39,17 +39,24 @@
       @if ($error ?? null)
         <p class="alert alert-warning" role="alert">{{ $error }}</p>
       @endif
-      <div class="actions-row">
+      @include('pages.enseignants.import-report')
+      @if(session('success'))<p class="alert alert-success" role="status">{{ session('success') }}</p>@endif
+      <div class="actions-row teacher-list-actions">
         <p class="breadcrumb">Gestion du personnel &gt; Enseignants</p>
         <div class="actions-group">
           <a class="btn-secondary" href="{{ route('enseignants.export', request()->only(['search', 'prenom', 'nom', 'statut_enseignant_id', 'corps_id', 'diplome_id', 'ia_id', 'ief_id'])) }}" title="Exporter tous les enseignants correspondant aux filtres appliqués">
             <i class="fa-solid fa-file-excel" aria-hidden="true"></i>
-            Exporter Excel
+            Excel
           </a>
-          @if ($drhAccess->isSuperAdmin())<a class="btn-secondary" href="{{ route('enseignants.submissions') }}">Dossiers IA à valider</a>@endif
+          @if ($drhAccess->isSuperAdmin())<a class="btn-secondary" href="{{ route('enseignants.submissions') }}">Dossiers IA</a>@endif
+          @if(in_array(session('sicore_user.role_slug'), ['admin', 'super_admin', 'gestionnaire_ia'], true))
+          <button class="btn-secondary" type="button" data-modal-open="teacher-import-modal">
+            <i class="fa-solid fa-file-import" aria-hidden="true"></i> Importer
+          </button>
+          @endif
           <button class="btn-primary" type="button" data-modal-open="teacher-create-modal">
             <i class="fa-solid fa-user-plus" aria-hidden="true"></i>
-            Ajouter un enseignant
+            Ajouter
           </button>
         </div>
       </div>
@@ -132,7 +139,7 @@
     </section>
   </main>
 
-<x-module-indemnite type="modal" id="teacher-create-modal" title="Ajouter un enseignant" :open="!empty($iaSubmissionForm) || ($errors->getBag('default')->any() && !old('_editing_id'))">
+<x-module-indemnite type="modal" id="teacher-create-modal" title="Ajouter un enseignant" :open="!empty($iaSubmissionForm) || ($errors->getBag('default')->any() && !$errors->has('csv') && !old('_editing_id'))">
   <form class="teacher-form" method="POST" action="{{ !empty($iaSubmissionForm) ? route('ia.teachers.submit') : route('enseignants.store') }}" novalidate>
     @csrf
     @if ($errors->any())
@@ -361,16 +368,21 @@
   </form>
 </x-module-indemnite>
 @if(in_array(session('sicore_user.role_slug'), ['admin', 'super_admin', 'gestionnaire_ia'], true))
-<x-module-indemnite type="modal" id="teacher-import-modal" title="Importer des enseignants">
-  <p>Téléchargez le modèle puis remplissez une ligne par enseignant (500 maximum). Dates : AAAA-MM-JJ. Situation matrimoniale : celibataire, marie, veuf ou divorce. Utilisez les identifiants des référentiels. Les codes bancaires doivent conserver leurs zéros initiaux. L’import est limité à votre périmètre ; une ligne invalide annule tout le fichier.</p>
-  <details><summary>Identifiants des référentiels</summary>
-    @foreach(['Statuts enseignants' => $statutOptions ?? [], 'Corps' => $corpsOptions ?? [], 'IA' => $academies ?? [], 'IEF' => $iefOptions ?? [], 'Diplômes' => $diplomeOptions ?? []] as $label => $options)
-      <p><strong>{{ $label }}</strong> : @foreach($options as $option){{ data_get($option, 'id') }} = {{ data_get($option, 'libelle', data_get($option, 'nom')) }}{{ $loop->last ? '' : ' ; ' }}@endforeach</p>
+<x-module-indemnite type="modal" id="teacher-import-modal" title="Importer des enseignants" :open="$errors->has('csv')">
+  <p>Excel ou CSV : 500 enseignants maximum, 2 Mo. Un bilan indique les lignes acceptées et bloquées.</p>
+  @if(session('sicore_user.role_slug') === 'gestionnaire_ia')
+  <p>Les dossiers importés seront soumis à la DAGE.</p>
+  @endif
+  @include('pages.enseignants.import-error')
+  <p>Libellés : statut, IEF, corps et catégorie. Les informations facultatives pourront être complétées après création.</p>
+  <details><summary>Libellés disponibles</summary>
+    @foreach(['Statuts enseignants' => $statutOptions ?? [], 'Corps' => $corpsOptions ?? [], 'Catégories' => $categorieOptions ?? [], 'IEF' => $iefOptions ?? []] as $label => $options)
+      <p><strong>{{ $label }}</strong> : @foreach($options as $option){{ data_get($option, 'libelle', data_get($option, 'nom')) }}{{ $loop->last ? '' : ' ; ' }}@endforeach</p>
     @endforeach
   </details>
-  <a class="btn-secondary" href="{{ route('enseignants.import.template') }}">Télécharger le modèle CSV</a>
+  <a class="btn-secondary" href="{{ route('enseignants.import.template') }}">Télécharger le modèle Excel</a>
   <form method="POST" action="{{ route('enseignants.import.store') }}" enctype="multipart/form-data">@csrf
-    <div class="form-group"><label for="teacher-import-csv">Fichier CSV *</label><input class="form-control" id="teacher-import-csv" name="csv" type="file" accept=".csv,text/csv" required></div>
+    <div class="form-group"><label for="teacher-import-csv">Fichier Excel ou CSV *</label><input class="form-control" id="teacher-import-csv" name="csv" type="file" accept=".xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv" required></div>
     <button class="btn-primary" type="submit">Importer</button>
   </form>
 </x-module-indemnite>
@@ -381,6 +393,10 @@
 @if (!empty($iaSubmissionForm))<style>#teacher-create-modal [data-referentiel-open] { display: none; }</style>@endif
 <link rel="stylesheet" href="{{ asset('assets/css/teacher-profile.css') }}?v={{ filemtime(public_path('assets/css/teacher-profile.css')) }}">
 <style>
+  .teacher-list-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .teacher-list-actions .breadcrumb { margin: 0; }
+  .teacher-list-actions .actions-group { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .teacher-list-actions .btn-primary, .teacher-list-actions .btn-secondary { padding: 9px 14px; font-size: 14px; min-height: 40px; white-space: nowrap; gap: 7px; }
   .teacher-form:not(:has(select[name="statut_enseignant_id"] option[data-fonctionnaire="1"]:checked)) [data-teacher-corps-field] {
     display: none !important;
   }

@@ -26,7 +26,9 @@ class IaWorkspaceTest extends TestCase
             '*/ia/referentiels*' => Http::response(['data' => ['iefs' => [['id' => 1, 'libelle' => 'IEF de Dakar']], 'etablissements' => []]]),
         ]);
         $this->get('/parametrage/enseignants')->assertOk()->assertSee('Awa Diop')->assertSee('Périmètre : IA de Dakar')
-            ->assertDontSee('name="ia_id"', false)->assertDontSee('Paramétrage')->assertDontSee('Gestion utilisateur');
+            ->assertDontSee('name="ia_id"', false)->assertDontSee('Paramétrage')->assertDontSee('Gestion utilisateur')
+            ->assertSee(route('enseignants.import.store'), false)
+            ->assertSee('Importer et soumettre à la DAGE');
         Http::assertSentCount(2);
         Http::assertSent(fn ($r) => str_contains($r->url(), '/ia/enseignants') && $r['ia_id'] == 1);
     }
