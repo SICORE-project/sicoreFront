@@ -99,6 +99,12 @@
   margin-top: 20px;
 }
 
+/* Résultat du filtre, dans la même carte que le formulaire. */
+.salary-statement-results {
+  margin: 24px -24px -24px;
+  border-top: 1px solid #d8e4de;
+}
+
 .salary-statement-official-header {
   display: grid;
   grid-template-columns: minmax(250px, 0.9fr) minmax(380px, 1.45fr) minmax(220px, 0.8fr);

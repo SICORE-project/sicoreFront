@@ -168,7 +168,7 @@ class PayrollController extends Controller
             $rules += [
                 'academic_year_id' => ['nullable', 'integer', 'min:1'],
                 'corps_id' => ['nullable', 'integer', 'min:1'],
-                'statuts_enseignant_id' => ['nullable', 'integer', 'min:1'], 
+                'statut_enseignant_id' => ['nullable', 'integer', 'min:1'], 
                 'ia_id' => ['nullable', 'integer', 'min:1'],
                 'ief_id' => ['nullable', 'integer', 'min:1'],
                 'matricule' => ['nullable', 'string', 'max:50'],
