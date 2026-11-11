@@ -10,6 +10,26 @@
   <x-topbar title="Périodes de paie" subtitle="Paramétrage > Périodes de paie" icon="fa-solid fa-calendar-week" />
 
   <section class="content-area">
+    @if (!empty($stats))
+      <div class="stats-grid four">
+        <article class="stat-card">
+          <div><p class="stat-label">Périodes définies</p><p class="stat-value">{{ number_format((int) ($stats['total'] ?? 0), 0, ',', ' ') }}</p><p class="stat-note">Référentiel des périodes</p></div>
+          <span class="stat-icon green"><i class="fa-solid fa-calendar-week" aria-hidden="true"></i></span>
+        </article>
+        <article class="stat-card">
+          <div><p class="stat-label">Paies en cours</p><p class="stat-value">{{ number_format((int) ($stats['ouvertes'] ?? 0), 0, ',', ' ') }}</p><p class="stat-note">Non clôturées</p></div>
+          <span class="stat-icon yellow"><i class="fa-solid fa-hourglass-half" aria-hidden="true"></i></span>
+        </article>
+        <article class="stat-card">
+          <div><p class="stat-label">Paies clôturées</p><p class="stat-value">{{ number_format((int) ($stats['cloturees'] ?? 0), 0, ',', ' ') }}</p><p class="stat-note">Périodes terminées</p></div>
+          <span class="stat-icon blue"><i class="fa-solid fa-lock" aria-hidden="true"></i></span>
+        </article>
+        <article class="stat-card">
+          <div><p class="stat-label">Dernière période</p><p class="stat-value">{{ $stats['derniere'] ?? '—' }}</p><p class="stat-note">Paie la plus récente</p></div>
+          <span class="stat-icon purple"><i class="fa-solid fa-calendar-check" aria-hidden="true"></i></span>
+        </article>
+      </div>
+    @endif
     <div class="actions-row">
       <p class="breadcrumb">Paramétrage &gt; Périodes de paie</p>
       @if ($canManage)
