@@ -15,9 +15,14 @@
     <p class="dashboard-notice" role="status">{{ $notice }}</p>
   @endforeach
   @if ($dashboard['cards'])
-    <section class="teacher-kpis" aria-label="Mes indicateurs de paie">
+    {{-- Même design que les pages de paramétrage (IA, IEF…). --}}
+    @php($iconColors = ['green', 'blue', 'yellow', 'purple'])
+    <section class="stats-grid four" aria-label="Mes indicateurs de paie">
       @foreach ($dashboard['cards'] as $card)
-        <article class="teacher-kpi"><span class="teacher-kpi-icon"><i class="fa-solid {{ $card['icon'] }}" aria-hidden="true"></i></span><div><p>{{ $card['label'] }}</p><strong>{{ $card['value'] === null ? '—' : number_format((float) $card['value'], 0, ',', ' ') }} @if ($card['unit'])<small>{{ $card['unit'] }}</small>@endif</strong></div></article>
+        <article class="stat-card">
+          <div><p class="stat-label">{{ $card['label'] }}</p><p class="stat-value">{{ $card['value'] === null ? '—' : number_format((float) $card['value'], 0, ',', ' ') }}@if ($card['unit'] && $card['value'] !== null) <small>{{ $card['unit'] }}</small>@endif</p><p class="stat-note">{{ $card['group'] ?? 'Mon suivi' }}</p></div>
+          <span class="stat-icon {{ $iconColors[$loop->index % count($iconColors)] }}"><i class="fa-solid {{ $card['icon'] }}" aria-hidden="true"></i></span>
+        </article>
       @endforeach
     </section>
   @endif
