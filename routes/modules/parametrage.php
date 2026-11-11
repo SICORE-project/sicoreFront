@@ -38,9 +38,12 @@ Route::middleware(['sicore.auth', 'sicore.module:parametrage.ia.read,parametrage
         */
 
         Route::get('/enseignants', [EnseignantController::class, 'index'])->name('enseignants.index');
+        Route::get('/enseignants/soumissions', [EnseignantController::class, 'submissions'])->name('enseignants.submissions');
+        Route::post('/enseignants/soumissions/{id}/valider', [EnseignantController::class, 'approveSubmission'])->whereNumber('id')->name('enseignants.submissions.approve');
         Route::get('/enseignants/import/modele', [\App\Http\Controllers\Parametrage\TeacherImportController::class, 'template'])->name('enseignants.import.template');
         Route::post('/enseignants/import', [\App\Http\Controllers\Parametrage\TeacherImportController::class, 'store'])->name('enseignants.import.store');
         Route::get('/enseignants/export', [EnseignantController::class, 'export'])->name('enseignants.export');
+        Route::post('/enseignants/check-identity', [EnseignantController::class, 'checkIdentity'])->name('enseignants.check-identity');
         Route::get('/enseignants/iefs', [EnseignantController::class, 'ieFs'])->name('enseignants.iefs');
         Route::get('/enseignants/etablissements', [EnseignantController::class, 'etablissements'])->name('enseignants.etablissements');
         Route::get('/enseignants/nouveau', [EnseignantController::class, 'create'])->name('enseignants.create');

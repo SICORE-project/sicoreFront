@@ -6,7 +6,6 @@
     if (!form) return;
 
     var search = form.querySelector('[name="search"]');
-    var status = form.querySelector('[name="est_actif"]');
     var timer;
 
     search.addEventListener("input", function () {
@@ -16,10 +15,6 @@
       }, 450);
     });
 
-    status.addEventListener("change", function () {
-      clearTimeout(timer);
-      form.requestSubmit();
-    });
 
     document.querySelectorAll("[data-edit-syndicat-form]").forEach(function (editForm) {
       var submitted = false;

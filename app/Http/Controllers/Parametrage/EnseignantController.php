@@ -65,6 +65,13 @@ class EnseignantController extends Controller
             $request->session()->forget(['access_token', 'sicore_user']);
             return redirect()->route('login')->with('warning', $result['error']);
         }
+        if ($result['error'] !== null) {
+            return view('pages.enseignants.index', array_merge($result, array_fill_keys([
+                'academies', 'filterIefs', 'regionOptions', 'iefOptions', 'corpsOptions',
+                'categorieOptions', 'diplomeOptions', 'disciplineOptions', 'institutionOptions',
+                'statutOptions', 'syndicatOptions',
+            ], [])));
+        }
         $iaResult = $academies->getAll(1, 100);
         $result['academies'] = $iaResult['items'];
         $result['filterIefs'] = $request->filled('ia_id') ? $academies->getIefs($request->integer('ia_id'))['items'] : [];
@@ -143,12 +150,27 @@ class EnseignantController extends Controller
 
     public function ieFs(Request $request, InspectionAcademieService $academies): \Illuminate\Http\JsonResponse
     {
+        if (app(\App\Services\Organisation\InterfaceAccess::class)->isIa()) {
+            $response = app(ApiClient::class)->get('ia/teacher-options');
+            abort_unless($response->successful(), $response->status());
+            return response()->json(['items' => $response->json('data.iefOptions', []), 'error' => null]);
+        }
+
         $result = $academies->getIefs($request->integer('ia_id'));
         return response()->json(['items' => $result['items'], 'error' => $result['error']]);
     }
 
     public function etablissements(Request $request, LieuServiceService $lieux): JsonResponse
     {
+        if (app(\App\Services\Organisation\InterfaceAccess::class)->isIa()) {
+            $response = app(ApiClient::class)->get('ia/teacher-options');
+            abort_unless($response->successful(), $response->status());
+            $items = collect($response->json('data.etablissements', []))->filter(fn ($item) =>
+                (int) ($item['ief_id'] ?? 0) === $request->integer('ief_id')
+                && ! str_starts_with((string) ($item['code'] ?? ''), 'ORG-IEF-'))->values();
+            return response()->json(['items' => $items, 'error' => null]);
+        }
+
         $filters = $request->validate(['ief_id' => ['required', 'integer', 'min:1']]);
         $items = [];
         $page = 1;
@@ -161,7 +183,32 @@ class EnseignantController extends Controller
             $page++;
         } while ($page <= $result['pagination']['last_page']);
 
+        // L'IEF synchronisee est un lieu de service administratif, pas un etablissement.
+        $items = array_values(array_filter($items, static function (array $item): bool {
+            $code = strtoupper(trim((string) ($item['code'] ?? '')));
+            $iefCode = strtoupper(trim((string) data_get($item, 'ief.code', '')));
+            return ! str_starts_with($code, 'ORG-IEF-')
+                && ! ($code !== '' && $iefCode !== '' && $code === $iefCode);
+        }));
+
         return response()->json(['items' => $items, 'error' => null]);
+    }
+
+    public function submissions(Request $request, ApiClient $api): View
+    {
+        abort_unless(app(\App\Services\Organisation\InterfaceAccess::class)->isSuperAdmin(), 403);
+        $response = $api->get('admin/personnel/enseignants/submissions', $request->only('page'));
+        abort_unless($response->successful(), $response->status());
+        return view('pages.enseignants.submissions', ['data' => $response->json('data', []), 'error' => null, 'reviewing' => true]);
+    }
+
+    public function approveSubmission(Request $request, int $id, ApiClient $api): RedirectResponse
+    {
+        abort_unless(app(\App\Services\Organisation\InterfaceAccess::class)->isSuperAdmin(), 403);
+        $response = $api->post('admin/personnel/enseignants/submissions/'.$id.'/approve', []);
+        if (! $response->successful()) return back()->withErrors($response->json('errors', []))
+            ->with('error', $response->json('message', 'Validation impossible.'));
+        return back()->with('success', $response->json('message'));
     }
 
     public function create(): View
@@ -228,8 +275,26 @@ class EnseignantController extends Controller
         return $this->redirect($service->delete($enseignant));
     }
 
+    public function checkIdentity(Request $request, \App\Services\Api\ApiClient $api)
+    {
+        $data = $request->validate([
+            'field' => ['required', 'in:cni,matricule,indice,email'],
+            'value' => ['required', 'string', 'max:100'],
+            'id' => ['nullable', 'integer', 'min:1'],
+        ]);
+        try {
+            $endpoint = app(\App\Services\Organisation\InterfaceAccess::class)->isIa()
+                ? 'ia/enseignants/check-identity' : 'admin/personnel/enseignants/check-identity';
+            $response = $api->post($endpoint, $data);
+            return response()->json($response->json() ?? [], $response->status());
+        } catch (\Illuminate\Http\Client\ConnectionException $exception) {
+            return response()->json(['message' => 'Vérification indisponible. Veuillez réessayer.'], 503);
+        }
+    }
+
     private function validated(Request $request): array
     {
+        $request->merge(['compte_bancaire' => \App\Support\TeacherRib::prepare($request->input('compte_bancaire'))]);
         $request->validate(['statut_enseignant_id' => ['required', 'integer', 'min:1']]);
         $result = app(\App\Services\Parametrage\StatutEnseignantService::class)->find($request->integer('statut_enseignant_id'));
         if (! $result['success'] || ! is_array($result['data'])) {
@@ -239,10 +304,10 @@ class EnseignantController extends Controller
         $fonctionnaire = in_array(mb_strtolower(trim($status['libelle'] ?? '')), ['fonctionnaire', 'fonctionnaires'], true)
             || in_array(mb_strtolower(trim($status['code'] ?? '')), ['fonctionnaire', 'fonc'], true);
         if (! $fonctionnaire) {
-            $request->merge(['indice' => null, 'corps_id' => null]);
+            $request->merge(['indice' => null]);
         } else {
             $request->merge(array_fill_keys(['salaire_brut', 'date_recrutement',
-                'annee_recrutement', 'diplome_id', 'categorie_id', 'date_fin_contrat', 'observations'], null));
+                'annee_recrutement', 'diplome_id', 'categorie_id', 'date_fin_contrat'], null));
             $request->merge(['statut' => 'en_activite', 'nombre_enfants' => 0, 'nombre_femmes' => 0,
                 'est_en_couple' => false, 'situation_matrimoniale' => null, 'nombre_parts_fiscales' => 1]);
         }
@@ -255,9 +320,7 @@ class EnseignantController extends Controller
             'conjoint_travaille' => $married ? ($request->input('conjoint_travaille') ?? false) : false,
             'nombre_parts_fiscales' => $fonctionnaire
                 ? 1
-                : ($request->input('situation_matrimoniale') === 'celibataire'
-                    ? 2
-                    : min(5, 2 + max(0, $request->integer('nombre_enfants')) * .5 - ($married && $request->boolean('conjoint_travaille') ? .5 : 0))),
+                : min(5, ($request->input('situation_matrimoniale') === 'celibataire' ? 1 : 2) + max(0, $request->integer('nombre_enfants')) * .5),
         ]);
         return $request->validate([
             'matricule' => ['bail', 'required', 'string', $fonctionnaire ? 'regex:~\A[0-9]{6}/[A-Z]\z~' : 'regex:~\A[0-9]{9}/[A-Z]\z~'],
@@ -284,12 +347,11 @@ class EnseignantController extends Controller
             'nombre_femmes' => ['nullable', 'integer', 'min:0'],
             'nombre_parts_fiscales' => ['required', 'numeric', 'min:1', 'max:5'],
             'conjoint_travaille' => ['nullable', 'boolean'],
-            'observations' => ['nullable', 'string'],
             'compte_bancaire' => ['required', 'array'],
             'compte_bancaire.institut_financier_id' => ['nullable', 'integer', 'min:1'],
-            'compte_bancaire.code_banque' => ['required', 'string', 'size:5'],
-            'compte_bancaire.code_guichet' => ['required', 'string', "regex:/\A[0-9]+\z/"],
-            'compte_bancaire.numero_compte' => ['required', 'string'],
+            'compte_bancaire.code_banque' => ['required', 'string', 'size:5', 'regex:/\ASN[0-9]{3}\z/'],
+            'compte_bancaire.code_guichet' => ['required', 'string', 'size:5', "regex:/\A[0-9]+\z/"],
+            'compte_bancaire.numero_compte' => ['required', 'string', 'size:12', 'regex:/\A[0-9]{12}\z/'],
             'compte_bancaire.cle_rib' => ['required', 'string', 'size:2', "regex:/\A[0-9]+\z/"],
             'compte_bancaire.iban' => ['nullable', 'string', 'max:34'],
             'compte_bancaire.bic' => ['nullable', 'string', 'max:11'],

@@ -11,7 +11,7 @@
   <form class="salary-statement-filter" method="GET">
     <header class="salary-statement-filter-header">
       <div>
-        <span class="auth-kicker">Paramètres de l’édition</span>
+        <!-- <span class="auth-kicker">Paramètres de l’édition</span> -->
         <h2 id="salaryStatementFiltersTitle">Préparer l’état mensuel des salaires</h2>
         <p>Les critères s’appliquent à l’écran, à l’impression et à l’export CSV.</p>
       </div>
@@ -44,7 +44,7 @@
       </div>
 
       <div class="form-group">
-        <label for="salaryStatementCorps">Corps d’enseignement</label>
+        <label for="salaryStatementCorps">Corps Enseignant</label>
         <select class="form-control" id="salaryStatementCorps" name="statut_enseignant_id">
           <option value="">Tous les statuts</option>
           @foreach (data_get($statement, 'filter_options.statuts', []) as $option)
@@ -121,16 +121,89 @@
 
     <div class="salary-statement-filter-actions">
       <a class="btn-secondary" href="{{ route('paie.etat-salaires') }}"><i class="fa-solid fa-rotate-left" aria-hidden="true"></i> Réinitialiser</a>
-      <button class="btn-secondary" type="submit"><i class="fa-solid fa-filter" aria-hidden="true"></i> Appliquer les filtres</button>
       <button class="btn-primary" type="submit" name="document" value="1" formtarget="_blank"><i class="fa-solid fa-file-lines" aria-hidden="true"></i> Générer l’état</button>
     </div>
+
+    {{-- Résultat du filtre : un agent par ligne, une colonne par élément de l'état. --}}
+    @php
+      $statementColumns = collect($statement['columns'] ?? []);
+    @endphp
+
+    <div class="salary-statement-results">
+
+      <div class="salary-statement-table-wrap">
+        <table class="salary-statement-table">
+
+          <thead>
+            <tr>
+              @foreach ($statementColumns as $column)
+                <th @class(['salary-statement-amount' => ! empty($column['amount'])])>{{ $column['label'] }}</th>
+
+              @endforeach
+            </tr>
+          </thead>
+          <tbody>
+            @forelse ($statementRows as $row)
+              <tr>
+                @foreach ($statementColumns as $column)
+                  @php
+                    $key = $column['key'];
+                    $value = ! empty($column['amount'])
+                      ? ($row[$key.'_display'] ?? '0')
+                      : ($row[$key] ?? '');
+                  @endphp
+                <td @class(['salary-statement-amount' => ! empty($column['amount'])])>{{ $value }}</td>
+
+                @endforeach
+              </tr>
+            @empty
+              <tr>
+                <td colspan="{{ max(1, $statementColumns->count()) }}">
+                  Aucun agent ne correspond aux critères sélectionnés.
+                </td>
+              </tr>
+            @endforelse
+          </tbody>
+          {{-- Ligne de totaux : même calcul que l’état imprimé (totaux envoyés par le back). --}}
+          @if ($statementRows->isNotEmpty())
+            <tfoot>
+              <tr>
+                @foreach ($statementColumns as $column)
+                  <td @class(['salary-statement-amount' => ! empty($column['amount'])])>
+                    @if ($column['key'] === 'first_name')
+                      TOTAL GÉNÉRAL
+                    @elseif (! empty($column['amount']))
+                      {{ data_get($statement, 'totals.'.$column['key'], '0') }}
+                    @endif
+                  </td>
+                @endforeach
+              </tr>
+            </tfoot>
+          @endif
+        </table>
+      </div>
+    </div>
   </form>
+
 
 </section>
 
 @push('scripts')
   <script>
     document.addEventListener('DOMContentLoaded', () => {
+      // Filtre automatique : le formulaire se renvoie dès qu'un critère change.
+      const form = document.querySelector('.salary-statement-filter');
+      const matricule = document.getElementById('salaryStatementMatricule');
+      let typingTimer;
+      form?.addEventListener('change', (event) => {
+        if (event.target === matricule) return;
+        form.requestSubmit();
+      });
+      matricule?.addEventListener('input', () => {
+        clearTimeout(typingTimer);
+        typingTimer = setTimeout(() => form.requestSubmit(), 600);
+      });
+
       const ia = document.querySelector('[data-salary-statement-ia]');
       const ief = document.querySelector('[data-salary-statement-ief]');
       const center = document.querySelector('[data-salary-statement-center]');

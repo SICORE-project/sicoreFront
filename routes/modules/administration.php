@@ -34,6 +34,7 @@ Route::middleware(['sicore.auth', 'sicore.module:administration.users.read,admin
             Route::post('/utilisateurs/compte-enseignant', [\App\Http\Controllers\Admin\TeacherAccountController::class, 'store'])->name('utilisateurs.teacher.store');
             Route::post('/utilisateurs/{id}/invitation-enseignant', [\App\Http\Controllers\Admin\TeacherAccountController::class, 'resend'])->whereNumber('id')->name('utilisateurs.teacher.resend');
             Route::get('/utilisateurs/nouveau', [UserController::class, 'create'])->name('utilisateurs.create');
+            Route::post('/utilisateurs/directions', [UserController::class, 'storeDirection'])->middleware('sicore.permission:parametrage.lieux_service.manage')->name('utilisateurs.directions.store');
             Route::post('/utilisateurs', [UserController::class, 'store'])->name('utilisateurs.store');
         });
 

@@ -31,7 +31,6 @@
     <form class="filter-panel parametrage-filters rubrique-filters" method="GET" action="{{ route('parametres.rubriques-paie.index') }}" data-rubrique-filters>
       <div class="form-group rubrique-search">
         <label for="rubriqueSearch">Rechercher</label>
-        {{-- Placeholder mis à jour --}}
         <input class="form-control" id="rubriqueSearch" name="search" type="search" value="{{ $filters['search'] ?? '' }}" placeholder="Code, libellé ou montant…" autocomplete="off">
       </div>
       <div class="form-group">
@@ -51,6 +50,28 @@
           <option value="annuelle" @selected(($filters['periodicite'] ?? '') === 'annuelle')>Annuelle</option>
         </select>
       </div>
+
+      <div class="form-group">
+    <label for="rubriqueStatut">Statut</label>
+    <select class="form-control" id="rubriqueStatut" name="statut_enseignant_id">
+        @foreach($statuts ?? [] as $statut)
+            @php
+                // On met en majuscule et on enlève les espaces pour comparer
+                $codeStatut = strtoupper(trim($statut['code'] ?? ''));
+                $libelleStatut = strtoupper(trim($statut['libelle'] ?? ''));
+                
+                // Si le code ou le libellé contient "FONCTIONNAIRE", on l'ignore
+                $estFonctionnaire = str_contains($codeStatut, 'FONCTIONNAIRE') || str_contains($libelleStatut, 'FONCTIONNAIRE');
+            @endphp
+
+            @if(!$estFonctionnaire)
+                <option value="{{ $statut['id'] }}" @selected((string) request('statut_enseignant_id') === (string) $statut['id'])>
+                    {{ $statut['libelle'] }}
+                </option>
+            @endif
+        @endforeach
+    </select>
+</div>
       <div class="actions-group"><a class="btn-secondary" href="{{ route('parametres.rubriques-paie.index') }}">Réinitialiser</a></div>
       <span class="loading-indicator" role="status" hidden data-filter-loading>Chargement…</span>
     </form>
@@ -59,8 +80,8 @@
       <div class="table-card-header"><div><h2 id="rubriqueListTitle">Liste des rubriques de paie</h2><p class="table-card-subtitle">{{ $pagination['total'] }} résultat{{ $pagination['total'] > 1 ? 's' : '' }}</p></div></div>
       <div class="table-responsive">
         <table class="table">
-          {{-- En-tête mis à jour --}}
-          <thead><tr>@if ($peutSupprimer)<th class="checkbox-cell"><input type="checkbox" data-select-all aria-label="Tout sélectionner"></th>@endif<th>Code</th><th>Libellé</th><th>Type</th><th>Périodicité</th><th>Montant</th>@if ($canManage)<th class="actions-cell">Actions</th>@endif</tr></thead>
+          {{-- AJOUT DE LA COLONNE STATUT DANS L'EN-TÊTE --}}
+          <thead><tr>@if ($peutSupprimer)<th class="checkbox-cell"><input type="checkbox" data-select-all aria-label="Tout sélectionner"></th>@endif<th>Code</th><th>Libellé</th><th>Type</th><th>Périodicité</th><th>Statut</th><th>Montant</th>@if ($canManage)<th class="actions-cell">Actions</th>@endif</tr></thead>
           <tbody>
             @forelse ($items as $rubrique)
               @php
@@ -73,7 +94,8 @@
                 <td><strong>{{ data_get($rubrique, 'libelle', '—') }}</strong></td>
                 <td><span class="rubrique-type rubrique-type--{{ $type === 'gain' ? 'gain' : 'retenue' }}"><i class="fa-solid {{ $type === 'gain' ? 'fa-arrow-up' : 'fa-arrow-down' }}" aria-hidden="true"></i> {{ $type === 'gain' ? 'Gain' : 'Retenue' }}</span></td>
                 <td>{{ ucfirst((string) data_get($rubrique, 'periodicite', '—')) }}</td>
-                {{-- Affichage du montant (formaté) --}}
+                {{-- AJOUT DE LA VALEUR DU STATUT --}}
+                <td>{{ data_get($rubrique, 'statut_enseignant.libelle', '-') }}</td>
                 <td>{{ data_get($rubrique, 'montant') !== null ? number_format((float) data_get($rubrique, 'montant'), 0, '', ' ') : '—' }}</td>
                 @if ($canManage)
                   <td class="actions-cell">
@@ -83,7 +105,8 @@
                 @endif
               </tr>
             @empty
-              <tr><td colspan="{{ ($canManage ? 6 : 5) + ($peutSupprimer ? 1 : 0) }}" class="empty-message show"><x-table-empty-state>Aucune rubrique de paie trouvée.</x-table-empty-state></td></tr>
+              {{-- MISE A JOUR DU COLSPAN (7 colonnes au lieu de 6) --}}
+              <tr><td colspan="{{ ($canManage ? 7 : 6) + ($peutSupprimer ? 1 : 0) }}" class="empty-message show"><x-table-empty-state>Aucune rubrique de paie trouvée.</x-table-empty-state></td></tr>
             @endforelse
           </tbody>
         </table>
@@ -146,7 +169,7 @@
       window.clearTimeout(filterTimer);
       filterTimer = window.setTimeout(submitFilters, 400);
     });
-    ['rubriqueType', 'rubriquePeriodicite'].forEach(function (id) {
+    ['rubriqueType', 'rubriquePeriodicite','rubriqueStatut'].forEach(function (id) {
       document.getElementById(id)?.addEventListener('change', submitFilters);
     });
 
@@ -163,7 +186,10 @@
       document.getElementById('rubriqueUpdateLibelle').value = item.libelle || '';
       document.getElementById('rubriqueUpdateType').value = item.type || 'gain';
       document.getElementById('rubriqueUpdatePeriodicite').value = item.periodicite || 'mensuelle';
-      // Modification ici : utilisation de "montant" au lieu de "description"
+      
+      // AJOUT : Pré-remplir le statut dans le modal de modification
+      document.getElementById('rubriqueUpdateStatutEnseignant').value = item.statut_enseignant_id || '';
+      
       document.getElementById('rubriqueUpdateMontant').value = item.montant || '';
     }
     document.querySelectorAll('[data-rubrique-edit]').forEach(function (button) {
@@ -195,7 +221,10 @@
       document.getElementById('rubriqueUpdateLibelle').value = @json(old('libelle'));
       document.getElementById('rubriqueUpdateType').value = @json(old('type', 'gain'));
       document.getElementById('rubriqueUpdatePeriodicite').value = @json(old('periodicite', 'mensuelle'));
-      // Modification ici : utilisation de "montant" au lieu de "description"
+      
+      // AJOUT : Récupérer l'ancienne valeur en cas d'erreur de validation
+      document.getElementById('rubriqueUpdateStatutEnseignant').value = @json(old('statut_enseignant_id'));
+      
       document.getElementById('rubriqueUpdateMontant').value = @json(old('montant'));
     @endif
   }());

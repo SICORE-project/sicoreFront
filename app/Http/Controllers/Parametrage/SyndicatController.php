@@ -37,14 +37,9 @@ class SyndicatController extends Controller
             $apiError = 'Le service backend est momentanément indisponible.';
         }
 
-        $stats = [
-            'total' => $syndicats->count(),
-            'actifs' => $syndicats->filter(fn (array $item): bool => (bool) ($item['est_actif'] ?? false))->count(),
-            'inactifs' => $syndicats->reject(fn (array $item): bool => (bool) ($item['est_actif'] ?? false))->count(),
-        ];
+        $stats = ['total' => $syndicats->count()];
 
         $search = trim((string) $request->query('search', ''));
-        $statut = (string) $request->query('est_actif', '');
 
         if ($search !== '') {
             $needle = mb_strtolower($search);
@@ -54,12 +49,6 @@ class SyndicatController extends Controller
             });
         }
 
-        if (in_array($statut, ['0', '1'], true)) {
-            $isActive = $statut === '1';
-            $syndicats = $syndicats->filter(
-                fn (array $item): bool => (bool) ($item['est_actif'] ?? false) === $isActive,
-            );
-        }
 
         $perPage = 10;
         $currentPage = LengthAwarePaginator::resolveCurrentPage();
@@ -79,7 +68,7 @@ class SyndicatController extends Controller
             'apiError',
             'stats',
             'search',
-            'statut',
+
             'canManage',
         ));
     }
@@ -92,14 +81,12 @@ class SyndicatController extends Controller
             'libelle' => ['required', 'string', 'max:100'],
             'montant_check_off' => ['nullable', 'numeric', 'min:0', 'decimal:0,2', 'max:9999999999.99'],
             'montant_oeuvre_sociale' => ['nullable', 'numeric', 'min:0', 'decimal:0,2', 'max:9999999999.99'],
-            'est_actif' => ['required', 'boolean'],
         ]);
 
         $payload = [
             ...$validated,
             'code' => mb_strtoupper(trim($validated['code'])),
             'libelle' => trim($validated['libelle']),
-            'est_actif' => (bool) $validated['est_actif'],
         ];
 
         try {
@@ -153,6 +140,10 @@ class SyndicatController extends Controller
         $value = trim($validated['value']);
 
         $exists = collect($syndicats)->contains(function (array $syndicat) use ($field, $value): bool {
+            if (! empty($syndicat['deleted_at'])) {
+                return false;
+            }
+
             return mb_strtolower(trim((string) ($syndicat[$field] ?? '')))
                 === mb_strtolower($value);
         });
@@ -162,7 +153,7 @@ class SyndicatController extends Controller
             'message' => $exists
                 ? ($field === 'code' ? 'Ce code existe déjà.' : 'Ce libellé existe déjà.')
                 : null,
-        ]);
+        ])->header('Cache-Control', 'no-store');
     }
 
     /**
@@ -207,12 +198,11 @@ class SyndicatController extends Controller
             'libelle' => ['required', 'string', 'max:100'],
             'montant_check_off' => ['nullable', 'numeric', 'min:0', 'decimal:0,2', 'max:9999999999.99'],
             'montant_oeuvre_sociale' => ['nullable', 'numeric', 'min:0', 'decimal:0,2', 'max:9999999999.99'],
-            'est_actif' => ['required', 'boolean'],
         ]);
 
         $validated['code'] = mb_strtoupper(trim($validated['code']));
         $validated['libelle'] = trim($validated['libelle']);
-        $validated['est_actif'] = (bool) $validated['est_actif'];
+
 
         try {
             $response = $this->apiClient->put("syndicats/{$id}", $validated);

@@ -27,6 +27,11 @@ class InterfaceAccess
         return $this->role() === 'enseignant';
     }
 
+    public function isSuperAdmin(): bool
+    {
+        return in_array($this->role(), ['super_admin', 'super_administrateur'], true);
+    }
+
     public function isAdmin(): bool
     {
         return in_array($this->role(), ['admin', 'administrateur', 'super_admin', 'super_administrateur'], true);
@@ -56,9 +61,13 @@ class InterfaceAccess
         $explicit = config('interface-permissions.routes', []);
         if (isset($explicit[$route])) return array_unique([$route, ...(array) $explicit[$route]]);
 
+        if ($route === 'utilisateurs.directions.store') return ['parametrage.lieux_service.manage'];
         $teacherRoutes = [
             'enseignants.legacy.index' => ['enseignants.read', 'personnel.consulter'],
             'enseignants.legacy.create' => ['enseignants.create', 'personnel.creer'],
+            'enseignants.import.template' => ['enseignants.create', 'personnel.creer'],
+            'enseignants.import.store' => ['enseignants.create', 'personnel.creer'],
+            'enseignants.check-identity' => ['enseignants.create', 'enseignants.update'],
             'enseignants.iefs' => ['enseignants.read', 'personnel.consulter'],
             'enseignants.etablissements' => ['enseignants.read', 'personnel.consulter'],
             'enseignants.referentiels.store' => ['parametrage.modifier'],
@@ -108,7 +117,9 @@ class InterfaceAccess
         }
 
         if ($this->isIa()) {
+            if (in_array($route, ['ia.teachers.create', 'ia.teachers.submit', 'ia.teachers.submissions', 'enseignants.iefs', 'enseignants.etablissements', 'enseignants.check-identity'], true)) return $this->allows('enseignants.read');
             if (in_array($route, ['dashboard', 'logout'], true)) return true;
+            if (in_array($route, ['enseignants.import.template', 'enseignants.import.store'], true)) return $this->allows('enseignants.read');
             $permission = match ($route) {
                 'enseignants.index', 'enseignants.legacy.index', 'ia.teachers.show', 'ia.structure', 'ia.iefs' => 'enseignants.read',
                 'paie.montants-engages-banque', 'paie.edition-salaires-banque', 'paie.elements-saisie-dashboard', 'paie.recap-elements-corps', 'paie.cumul-enseignants-ief', 'paie.effectifs-corps', 'paie.non-generee', 'paie.edition-enseignants', 'paie.edition-fonctionnaires', 'paie.mutuelles-sante', 'paie.situation-affectations', 'paie.prime-scolaire', 'paie.reliquats', 'paie.double-flux', 'paie.directeurs-interim', 'paie.heures-supplementaires-interim',
