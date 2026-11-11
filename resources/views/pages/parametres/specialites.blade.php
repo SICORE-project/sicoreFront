@@ -11,6 +11,26 @@
     <div class="page-title-wrap"><span class="title-icon"><i class="fa-solid fa-book"></i></span><div><h1>Gestion des spécialités</h1><p>Référentiel des spécialités d’enseignement</p></div></div>
   </header>
   <section class="content-area">
+    @if (!empty($stats))
+      <div class="stats-grid four">
+        <article class="stat-card">
+          <div><p class="stat-label">Disciplines</p><p class="stat-value">{{ number_format((int) ($stats['total'] ?? 0), 0, ',', ' ') }}</p><p class="stat-note">Toutes les disciplines</p></div>
+          <span class="stat-icon green"><i class="fa-solid fa-book-open" aria-hidden="true"></i></span>
+        </article>
+        <article class="stat-card">
+          <div><p class="stat-label">Disciplines actives</p><p class="stat-value">{{ number_format((int) ($stats['actives'] ?? 0), 0, ',', ' ') }}</p><p class="stat-note">Utilisables</p></div>
+          <span class="stat-icon blue"><i class="fa-solid fa-circle-check" aria-hidden="true"></i></span>
+        </article>
+        <article class="stat-card">
+          <div><p class="stat-label">Disciplines inactives</p><p class="stat-value">{{ number_format((int) ($stats['inactives'] ?? 0), 0, ',', ' ') }}</p><p class="stat-note">Désactivées</p></div>
+          <span class="stat-icon red"><i class="fa-solid fa-circle-pause" aria-hidden="true"></i></span>
+        </article>
+        <article class="stat-card">
+          <div><p class="stat-label">Enseignants rattachés</p><p class="stat-value">{{ number_format((int) ($stats['enseignants'] ?? 0), 0, ',', ' ') }}</p><p class="stat-note">Par discipline</p></div>
+          <span class="stat-icon purple"><i class="fa-solid fa-chalkboard-user" aria-hidden="true"></i></span>
+        </article>
+      </div>
+    @endif
     <div class="actions-row">
       <p class="breadcrumb">Paramétrage &gt; Spécialités</p>
       @if ($canCreate)
