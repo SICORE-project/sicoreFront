@@ -36,6 +36,7 @@ class EnseignantService
                 'last_page' => max(1, (int) $response->json('meta.last_page', $response->json('data.last_page', 1))),
                 'total' => (int) $response->json('meta.total', $response->json('data.total', 0)),
             ],
+            'stats' => (array) $response->json('stats', []),
             'error' => null,
             'unauthorized' => false,
         ];
