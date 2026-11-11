@@ -35,6 +35,7 @@ class PeriodePaieService
 
         return [
             'items' => (array) data_get($payload, 'data.data', []),
+            'stats' => (array) data_get($payload, 'stats', []),
             'error' => null,
             'unauthorized' => false,
             'pagination' => [
