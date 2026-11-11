@@ -15,6 +15,26 @@
   </header>
 
   <section class="content-area">
+    @if (!empty($stats))
+      <div class="stats-grid four">
+        <article class="stat-card">
+          <div><p class="stat-label">Banques</p><p class="stat-value">{{ number_format((int) ($stats['total'] ?? 0), 0, ',', ' ') }}</p><p class="stat-note">Toutes les banques</p></div>
+          <span class="stat-icon green"><i class="fa-solid fa-building-columns" aria-hidden="true"></i></span>
+        </article>
+        <article class="stat-card">
+          <div><p class="stat-label">Guichets</p><p class="stat-value">{{ number_format((int) ($stats['guichets'] ?? 0), 0, ',', ' ') }}</p><p class="stat-note">Agences enregistrées</p></div>
+          <span class="stat-icon blue"><i class="fa-solid fa-store" aria-hidden="true"></i></span>
+        </article>
+        <article class="stat-card">
+          <div><p class="stat-label">Comptes bancaires</p><p class="stat-value">{{ number_format((int) ($stats['comptes'] ?? 0), 0, ',', ' ') }}</p><p class="stat-note">Comptes des enseignants</p></div>
+          <span class="stat-icon purple"><i class="fa-solid fa-credit-card" aria-hidden="true"></i></span>
+        </article>
+        <article class="stat-card">
+          <div><p class="stat-label">Enseignants bancarisés</p><p class="stat-value">{{ number_format((int) ($stats['enseignants'] ?? 0), 0, ',', ' ') }}</p><p class="stat-note">Avec au moins un compte</p></div>
+          <span class="stat-icon yellow"><i class="fa-solid fa-chalkboard-user" aria-hidden="true"></i></span>
+        </article>
+      </div>
+    @endif
     <form class="filter-panel parametrage-filters institution-filters" id="institutionFilterForm" method="GET" action="{{ route('parametres.institutions-financieres') }}">
       <div class="form-group"><label for="institutionSearch">Rechercher</label><input class="form-control" id="institutionSearch" name="search" type="search" value="{{ request('search') }}" placeholder="Libellé, sigle ou code banque"></div>
       <div class="actions-group">
