@@ -87,7 +87,7 @@ class IaWorkspaceController extends Controller
     {
         $this->filters($request);
         [$response, $error] = $this->get('ia/teacher-submissions', $request->only('page'));
-        return view('pages.enseignants.submissions', ['data' => $response['data'] ?? [], 'error' => $error, 'reviewing' => false]);
+        return view('pages.enseignants.submissions', ['data' => $response['data'] ?? [], 'stats' => $response['stats'] ?? [], 'error' => $error, 'reviewing' => false]);
     }
 
     public function teacher(Request $request, int $id): View
