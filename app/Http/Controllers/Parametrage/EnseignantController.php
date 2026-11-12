@@ -199,7 +199,7 @@ class EnseignantController extends Controller
         abort_unless(app(\App\Services\Organisation\InterfaceAccess::class)->isSuperAdmin(), 403);
         $response = $api->get('admin/personnel/enseignants/submissions', $request->only('page'));
         abort_unless($response->successful(), $response->status());
-        return view('pages.enseignants.submissions', ['data' => $response->json('data', []), 'error' => null, 'reviewing' => true]);
+        return view('pages.enseignants.submissions', ['data' => $response->json('data', []), 'stats' => (array) $response->json('stats', []), 'error' => null, 'reviewing' => true]);
     }
 
     public function approveSubmission(Request $request, int $id, ApiClient $api): RedirectResponse

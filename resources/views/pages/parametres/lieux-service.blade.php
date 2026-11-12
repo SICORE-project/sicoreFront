@@ -13,6 +13,26 @@
     </div>
   </header>
   <section class="content-area">
+    @if (!empty($stats))
+      <div class="stats-grid four">
+        <article class="stat-card">
+          <div><p class="stat-label">Établissements</p><p class="stat-value">{{ number_format((int) ($stats['total'] ?? 0), 0, ',', ' ') }}</p><p class="stat-note">Tous les établissements</p></div>
+          <span class="stat-icon green"><i class="fa-solid fa-location-dot" aria-hidden="true"></i></span>
+        </article>
+        <article class="stat-card">
+          <div><p class="stat-label">Établissements actifs</p><p class="stat-value">{{ number_format((int) ($stats['actifs'] ?? 0), 0, ',', ' ') }}</p><p class="stat-note">En service</p></div>
+          <span class="stat-icon blue"><i class="fa-solid fa-circle-check" aria-hidden="true"></i></span>
+        </article>
+        <article class="stat-card">
+          <div><p class="stat-label">IA couvertes</p><p class="stat-value">{{ number_format((int) ($stats['ia'] ?? 0), 0, ',', ' ') }}</p><p class="stat-note">Couverture académique</p></div>
+          <span class="stat-icon purple"><i class="fa-solid fa-building-columns" aria-hidden="true"></i></span>
+        </article>
+        <article class="stat-card">
+          <div><p class="stat-label">IEF couvertes</p><p class="stat-value">{{ number_format((int) ($stats['ief'] ?? 0), 0, ',', ' ') }}</p><p class="stat-note">Couverture départementale</p></div>
+          <span class="stat-icon yellow"><i class="fa-solid fa-sitemap" aria-hidden="true"></i></span>
+        </article>
+      </div>
+    @endif
     <div class="actions-row"><p class="breadcrumb">Paramétrage &gt; Établissements</p><div class="actions-group"><button class="btn-primary" type="button" data-modal-open="lieu-service-create-modal">+ Nouvel établissement</button>@if ($peutSupprimer)<button class="btn-secondary btn-bulk-delete" type="button" data-bulk-delete-button disabled>Supprimer la sélection</button>@endif</div></div>
     <form class="filter-panel parametrage-filters" id="lieuFilterForm" method="GET" action="{{ route('parametres.lieux-service.index') }}" aria-label="Filtres des établissements">
       <input type="hidden" name="per_page" value="{{ $pagination['per_page'] }}">

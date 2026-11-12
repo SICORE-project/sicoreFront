@@ -28,6 +28,7 @@ class DiplomesController extends Controller
 
         $diplomes = [];
         $meta = null;
+        $stats = [];
         $error = null;
 
         try {
@@ -39,6 +40,7 @@ class DiplomesController extends Controller
             if ($response->successful()) {
                 $diplomes = $response->json('data', []);
                 $meta = $response->json('meta');
+                $stats = (array) $response->json('stats', []);
             } else {
                 $error = $response->json('message') ?? 'Impossible de récupérer les diplômes.';
             }
@@ -49,7 +51,7 @@ class DiplomesController extends Controller
         $diplomaOptions = $diplomeService->options();
         $categoryOptions = $categories->getAll(['per_page' => 100])['items'];
 
-        return view('pages.parametres.diplomes', compact('diplomes', 'meta', 'error', 'categoryOptions', 'diplomaOptions'));
+        return view('pages.parametres.diplomes', compact('diplomes', 'meta', 'stats', 'error', 'categoryOptions', 'diplomaOptions'));
     }
 
     public function store(Request $request): RedirectResponse

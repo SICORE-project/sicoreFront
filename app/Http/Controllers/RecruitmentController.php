@@ -18,11 +18,14 @@ class RecruitmentController extends Controller
     public function index(Request $request)
     {
         $batchFilters = $request->validate(['year'=>['nullable','integer','between:1900,2100'], 'reference'=>['nullable','string','max:100']]);
-        $batches = $notices = [];
+        $batches = $notices = $stats = [];
         $error = null;
         try {
             $response = $this->api->get('batches', $batchFilters);
-            if ($response->successful()) $batches = $response->json('data', []);
+            if ($response->successful()) {
+                $batches = $response->json('data', []);
+                $stats = (array) $response->json('stats', []);
+            }
             else $error = $this->message($response);
             if (! $error) {
                 $response = $this->api->get('notices');
@@ -44,7 +47,7 @@ class RecruitmentController extends Controller
                 $searchError = 'La recherche est momentanément indisponible.';
             }
         }
-        return view('pages.recruitment.index', compact('batches', 'notices', 'error', 'searchResults', 'searchError'));
+        return view('pages.recruitment.index', compact('batches', 'notices', 'stats', 'error', 'searchResults', 'searchError'));
     }
 
     public function create()
