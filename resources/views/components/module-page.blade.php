@@ -90,6 +90,12 @@
                     ? null
                     : data_get($moduleData, 'period.id'),
                 ]);
+                if ($slug === 'paie-edition') {
+                  $exportParameters = array_merge($exportParameters, request()->only([
+                    'search', 'statuts_enseignant_id', 'corps_id', 'annee_academique_id',
+                    'period_id', 'ia_id', 'ief_id', 'matricule',
+                  ]));
+                }
                 if ($slug === 'paie-etat-salaires') {
                   $exportParameters = array_merge(
                     $exportParameters,
@@ -229,7 +235,10 @@
         @endphp
         
         @if (! empty($activeFilters))
-        <form class="filter-panel" method="GET" aria-label="Filtres de la page">
+        <form class="filter-panel" method="GET" action="{{ url()->current() }}" aria-label="Filtres de la page">
+        @if ($slug === 'paie-edition')
+          <input type="hidden" name="search" value="1">
+        @endif
         @foreach ($activeFilters as $index => $filter)
           @php
             $filterId = $slug.'-filter-'.$index;
@@ -242,7 +251,10 @@
             <label for="{{ $filterId }}">{{ $filterLabel }}</label>
             
             {{-- Si c'est le matricule, on affiche un champ texte --}}
-            @if ($filterName === 'matricule')
+            @if ($slug === 'paie-edition' && $filterName === 'ia_id' && !empty($moduleData['scope_ia_id']))
+                <input class="form-control" id="{{ $filterId }}" value="{{ $moduleData['scope_label'] ?? ($filterOptions[0]['label'] ?? $moduleData['scope_ia_id']) }}" readonly>
+                <input type="hidden" name="ia_id" value="{{ $moduleData['scope_ia_id'] }}">
+            @elseif ($filterName === 'matricule')
                 <input class="form-control" id="{{ $filterId }}" name="{{ $filterName }}" type="search" value="{{ $filterValue }}" placeholder="Saisir un matricule">
             @else
                 <select class="form-control" id="{{ $filterId }}" name="{{ $filterName }}">
@@ -259,12 +271,43 @@
             @endif
           </div>
         @endforeach
-        <div class="actions-group">
-          <button class="btn-secondary" type="submit">
-            <i class="fa-solid fa-filter" aria-hidden="true"></i>
-            {{ $slug === 'paie-edition' ? 'Générer la paie' : 'Appliquer' }}
-          </button>
-        </div>
+        <div class="actions-group"
+     @if ($slug === 'paie-edition')
+         style="
+             grid-column: span 2;
+             display: flex;
+             align-items: center;
+             justify-content: flex-end;
+             align-self: end;
+             gap: 12px;
+             padding-left: 16px;
+             flex-wrap: nowrap;
+         "
+     @endif>
+
+    <button class="btn-secondary"
+            type="submit"
+            style="white-space: nowrap;">
+
+        <i class="fa-solid fa-filter" aria-hidden="true"></i>
+
+        {{ $slug === 'paie-edition' ? 'Générer la paie' : 'Appliquer' }}
+
+    </button>
+
+    @if ($slug === 'paie-edition')
+        <a class="btn-secondary"
+           href="{{ url()->current() }}"
+           style="white-space: nowrap;">
+
+            <i class="fa-solid fa-rotate-left" aria-hidden="true"></i>
+
+            Réinitialiser
+
+        </a>
+    @endif
+
+</div>
         </form>
         @endif
 
@@ -402,7 +445,8 @@
             </tr>
           </thead>
           <tbody>
-            @forelse ($page['rows'] ?? [] as $row)
+            @if (!empty($page['rows']))
+            @foreach ($page['rows'] as $row)
               @php
                 $rowIndex = $loop->index;
                 $rowFilter = data_get($moduleData, 'row_filters.'.$rowIndex, []);
@@ -449,13 +493,14 @@
                   </td>
                 @endforeach
               </tr>
-            @empty
+            @endforeach
+            @else
               <tr class="table-empty-row">
                 <td colspan="{{ max(1, count($page['columns'] ?? [])) }}" class="table-empty-cell">
                   Aucune donnée disponible pour cette sélection.
                 </td>
               </tr>
-            @endforelse
+            @endif
           </tbody>
         </table>
       </div>
