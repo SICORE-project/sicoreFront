@@ -132,7 +132,7 @@ class AdministrationDashboardTest extends TestCase
                 ],
             ],
         ])])]);
-        $this->get('/dashboard')->assertOk()->assertSee('teacher-kpi')->assertSee('teacher-dashboard.js')
+        $this->get('/dashboard')->assertOk()->assertSee('stat-card')->assertSee('teacher-dashboard.js')
             ->assertSee('Évolution du montant net')->assertSee('Situation des paiements')
             ->assertSee('6 périodes')->assertSee('12 périodes')->assertSee('150 000')
             ->assertDontSee('Points de suivi');

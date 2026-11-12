@@ -37,7 +37,12 @@ class SyndicatController extends Controller
             $apiError = 'Le service backend est momentanément indisponible.';
         }
 
-        $stats = ['total' => $syndicats->count()];
+        $actifs = $syndicats->filter(fn (array $item): bool => (bool) ($item['est_actif'] ?? false))->count();
+        $stats = [
+            'total' => $syndicats->count(),
+            'actifs' => $actifs,
+            'inactifs' => $syndicats->count() - $actifs,
+        ];
 
         $search = trim((string) $request->query('search', ''));
 

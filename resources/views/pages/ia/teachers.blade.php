@@ -6,6 +6,26 @@
     <section class="content-area">
         <section class="objective-card"><h2>{{ $scopeLabel }}</h2><p>Périmètre : {{ $scopeLabel }}</p></section>
         @if ($error)<p class="alert alert-warning" role="alert">{{ $error }}</p>@endif
+        @if (!empty($data['stats']))
+          <div class="stats-grid four">
+            <article class="stat-card">
+              <div><p class="stat-label">Enseignants de l’IA</p><p class="stat-value">{{ number_format((int) ($data['stats']['total'] ?? 0), 0, ',', ' ') }}</p><p class="stat-note">{{ $scopeLabel }}</p></div>
+              <span class="stat-icon green"><i class="fa-solid fa-chalkboard-user" aria-hidden="true"></i></span>
+            </article>
+            <article class="stat-card">
+              <div><p class="stat-label">En activité</p><p class="stat-value">{{ number_format((int) ($data['stats']['en_activite'] ?? 0), 0, ',', ' ') }}</p><p class="stat-note">Statut en activité</p></div>
+              <span class="stat-icon blue"><i class="fa-solid fa-user-check" aria-hidden="true"></i></span>
+            </article>
+            <article class="stat-card">
+              <div><p class="stat-label">Contractuels et vacataires</p><p class="stat-value">{{ number_format((int) ($data['stats']['non_fonctionnaires'] ?? 0), 0, ',', ' ') }}</p><p class="stat-note">Non fonctionnaires</p></div>
+              <span class="stat-icon yellow"><i class="fa-solid fa-file-signature" aria-hidden="true"></i></span>
+            </article>
+            <article class="stat-card">
+              <div><p class="stat-label">IEF couvertes</p><p class="stat-value">{{ number_format((int) ($data['stats']['ief'] ?? 0), 0, ',', ' ') }}</p><p class="stat-note">Dans votre IA</p></div>
+              <span class="stat-icon purple"><i class="fa-solid fa-sitemap" aria-hidden="true"></i></span>
+            </article>
+          </div>
+        @endif
         @include('pages.enseignants.import-report')
       @if(session('success'))<p class="alert alert-success" role="status">{{ session('success') }}</p>@endif
         <section class="panel">
