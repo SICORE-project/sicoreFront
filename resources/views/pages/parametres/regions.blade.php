@@ -67,33 +67,7 @@
         @endif
 
 
-        {{-- ========================================================= --}}
-        {{-- OBJECTIFS --}}
-        {{-- ========================================================= --}}
 
-        <section class="objective-card">
-
-            <h2>Objectifs métier</h2>
-
-            <ul class="objective-list">
-                <li>
-                    Consulter les régions administratives enregistrées dans SICORE.
-                </li>
-
-                <li>
-                    Rechercher une région par son code ou son libellé.
-                </li>
-
-                <li>
-                    Créer et modifier une région.
-                </li>
-
-                <li>
-                    Identifier les régions actives et inactives.
-                </li>
-            </ul>
-
-        </section>
 
 
         {{-- ========================================================= --}}

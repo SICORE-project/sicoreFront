@@ -61,35 +61,7 @@
         @endif
 
 
-        {{-- OBJECTIFS --}}
 
-        <section class="objective-card">
-
-            <h2>Objectifs métier</h2>
-
-            <ul class="objective-list">
-                <li>
-                    Consulter les départements administratifs enregistrés dans SICORE.
-                </li>
-
-                <li>
-                    Rechercher un département par son code ou son libellé.
-                </li>
-
-                <li>
-                    Filtrer les départements par région et par statut.
-                </li>
-
-                <li>
-                    Créer et modifier un département.
-                </li>
-
-                <li>
-                    Identifier les départements actifs et inactifs.
-                </li>
-            </ul>
-
-        </section>
 
 
         {{-- STATISTIQUES --}}

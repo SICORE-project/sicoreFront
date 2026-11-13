@@ -18,13 +18,6 @@
   <section class="content-area">
     @if (session('success')) <div class="alert alert-success">{{ session('success') }}</div> @endif
     @if (session('error')) <div class="alert alert-error">{{ session('error') }}</div> @endif
-    <section class="objective-card">
-      <h2>Objectifs métier</h2>
-      <ul class="objective-list">
-        <li>Consulter les inspections d’académie enregistrées dans SICORE.</li>
-        <li>Identifier la région de rattachement de chaque inspection.</li>
-      </ul>
-    </section>
 
     <div class="stats-grid">
       <article class="stat-card">
