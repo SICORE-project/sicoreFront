@@ -9,9 +9,11 @@
   <section class="content-area">
     @if (session('success')) <div class="alert alert-success">{{ session('success') }}</div> @endif
     @if (session('error')) <div class="alert alert-error">{{ session('error') }}</div> @endif
-    <div class="stats-grid">
+    <div class="stats-grid four">
       <article class="stat-card"><div><p class="stat-label">Total IEF</p><p class="stat-value">{{ $pagination['total'] }}</p><p class="stat-note">IEF enregistrées</p></div><span class="stat-icon green"><i class="fa-solid fa-sitemap"></i></span></article>
       <article class="stat-card"><div><p class="stat-label">IA disponibles</p><p class="stat-value">{{ count($ias) }}</p><p class="stat-note">Rattachements possibles</p></div><span class="stat-icon blue"><i class="fa-solid fa-building-columns"></i></span></article>
+      <article class="stat-card"><div><p class="stat-label">Établissements</p><p class="stat-value">{{ number_format((int) ($stats['etablissements'] ?? 0), 0, ',', ' ') }}</p><p class="stat-note">Rattachés à une IEF</p></div><span class="stat-icon purple"><i class="fa-solid fa-school"></i></span></article>
+      <article class="stat-card"><div><p class="stat-label">IEF sans établissement</p><p class="stat-value">{{ number_format((int) ($stats['iefs_sans_etablissement'] ?? 0), 0, ',', ' ') }}</p><p class="stat-note">Aucun établissement rattaché</p></div><span class="stat-icon yellow"><i class="fa-solid fa-triangle-exclamation"></i></span></article>
     </div>
     <div class="actions-row"><p class="breadcrumb">Gestion du personnel &gt; IEF</p><div class="actions-group">@if (! $scopedReadOnly)<button class="btn-primary" type="button" data-modal-open="ief-create-modal">+ Nouvelle IEF</button>@endif @if ($peutSupprimer)<button class="btn-secondary btn-bulk-delete" type="button" data-bulk-delete-button disabled>Supprimer la sélection</button>@endif</div></div>
     <form class="filter-panel parametrage-filters" id="iefFilterForm" method="GET" action="{{ route($listRoute) }}">
@@ -26,16 +28,16 @@
     @if ($error) <div class="alert alert-error">{{ $error }}</div> @endif
     <section class="table-card">
       <div class="table-card-header"><div><h2>Liste des IEF</h2><p class="table-card-subtitle">{{ $pagination['total'] }} enregistrement{{ $pagination['total'] > 1 ? 's' : '' }}</p></div></div>
-      <div class="table-responsive"><table class="table" id="iefTable"><thead><tr> @if ($peutSupprimer)<th class="checkbox-cell"><input type="checkbox" data-select-all aria-label="Tout sélectionner"></th>@endif <th>Code</th><th>Libellé</th><th>Inspection d’académie</th>@if (! $scopedReadOnly)<th class="actions-cell">Actions</th>@endif</tr></thead><tbody>
+      <div class="table-responsive"><table class="table" id="iefTable"><thead><tr> @if ($peutSupprimer)<th class="checkbox-cell"><input type="checkbox" data-select-all aria-label="Tout sélectionner"></th>@endif <th>Code</th><th>Libellé</th><th>Inspection d’académie</th><th>Établissements</th>@if (! $scopedReadOnly)<th class="actions-cell">Actions</th>@endif</tr></thead><tbody>
         @forelse ($items as $ief)
           @php($iefId = data_get($ief, 'id'))
-          <tr> @if ($peutSupprimer)<td class="checkbox-cell">@if ($iefId)<input type="checkbox" data-row-checkbox value="{{ $iefId }}" aria-label="Sélectionner {{ data_get($ief, 'code') }}">@endif</td>@endif <td>{{ data_get($ief, 'code', '—') }}</td><td>{{ data_get($ief, 'libelle', '—') }}</td><td>{{ data_get($ief, 'ia.code', '—') }} — {{ data_get($ief, 'ia.libelle', '—') }}</td>@if (! $scopedReadOnly)<td class="actions-cell">
+          <tr> @if ($peutSupprimer)<td class="checkbox-cell">@if ($iefId)<input type="checkbox" data-row-checkbox value="{{ $iefId }}" aria-label="Sélectionner {{ data_get($ief, 'code') }}">@endif</td>@endif <td>{{ data_get($ief, 'code', '—') }}</td><td>{{ data_get($ief, 'libelle', '—') }}</td><td>{{ data_get($ief, 'ia.code', '—') }} — {{ data_get($ief, 'ia.libelle', '—') }}</td><td>{{ is_numeric(data_get($ief, 'etablissements_count')) ? number_format(data_get($ief, 'etablissements_count'), 0, ',', ' ') : '—' }}</td>@if (! $scopedReadOnly)<td class="actions-cell">
             <button class="icon-action" type="button" data-modal-open="ief-edit-modal" data-ief-edit='@json($ief)' title="Modifier"><i class="fa-solid fa-pen-to-square"></i></button>
             @if ($iefId && $peutSupprimer)
               <form class="inline-form" method="POST" action="{{ route('parametres.ief.destroy', $iefId) }}">@csrf @method('DELETE')<button class="icon-action delete" type="submit" title="Supprimer"><i class="fa-solid fa-trash-can"></i></button></form>
             @endif
           </td>@endif</tr>
-        @empty <tr><td colspan="{{ ($scopedReadOnly ? 3 : 4) + ($peutSupprimer ? 1 : 0) }}" class="empty-message"><x-table-empty-state>Aucune IEF trouvée.</x-table-empty-state></td></tr> @endforelse
+        @empty <tr><td colspan="{{ ($scopedReadOnly ? 4 : 5) + ($peutSupprimer ? 1 : 0) }}" class="empty-message"><x-table-empty-state>Aucune IEF trouvée.</x-table-empty-state></td></tr> @endforelse
       </tbody></table></div>
       @include('components.pagination', ['pagination' => $pagination])
     </section>
