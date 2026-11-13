@@ -10,7 +10,7 @@
           {{-- 6 cartes sur 3 colonnes : 2 lignes complètes. --}}
           <div class="stats-grid three">
             <article class="stat-card">
-              <div><p class="stat-label">Enseignants de l’IA</p><p class="stat-value">{{ number_format((int) ($data['stats']['total'] ?? 0), 0, ',', ' ') }}</p><p class="stat-note">{{ $scopeLabel }}</p></div>
+              <div><p class="stat-label">Enseignants de l’IA</p><p class="stat-value">{{ number_format((int) ($data['stats']['total'] ?? 0), 0, ',', ' ') }}</p><p class="stat-note">Tous statuts confondus</p></div>
               <span class="stat-icon green"><i class="fa-solid fa-chalkboard-user" aria-hidden="true"></i></span>
             </article>
             <article class="stat-card">
