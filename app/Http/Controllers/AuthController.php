@@ -74,6 +74,8 @@ class AuthController extends Controller
             'email' => $data['user']['email'],
             'role' => $data['user']['role']['nom'] ?? null,
             'role_slug' => $data['user']['role']['slug'] ?? null,
+            // Périmètre DECPC (lu par OrganisationContext) : sans lui, les profils DECPC n'accèdent à aucune donnée.
+            'decpc' => $data['user']['decpc'] ?? $data['decpc'] ?? [],
             'permissions' => $data['user']['permissions'] ?? [],
             'ia_id' => $data['user']['ia_id'] ?? null,
             'enseignant_id' => $data['user']['enseignant_id'] ?? null,
