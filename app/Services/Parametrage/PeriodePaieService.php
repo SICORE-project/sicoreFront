@@ -35,6 +35,7 @@ class PeriodePaieService
 
         return [
             'items' => (array) data_get($payload, 'data.data', []),
+            'payrollPeriods' => (array) data_get($payload, 'payroll_periods', []),
             'error' => null,
             'unauthorized' => false,
             'pagination' => [
@@ -60,12 +61,22 @@ class PeriodePaieService
         return $this->mutate('delete', "periodes-paie/{$id}", [], 'Période de paie supprimée.');
     }
 
+    public function open(int|string $id): array
+    {
+        return $this->mutate('post', "periodes-paie/{$id}/open", [], 'Période ouverte et calculée.');
+    }
+
+    public function close(int|string $id): array
+    {
+        return $this->mutate('post', "periodes-paie/cycles/{$id}/close", [], 'Période clôturée.');
+    }
+
     private function mutate(string $method, string $uri, array $data, string $fallback): array
     {
         try {
             $response = $method === 'delete'
                 ? $this->apiClient->delete($uri)
-                : $this->apiClient->{$method}($uri, $data);
+                : ($method === 'post' ? $this->apiClient->post($uri, $data, 300) : $this->apiClient->{$method}($uri, $data));
 
             return [
                 'success' => $response->successful(),

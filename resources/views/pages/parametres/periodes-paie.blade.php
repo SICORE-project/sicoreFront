@@ -21,6 +21,16 @@
     @if (session('success'))<div class="alert alert-success" role="status">{{ session('success') }}</div>@endif
     @if (session('error'))<div class="alert alert-error" role="alert">{{ session('error') }}</div>@endif
     @if ($error)<div class="alert alert-error" role="alert">{{ $error }}</div>@endif
+    <div class="alert alert-info">Créer une période calcule automatiquement la paie des PC/VAC actifs de toutes les IA. Clôturez les périodes en cours avant d’en ouvrir une nouvelle. Les périodes clôturées restent consultables. Utilisez un code AAAA-MM pour préciser l’année.</div>
+    @if ($canManage)
+    <section class="table-card"><div class="table-card-header"><h2>Cycles de paie</h2></div><div class="table-responsive"><table class="table"><thead><tr><th>Période</th><th>Statut</th><th>Action</th></tr></thead><tbody>
+    @foreach (($payrollPeriods ?? []) as $cycle)
+      <tr><td>{{ $cycle['label'] }}</td><td>{{ ['open' => 'Ouverte', 'calculated' => 'Calculée', 'validated' => 'Validée', 'closed' => 'Clôturée'][$cycle['status']] ?? $cycle['status'] }}</td><td>
+        @if ($cycle['status'] !== 'closed')<form method="POST" action="{{ route('parametres.periodes-paie.close', $cycle['id']) }}" onsubmit="return confirm('Clôturer cette période ? Les montants seront figés et les bulletins resteront consultables.');">@csrf<button class="btn-secondary" type="submit">Clôturer la période</button></form>@endif
+      </td></tr>
+    @endforeach
+    </tbody></table></div></section>
+    @endif
 
     <form class="filter-panel parametrage-filters periode-filters" method="GET" action="{{ route('parametres.periodes-paie.index') }}" data-periode-filters>
       <div class="form-group periode-search">
@@ -44,6 +54,7 @@
                 <td><strong>{{ data_get($periode, 'libelle', '—') }}</strong></td>
                 @if ($canManage)
                   <td class="actions-cell">
+                    <form class="inline-form" method="POST" action="{{ route('parametres.periodes-paie.open', data_get($periode, 'id')) }}">@csrf<button class="btn-secondary" type="submit">Ouvrir et calculer</button></form>
                     <button class="icon-action" type="button" data-modal-open="periode-update-modal" data-periode-edit='@json($periode)' title="Modifier" aria-label="Modifier {{ data_get($periode, 'libelle') }}"><i class="fa-solid fa-pen-to-square" aria-hidden="true"></i></button>
                     <form class="inline-form" method="POST" action="{{ route('parametres.periodes-paie.destroy', data_get($periode, 'id')) }}" data-periode-delete data-confirm-message="Supprimer définitivement la période « {{ data_get($periode, 'libelle') }} » ?">@csrf @method('DELETE')<button class="icon-action delete" type="submit" title="Supprimer"><i class="fa-solid fa-trash-can" aria-hidden="true"></i></button></form>
                   </td>
@@ -73,7 +84,7 @@
         <div class="form-group"><label for="periodeCode">Code <span aria-hidden="true">*</span></label><input class="form-control" id="periodeCode" name="code" value="{{ old('code') }}" maxlength="20" required>@error('code')<small class="field-error">{{ $message }}</small>@enderror</div>
         <div class="form-group"><label for="periodeLibelle">Libellé <span aria-hidden="true">*</span></label><input class="form-control" id="periodeLibelle" name="libelle" value="{{ old('libelle') }}" maxlength="100" required>@error('libelle')<small class="field-error">{{ $message }}</small>@enderror</div>
       </div>
-      <div class="form-actions"><button class="btn-secondary" type="button" data-modal-close>Annuler</button><button class="btn-primary" type="submit">Ajouter</button></div>
+      <div class="form-actions"><button class="btn-secondary" type="button" data-modal-close>Annuler</button><button class="btn-primary" type="submit">Créer et calculer la paie</button></div>
     </form>
   </x-module-indemnite>
 

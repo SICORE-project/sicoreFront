@@ -75,6 +75,18 @@ class PeriodePaieController extends Controller
         ];
     }
 
+    public function open(string $periode, PeriodePaieService $service): RedirectResponse
+    {
+        $result = $service->open($periode);
+        return back()->with($result['success'] ? 'success' : 'error', collect($result['errors'])->flatten()->implode(' ') ?: $result['message']);
+    }
+
+    public function close(string $periode, PeriodePaieService $service): RedirectResponse
+    {
+        $result = $service->close($periode);
+        return back()->with($result['success'] ? 'success' : 'error', collect($result['errors'])->flatten()->implode(' ') ?: $result['message']);
+    }
+
     public function destroyMultiple(Request $request, PeriodePaieService $service): RedirectResponse
     {
         return $this->supprimerSelection($request, fn (int $id) => $service->delete($id), 'période', 'parametres.periodes-paie.index');

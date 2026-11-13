@@ -27,20 +27,6 @@ $collectiveTabaskiFields = [
 ];
 
 return [
-    'generate-payslips' => [
-        'title' => 'Générer les bulletins de salaire',
-        'confirmation' => 'Les dossiers sont repris depuis Personnel. Les montants des retenues viennent de Rubriques de paie. Seule la sélection sera recalculée ; les autres bulletins sont conservés.',
-        'fields' => [
-            ['name' => 'generation_scope', 'label' => 'Générer pour', 'type' => 'select', 'required' => true, 'default' => 'ia', 'full_width' => true,
-                'options' => [['value' => 'ia', 'label' => 'Toute une IA'], ['value' => 'teacher', 'label' => 'Un enseignant identifié par son matricule']]],
-            ['name' => 'enseignant_id', 'label' => 'Enseignant / matricule', 'type' => 'teacher', 'full_width' => true],
-            ['name' => 'ia_id', 'label' => 'Inspection académique (IA)', 'type' => 'academic_inspection'],
-            ['name' => 'ief_id', 'label' => 'IEF (facultatif)', 'type' => 'education_inspection', 'help' => 'Laisser vide pour toutes les IEF de l’IA.'],
-            ['name' => 'statut_enseignant_id', 'label' => 'Corps / statut enseignant (facultatif)', 'type' => 'teaching_statuses', 'full_width' => true, 'help' => 'Laisser vide pour les PC et VAC de la sélection.'],
-            ['name' => 'annee_academique_id', 'label' => 'Année académique', 'type' => 'academic_year', 'required' => true],
-            ['name' => 'month', 'label' => 'Mois de paie', 'type' => 'payroll_month', 'required' => true],
-        ],
-    ],
     'configure-teacher-payroll' => [
         'title' => 'Configurer le profil de paie',
         'confirmation' => 'La grille applicable détermine le salaire de base. IMPR et TRIMF, ainsi que IPM et Check-off pour les PC, sont repris automatiquement depuis les montants de Paramétrage → Rubriques de paie. Aucune saisie individuelle de ces montants ici.',

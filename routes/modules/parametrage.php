@@ -134,6 +134,8 @@ Route::middleware(['sicore.auth', 'sicore.module:parametrage.ia.read,parametrage
 
         Route::get('/parametres/periodes-paie', [PeriodePaieController::class, 'index'])
             ->name('parametres.periodes-paie.index');
+        Route::post('/parametres/periodes-paie/{periode}/open', [PeriodePaieController::class, 'open'])->whereNumber('periode')->middleware('sicore.permission:parametrage.periodes_paie.manage')->name('parametres.periodes-paie.open');
+        Route::post('/parametres/periodes-paie/cycles/{periode}/close', [PeriodePaieController::class, 'close'])->whereNumber('periode')->middleware('sicore.permission:parametrage.periodes_paie.manage')->name('parametres.periodes-paie.close');
         Route::post('/parametres/periodes-paie', [PeriodePaieController::class, 'store'])
             ->name('parametres.periodes-paie.store');
         Route::put('/parametres/periodes-paie/{periode}', [PeriodePaieController::class, 'update'])

@@ -6,19 +6,10 @@ use Tests\TestCase;
 
 class PayrollPayslipDisplayTest extends TestCase
 {
-    public function test_generation_uses_one_form_for_whole_ia_and_individual_without_salary_resubmission(): void
+    public function test_manual_generation_form_is_unavailable(): void
     {
-        $definition = config('payroll-forms.generate-payslips');
-        $fields = collect($definition['fields'])->keyBy('name');
-        $this->assertEquals(['ia', 'teacher'], array_column($fields['generation_scope']['options'], 'value'));
-        foreach (['enseignant_id', 'ia_id', 'ief_id', 'statut_enseignant_id', 'annee_academique_id', 'month'] as $field) {
-            $this->assertTrue($fields->has($field));
-        }
-        foreach (['payroll_diploma_level', 'payroll_category_level', 'impr_monthly_amount', 'trimf_monthly_amount'] as $field) {
-            $this->assertFalse($fields->has($field));
-        }
+        $this->assertNull(config('payroll-forms.generate-payslips'));
     }
-
     public function test_profile_form_does_not_request_deductions_owned_by_the_rubric_crud(): void
     {
         $definition = config('payroll-forms.configure-teacher-payroll');

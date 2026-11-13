@@ -211,19 +211,12 @@
     if (selectedPeriod && defaults.payroll_period_id == null) {
       defaults.payroll_period_id = selectedPeriod.id;
     }
-    if ((isCollectiveTabaskiAction() || currentAction === "generate-payslips") && defaults.annee_academique_id == null) {
+    if (isCollectiveTabaskiAction() && defaults.annee_academique_id == null) {
       var academicYears = page.data.academic_years || [];
       var activeYear = academicYears.find(function (year) { return year.is_active; });
       if (activeYear || academicYears.length) {
         defaults.annee_academique_id = (activeYear || academicYears[0]).id;
       }
-    }
-    if (currentAction === "generate-payslips" && selectedPeriod && defaults.month == null) {
-      defaults.month = selectedPeriod.month_number;
-      var matchingYear = (page.data.academic_years || []).find(function (year) {
-        return year.start_date <= selectedPeriod.start_date && year.end_date >= selectedPeriod.end_date;
-      });
-      if (matchingYear) defaults.annee_academique_id = matchingYear.id;
     }
     if (selectedPeriod && defaults.expected_version == null && currentAction === "close-period") {
       defaults.expected_version = selectedPeriod.version;
@@ -301,7 +294,6 @@
     initializeCollectiveHierarchy(defaults);
     initializeCheckboxGroups();
     initializePayrollProfileFields();
-    initializePayrollGeneration(defaults);
     var codeField = form.elements.code;
     if (currentAction === "add-element" && codeField) {
       codeField.addEventListener("change", syncEditableRecord);
@@ -323,72 +315,7 @@
     }
   }
 
-  function initializePayrollGeneration(defaults) {
-    if (currentAction !== "generate-payslips") return;
-    var scope = form.elements.generation_scope;
-    var teacherField = form.elements.enseignant_id;
-    var iaField = form.elements.ia_id;
-    var iefField = form.elements.ief_id;
-    var corpsField = form.elements.statut_enseignant_id;
-    var summary = document.createElement("div");
-    summary.className = "payroll-teacher-summary payroll-field-full";
-    summary.setAttribute("aria-live", "polite");
-    fieldsHost.appendChild(summary);
 
-    function showField(control, visible, required) {
-      control.closest(".payroll-field").hidden = !visible;
-      control.disabled = !visible;
-      control.required = !!required;
-    }
-    function refreshIefs(value) {
-      replaceSelectOptions(iefField, (page.data.education_inspections || []).filter(function (option) {
-        return String(option.ia_id) === String(iaField.value);
-      }), "Toutes les IEF de l’IA", value);
-    }
-    function refresh() {
-      var individual = scope.value === "teacher";
-      showField(teacherField, individual, individual);
-      showField(iaField, !individual, !individual);
-      showField(iefField, !individual, false);
-      showField(corpsField, !individual, false);
-      var selected = (page.data.teachers || []).find(function (teacher) {
-        return String(teacher.id) === String(teacherField.value);
-      });
-      if (individual) {
-        var profile = selected && selected.administrative_profile || {};
-        var facts = selected ? [
-          ["Matricule", selected.matricule], ["Corps / statut", profile.status_label || profile.engagement_type],
-          ["IA", selected.ia_label], ["IEF", selected.ief_label],
-          ["Diplôme", profile.diploma_label], ["Catégorie", profile.category_label],
-          ["Établissement", selected.establishment]
-        ] : [];
-        summary.innerHTML = '<strong>Données enregistrées dans Personnel</strong>' +
-          (selected ? '<span>' + escapeHtml(selected.name) + '</span>' : '<span>Sélectionnez un enseignant.</span>') +
-          facts.map(function (fact) { return '<small>' + escapeHtml(fact[0]) + ' : ' + escapeHtml(fact[1] || 'Non renseigné') + '</small>'; }).join("");
-        submitButton.disabled = !selected;
-      } else {
-        var count = (page.data.teachers || []).filter(function (teacher) {
-          var profile = teacher.administrative_profile || {};
-          return String(teacher.ia_id) === String(iaField.value) &&
-            (!iefField.value || String(teacher.ief_id) === String(iefField.value)) &&
-            (!corpsField.value || String(teacher.statut_enseignant_id) === String(corpsField.value)) &&
-            ["contractuel", "vacataire"].indexOf(profile.engagement_type) !== -1;
-        }).length;
-        summary.innerHTML = '<strong>Génération pour l’IA sélectionnée</strong><span>' + count +
-          ' enseignant(s) actif(s) PC/VAC dans la sélection.</span><small>Un dossier incomplet sera signalé, sans inventer ses données.</small>';
-        submitButton.disabled = !iaField.value || count === 0;
-      }
-    }
-    iaField.addEventListener("change", function () { refreshIefs(""); refresh(); });
-    [scope, teacherField, iefField, corpsField].forEach(function (control) { control.addEventListener("change", refresh); });
-    refreshIefs(defaults.ief_id);
-    refresh();
-  }
-
-  // ---------------------------------------------------------------------------
-  // Sélection obligatoire du formateur : IA, puis IEF, puis matricule saisi.
-  // Les listes et suggestions viennent de PayrollPageService.php.
-  // ---------------------------------------------------------------------------
   function initializeTeacherHierarchy(defaults) {
     var iaField = form.elements.ia_id;
     var iefField = form.elements.ief_id;
