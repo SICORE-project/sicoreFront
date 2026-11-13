@@ -7,7 +7,8 @@
         <section class="objective-card"><h2>{{ $scopeLabel }}</h2><p>Périmètre : {{ $scopeLabel }}</p></section>
         @if ($error)<p class="alert alert-warning" role="alert">{{ $error }}</p>@endif
         @if (!empty($data['stats']))
-          <div class="stats-grid four">
+          {{-- 6 cartes sur 3 colonnes : 2 lignes complètes. --}}
+          <div class="stats-grid three">
             <article class="stat-card">
               <div><p class="stat-label">Enseignants de l’IA</p><p class="stat-value">{{ number_format((int) ($data['stats']['total'] ?? 0), 0, ',', ' ') }}</p><p class="stat-note">{{ $scopeLabel }}</p></div>
               <span class="stat-icon green"><i class="fa-solid fa-chalkboard-user" aria-hidden="true"></i></span>
@@ -17,8 +18,16 @@
               <span class="stat-icon blue"><i class="fa-solid fa-user-check" aria-hidden="true"></i></span>
             </article>
             <article class="stat-card">
-              <div><p class="stat-label">Contractuels et vacataires</p><p class="stat-value">{{ number_format((int) ($data['stats']['non_fonctionnaires'] ?? 0), 0, ',', ' ') }}</p><p class="stat-note">Non fonctionnaires</p></div>
+              <div><p class="stat-label">Fonctionnaires</p><p class="stat-value">{{ number_format((int) ($data['stats']['fonctionnaires'] ?? 0), 0, ',', ' ') }}</p><p class="stat-note">Statut fonctionnaire</p></div>
+              <span class="stat-icon green"><i class="fa-solid fa-user-tie" aria-hidden="true"></i></span>
+            </article>
+            <article class="stat-card">
+              <div><p class="stat-label">Contractuels</p><p class="stat-value">{{ number_format((int) ($data['stats']['contractuels'] ?? 0), 0, ',', ' ') }}</p><p class="stat-note">Statut contractuel</p></div>
               <span class="stat-icon yellow"><i class="fa-solid fa-file-signature" aria-hidden="true"></i></span>
+            </article>
+            <article class="stat-card">
+              <div><p class="stat-label">Vacataires</p><p class="stat-value">{{ number_format((int) ($data['stats']['vacataires'] ?? 0), 0, ',', ' ') }}</p><p class="stat-note">Statut vacataire</p></div>
+              <span class="stat-icon blue"><i class="fa-solid fa-user-clock" aria-hidden="true"></i></span>
             </article>
             <article class="stat-card">
               <div><p class="stat-label">IEF couvertes</p><p class="stat-value">{{ number_format((int) ($data['stats']['ief'] ?? 0), 0, ',', ' ') }}</p><p class="stat-note">Dans votre IA</p></div>
@@ -44,9 +53,12 @@
         <section class="panel">
             <div class="panel-header"><h2>Enseignants</h2><div class="actions-group"><a class="btn-primary" href="{{ route('ia.teachers.create') }}">Ajouter un enseignant</a><a class="btn-secondary" href="{{ route('ia.teachers.submissions') }}">Mes soumissions</a></div></div>
             <form method="get" class="ia-filters">
-                @if (($filters['engagement'] ?? '') === 'non_fonctionnaires')
-                    <input type="hidden" name="engagement" value="non_fonctionnaires">
-                    <p>Contractuels et vacataires</p>
+                @php
+                    $engagementLabels = ['non_fonctionnaires' => 'Contractuels et vacataires', 'contractuel' => 'Contractuels', 'vacataire' => 'Vacataires'];
+                @endphp
+                @if (isset($engagementLabels[$filters['engagement'] ?? '']))
+                    <input type="hidden" name="engagement" value="{{ $filters['engagement'] }}">
+                    <p>{{ $engagementLabels[$filters['engagement']] }}</p>
                 @endif
                 <label>Rechercher<input name="search" value="{{ $filters['search'] ?? '' }}" placeholder="Nom, prénom ou matricule"></label>
                 <label>IEF<select name="ief_id"><option value="">Toutes les IEF de mon IA</option>

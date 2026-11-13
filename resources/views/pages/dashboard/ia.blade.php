@@ -13,10 +13,11 @@
         @if ($canConsultPersonnel)
             <div class="stats-grid ia-personnel-stats">
                 @foreach ([
-                    ['agents', 'Enseignants', 'fa-users', 'green'],
-                    ['non_fonctionnaires', 'Contractuels et vacataires', 'fa-chalkboard-user', 'yellow'],
-                ] as [$key, $label, $icon, $color])
-                    <a class="stat-card ia-stat-link" href="{{ route('enseignants.index', $key === 'non_fonctionnaires' ? ['engagement' => 'non_fonctionnaires'] : []) }}" aria-label="{{ 'Consulter : '.$label }}">
+                    ['agents', 'Enseignants', 'fa-users', 'green', null],
+                    ['contractuels', 'Contractuels', 'fa-file-signature', 'yellow', 'contractuel'],
+                    ['vacataires', 'Vacataires', 'fa-user-clock', 'blue', 'vacataire'],
+                ] as [$key, $label, $icon, $color, $engagement])
+                    <a class="stat-card ia-stat-link" href="{{ route('enseignants.index', $engagement ? ['engagement' => $engagement] : []) }}" aria-label="{{ 'Consulter : '.$label }}">
                         <div><p class="stat-label">{{ $label }}</p>
                             <p class="stat-value">{{ is_numeric(data_get($metrics, 'indicateurs.'.$key)) ? number_format(data_get($metrics, 'indicateurs.'.$key), 0, ',', ' ') : '—' }}</p>
                             <p class="stat-note">{{ isset($metrics['indicateurs'][$key]) ? $scopeLabel : 'Indicateur indisponible' }}</p>
@@ -108,7 +109,7 @@
 
 @push('styles')
 <style>
-    .ia-dashboard .ia-personnel-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .ia-dashboard .ia-personnel-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
     .ia-dashboard .ia-stat-link { color: inherit; text-decoration: none; transition: box-shadow .15s, border-color .15s; }
     .ia-dashboard .ia-stat-link:hover { border-color: #176637; box-shadow: 0 6px 20px #17663720; }
     .ia-dashboard .ia-stat-link:focus-visible { outline: 3px solid #176637; outline-offset: 3px; }
