@@ -81,6 +81,8 @@ class AuthController extends Controller
             'enseignant_id' => $data['user']['enseignant_id'] ?? null,
             'ief_id' => $data['user']['ief_id'] ?? null,
             'acces_organisationnel' => $data['user']['acces_organisationnel'] ?? $data['user']['organisation_access'] ?? [],
+            // Périmètre DRH (lu par OrganisationContext) : sans lui, l'Agent DRH n'accède à aucune donnée.
+            'drh' => $data['user']['drh'] ?? $data['drh'] ?? [],
         ]);
 
         $redirect = $returnUrl && ! app(\App\Services\Organisation\DrhAccess::class)->isDrh()

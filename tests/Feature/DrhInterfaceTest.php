@@ -110,4 +110,30 @@ class DrhInterfaceTest extends TestCase
         $this->post('/login', ['email' => 'drh@example.test', 'password' => 'test-password', 'next' => '/paie/bulletins'])
             ->assertRedirect(route('dashboard'))->assertSessionHas('sicore_user.permissions', ['personnel.consulter']);
     }
+
+    public function test_login_keeps_the_drh_perimeter_returned_by_the_api(): void
+    {
+        Http::fake(['*/login' => Http::response([
+            'access_token' => 'token', 'message' => 'Bienvenue',
+            'user' => ['id' => 4, 'prenom' => 'Amina', 'nom' => 'Diop', 'email' => 'drh@example.test',
+                'role' => ['slug' => 'agent_drh', 'nom' => 'Agent DRH'], 'permissions' => ['enseignants.read'],
+                'drh' => ['perimetre' => ['type' => 'national', 'id' => null]]],
+        ])]);
+        $this->post('/login', ['email' => 'drh@example.test', 'password' => 'test-password'])
+            ->assertRedirect(route('dashboard'))->assertSessionHas('sicore_user.drh.perimetre.type', 'national');
+    }
+
+    public function test_dashboard_displays_personnel_indicators_and_distribution(): void
+    {
+        Http::fake(['*/drh/dashboard*' => Http::response(['data' => [
+            'indicateurs' => ['total_agents' => 12, 'attente_prise_service' => 3, 'enseignants_fonctionnaires' => 7,
+                'enseignants_non_fonctionnaires' => 5, 'dossiers_actifs' => 9, 'dossiers_incomplets' => 2],
+            'agents_par_lieu_service' => [['libelle' => 'Lycée technique de Thiès', 'total' => 8]],
+            'derniers_dossiers' => [['prenom' => 'Awa', 'nom' => 'Ba', 'matricule' => 'MAT01', 'updated_at' => '2026-11-12 09:15:00']],
+        ]])]);
+        $this->drh()->get('/dashboard')->assertOk()
+            ->assertSee('En attente de prise de service')->assertSee('Contractuels et vacataires')
+            ->assertSee('Dossiers incomplets')->assertSee('Lycée technique de Thiès')
+            ->assertSee('MAT01')->assertSee('12/11/2026 à 09:15');
+    }
 }
