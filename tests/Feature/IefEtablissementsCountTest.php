@@ -7,27 +7,26 @@ use Tests\TestCase;
 
 class IefEtablissementsCountTest extends TestCase
 {
-    public function test_ief_page_shows_establishments_per_ief(): void
+    public function test_ief_page_shows_the_number_of_establishments(): void
     {
         Http::fake([
             '*/iefs*' => Http::response([
                 'data' => [
-                    ['id' => 1, 'code' => 'IEF1', 'libelle' => 'IEF de Pikine', 'ia' => ['code' => 'IA1', 'libelle' => 'IA de Dakar'], 'etablissements_count' => 7],
-                    ['id' => 2, 'code' => 'IEF2', 'libelle' => 'IEF de Guédiawaye', 'ia' => ['code' => 'IA1', 'libelle' => 'IA de Dakar'], 'etablissements_count' => 0],
+                    ['id' => 1, 'code' => 'IEF1', 'libelle' => 'IEF de Pikine', 'ia' => ['code' => 'IA1', 'libelle' => 'IA de Dakar']],
                 ],
-                'meta' => ['current_page' => 1, 'last_page' => 1, 'total' => 2],
-                'stats' => ['etablissements' => 7, 'iefs_sans_etablissement' => 1],
+                'meta' => ['current_page' => 1, 'last_page' => 1, 'total' => 1],
+                'stats' => ['etablissements' => 7],
             ]),
             '*' => Http::response(['data' => []]),
         ]);
 
         $response = $this->withSession(['access_token' => 'token', 'sicore_user' => ['name' => 'Admin', 'role_slug' => 'super_admin', 'permissions' => ['parametrage.ief.read']]])
             ->get('/parametrage/parametres/ief')->assertOk()
-            ->assertSeeInOrder(['Total IEF', 'IA disponibles', 'Établissements', '7', 'IEF sans établissement', '1'])
-            ->assertSee('<th>Établissements</th>', false)
-            ->assertSeeInOrder(['IEF de Pikine', 'IA de Dakar', '7', 'IEF de Guédiawaye', 'IA de Dakar', '0']);
+            ->assertSeeInOrder(['Total IEF', 'IA disponibles', 'Établissements', '7'])
+            ->assertDontSee('<th>Établissements</th>', false);
 
-        // 4 cartes : une ligne complète.
-        $this->assertSame(4, substr_count($response->getContent(), '<article class="stat-card">'));
+        // 3 cartes sur 3 colonnes : une ligne complète.
+        $this->assertSame(3, substr_count($response->getContent(), '<article class="stat-card">'));
+        $this->assertStringContainsString('stats-grid three', $response->getContent());
     }
 }
