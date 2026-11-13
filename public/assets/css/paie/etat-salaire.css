@@ -105,6 +105,24 @@
   border-top: 1px solid #d8e4de;
 }
 
+.salary-statement-results-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 28px 24px;
+  color: #62736c;
+}
+
+.salary-statement-results-empty i {
+  color: #087445;
+  font-size: 18px;
+}
+
+.salary-statement-results-empty p {
+  margin: 0;
+}
+
 .salary-statement-official-header {
   display: grid;
   grid-template-columns: minmax(250px, 0.9fr) minmax(380px, 1.45fr) minmax(220px, 0.8fr);
