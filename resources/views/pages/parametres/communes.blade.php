@@ -65,39 +65,7 @@
         @endif
 
 
-        {{-- ===================================================== --}}
-        {{-- OBJECTIFS --}}
-        {{-- ===================================================== --}}
 
-        <section class="objective-card">
-
-            <h2>Objectifs métier</h2>
-
-            <ul class="objective-list">
-
-                <li>
-                    Consulter les communes administratives enregistrées dans SICORE.
-                </li>
-
-                <li>
-                    Rechercher une commune par son code ou son libellé.
-                </li>
-
-                <li>
-                    Filtrer les communes par région, département et statut.
-                </li>
-
-                <li>
-                    Créer et modifier une commune.
-                </li>
-
-                <li>
-                    Identifier les communes actives et inactives.
-                </li>
-
-            </ul>
-
-        </section>
 
 
         {{-- ===================================================== --}}

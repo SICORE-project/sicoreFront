@@ -41,15 +41,7 @@
             </div>
         @endif
 
-        <!-- Objectifs métier -->
-        <section class="objective-card">
-            <h2>Objectifs métier</h2>
-            <ul class="objective-list">
-                <li>Visualiser les droits par module.</li>
-                <li>Séparer les permissions de consultation, saisie, validation et administration.</li>
-                <li>Préparer les paramètres sans inventer de backend.</li>
-            </ul>
-        </section>
+
 
         <!-- Statistiques -->
         <div class="stats-grid four">

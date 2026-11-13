@@ -46,17 +46,6 @@
       </section>
     @endif
 
-    {{-- Objectifs définis dans config/module-pages.php. --}}
-    @if (! empty($page['objectives']))
-      <section class="objective-card {{ ! empty($page['sensitive']) ? 'sensitive-panel' : '' }}">
-        <h2>Objectifs métier</h2>
-        <ul class="objective-list">
-          @foreach ($page['objectives'] as $objective)
-            <li>{{ $objective }}</li>
-          @endforeach
-        </ul>
-      </section>
-    @endif
 
     {{-- Cartes statistiques : données API en Paie, configuration sinon. --}}
     @if (! empty($page['stats']))

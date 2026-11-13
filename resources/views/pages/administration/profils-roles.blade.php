@@ -45,16 +45,7 @@
         </ul>
     </div>
 @endif
-        <!-- Objectifs métier -->
-        <section class="objective-card">
-            <h2>Objectifs métier</h2>
 
-            <ul class="objective-list">
-                <li>Décrire les responsabilités fonctionnelles.</li>
-                <li>Associer les rôles aux modules SICORE.</li>
-                <li>Limiter les accès aux besoins réels des services.</li>
-            </ul>
-        </section>
 
 
         <!-- Statistiques -->
