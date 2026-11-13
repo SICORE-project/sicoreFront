@@ -114,4 +114,19 @@ class IaWorkspaceTest extends TestCase
         $this->get(route('ia.teachers.submissions'))->assertOk()
             ->assertSee('En attente de validation')->assertDontSee('>Valider</button>', false);
     }
+
+    public function test_teacher_page_separates_contract_and_temporary_teachers(): void
+    {
+        Http::fake([
+            '*/ia/enseignants*' => Http::response(['data' => [], 'total' => 0, 'current_page' => 1, 'last_page' => 1,
+                'stats' => ['total' => 9, 'en_activite' => 8, 'fonctionnaires' => 4, 'contractuels' => 3, 'vacataires' => 2, 'ief' => 2]]),
+            '*/ia/referentiels*' => Http::response(['data' => ['iefs' => [], 'etablissements' => []]]),
+        ]);
+        $response = $this->get('/parametrage/enseignants?engagement=vacataire')->assertOk()
+            ->assertSeeInOrder(['Fonctionnaires', '4', 'Contractuels', '3', 'Vacataires', '2'])
+            ->assertSee('name="engagement" value="vacataire"', false);
+        // 6 cartes sur 3 colonnes : 2 lignes complètes.
+        $this->assertSame(6, substr_count($response->getContent(), '<article class="stat-card">'));
+        Http::assertSent(fn ($request) => str_contains($request->url(), '/ia/enseignants') && $request['engagement'] === 'vacataire');
+    }
 }

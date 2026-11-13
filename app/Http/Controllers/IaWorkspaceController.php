@@ -76,7 +76,7 @@ class IaWorkspaceController extends Controller
             // Engagement.
             'engagement' => [
                 'nullable',
-                'in:non_fonctionnaires',
+                'in:non_fonctionnaires,contractuel,vacataire',
             ],
 
             // Ancien filtre année académique.
