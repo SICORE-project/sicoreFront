@@ -829,6 +829,17 @@
   gap: 10px;
 }
 
+/* Fil d'Ariane à gauche, boutons regroupés à droite (même s'ils ne sont pas dans .actions-group). */
+.actions-row > .breadcrumb {
+  margin-right: auto;
+}
+
+.actions-row > .actions-group:only-child,
+.actions-row > .btn-primary:only-child,
+.actions-row > .btn-secondary:only-child {
+  margin-left: auto;
+}
+
 .table-card {
   overflow: hidden;
   border: 1px solid var(--border);
