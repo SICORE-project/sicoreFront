@@ -67,6 +67,16 @@ class UserController extends Controller
         config()->set('module-pages.utilisateurs.filter_options', $options['data']);
         config()->set('module-pages.utilisateurs.columns', ['Nom complet', 'Profil', 'Statut', 'Actions']);
         config()->set('module-pages.utilisateurs.rows', $rows);
+        $stats = $response['stats'] ?? [];
+        if ($stats !== []) {
+            $format = fn ($value) => number_format((int) $value, 0, ',', ' ');
+            config()->set('module-pages.utilisateurs.stats', [
+                ['label' => 'Comptes utilisateurs', 'value' => $format($stats['total'] ?? 0), 'note' => 'Tous les comptes', 'icon' => 'fa-solid fa-users', 'color' => 'green'],
+                ['label' => 'Comptes actifs', 'value' => $format($stats['actifs'] ?? 0), 'note' => 'Accès autorisé', 'icon' => 'fa-solid fa-user-check', 'color' => 'blue'],
+                ['label' => 'Comptes suspendus', 'value' => $format($stats['suspendus'] ?? 0), 'note' => 'Inactifs ou bloqués', 'icon' => 'fa-solid fa-user-lock', 'color' => 'red'],
+                ['label' => 'Comptes enseignants', 'value' => $format($stats['enseignants'] ?? 0), 'note' => 'Liés à un dossier', 'icon' => 'fa-solid fa-chalkboard-user', 'color' => 'purple'],
+            ]);
+        }
         config()->set('module-pages.utilisateurs.pagination', $pagination);
         config()->set('module-pages.utilisateurs.actions', [
             'Nouvel utilisateur',

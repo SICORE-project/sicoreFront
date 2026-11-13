@@ -39,6 +39,7 @@ class InstitutionFinanciereService
 
         return [
             'items' => $items,
+            'stats' => (array) data_get($payload, 'stats', []),
             'error' => null,
             'unauthorized' => false,
             'pagination' => [

@@ -9,6 +9,22 @@
   <section class="content-area">
     @if(session('success')) <div class="alert alert-success">{{ session('success') }}</div> @endif
     @if(session('error')) <div class="alert alert-error">{{ session('error') }}</div> @endif
+    @if (!empty($stats))
+      <div class="stats-grid three">
+        <article class="stat-card">
+          <div><p class="stat-label">Corps enseignants</p><p class="stat-value">{{ number_format((int) ($stats['total'] ?? 0), 0, ',', ' ') }}</p><p class="stat-note">Tous les corps</p></div>
+          <span class="stat-icon green"><i class="fa-solid fa-users-line" aria-hidden="true"></i></span>
+        </article>
+        <article class="stat-card">
+          <div><p class="stat-label">Catégories rattachées</p><p class="stat-value">{{ number_format((int) ($stats['categories'] ?? 0), 0, ',', ' ') }}</p><p class="stat-note">Grilles par corps</p></div>
+          <span class="stat-icon purple"><i class="fa-solid fa-layer-group" aria-hidden="true"></i></span>
+        </article>
+        <article class="stat-card">
+          <div><p class="stat-label">Enseignants rattachés</p><p class="stat-value">{{ number_format((int) ($stats['enseignants'] ?? 0), 0, ',', ' ') }}</p><p class="stat-note">Effectif par corps</p></div>
+          <span class="stat-icon blue"><i class="fa-solid fa-chalkboard-user" aria-hidden="true"></i></span>
+        </article>
+      </div>
+    @endif
     <p class="breadcrumb">Paramétrage &gt; Corps</p>
     <div class="corps-toolbar">
       <form id="corpsFilterForm" method="GET" action="{{ route('parametres.corps.index') }}">

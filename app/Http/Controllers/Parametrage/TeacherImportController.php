@@ -16,35 +16,41 @@ class TeacherImportController extends Controller
     public function template(Request $request)
     {
         $this->authorizeImport($request);
-        return response()->streamDownload(function () {
-            $output = fopen('php://output', 'w');
-            fwrite($output, "\xEF\xBB\xBF");
-            fputcsv($output, ['matricule', 'nom', 'prenom', 'date_naissance', 'cni', 'telephone',
-                'statut_enseignant_id', 'corps_id', 'indice', 'ia_id', 'ief_id', 'lieu_service_id',
-                'situation_matrimoniale', 'nombre_enfants', 'nombre_femmes', 'conjoint_travaille',
-                'date_recrutement', 'annee_recrutement', 'diplome_id', 'statut', 'observations',
-                'code_banque', 'code_guichet', 'numero_compte', 'cle_rib'], ';', '"', '');
-            fclose($output);
-        }, 'modele-enseignants.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
+        $headers = ['matricule', 'nom', 'prenom', 'date_naissance', 'cni', 'telephone',
+            'statut_enseignant', 'corps', 'categorie', 'indice', 'ief',
+            'situation_matrimoniale', 'nombre_enfants', 'code_banque', 'code_guichet', 'numero_compte'];
+        $path = app(\App\Services\Exports\TeacherExcelExport::class)->create(
+            array_fill(0, 500, array_fill(0, count($headers), '')), $headers, true
+        );
+        return response()->download($path, 'modele-enseignants.xlsx', [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ])->deleteFileAfterSend(true);
     }
 
     public function store(Request $request, ApiClient $api)
     {
         $this->authorizeImport($request);
-        $request->validate(['csv' => ['required', 'file', 'mimes:csv,txt', 'max:2048']]);
+        $request->validate(['csv' => ['required', 'file', 'mimes:csv,txt,xlsx', 'max:2048']]);
         $file = $request->file('csv');
-        $handle = fopen($file->getRealPath(), 'r');
+        $isExcel = strtolower($file->getClientOriginalExtension()) === 'xlsx';
+        $handle = $isExcel
+            ? app(\App\Services\Imports\TeacherExcelImport::class)->csv($file->getRealPath())
+            : fopen($file->getRealPath(), 'r');
         try {
-            $response = $api->postMultipart('admin/personnel/enseignants/import', [], [
-                ['name' => 'csv', 'contents' => $handle, 'filename' => $file->getClientOriginalName()],
+            $response = $api->postMultipart($request->session()->get('sicore_user.role_slug') === 'gestionnaire_ia'
+                ? 'ia/teachers/import' : 'admin/personnel/enseignants/import', [], [
+                ['name' => 'csv', 'contents' => $handle, 'filename' => $isExcel ? 'enseignants.csv' : $file->getClientOriginalName()],
             ], 120);
         } catch (ConnectionException) {
             return back()->withErrors(['csv' => 'Le service backend est inaccessible.']);
         } finally {
             fclose($handle);
         }
+        if ($response->serverError()) {
+            return back()->withErrors(['csv' => 'Le serveur a interrompu le traitement du fichier et aucun bilan complet n’a pu être reçu. Vérifiez la liste des enseignants ou les soumissions avant de relancer l’import. Si le problème persiste, contactez l’administrateur.']);
+        }
         return $response->successful()
-            ? back()->with('success', $response->json('message'))
+            ? back()->with('success', $response->json('message'))->with('teacher_import_report', $response->json())
             : back()->withErrors($response->json('errors', ['csv' => $response->json('message', 'Import impossible.')]));
     }
 }

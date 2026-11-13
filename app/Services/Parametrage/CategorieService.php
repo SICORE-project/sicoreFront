@@ -20,6 +20,7 @@ class CategorieService
         return [
             'items' => $response->json('data.data', []),
             'pagination' => ['current_page' => (int) $response->json('data.current_page', 1), 'last_page' => max(1, (int) $response->json('data.last_page', 1)), 'total' => (int) $response->json('data.total', 0)],
+            'stats' => (array) $response->json('stats', []),
             'error' => null, 'unauthorized' => false,
         ];
     }
