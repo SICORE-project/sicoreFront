@@ -41,7 +41,6 @@ class IefService
             ],
             'stats' => [
                 'etablissements' => (int) data_get($payload, 'stats.etablissements', 0),
-                'iefs_sans_etablissement' => (int) data_get($payload, 'stats.iefs_sans_etablissement', 0),
             ],
             'error' => null,
             'unauthorized' => false,
