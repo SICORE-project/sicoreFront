@@ -13,14 +13,14 @@
         @if ($canConsultPersonnel)
             <div class="stats-grid ia-personnel-stats">
                 @foreach ([
-                    ['agents', 'Enseignants', 'fa-users', 'green', null],
-                    ['contractuels', 'Contractuels', 'fa-file-signature', 'yellow', 'contractuel'],
-                    ['vacataires', 'Vacataires', 'fa-user-clock', 'blue', 'vacataire'],
-                ] as [$key, $label, $icon, $color, $engagement])
+                    ['agents', 'Enseignants', 'fa-users', 'green', null, 'Tous statuts confondus'],
+                    ['contractuels', 'Contractuels', 'fa-file-signature', 'yellow', 'contractuel', 'Statut contractuel'],
+                    ['vacataires', 'Vacataires', 'fa-user-clock', 'blue', 'vacataire', 'Statut vacataire'],
+                ] as [$key, $label, $icon, $color, $engagement, $note])
                     <a class="stat-card ia-stat-link" href="{{ route('enseignants.index', $engagement ? ['engagement' => $engagement] : []) }}" aria-label="{{ 'Consulter : '.$label }}">
                         <div><p class="stat-label">{{ $label }}</p>
                             <p class="stat-value">{{ is_numeric(data_get($metrics, 'indicateurs.'.$key)) ? number_format(data_get($metrics, 'indicateurs.'.$key), 0, ',', ' ') : '—' }}</p>
-                            <p class="stat-note">{{ isset($metrics['indicateurs'][$key]) ? $scopeLabel : 'Indicateur indisponible' }}</p>
+                            <p class="stat-note">{{ isset($metrics['indicateurs'][$key]) ? $note : 'Indicateur indisponible' }}</p>
                         </div>
                         <span class="stat-icon {{ $color }}"><i class="fa-solid {{ $icon }}" aria-hidden="true"></i></span>
                     </a>
