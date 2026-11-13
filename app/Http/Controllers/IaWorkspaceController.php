@@ -687,6 +687,16 @@ class IaWorkspaceController extends Controller
             )
             ->values();
 
+        // Nombre d'établissements par IEF (liste déjà renvoyée par ia/referentiels).
+        $etablissementsParIef = collect($data['data']['etablissements'] ?? [])
+            ->whereNotNull('ief_id')
+            ->countBy('ief_id');
+        $iefsDeLIa = collect($data['data']['iefs'] ?? []);
+        $stats = [
+            'etablissements' => $iefsDeLIa->sum(fn ($ief) => $etablissementsParIef->get($ief['id'] ?? null, 0)),
+            'iefs_sans_etablissement' => $iefsDeLIa->filter(fn ($ief) => ! $etablissementsParIef->get($ief['id'] ?? null))->count(),
+        ];
+
         // Associer les IEF à leur IA.
         if (! $isIa) {
 
@@ -695,6 +705,7 @@ class IaWorkspaceController extends Controller
                     $item,
                     [
                         'ia' => $ia,
+                        'etablissements_count' => $etablissementsParIef->get($item['id'] ?? null, 0),
                     ]
                 )
             );
@@ -708,6 +719,8 @@ class IaWorkspaceController extends Controller
             [
 
                 'items' => $items->all(),
+
+                'stats' => $stats,
 
                 'error' => $error,
 
