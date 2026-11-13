@@ -100,4 +100,25 @@ class DecpcDashboardTest extends TestCase
         Http::assertSent(fn ($request) => str_contains($request->url(), 'decpc/dashboard')
             && ! isset($request['lieu_service_id']));
     }
+
+    public function test_decpc_profile_sees_convocation_and_piece_indicators(): void
+    {
+        Http::fake(['*/decpc/dashboard*' => Http::response(['data' => [
+            'convocations' => ['total' => 12, 'brouillons' => 4, 'emises' => 1, 'envoyees' => 6, 'cloturees' => 1,
+                'dernieres' => [['objet' => 'BTS session 2026', 'statut' => 'envoyee', 'date_emission' => '2026-11-02']]],
+            'pieces' => ['total' => 30, 'a_verifier' => 9, 'validees' => 19, 'rejetees' => 2],
+        ]])]);
+        $this->loginAsDecpc(['role_slug' => 'decpc', 'permissions' => ['convocations.read', 'pieces.read']])
+            ->get('/dashboard')->assertOk()
+            ->assertSee('Convocations par statut')->assertSee('BTS session 2026')->assertSee('Envoyée')
+            ->assertSee('Pièces justificatives')->assertSee('À vérifier')
+            ->assertDontSee('Derniers dossiers reçus ou traités');
+    }
+
+    public function test_convocation_indicators_are_hidden_without_permission(): void
+    {
+        Http::fake(['*' => Http::response(['data' => ['convocations' => ['total' => 12], 'pieces' => ['total' => 30]]])]);
+        $this->loginAsDecpc(['permissions' => ['indemnites.read']])->get('/dashboard')->assertOk()
+            ->assertDontSee('Convocations par statut')->assertDontSee('Pièces déposées');
+    }
 }

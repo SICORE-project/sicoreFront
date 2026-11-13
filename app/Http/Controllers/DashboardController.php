@@ -49,10 +49,12 @@ class DashboardController extends Controller
         $error = null;
         $canConsultPersonnel = $access->allowsRoute('enseignants.index');
         $canConsultIndemnites = $access->allows('indemnites.read') && $this->organisation->isScoped();
+        $canConsultConvocations = $access->allowsRoute('indemnites.convocations');
+        $canConsultPieces = $access->allowsRoute('indemnites.pieces-justificatives');
 
         if (! $this->organisation->isScoped()) {
             $error = 'Votre périmètre DECPC doit être défini pour accéder aux dossiers.';
-        } elseif ($canConsultPersonnel || $canConsultIndemnites) {
+        } elseif ($canConsultPersonnel || $canConsultIndemnites || $canConsultConvocations || $canConsultPieces) {
             try {
                 $response = $this->api->get('decpc/dashboard');
                 if ($response->successful() && is_array($response->json('data'))) {
@@ -82,6 +84,8 @@ class DashboardController extends Controller
             'error' => $error,
             'canConsultPersonnel' => $canConsultPersonnel,
             'canConsultIndemnites' => $canConsultIndemnites,
+            'canConsultConvocations' => $canConsultConvocations,
+            'canConsultPieces' => $canConsultPieces,
             'scopeLabel' => $this->organisation->label(),
             'navigation' => $access->navigation(config('navigation', [])),
         ]);
