@@ -5,6 +5,8 @@
 @section('content')
 @php
     $peutSupprimer = $canManage && \App\Support\SicoreAccess::can(request(), 'parametrage.periodes_paie.manage');
+    $statusLabels = ['open' => 'Ouverte — calcul en attente', 'calculated' => 'Ouverte — paie calculée', 'validated' => 'Ouverte — paie validée', 'closed' => 'Clôturée', 'not_opened' => 'Non ouverte'];
+    $formatDate = fn ($value) => $value ? \Carbon\Carbon::parse($value)->format('d/m/Y') : 'Non renseignée';
 @endphp
 <main class="main-content">
   <x-topbar title="Périodes de paie" subtitle="Paramétrage > Périodes de paie" icon="fa-solid fa-calendar-week" />
@@ -21,11 +23,11 @@
     @if (session('success'))<div class="alert alert-success" role="status">{{ session('success') }}</div>@endif
     @if (session('error'))<div class="alert alert-error" role="alert">{{ session('error') }}</div>@endif
     @if ($error)<div class="alert alert-error" role="alert">{{ $error }}</div>@endif
-    <div class="alert alert-info">Créer une période calcule automatiquement la paie des PC/VAC actifs de toutes les IA. Clôturez les périodes en cours avant d’en ouvrir une nouvelle. Les périodes clôturées restent consultables. Utilisez un code AAAA-MM pour préciser l’année.</div>
+    <div class="alert alert-info">Créer une période calcule la paie des PC/VAC de toutes les IA. La date de fin est incluse : la clôture automatique intervient après 23 h 59, selon l’heure du serveur. Les bulletins restent consultables. Les périodes anciennes sans dates enregistrées conservent une clôture manuelle.</div>
     @if ($canManage)
     <section class="table-card"><div class="table-card-header"><h2>Cycles de paie</h2></div><div class="table-responsive"><table class="table"><thead><tr><th>Période</th><th>Statut</th><th>Action</th></tr></thead><tbody>
     @foreach (($payrollPeriods ?? []) as $cycle)
-      <tr><td>{{ $cycle['label'] }}</td><td>{{ ['open' => 'Ouverte', 'calculated' => 'Calculée', 'validated' => 'Validée', 'closed' => 'Clôturée'][$cycle['status']] ?? $cycle['status'] }}</td><td>
+      <tr><td>{{ $cycle['label'] }}<small class="periode-date-range">Du {{ $formatDate($cycle['start_date'] ?? null) }} au {{ $formatDate($cycle['end_date'] ?? null) }}</small></td><td><span class="periode-status periode-status-{{ $cycle['status'] }}">{{ $statusLabels[$cycle['status']] ?? $cycle['status'] }}</span>@if (!empty($cycle['closed_at']))<small class="periode-date-range">Clôturée le {{ \Carbon\Carbon::parse($cycle['closed_at'])->format('d/m/Y à H:i') }}</small>@endif</td><td>
         @if ($cycle['status'] !== 'closed')<form method="POST" action="{{ route('parametres.periodes-paie.close', $cycle['id']) }}" onsubmit="return confirm('Clôturer cette période ? Les montants seront figés et les bulletins resteront consultables.');">@csrf<button class="btn-secondary" type="submit">Clôturer la période</button></form>@endif
       </td></tr>
     @endforeach
@@ -45,23 +47,26 @@
       <div class="table-card-header"><div><h2 id="periodeListTitle">Liste des périodes de paie</h2><p class="table-card-subtitle">{{ $pagination['total'] }} résultat{{ $pagination['total'] > 1 ? 's' : '' }}</p></div></div>
       <div class="table-responsive">
         <table class="table">
-          <thead><tr>@if ($peutSupprimer)<th class="checkbox-cell"><input type="checkbox" data-select-all aria-label="Tout sélectionner"></th>@endif<th>Code</th><th>Libellé</th>@if ($canManage)<th class="actions-cell">Actions</th>@endif</tr></thead>
+          <thead><tr>@if ($peutSupprimer)<th class="checkbox-cell"><input type="checkbox" data-select-all aria-label="Tout sélectionner"></th>@endif<th>Code</th><th>Libellé</th><th>Date de début</th><th>Date de fin</th><th>Statut</th>@if ($canManage)<th class="actions-cell">Actions</th>@endif</tr></thead>
           <tbody>
             @forelse ($items as $periode)
               <tr>
                 @if ($peutSupprimer)<td class="checkbox-cell"><input type="checkbox" data-row-checkbox value="{{ data_get($periode, 'id') }}" aria-label="Sélectionner {{ data_get($periode, 'code') }}"></td>@endif
                 <td><span class="periode-code">{{ data_get($periode, 'code', '—') }}</span></td>
                 <td><strong>{{ data_get($periode, 'libelle', '—') }}</strong></td>
+                <td>{{ $formatDate(data_get($periode, 'display_start_date', data_get($periode, 'date_debut'))) }}</td>
+                <td>{{ $formatDate(data_get($periode, 'display_end_date', data_get($periode, 'date_fin'))) }}@if(data_get($periode, 'auto_close_enabled') && data_get($periode, 'cycle_status') !== 'closed')<small class="periode-date-range">{{ data_get($periode, 'date_fin') < now()->toDateString() ? 'Clôture automatique en attente — vérifier le service et les journaux' : 'Clôture automatique à la fin de cette journée' }}</small>@endif</td>
+                <td><span class="periode-status periode-status-{{ data_get($periode, 'cycle_status', 'not_opened') }}">{{ $statusLabels[data_get($periode, 'cycle_status', 'not_opened')] ?? 'Non ouverte' }}</span>@if(data_get($periode, 'cycle_closed_at'))<small class="periode-date-range">Le {{ \Carbon\Carbon::parse(data_get($periode, 'cycle_closed_at'))->format('d/m/Y à H:i') }}</small>@endif</td>
                 @if ($canManage)
                   <td class="actions-cell">
-                    <form class="inline-form" method="POST" action="{{ route('parametres.periodes-paie.open', data_get($periode, 'id')) }}">@csrf<button class="btn-secondary" type="submit">Ouvrir et calculer</button></form>
+                    @if(data_get($periode, 'cycle_status', 'not_opened') === 'not_opened')<form class="inline-form" method="POST" action="{{ route('parametres.periodes-paie.open', data_get($periode, 'id')) }}">@csrf<button class="btn-secondary" type="submit">Ouvrir et calculer</button></form>@endif
                     <button class="icon-action" type="button" data-modal-open="periode-update-modal" data-periode-edit='@json($periode)' title="Modifier" aria-label="Modifier {{ data_get($periode, 'libelle') }}"><i class="fa-solid fa-pen-to-square" aria-hidden="true"></i></button>
                     <form class="inline-form" method="POST" action="{{ route('parametres.periodes-paie.destroy', data_get($periode, 'id')) }}" data-periode-delete data-confirm-message="Supprimer définitivement la période « {{ data_get($periode, 'libelle') }} » ?">@csrf @method('DELETE')<button class="icon-action delete" type="submit" title="Supprimer"><i class="fa-solid fa-trash-can" aria-hidden="true"></i></button></form>
                   </td>
                 @endif
               </tr>
             @empty
-              <tr><td colspan="{{ ($canManage ? 3 : 2) + ($peutSupprimer ? 1 : 0) }}" class="empty-message show"><x-table-empty-state>Aucune période de paie trouvée.</x-table-empty-state></td></tr>
+              <tr><td colspan="{{ ($canManage ? 6 : 5) + ($peutSupprimer ? 1 : 0) }}" class="empty-message show"><x-table-empty-state>Aucune période de paie trouvée.</x-table-empty-state></td></tr>
             @endforelse
           </tbody>
         </table>
@@ -83,6 +88,8 @@
       <div class="form-grid two-columns">
         <div class="form-group"><label for="periodeCode">Code <span aria-hidden="true">*</span></label><input class="form-control" id="periodeCode" name="code" value="{{ old('code') }}" maxlength="20" required>@error('code')<small class="field-error">{{ $message }}</small>@enderror</div>
         <div class="form-group"><label for="periodeLibelle">Libellé <span aria-hidden="true">*</span></label><input class="form-control" id="periodeLibelle" name="libelle" value="{{ old('libelle') }}" maxlength="100" required>@error('libelle')<small class="field-error">{{ $message }}</small>@enderror</div>
+        <div class="form-group"><label for="periodeDateDebut">Date de début <span aria-hidden="true">*</span></label><input class="form-control" id="periodeDateDebut" name="date_debut" type="date" value="{{ old('date_debut') }}" required>@error('date_debut')<small class="field-error">{{ $message }}</small>@enderror</div>
+        <div class="form-group"><label for="periodeDateFin">Date de fin <span aria-hidden="true">*</span></label><input class="form-control" id="periodeDateFin" name="date_fin" type="date" min="{{ now()->toDateString() }}" value="{{ old('date_fin') }}" required>@error('date_fin')<small class="field-error">{{ $message }}</small>@enderror</div>
       </div>
       <div class="form-actions"><button class="btn-secondary" type="button" data-modal-close>Annuler</button><button class="btn-primary" type="submit">Créer et calculer la paie</button></div>
     </form>
@@ -108,6 +115,10 @@
   .periode-search { min-width: 260px; flex: 1 1 400px; }
   .periode-code { display: inline-flex; padding: 5px 9px; border-radius: 8px; background: #f1f5f9; color: #334155; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-weight: 700; }
   .periode-form .form-actions { margin-top: 22px; padding-top: 18px; border-top: 1px solid #e2e8f0; }
+  .periode-status { display: inline-flex; align-items: center; padding: 6px 12px; border-radius: 999px; font-weight: 750; white-space: nowrap; background: #f1f5f9; color: #475569; }
+  .periode-status-calculated, .periode-status-open, .periode-status-validated { background: #e5f6ed; color: #11603c; }
+  .periode-status-closed { background: #fce9e8; color: #92312c; }
+  .periode-date-range { display: block; margin-top: 5px; font-size: 12px; color: #64748b; }
 </style>
 @endpush
 

@@ -17,8 +17,9 @@ class PayrollPeriodWorkflowTest extends TestCase
     public function test_period_page_displays_cycle_closure_and_existing_reference_opening(): void
     {
         Http::fake(['*/periodes-paie*' => Http::response(['data' => ['data' => [['id' => 1, 'code' => '11', 'libelle' => 'Novembre']], 'total' => 1],
-            'payroll_periods' => [['id' => 2,'code' => '2026-10','label' => 'Octobre 2026','status' => 'calculated']]])]);
-        $this->get(route('parametres.periodes-paie.index'))->assertOk()->assertSee('Clôturer la période')->assertSee('Ouvrir et calculer')->assertSee('Créer et calculer la paie');
+            'payroll_periods' => [['id' => 2,'code' => '2026-10','label' => 'Octobre 2026','status' => 'calculated'], ['id' => 3,'code' => '2026-09','label' => 'Septembre 2026','status' => 'closed']]])]);
+        $this->get(route('parametres.periodes-paie.index'))->assertOk()->assertSee('Clôturer la période')->assertSee('Ouvrir et calculer')->assertSee('Créer et calculer la paie')
+            ->assertSee('name="date_debut"', false)->assertSee('name="date_fin"', false)->assertSee('Ouverte — paie calculée')->assertSee('Clôturée');
     }
 
     public function test_close_uses_only_the_period_lifecycle_endpoint(): void

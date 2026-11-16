@@ -36,7 +36,7 @@ class PeriodePaieController extends Controller
 
     public function store(Request $request, PeriodePaieService $service): RedirectResponse
     {
-        $result = $service->create($request->validate($this->rules()));
+        $result = $service->create($request->validate($this->rules(true)));
 
         if ($result['success']) {
             return redirect()->route('parametres.periodes-paie.index')->with('success', $result['message']);
@@ -67,12 +67,15 @@ class PeriodePaieController extends Controller
             ->with($result['success'] ? 'success' : 'error', $result['message']);
     }
 
-    private function rules(): array
+    private function rules(bool $creating = false): array
     {
         return [
             'code' => ['required', 'string', 'max:20', 'regex:/^[A-Z0-9]+(?:[-_][A-Z0-9]+)*$/'],
             'libelle' => ['required', 'string', 'max:100'],
-        ];
+        ] + ($creating ? [
+            'date_debut' => ['required', 'date_format:Y-m-d'],
+            'date_fin' => ['required', 'date_format:Y-m-d', 'after_or_equal:date_debut', 'after_or_equal:today'],
+        ] : []);
     }
 
     public function open(string $periode, PeriodePaieService $service): RedirectResponse
