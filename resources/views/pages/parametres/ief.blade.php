@@ -9,9 +9,10 @@
   <section class="content-area">
     @if (session('success')) <div class="alert alert-success">{{ session('success') }}</div> @endif
     @if (session('error')) <div class="alert alert-error">{{ session('error') }}</div> @endif
-    <div class="stats-grid">
+    <div class="stats-grid three">
       <article class="stat-card"><div><p class="stat-label">Total IEF</p><p class="stat-value">{{ $pagination['total'] }}</p><p class="stat-note">IEF enregistrées</p></div><span class="stat-icon green"><i class="fa-solid fa-sitemap"></i></span></article>
       <article class="stat-card"><div><p class="stat-label">IA disponibles</p><p class="stat-value">{{ count($ias) }}</p><p class="stat-note">Rattachements possibles</p></div><span class="stat-icon blue"><i class="fa-solid fa-building-columns"></i></span></article>
+      <article class="stat-card"><div><p class="stat-label">Établissements</p><p class="stat-value">{{ number_format((int) ($stats['etablissements'] ?? 0), 0, ',', ' ') }}</p><p class="stat-note">Rattachés à une IEF</p></div><span class="stat-icon purple"><i class="fa-solid fa-school"></i></span></article>
     </div>
     <div class="actions-row"><p class="breadcrumb">Gestion du personnel &gt; IEF</p><div class="actions-group">@if (! $scopedReadOnly)<button class="btn-primary" type="button" data-modal-open="ief-create-modal">+ Nouvelle IEF</button>@endif @if ($peutSupprimer)<button class="btn-secondary btn-bulk-delete" type="button" data-bulk-delete-button disabled>Supprimer la sélection</button>@endif</div></div>
     <form class="filter-panel parametrage-filters" id="iefFilterForm" method="GET" action="{{ route($listRoute) }}">

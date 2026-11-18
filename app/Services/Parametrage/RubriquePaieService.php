@@ -50,6 +50,9 @@ class RubriquePaieService
                 'total' => (int) data_get($payload, 'statistics.total', 0),
                 'gains' => (int) data_get($payload, 'statistics.gains', 0),
                 'retenues' => (int) data_get($payload, 'statistics.retenues', 0),
+                'contractuels' => (int) data_get($payload, 'statistics.contractuels', 0),
+                'vacataires' => (int) data_get($payload, 'statistics.vacataires', 0),
+                'mensuelles' => (int) data_get($payload, 'statistics.mensuelles', 0),
             ],
         ];
     }
@@ -99,7 +102,7 @@ class RubriquePaieService
             'error' => $message,
             'unauthorized' => false,
             'pagination' => ['current_page' => $page, 'last_page' => 1, 'total' => 0],
-            'statistics' => ['total' => 0, 'gains' => 0, 'retenues' => 0],
+            'statistics' => ['total' => 0, 'gains' => 0, 'retenues' => 0, 'contractuels' => 0, 'vacataires' => 0, 'mensuelles' => 0],
         ];
     }
 

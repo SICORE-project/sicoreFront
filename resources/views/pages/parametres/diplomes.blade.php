@@ -30,7 +30,7 @@
           <span class="stat-icon purple"><i class="fa-solid fa-layer-group" aria-hidden="true"></i></span>
         </article>
         <article class="stat-card">
-          <div><p class="stat-label">Salaire brut moyen</p><p class="stat-value">{{ number_format((float) ($stats['salaire_moyen'] ?? 0), 0, ',', ' ') }} <small>FCFA</small></p><p class="stat-note">Moyenne des diplômes</p></div>
+          <div><p class="stat-label">Salaire brut moyen</p><p class="stat-value">{{ number_format((float) ($stats['salaire_moyen'] ?? 0), 0, ',', ' ') }} <small>FCFA</small></p><p class="stat-note">Salaire moyen d’un diplôme</p></div>
           <span class="stat-icon blue"><i class="fa-solid fa-money-bill-wave" aria-hidden="true"></i></span>
         </article>
         <article class="stat-card">

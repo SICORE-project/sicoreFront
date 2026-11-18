@@ -6,3 +6,5 @@
 .sa-dashboard .stat-value small{font-size:12px;font-weight:800;color:var(--text-muted)}
 .sa-dashboard .sa-panel{border:1px solid var(--border);border-radius:var(--radius-card);box-shadow:var(--shadow-card)}
 .sa-dashboard .sa-panel h2{font-size:16px;font-weight:900}
+/* Cartes : toujours des lignes complètes (8 cartes = 2 lignes de 4, ou 4 lignes de 2 sur écran moyen) */
+@media (min-width:769px) and (max-width:1200px){.sa-dashboard .stats-grid.four{grid-template-columns:repeat(2,minmax(0,1fr))}}
