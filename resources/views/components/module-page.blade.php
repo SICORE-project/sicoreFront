@@ -90,6 +90,12 @@
                     ? null
                     : data_get($moduleData, 'period.id'),
                 ]);
+                if ($slug === 'paie-edition') {
+                  $exportParameters = array_merge($exportParameters, request()->only([
+                    'search', 'statuts_enseignant_id', 'corps_id', 'annee_academique_id',
+                    'period_id', 'ia_id', 'ief_id', 'matricule',
+                  ]));
+                }
                 if ($slug === 'paie-etat-salaires') {
                   $exportParameters = array_merge(
                     $exportParameters,
@@ -229,7 +235,10 @@
         @endphp
         
         @if (! empty($activeFilters))
-        <form class="filter-panel" method="GET" aria-label="Filtres de la page">
+        <form class="filter-panel" method="GET" action="{{ url()->current() }}" aria-label="Filtres de la page">
+        @if ($slug === 'paie-edition')
+          <input type="hidden" name="search" value="1">
+        @endif
         @foreach ($activeFilters as $index => $filter)
           @php
             $filterId = $slug.'-filter-'.$index;
@@ -242,7 +251,10 @@
             <label for="{{ $filterId }}">{{ $filterLabel }}</label>
             
             {{-- Si c'est le matricule, on affiche un champ texte --}}
-            @if ($filterName === 'matricule')
+            @if ($slug === 'paie-edition' && $filterName === 'ia_id' && !empty($moduleData['scope_ia_id']))
+                <input class="form-control" id="{{ $filterId }}" value="{{ $moduleData['scope_label'] ?? ($filterOptions[0]['label'] ?? $moduleData['scope_ia_id']) }}" readonly>
+                <input type="hidden" name="ia_id" value="{{ $moduleData['scope_ia_id'] }}">
+            @elseif ($filterName === 'matricule')
                 <input class="form-control" id="{{ $filterId }}" name="{{ $filterName }}" type="search" value="{{ $filterValue }}" placeholder="Saisir un matricule">
             @else
                 <select class="form-control" id="{{ $filterId }}" name="{{ $filterName }}">
@@ -259,12 +271,43 @@
             @endif
           </div>
         @endforeach
-        <div class="actions-group">
-          <button class="btn-secondary" type="submit">
-            <i class="fa-solid fa-filter" aria-hidden="true"></i>
-            {{ $slug === 'paie-edition' ? 'Générer la paie' : 'Appliquer' }}
-          </button>
-        </div>
+        <div class="actions-group"
+     @if ($slug === 'paie-edition')
+         style="
+             grid-column: span 2;
+             display: flex;
+             align-items: center;
+             justify-content: flex-end;
+             align-self: end;
+             gap: 12px;
+             padding-left: 16px;
+             flex-wrap: nowrap;
+         "
+     @endif>
+
+    <button class="btn-secondary"
+            type="submit"
+            style="white-space: nowrap;">
+
+        <i class="fa-solid fa-filter" aria-hidden="true"></i>
+
+        {{ $slug === 'paie-edition' ? 'Générer la paie' : 'Appliquer' }}
+
+    </button>
+
+    @if ($slug === 'paie-edition')
+        <a class="btn-secondary"
+           href="{{ url()->current() }}"
+           style="white-space: nowrap;">
+
+            <i class="fa-solid fa-rotate-left" aria-hidden="true"></i>
+
+            Réinitialiser
+
+        </a>
+    @endif
+
+</div>
         </form>
         @endif
 
@@ -390,19 +433,61 @@
       <section class="result-card" data-indemnity-result hidden></section>
     @endif
 
+    @if ($slug === 'paie-edition')
+      <style>
+        .payroll-edition-grid .table-responsive { overflow-x: auto; }
+        .payroll-edition-grid #moduleTable {
+          border-collapse: collapse;
+          border-spacing: 0;
+          width: max-content;
+          min-width: 100%;
+          font-size: 13px;
+          color: #24352d;
+        }
+        .payroll-edition-grid #moduleTable th,
+        .payroll-edition-grid #moduleTable td {
+          border: 1px solid #cbd9d0;
+          padding: 9px 12px;
+          vertical-align: middle;
+          white-space: nowrap;
+          min-width: 90px;
+        }
+        .payroll-edition-grid #moduleTable thead th {
+          background: #196438;
+          color: #fff;
+          font-weight: 700;
+          text-align: center;
+          white-space: normal;
+          min-width: 100px;
+        }
+        .payroll-edition-grid #moduleTable tbody td { background: #fff; text-align: right; }
+        .payroll-edition-grid #moduleTable tbody tr:nth-child(even) td { background: #f0f7f2; }
+        .payroll-edition-grid #moduleTable tbody tr:hover td { background: #e1f1e6; }
+        .payroll-edition-grid #moduleTable tbody td:nth-child(-n+3) { text-align: left; }
+        .payroll-edition-grid #moduleTable tbody td:first-child { text-align: center; }
+        .payroll-edition-grid #moduleTable .table-empty-cell { text-align: center; padding: 24px; }
+        .payroll-edition-grid #moduleTable td.edition-text-cell { text-align: left; }
+        @media print {
+          .payroll-edition-grid #moduleTable th { color: #172b20; background: #e1f1e6; }
+          .payroll-edition-grid #moduleTable th, .payroll-edition-grid #moduleTable td { padding: 3px 5px; font-size: 9px; }
+        }
+      </style>
+    @endif
+
     {{-- Tableau générique construit avec columns et rows. --}}
-    <section class="table-card">
+    <section @class(['table-card', 'payroll-edition-grid' => $slug === 'paie-edition'])>
       <div class="table-responsive">
       <table class="table" id="moduleTable" @if(!in_array($slug, ['utilisateurs', 'paie-edition'])) data-paginated-table @endif>
           <thead>
             <tr>
               @foreach ($page['columns'] ?? [] as $column)
-                <th @class(['actions-cell' => $loop->last])>{{ $column }}</th>
+                <th @class(['actions-cell' => $loop->last && $slug !== 'paie-edition'])>{{ $column }}</th>
               @endforeach
             </tr>
           </thead>
           <tbody>
-            @forelse ($page['rows'] ?? [] as $row)
+            @if (!empty($page['rows']))
+            @foreach ($page['rows'] as $row)
               @php
                 $rowIndex = $loop->index;
                 $rowFilter = data_get($moduleData, 'row_filters.'.$rowIndex, []);
@@ -417,7 +502,7 @@
                 @endif
               >
                 @foreach ($row as $cell)
-                  <td @class(['actions-cell' => $loop->last])>
+                  <td @class(['actions-cell' => $loop->last && $slug !== 'paie-edition', 'edition-text-cell' => $slug === 'paie-edition' && in_array(mb_strtolower(trim((string) ($page['columns'][$loop->index] ?? ''))), ['prénom(s)', 'nom', 'compte', 'banque', 'sortant', 'syndicat', 'syndicatdeux', 'categ.', 'etab', 'numerobanque', 'codeguichet'], true)])>
                     {{-- Une cellule peut être un badge, des actions ou du texte. --}}
                     @if ($connected && is_array($cell) && isset($cell['badge']))
                       <span class="badge badge-{{ $cell['badge'] }}">{{ $cell['value'] }}</span>
@@ -449,26 +534,126 @@
                   </td>
                 @endforeach
               </tr>
-            @empty
+            @endforeach
+            @else
               <tr class="table-empty-row">
                 <td colspan="{{ max(1, count($page['columns'] ?? [])) }}" class="table-empty-cell">
                   Aucune donnée disponible pour cette sélection.
                 </td>
               </tr>
-            @endforelse
+            @endif
           </tbody>
         </table>
       </div>
       {{-- Boutons de validation uniquement pour la page Édition --}}
       @if ($slug === 'paie-edition' && !empty($page['rows']))
+      @php
+        $editionRows = collect($page['rows'] ?? []);
+        $editionColumns = collect($page['columns'] ?? [])->values();
+        $editionFilterLabel = function ($names, $fallback) use ($moduleData, $page) {
+          $filter = collect($moduleData['filters'] ?? $page['filters'] ?? [])->first(fn ($f) => is_array($f) && in_array($f['name'] ?? '', $names, true));
+          $value = $filter['value'] ?? '';
+          $option = collect($filter['options'] ?? [])->first(fn ($o) => (string) ($o['value'] ?? '') === (string) $value);
+          return filled($value) ? ($option['label'] ?? $fallback) : $fallback;
+        };
+        $editionNetIndex = $editionColumns->search(fn ($c) => in_array(mb_strtolower(trim($c)), ['net à percevoir', 'salaire net'], true));
+        $editionNetValues = $editionRows->map(function ($row) use ($editionNetIndex) {
+          if ($editionNetIndex === false) return null;
+          $value = preg_replace('/[\s\x{00A0}\x{202F}]/u', '', str_replace('FCFA', '', (string) ($row[$editionNetIndex] ?? '')));
+          return is_numeric($value) ? (float) $value : null;
+        });
+        $editionTotal = $editionNetValues->containsStrict(null) ? 'Non calculé' : number_format($editionNetValues->sum(), 0, ',', ' ').' FCFA';
+      @endphp
+      <template id="editionPrintTemplate">
+        <article class="salary-statement-document">
+          <header class="salary-statement-official-header">
+            <div class="salary-statement-republic">
+              <img src="{{ asset('assets/images/flag-senegal.svg') }}" alt="Drapeau du Sénégal">
+              <div><strong>République du Sénégal</strong><span>Un Peuple · Un But · Une Foi</span></div>
+            </div>
+            <div class="salary-statement-title">
+              <span>Ministère de l’Emploi et de la Formation Professionnelle et Technique</span>
+              <h2>Édition de la paie</h2>
+              <strong>{{ mb_strtoupper(data_get($moduleData, 'period.label', '') ?? '') }}</strong>
+            </div>
+            <div class="salary-statement-edition-meta">
+              <span>Année académique</span><strong>{{ $editionFilterLabel(['annee_academique_id', 'academic_year_id'], 'Toutes') }}</strong>
+              <small>Édité le {{ now()->format('d/m/Y à H:i') }}</small>
+            </div>
+          </header>
+          <section class="salary-statement-scope">
+            <div><span>Corps</span><strong>{{ $editionFilterLabel(['statuts_enseignant_id', 'statut_enseignant_id', 'corps_id'], 'Tous les corps') }}</strong></div>
+            <div><span>Inspection académique</span><strong>{{ $moduleData['scope_label'] ?? $editionFilterLabel(['ia_id'], 'Toutes les IA') }}</strong></div>
+            <div><span>IEF</span><strong>{{ $editionFilterLabel(['ief_id'], 'Toutes les IEF') }}</strong></div>
+            <div><span>Effectif</span><strong>{{ $editionRows->count() }} agent(s)</strong></div>
+            <div><span>Unité</span><strong>Franc CFA (FCFA)</strong></div>
+          </section>
+          <div class="salary-statement-table-wrap">
+            <table class="salary-statement-table">
+              <thead><tr>@foreach ($editionColumns as $column)<th>{{ $column }}</th>@endforeach</tr></thead>
+              <tbody>
+                @foreach ($editionRows as $row)
+                  <tr>@foreach ($editionColumns as $index => $column)<td>{{ $row[$index] ?? '—' }}</td>@endforeach</tr>
+                @endforeach
+              </tbody>
+            </table>
+          </div>
+          <p class="edition-print-total">Montant total à engager : <strong>{{ $editionTotal }}</strong></p>
+          <footer class="salary-statement-footer">
+            <div><strong>État préparatoire de paie</strong><span>Document établi à partir des données de l’édition sélectionnée. Ne vaut pas certification du service fait.</span></div>
+            <div class="salary-statement-signatory"><span>Ordonnateur de crédit</span><strong>L’Inspecteur de l’Éducation et de la Formation (IEF)</strong></div>
+            <div class="salary-statement-signatory"><span>Visa et signature</span><strong>Le responsable habilité de la paie</strong></div>
+          </footer>
+        </article>
+      </template>
+      <script>
+        function printPayrollEdition() {
+          const template = document.getElementById('editionPrintTemplate');
+          const popup = window.open('', '_blank');
+          if (!popup) { alert('Autorisez les fenêtres contextuelles pour imprimer.'); return; }
+          const css = `
+            @page { size: A3 landscape; margin: 9mm; }
+            * { box-sizing: border-box; }
+            body { font-family: Arial, sans-serif; color: #24352d; margin: 0; font-size: 10pt; }
+            .salary-statement-official-header { display: grid; grid-template-columns: 1fr 2fr 1fr; gap: 12px; align-items: center; border-bottom: 2px solid #196438; padding: 12px 0; }
+            .salary-statement-republic { display: flex; align-items: center; gap: 10px; }
+            .salary-statement-republic img { width: 44px; }
+            .salary-statement-republic span, .salary-statement-edition-meta span, .salary-statement-edition-meta small, .salary-statement-footer span { display: block; }
+            .salary-statement-title { text-align: center; }
+            .salary-statement-title h2 { color: #196438; margin: 5px 0; text-transform: uppercase; }
+            .salary-statement-edition-meta { text-align: right; }
+            .salary-statement-scope { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin: 12px 0; }
+            .salary-statement-scope div { border: 1px solid #cbd9d0; padding: 7px; }
+            .salary-statement-scope span { display: block; color: #52665a; font-size: 9pt; }
+            .salary-statement-table { border-collapse: collapse; width: 100%; table-layout: fixed; font-size: 6.5pt; }
+            .salary-statement-table th, .salary-statement-table td { border: 1px solid #a9bdb0; padding: 3px 2px; overflow-wrap: anywhere; vertical-align: middle; }
+            .salary-statement-table th { background: #196438; color: white; text-align: center; }
+            .salary-statement-table td { text-align: right; }
+            .salary-statement-table td:nth-child(-n+3) { text-align: left; }
+            .salary-statement-table th:nth-child(2), .salary-statement-table th:nth-child(3) { width: 5%; }
+            .salary-statement-table tbody tr:nth-child(even) { background: #f0f7f2; }
+            thead { display: table-header-group; } tr { break-inside: avoid; }
+            .edition-print-total { text-align: right; padding: 8px; border: 1px solid #cbd9d0; }
+            .salary-statement-footer { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 20px; margin-top: 18px; break-inside: avoid; }
+            .salary-statement-signatory { text-align: center; min-height: 65px; }
+            @media print { * { print-color-adjust: exact; -webkit-print-color-adjust: exact; } }
+          `;
+          popup.document.open();
+          popup.document.write('<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>Édition de la paie - SICORE</title><style>' + css + '</style></head><body></body></html>');
+          popup.document.body.appendChild(popup.document.importNode(template.content, true));
+          popup.document.close();
+          const images = Array.from(popup.document.images);
+          Promise.all(images.map(img => img.complete ? Promise.resolve() : new Promise(resolve => { img.addEventListener('load', resolve, {once:true}); img.addEventListener('error', resolve, {once:true}); }))).then(() => { popup.focus(); popup.print(); });
+        }
+      </script>
       <div class="edition-footer-actions" style="display: flex; align-items: center; justify-content: space-between; padding: 15px; background: #f8fafc; border-top: 1px solid #e2e8f0; margin-top: 10px;">
         <div style="display: flex; gap: 10px;">
           <button type="button" class="btn-primary" style="background: #4b5563; color: white;">Valider</button>
-          <button type="button" class="btn-secondary" onclick="window.print()">Imprimer</button>
+          <button type="button" class="btn-secondary" onclick="printPayrollEdition()">Imprimer</button>
           <button type="button" class="btn-secondary">Annuler</button>
         </div>
         <div style="font-weight: bold; font-size: 1.1rem;">
-          Montant à engager : <span style="color: #b91c1c;">{{ number_format(collect($page['rows'])->sum(fn($row) => (float) str_replace([' ', 'FCFA', '—'], '', $row[8])), 0, ',', ' ') }}</span> FCFA
+          Montant à engager : <span style="color: #b91c1c;">{{ $editionTotal }}</span>
         </div>
       </div>
       @endif

@@ -104,35 +104,23 @@
         {{-- STATISTIQUES --}}
         {{-- ===================================================== --}}
 
-        <div class="stats-grid">
-
+        <div class="stats-grid four">
             <article class="stat-card">
-
-                <div>
-
-                    <p class="stat-label">
-                        Communes
-                    </p>
-
-                    <p class="stat-value">
-                        {{ $pagination['total'] ?? 0 }}
-                    </p>
-
-                    <p class="stat-note">
-                        Communes enregistrées
-                    </p>
-
-                </div>
-
-                <span class="stat-icon green">
-                    <i
-                        class="fa-solid fa-map-location-dot"
-                        aria-hidden="true"
-                    ></i>
-                </span>
-
+                <div><p class="stat-label">Communes</p><p class="stat-value">{{ number_format((int) ($stats['total'] ?? $pagination['total'] ?? 0), 0, ',', ' ') }}</p><p class="stat-note">Communes enregistrées</p></div>
+                <span class="stat-icon green"><i class="fa-solid fa-city" aria-hidden="true"></i></span>
             </article>
-
+            <article class="stat-card">
+                <div><p class="stat-label">Communes actives</p><p class="stat-value">{{ number_format((int) ($stats['actives'] ?? 0), 0, ',', ' ') }}</p><p class="stat-note">En service</p></div>
+                <span class="stat-icon blue"><i class="fa-solid fa-circle-check" aria-hidden="true"></i></span>
+            </article>
+            <article class="stat-card">
+                <div><p class="stat-label">Départements couverts</p><p class="stat-value">{{ number_format((int) ($stats['departements'] ?? 0), 0, ',', ' ') }}</p><p class="stat-note">Avec au moins une commune</p></div>
+                <span class="stat-icon purple"><i class="fa-solid fa-map" aria-hidden="true"></i></span>
+            </article>
+            <article class="stat-card">
+                <div><p class="stat-label">Régions couvertes</p><p class="stat-value">{{ number_format((int) ($stats['regions'] ?? 0), 0, ',', ' ') }}</p><p class="stat-note">Avec au moins une commune</p></div>
+                <span class="stat-icon yellow"><i class="fa-solid fa-map-location-dot" aria-hidden="true"></i></span>
+            </article>
         </div>
 
 

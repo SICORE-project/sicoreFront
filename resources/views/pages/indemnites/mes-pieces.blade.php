@@ -22,6 +22,25 @@
 
         @if ($erreur)
             <div class="alert alert-danger">{{ $erreur }}</div>
+        @else
+            <div class="stats-grid four">
+                <article class="stat-card">
+                    <div><p class="stat-label">Mes convocations</p><p class="stat-value">{{ $stats['convocations'] }}</p><p class="stat-note">Examens concernés</p></div>
+                    <span class="stat-icon green"><i class="fa-solid fa-calendar-check" aria-hidden="true"></i></span>
+                </article>
+                <article class="stat-card">
+                    <div><p class="stat-label">Pièces déposées</p><p class="stat-value">{{ $stats['deposees'] }}</p><p class="stat-note">En cours de vérification</p></div>
+                    <span class="stat-icon blue"><i class="fa-solid fa-file-arrow-up" aria-hidden="true"></i></span>
+                </article>
+                <article class="stat-card">
+                    <div><p class="stat-label">Pièces validées</p><p class="stat-value">{{ $stats['validees'] }}</p><p class="stat-note">Acceptées</p></div>
+                    <span class="stat-icon purple"><i class="fa-solid fa-circle-check" aria-hidden="true"></i></span>
+                </article>
+                <article class="stat-card">
+                    <div><p class="stat-label">Pièces rejetées</p><p class="stat-value">{{ $stats['rejetees'] }}</p><p class="stat-note">À déposer de nouveau</p></div>
+                    <span class="stat-icon red"><i class="fa-solid fa-circle-xmark" aria-hidden="true"></i></span>
+                </article>
+            </div>
         @endif
 
         @forelse ($convocations as $convocation)

@@ -62,6 +62,16 @@
       </div>
 
       <div class="form-group">
+        <label for="salaryStatementCorps">Corps Enseignant</label>
+        <select class="form-control" id="salaryStatementCorps" name="statut_enseignant_id">
+          <option value="">Tous les statuts</option>
+          @foreach (data_get($statement, 'filter_options.statuts', []) as $option)
+            <option value="{{ $option['id'] }}" @selected((string) $option['id'] === (string) request('statut_enseignant_id'))>{{ $option['label'] }}</option>
+          @endforeach
+        </select>
+      </div>
+
+      <div class="form-group">
         <label for="salaryStatementIa">Inspection académique (IA)</label>
         @if (! empty($moduleData['scope_ia_id']))
           <input class="form-control" value="{{ $moduleData['scope_label'] }}" readonly aria-label="IA de rattachement">
@@ -129,7 +139,7 @@
 
     <div class="salary-statement-filter-actions">
       <a class="btn-secondary" href="{{ route('paie.etat-salaires') }}"><i class="fa-solid fa-rotate-left" aria-hidden="true"></i> Réinitialiser</a>
-      <button class="btn-primary" type="submit" name="document" value="1" formtarget="_blank"><i class="fa-solid fa-file-lines" aria-hidden="true"></i> Consulter</button>
+      <button class="btn-primary" type="submit" name="document" value="1" formtarget="_blank"><i class="fa-solid fa-file-lines" aria-hidden="true"></i> Générer l’état</button>
     </div>
 
     {{-- Résultat du filtre : un agent par ligne, une colonne par élément de l'état. --}}
@@ -137,16 +147,10 @@
       $statementColumns = collect($statement['columns'] ?? []);
     @endphp
 
-    <!-- @if (! $hasCriteria)
-    <div class="salary-statement-results salary-statement-results-empty">
-      <i class="fa-solid fa-filter" aria-hidden="true"></i>
-      <p>Choisissez au moins un critère (statut, IA, IEF, matricule, lieu de paiement ou centre) pour afficher les agents.</p>
-    </div>
-    @else -->
     <div class="salary-statement-results">
 
       <div class="salary-statement-table-wrap">
-        <!-- <table class="salary-statement-table">
+        <table class="salary-statement-table">
 
           <thead>
             <tr>
@@ -194,10 +198,9 @@
               </tr>
             </tfoot>
           @endif
-        </table> -->
+        </table>
       </div>
     </div>
-    @endif
   </form>
 
 

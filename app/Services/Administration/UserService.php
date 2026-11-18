@@ -54,6 +54,7 @@ class UserService
         return [
             'items' => $response->json('data', []),
             'pagination' => array_merge($pagination, $response->json('meta', [])),
+            'stats' => (array) $response->json('stats', []),
             'error' => null,
         ];
     }

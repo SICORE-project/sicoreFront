@@ -9,7 +9,7 @@ use ZipArchive;
 
 class TeacherExcelExport
 {
-    public function create(iterable $rows, array $headers = ['Matricule', 'Nom', 'Prénom', 'IA', 'Corps', 'Statut enseignant', 'Situation administrative']): string
+    public function create(iterable $rows, array $headers = ['Matricule', 'Nom', 'Prénom', 'IA', 'Corps', 'Statut enseignant', 'Situation administrative'], bool $importTemplate = false): string
     {
         $path = tempnam(sys_get_temp_dir(), 'teachers_xlsx_');
         $sheet = tempnam(sys_get_temp_dir(), 'teachers_sheet_');
@@ -39,6 +39,9 @@ class TeacherExcelExport
             }
             $xml->endElement();
             $xml->writeRaw('<autoFilter ref="A1:'.$this->column(count($headers) - 1).$count.'"/>');
+            if ($importTemplate) {
+                $xml->writeRaw('<dataValidations count="2"><dataValidation type="list" errorStyle="stop" allowBlank="1" showErrorMessage="1" errorTitle="Situation matrimoniale" error="Choisissez une valeur dans la liste." sqref="L2:L501"><formula1>"celibataire,marie,veuf,divorce"</formula1></dataValidation><dataValidation type="textLength" operator="between" allowBlank="1" showInputMessage="1" showErrorMessage="1" promptTitle="Date de naissance" prompt="Saisissez la date au format AAAA-MM-JJ, par exemple 1990-01-31." errorTitle="Format de date" error="Saisissez une date au format AAAA-MM-JJ." sqref="D2:D501"><formula1>10</formula1><formula2>10</formula2></dataValidation></dataValidations>');
+            }
             $xml->endElement();
             $xml->endDocument();
             $xml->flush();
@@ -96,6 +99,7 @@ class TeacherExcelExport
             $xml->writeAttribute('r', $this->column($index).$number);
             // Inline strings preserve leading zeroes and never execute spreadsheet formulas.
             $xml->writeAttribute('t', 'inlineStr');
+            $xml->writeAttribute('s', '1');
             $xml->startElement('is');
             $xml->startElement('t');
             $xml->writeAttribute('xml:space', 'preserve');

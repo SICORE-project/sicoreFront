@@ -4,6 +4,26 @@
 <main class="main-content recruitment-page">
     @include('pages.recruitment.header', ['heading' => 'Nouveaux enseignants vacataires'])
     <section class="content-area">
+        @if (!empty($stats))
+            <div class="stats-grid four">
+                <article class="stat-card">
+                    <div><p class="stat-label">Listes importées</p><p class="stat-value">{{ number_format((int) ($stats['listes'] ?? 0), 0, ',', ' ') }}</p><p class="stat-note">Listes de recrutement</p></div>
+                    <span class="stat-icon green"><i class="fa-solid fa-file-import" aria-hidden="true"></i></span>
+                </article>
+                <article class="stat-card">
+                    <div><p class="stat-label">Enseignants recrutés</p><p class="stat-value">{{ number_format((int) ($stats['recrutes'] ?? 0), 0, ',', ' ') }}</p><p class="stat-note">Dans votre périmètre</p></div>
+                    <span class="stat-icon blue"><i class="fa-solid fa-user-plus" aria-hidden="true"></i></span>
+                </article>
+                <article class="stat-card">
+                    <div><p class="stat-label">Prises de service</p><p class="stat-value">{{ number_format((int) ($stats['prises_service'] ?? 0), 0, ',', ' ') }}</p><p class="stat-note">Enregistrées</p></div>
+                    <span class="stat-icon purple"><i class="fa-solid fa-user-check" aria-hidden="true"></i></span>
+                </article>
+                <article class="stat-card">
+                    <div><p class="stat-label">En attente</p><p class="stat-value">{{ number_format((int) ($stats['en_attente'] ?? 0), 0, ',', ' ') }}</p><p class="stat-note">Prise de service à enregistrer</p></div>
+                    <span class="stat-icon yellow"><i class="fa-solid fa-hourglass-half" aria-hidden="true"></i></span>
+                </article>
+            </div>
+        @endif
         @include('pages.recruitment.search')
         <div class="actions-row">
             <div><h2>Listes des enseignants recrutés</h2><p>Importez les nouveaux enseignants vacataires, joignez leur ordre de service et suivez leur prise de service.</p></div>

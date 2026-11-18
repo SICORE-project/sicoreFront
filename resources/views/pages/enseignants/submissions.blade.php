@@ -10,6 +10,26 @@
     @if(session('success'))<p class="alert alert-success" role="status">{{ session('success') }}</p>@endif
     @if(session('error') || $error)<p class="alert alert-danger" role="alert">{{ session('error') ?: $error }}</p>@endif
     @if($errors->any())<div class="alert alert-danger" role="alert"><ul>@foreach($errors->all() as $message)<li>{{ $message }}</li>@endforeach</ul></div>@endif
+    @if (!empty($stats))
+      <div class="stats-grid four">
+        <article class="stat-card">
+          <div><p class="stat-label">Dossiers soumis</p><p class="stat-value">{{ number_format((int) ($stats['total'] ?? 0), 0, ',', ' ') }}</p><p class="stat-note">Tous les dossiers</p></div>
+          <span class="stat-icon green"><i class="fa-solid fa-folder-open" aria-hidden="true"></i></span>
+        </article>
+        <article class="stat-card">
+          <div><p class="stat-label">En attente de validation</p><p class="stat-value">{{ number_format((int) ($stats['en_attente'] ?? 0), 0, ',', ' ') }}</p><p class="stat-note">À traiter par la DAGE</p></div>
+          <span class="stat-icon yellow"><i class="fa-solid fa-hourglass-half" aria-hidden="true"></i></span>
+        </article>
+        <article class="stat-card">
+          <div><p class="stat-label">Dossiers validés</p><p class="stat-value">{{ number_format((int) ($stats['valides'] ?? 0), 0, ',', ' ') }}</p><p class="stat-note">Ajoutés aux enseignants</p></div>
+          <span class="stat-icon blue"><i class="fa-solid fa-circle-check" aria-hidden="true"></i></span>
+        </article>
+        <article class="stat-card">
+          <div><p class="stat-label">IA concernées</p><p class="stat-value">{{ number_format((int) ($stats['ia'] ?? 0), 0, ',', ' ') }}</p><p class="stat-note">Ayant soumis des dossiers</p></div>
+          <span class="stat-icon purple"><i class="fa-solid fa-building-columns" aria-hidden="true"></i></span>
+        </article>
+      </div>
+    @endif
     <p>{{ $reviewing ? 'Consultez les dossiers transmis par les IA avant de les valider.' : 'Les dossiers en attente ne figurent pas encore dans la liste des enseignants.' }}</p>
     <section class="table-card"><div class="table-responsive"><table class="table">
       <thead><tr><th>Enseignant</th><th>Matricule</th><th>IA</th><th>Statut</th><th>Actions</th></tr></thead>
