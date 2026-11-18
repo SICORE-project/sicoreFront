@@ -24,7 +24,7 @@ class IaDashboardTest extends TestCase
         $this->manager();
         Http::fake(['*/ia/dashboard' => Http::response(['data' => [
             'ia' => ['id' => 4, 'libelle' => 'IA de Dakar'],
-            'indicateurs' => ['agents' => 1250, 'fonctionnaires' => 1000, 'non_fonctionnaires' => 250, 'bulletins_generes' => 1100, 'bulletins_restants' => 150],
+            'indicateurs' => ['agents' => 1250, 'fonctionnaires' => 1000, 'non_fonctionnaires' => 250, 'contractuels' => 170, 'vacataires' => 80, 'bulletins_generes' => 1100, 'bulletins_restants' => 150],
             'periode' => ['code' => '2026-09'],
             'iefs' => [['libelle' => 'IEF de Rufisque', 'total' => 300]],
             'lieu_de_services' => [['libelle' => 'Lycée de Rufisque', 'total' => 40]],
@@ -33,6 +33,8 @@ class IaDashboardTest extends TestCase
 
         $this->get('/dashboard')->assertOk()->assertViewIs('pages.dashboard.ia')
             ->assertSee('Fatou Fall')->assertSee('IA de Dakar')->assertSee('1 250')
+            ->assertSeeInOrder(['Contractuels', '170', 'Vacataires', '80'])->assertDontSee('Contractuels et vacataires')
+            ->assertSee('engagement=contractuel', false)->assertSee('engagement=vacataire', false)
             ->assertDontSee('Bulletins g'.chr(233).'n'.chr(233).'r'.chr(233).'s')->assertDontSee('Bulletins restants')
             ->assertSee('IEF de Rufisque')->assertSee('Lycée de Rufisque')
             ->assertSee('Awa Diop')->assertSee('Payé')->assertSee('21/09/2026 à 09:30')

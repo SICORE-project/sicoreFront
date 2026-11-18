@@ -32,10 +32,10 @@
     @endif
     <div class="actions-row">
       <p class="breadcrumb">Paramétrage &gt; Périodes de paie</p>
-      @if ($canManage)
+      @if ($canManage)<div class="actions-group">
         <button class="btn-primary" type="button" data-modal-open="periode-create-modal"><i class="fa-solid fa-plus" aria-hidden="true"></i> Ajouter une période</button>
         @if ($peutSupprimer)<button class="btn-secondary btn-bulk-delete" type="button" data-bulk-delete-button disabled>Supprimer la sélection</button>@endif
-      @endif
+      </div>@endif
     </div>
 
     @if (session('success'))<div class="alert alert-success" role="status">{{ session('success') }}</div>@endif

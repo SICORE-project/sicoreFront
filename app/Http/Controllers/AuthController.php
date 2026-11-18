@@ -74,11 +74,15 @@ class AuthController extends Controller
             'email' => $data['user']['email'],
             'role' => $data['user']['role']['nom'] ?? null,
             'role_slug' => $data['user']['role']['slug'] ?? null,
+            // Périmètre DECPC (lu par OrganisationContext) : sans lui, les profils DECPC n'accèdent à aucune donnée.
+            'decpc' => $data['user']['decpc'] ?? $data['decpc'] ?? [],
             'permissions' => $data['user']['permissions'] ?? [],
             'ia_id' => $data['user']['ia_id'] ?? null,
             'enseignant_id' => $data['user']['enseignant_id'] ?? null,
             'ief_id' => $data['user']['ief_id'] ?? null,
             'acces_organisationnel' => $data['user']['acces_organisationnel'] ?? $data['user']['organisation_access'] ?? [],
+            // Périmètre DRH (lu par OrganisationContext) : sans lui, l'Agent DRH n'accède à aucune donnée.
+            'drh' => $data['user']['drh'] ?? $data['drh'] ?? [],
         ]);
 
         $redirect = $returnUrl && ! app(\App\Services\Organisation\DrhAccess::class)->isDrh()
