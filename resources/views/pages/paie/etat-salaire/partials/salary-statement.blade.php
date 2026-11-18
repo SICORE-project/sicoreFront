@@ -45,7 +45,7 @@
 
           @foreach (($moduleData['periods'] ?? []) as $periodOption)
             <option value="{{ $periodOption['id'] }}" @selected((string) $periodOption['id'] === (string) data_get($moduleData, 'period.id'))>
-              {{ $periodOption['label'] }} — {{ $periodOption['status_label'] }}
+              {{ $periodOption['label'] }}
             </option>
           @endforeach
         </select>
@@ -57,16 +57,6 @@
           <option value="">Année correspondant à la période</option>
           @foreach (($moduleData['academic_years'] ?? []) as $year)
             <option value="{{ $year['id'] }}" @selected((string) $year['id'] === (string) $selectedAcademicYear)>{{ $year['label'] }}</option>
-          @endforeach
-        </select>
-      </div>
-
-      <div class="form-group">
-        <label for="salaryStatementCorps">Corps Enseignant</label>
-        <select class="form-control" id="salaryStatementCorps" name="statut_enseignant_id">
-          <option value="">Tous les statuts</option>
-          @foreach (data_get($statement, 'filter_options.statuts', []) as $option)
-            <option value="{{ $option['id'] }}" @selected((string) $option['id'] === (string) request('statut_enseignant_id'))>{{ $option['label'] }}</option>
           @endforeach
         </select>
       </div>
