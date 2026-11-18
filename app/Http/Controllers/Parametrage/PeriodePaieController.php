@@ -36,7 +36,7 @@ class PeriodePaieController extends Controller
 
     public function store(Request $request, PeriodePaieService $service): RedirectResponse
     {
-        $result = $service->create($request->validate($this->rules(true)));
+        $result = $service->create($request->validate($this->rules()));
 
         if ($result['success']) {
             return redirect()->route('parametres.periodes-paie.index')->with('success', $result['message']);
@@ -67,27 +67,12 @@ class PeriodePaieController extends Controller
             ->with($result['success'] ? 'success' : 'error', $result['message']);
     }
 
-    private function rules(bool $creating = false): array
+    private function rules(): array
     {
         return [
             'code' => ['required', 'string', 'max:20', 'regex:/^[A-Z0-9]+(?:[-_][A-Z0-9]+)*$/'],
             'libelle' => ['required', 'string', 'max:100'],
-        ] + ($creating ? [
-            'date_debut' => ['required', 'date_format:Y-m-d'],
-            'date_fin' => ['required', 'date_format:Y-m-d', 'after_or_equal:date_debut', 'after_or_equal:today'],
-        ] : []);
-    }
-
-    public function open(string $periode, PeriodePaieService $service): RedirectResponse
-    {
-        $result = $service->open($periode);
-        return back()->with($result['success'] ? 'success' : 'error', collect($result['errors'])->flatten()->implode(' ') ?: $result['message']);
-    }
-
-    public function close(string $periode, PeriodePaieService $service): RedirectResponse
-    {
-        $result = $service->close($periode);
-        return back()->with($result['success'] ? 'success' : 'error', collect($result['errors'])->flatten()->implode(' ') ?: $result['message']);
+        ];
     }
 
     public function destroyMultiple(Request $request, PeriodePaieService $service): RedirectResponse

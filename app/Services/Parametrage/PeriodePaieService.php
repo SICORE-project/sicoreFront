@@ -35,7 +35,7 @@ class PeriodePaieService
 
         return [
             'items' => (array) data_get($payload, 'data.data', []),
-            'payrollPeriods' => (array) data_get($payload, 'payroll_periods', []),
+            'stats' => (array) data_get($payload, 'stats', []),
             'error' => null,
             'unauthorized' => false,
             'pagination' => [
@@ -59,16 +59,6 @@ class PeriodePaieService
     public function delete(int|string $id): array
     {
         return $this->mutate('delete', "periodes-paie/{$id}", [], 'Période de paie supprimée.');
-    }
-
-    public function open(int|string $id): array
-    {
-        return $this->mutate('post', "periodes-paie/{$id}/open", [], 'Période ouverte et calculée.');
-    }
-
-    public function close(int|string $id): array
-    {
-        return $this->mutate('post', "periodes-paie/cycles/{$id}/close", [], 'Période clôturée.');
     }
 
     private function mutate(string $method, string $uri, array $data, string $fallback): array

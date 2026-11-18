@@ -180,7 +180,7 @@
                     value="{{ $periodOption['id'] }}"
                     @selected((string) $periodOption['id'] === (string) data_get($moduleData, 'period.id'))
                   >
-                    {{ $periodOption['label'] }} — {{ $periodOption['status_label'] }}
+                    {{ trim(preg_replace('/\s*\b\d{4}\b/u', '', $periodOption['label'])) }}
                   </option>
                 @endforeach
               </select>

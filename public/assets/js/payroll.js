@@ -61,7 +61,7 @@
       return periods.map(function (period) {
         return {
           value: period.id,
-          label: period.label + " — " + period.status_label
+          label: String(period.label || '').replace(/\s*\b\d{4}\b/g, '').trim()
         };
       });
     }

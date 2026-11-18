@@ -21,6 +21,7 @@ class PayrollBulletinConsultationTest extends TestCase
         Http::fake([
             '*/payroll/pages/paie-etat-salaires*' => Http::response(['data' => [
                 'period' => ['id' => 1], 'salary_statement' => ['rows' => $records, 'filter_options' => []],
+                'periods' => [['id' => 1, 'code' => '2026-10', 'label' => 'Octobre 2026', 'status_label' => 'Calculée']],
             ]]),
             '*/payroll/pages/paie-bulletins*' => Http::response(['data' => ['rows' => [
                 ['BS-1', '', 'PC-1', '', '', '', '', '', ['actions' => [['code' => 'view-payslip', 'payload' => ['payroll_payslip_id' => 10]]]]],
@@ -41,7 +42,8 @@ class PayrollBulletinConsultationTest extends TestCase
     {
         $this->fakeApi([]);
         $this->get('/paie/bulletins')->assertOk()->assertSee('Édition bulletin avec le groupe')
-            ->assertDontSee('data-payroll-action', false)->assertDontSee('<table', false);
+            ->assertDontSee('data-payroll-action', false)->assertDontSee('<table', false)
+            ->assertSee('>Octobre</option>', false)->assertDontSee('>Octobre 2026</option>', false)->assertDontSee('Octobre 2026 — Calculée');
         Http::assertSentCount(1);
     }
 
