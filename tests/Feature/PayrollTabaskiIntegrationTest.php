@@ -7,6 +7,34 @@ use Tests\TestCase;
 
 class PayrollTabaskiIntegrationTest extends TestCase
 {
+    public function test_empty_advances_show_one_explanation_without_table_headers_or_pagination(): void
+    {
+        Http::fake(['*/payroll/pages/paie-avance-tabaski*' => Http::response(['data' => [
+            'rows' => [], 'columns' => ['Enseignant', 'Matricule', 'Reste à retenir'], 'actions' => [], 'stats' => [], 'filters' => [],
+        ]])]);
+        $this->withSession(['access_token' => 'test', 'sicore_user' => ['role_slug' => 'super_admin']])
+            ->get('/paie/avance-tabaski')->assertOk()
+            ->assertSee('Aucune avance Tabaski enregistrée pour le moment')
+            ->assertSee('Les bénéficiaires et leurs avances apparaîtront ici dès l’enregistrement.')
+            ->assertDontSee('id="moduleTable"', false)->assertDontSee('data-table-pagination', false)
+            ->assertDontSee('Aucune donnée disponible pour cette sélection.')->assertDontSee('Aucune donnée trouvée.');
+    }
+    public function test_fixed_schedules_do_not_request_ten_periods_or_editable_amounts(): void
+    {
+        foreach (['apply-tabaski-advance', 'apply-tabaski-deduction'] as $action) {
+            $names = array_column(config('payroll-forms.'.$action.'.fields'), 'name');
+            $this->assertContains('start_month', $names);
+            $this->assertContains('ief_id', $names);
+            $this->assertContains('matricule', $names);
+            foreach (config('payroll-forms.'.$action.'.fields') as $field) {
+                if (in_array($field['name'], ['ief_id', 'matricule'], true)) $this->assertEmpty($field['required'] ?? false);
+            }
+            foreach (['months','month','annee_academique_id'] as $removed) $this->assertNotContains($removed, $names);
+            $amount = collect(config('payroll-forms.'.$action.'.fields'))->firstWhere('name', 'amount');
+            $this->assertSame($action === 'apply-tabaski-advance' ? 100000 : 10000, $amount['default']);
+            $this->assertTrue($amount['readonly']);
+        }
+    }
     public function test_les_pages_tabaski_affichent_les_formateurs_sans_filtre_de_periode(): void
     {
         foreach (['avance-tabaski', 'retenue-tabaski'] as $page) {
@@ -45,7 +73,7 @@ class PayrollTabaskiIntegrationTest extends TestCase
             ])]);
 
             $this->withSession([
-                'sicore_user' => ['name' => 'Gestionnaire paie', 'role' => 'Gestionnaire Paie'],
+                'sicore_user' => ['name' => 'Gestionnaire paie', 'role_slug' => 'super_admin', 'permissions' => ['paie.bulletins.read']],
                 'access_token' => 'test-token',
             ])->get('/paie/'.$page)
                 ->assertOk()
@@ -65,7 +93,7 @@ class PayrollTabaskiIntegrationTest extends TestCase
         ], 503)]);
 
         $this->withSession([
-            'sicore_user' => ['name' => 'Gestionnaire paie', 'role' => 'Gestionnaire Paie'],
+            'sicore_user' => ['name' => 'Gestionnaire paie', 'role_slug' => 'super_admin', 'permissions' => ['paie.bulletins.read']],
             'access_token' => 'test-token',
         ])->get('/paie/avance-tabaski')
             ->assertOk()
@@ -80,7 +108,7 @@ class PayrollTabaskiIntegrationTest extends TestCase
         ], 503)]);
 
         $this->withSession([
-            'sicore_user' => ['name' => 'Gestionnaire paie', 'role' => 'Gestionnaire Paie'],
+            'sicore_user' => ['name' => 'Gestionnaire paie', 'role_slug' => 'super_admin', 'permissions' => ['paie.bulletins.read']],
             'access_token' => 'test-token',
         ])->get('/paie/retenues-rappel')
             ->assertOk()

@@ -141,6 +141,7 @@
     var value = defaults[field.name] == null ? (field.default == null ? "" : field.default) : defaults[field.name];
     var required = field.required ? " required" : "";
     var attributes = [
+      field.readonly ? ' readonly' : '',
       field.min != null ? ' min="' + escapeHtml(field.min) + '"' : "",
       field.max != null ? ' max="' + escapeHtml(field.max) + '"' : "",
       field.step != null ? ' step="' + escapeHtml(field.step) + '"' : "",
@@ -455,34 +456,68 @@
   function initializeCollectiveHierarchy(defaults) {
     if (!isCollectiveTabaskiAction()) return;
 
-    var iaField = form.elements.ia_id;
     var iefField = form.elements.ief_id;
-    if (!iaField || !iefField || form.elements.matricule) return;
+    var matriculeField = form.elements.matricule;
+    var statusField = form.elements.statut_enseignant_id;
+    var iaBoxes = Array.prototype.slice.call(form.querySelectorAll('input[name="ia_ids"]'));
+    var suggestions = form.querySelector('[data-payroll-matricule-suggestions]');
+    if (!iefField || !matriculeField || !iaBoxes.length || !suggestions) return;
+
+    function selectedIas() {
+      return iaBoxes.filter(function (box) { return box.checked; }).map(function (box) { return String(box.value); });
+    }
+
+    function availableTeachers() {
+      var ias = selectedIas();
+      var statusId = String(statusField.value);
+      return (page.data.teachers || []).filter(function (teacher) {
+        var scopes = currentAction === 'apply-tabaski-deduction'
+          ? (page.data.tabaski_beneficiaries || []).filter(function (item) { return String(item.enseignant_id) === String(teacher.id); })
+          : [{ia_id: teacher.ia_id, ief_id: teacher.ief_id, statut_enseignant_id: teacher.statut_enseignant_id}];
+        return teacher.matricule && scopes.some(function (scope) {
+          return ias.indexOf(String(scope.ia_id)) !== -1 && String(scope.statut_enseignant_id) === statusId &&
+            (!iefField.value || String(scope.ief_id) === String(iefField.value));
+        });
+      });
+    }
+
+    function syncMatricule() {
+      var value = String(matriculeField.value || '').trim().toLocaleUpperCase('fr-FR');
+      var teachers = availableTeachers();
+      suggestions.innerHTML = teachers.map(function (teacher) {
+        return '<option value="' + escapeHtml(teacher.matricule) + '">' + escapeHtml(teacher.name) + '</option>';
+      }).join('');
+      var teacher = teachers.find(function (item) { return String(item.matricule).trim().toLocaleUpperCase('fr-FR') === value; });
+      matriculeField.setCustomValidity(value && !teacher ? 'Ce matricule ne correspond pas à la sélection ou ne possède pas d’avance à rembourser.' : '');
+      var summary = fieldsHost.querySelector('[data-payroll-teacher-summary]');
+      if (summary) {
+        summary.hidden = !teacher;
+        summary.innerHTML = teacher ? '<strong>Formateur identifié</strong><span>' + escapeHtml(teacher.name) + ' · ' + escapeHtml(teacher.matricule) + '</span>' : '';
+      }
+    }
 
     function populateEducationInspections(selectedIef) {
       var inspections = (page.data.education_inspections || []).filter(function (inspection) {
-        return String(inspection.ia_id) === String(iaField.value);
+        return selectedIas().indexOf(String(inspection.ia_id)) !== -1;
       });
       replaceSelectOptions(
         iefField,
         inspections,
-        inspections.length ? "Sélectionner une IEF…" : "Aucune IEF disponible",
+        inspections.length ? "Toutes les IEF des IA sélectionnées" : "Choisir d’abord une IA",
         selectedIef
       );
-      iefField.disabled = !iaField.value || inspections.length === 0;
+      iefField.disabled = inspections.length === 0;
+      syncMatricule();
     }
 
-    replaceSelectOptions(
-      iaField,
-      page.data.academic_inspections || [],
-      "Sélectionner une IA…",
-      defaults.ia_id
-    );
     populateEducationInspections(defaults.ief_id);
-
-    iaField.addEventListener("change", function () {
-      populateEducationInspections("");
+    iaBoxes.forEach(function (box) { box.addEventListener('change', function () { populateEducationInspections(iefField.value); }); });
+    form.querySelectorAll('[data-checkbox-action]').forEach(function (button) {
+      button.addEventListener('click', function () { window.setTimeout(function () { populateEducationInspections(iefField.value); }, 0); });
     });
+    iefField.addEventListener('change', syncMatricule);
+    statusField.addEventListener('change', syncMatricule);
+    matriculeField.addEventListener('input', syncMatricule);
   }
 
   function initializeCheckboxGroups() {
@@ -780,16 +815,8 @@
       status.textContent = 'Sélectionnez au moins une Inspection académique (IA).';
       return false;
     }
-    if (currentAction === 'apply-tabaski-deduction') {
-      var monthCount = form.querySelectorAll('input[name="months"]:checked').length;
-      if (monthCount !== 10) {
-        status.textContent = 'La retenue Tabaski doit porter sur exactement 10 mois distincts.';
-        return false;
-      }
-    }
-    var amount = form.elements.amount ? Number(form.elements.amount.value) : 0;
-    if (!Number.isFinite(amount) || amount <= 0) {
-      status.textContent = 'Le montant doit être strictement supérieur à zéro.';
+    if (!form.elements.start_month?.value) {
+      status.textContent = 'Choisissez le premier mois à venir.';
       return false;
     }
 

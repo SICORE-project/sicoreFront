@@ -434,6 +434,9 @@
     @endif
 
     {{-- Tableau générique construit avec columns et rows. --}}
+    @if ($connected && $slug === 'paie-avance-tabaski' && empty($page['rows']))
+      @include('pages.paie.partials.tabaski-empty-advances')
+    @else
     <section class="table-card">
       <div class="table-responsive">
       <table class="table" id="moduleTable" @if(!in_array($slug, ['utilisateurs', 'paie-edition'])) data-paginated-table @endif>
@@ -548,6 +551,7 @@
       </nav>
       @endif
     </section>
+    @endif
     @endif
   </section>
 </main>

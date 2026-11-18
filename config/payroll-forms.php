@@ -9,8 +9,8 @@
 
 /*
 | Les opérations Tabaski sont collectives. Elles ciblent tous les enseignants
-| actifs du statut et de l'IEF choisis ; aucun matricule ni catégorie salariale
-| ne doit donc apparaître dans ces deux formulaires.
+| actifs du statut et des IA choisis. IEF et matricule permettent de limiter
+| facultativement la sélection sans modifier les échéanciers existants.
 */
 $collectiveTabaskiFields = [
     ['name' => 'statut_enseignant_id', 'label' => 'Statut enseignant', 'type' => 'teaching_statuses', 'required' => true],
@@ -23,7 +23,9 @@ $collectiveTabaskiFields = [
         'full_width' => true,
         'select_all' => true,
     ],
-    ['name' => 'annee_academique_id', 'label' => 'Année académique', 'type' => 'academic_year', 'required' => true],
+    ['name' => 'ief_id', 'label' => 'IEF rattachée (facultatif)', 'type' => 'education_inspection', 'help' => 'Laisser vide pour toutes les IEF des IA cochées.'],
+    ['name' => 'matricule', 'label' => 'Matricule du formateur (facultatif)', 'type' => 'matricule', 'full_width' => true, 'help' => 'Saisir le matricule exact pour un seul formateur ; laisser vide pour le groupe.'],
+    ['name' => 'start_month', 'label' => 'À partir du mois', 'type' => 'month', 'required' => true, 'help' => 'Choisir un mois après la dernière période déjà calculée. Les périodes futures ne doivent pas encore exister.'],
 ];
 
 return [
@@ -119,29 +121,19 @@ return [
         ],
     ],
     'apply-tabaski-advance' => [
-        'title' => 'Appliquer une avance Tabaski',
-        'confirmation' => 'L’avance sera appliquée aux enseignants actifs du statut et des IA sélectionnés, sur un seul mois.',
+        'title' => 'Programmer une avance Tabaski',
+        'confirmation' => '100 000 FCFA seront ajoutés au prochain bulletin éligible de chaque bénéficiaire. La liste des enseignants est figée lors de cette application.',
         'fields' => [
             ...$collectiveTabaskiFields,
-            ['name' => 'month', 'label' => 'Mois d’application', 'type' => 'payroll_month', 'required' => true],
-            ['name' => 'amount', 'label' => 'Montant (FCFA)', 'type' => 'number', 'required' => true, 'min' => '1', 'step' => '1', 'default' => 100000],
+            ['name' => 'amount', 'label' => 'Montant de l’avance (FCFA)', 'type' => 'number', 'default' => 100000, 'required' => true, 'readonly' => true, 'min' => 100000, 'max' => 100000, 'step' => 1],
         ],
     ],
     'apply-tabaski-deduction' => [
-        'title' => 'Appliquer une retenue Tabaski',
-        'confirmation' => 'La retenue sera appliquée aux enseignants actifs du statut et des IA sélectionnés sur exactement 10 mois. Le montant saisi reste inchangé pour chaque mois.',
+        'title' => 'Activer les retenues Tabaski',
+        'confirmation' => 'Uniquement les bénéficiaires d’une avance recevront 10 retenues mensuelles de 10 000 FCFA. La première retenue commence au plus tôt le mois suivant le versement de l’avance. Les nouveaux enseignants sans avance sont exclus.',
         'fields' => [
             ...$collectiveTabaskiFields,
-            [
-                'name' => 'months',
-                'label' => 'Mois de retenue (exactement 10)',
-                'type' => 'checkbox_group',
-                'source' => 'payroll_months',
-                'required' => true,
-                'exact' => 10,
-                'full_width' => true,
-            ],
-            ['name' => 'amount', 'label' => 'Montant mensuel (FCFA)', 'type' => 'number', 'required' => true, 'min' => '1', 'step' => '1', 'default' => 10000],
+            ['name' => 'amount', 'label' => 'Montant mensuel de la retenue (FCFA)', 'type' => 'number', 'default' => 10000, 'required' => true, 'readonly' => true, 'min' => 10000, 'max' => 10000, 'step' => 1, 'help' => '10 000 FCFA par mois pendant 10 mois, soit 100 000 FCFA au total.'],
         ],
     ],
     'exempt-element' => [
