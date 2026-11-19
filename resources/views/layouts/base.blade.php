@@ -15,13 +15,13 @@
   <title>@yield('title', 'SICORE')</title>
 
   <link rel="icon" href="{{ asset('favicon.ico') }}">
-  <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  {{-- Font Awesome 6.5.2 et Alpine 3.17.5 servis localement (plus de téléchargement depuis internet). --}}
+  <link rel="stylesheet" href="{{ asset('assets/vendor/fontawesome/css/all.min.css') }}">
   <link rel="stylesheet" href="{{ asset('assets/css/style.css') }}?v={{ filemtime(public_path('assets/css/style.css')) }}">
   <link rel="stylesheet" href="{{ asset('assets/css/responsive.css') }}?v={{ filemtime(public_path('assets/css/responsive.css')) }}">
   {{-- Une page peut ajouter une feuille avec @push('styles'). --}}
   @stack('styles')
-  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <script defer src="{{ asset('assets/vendor/alpinejs/cdn.min.js') }}"></script>
 </head>
 <body @yield('body_attributes')>
   {{-- Contenu fourni par layouts/app.blade.php ou layouts/guest.blade.php. --}}
