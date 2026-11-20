@@ -24,9 +24,11 @@ class ApiClient
         'corps', 'categories', 'grades', 'diplomes', 'syndicats', 'annees-academiques',
         'types-convocation', 'lieux-service', 'parametrage/disciplines',
         'parametrage/institutions-financieres', 'parametrage/lieux-service',
+        'admin/roles/all', 'admin/users/filter-options',
     ];
 
-    private const CACHE_TTL_SECONDS = 600;
+    // Toute écriture vide le cache immédiatement ; la durée ne sert que de filet de sécurité.
+    private const CACHE_TTL_SECONDS = 43200;
 
     private const CACHE_VERSION_KEY = 'api-client:cache-version';
 
@@ -72,9 +74,14 @@ class ApiClient
             return $this->request()->get($this->baseUrl . '/' . $uri, $query);
         }
 
-        // Clé propre à la connexion (jeton) : chacun ne voit que ce que son profil autorise.
+        // Clé propre à l'utilisateur et à son profil (rôle, IA, IEF) : chacun ne voit que ce
+        // que son profil autorise, et le cache est conservé d'une connexion à l'autre.
+        $user = (array) session('sicore_user', []);
+        $owner = isset($user['id'])
+            ? implode('|', [$user['id'], $user['role_slug'] ?? '', $user['ia_id'] ?? '', $user['ief_id'] ?? ''])
+            : session('access_token', '');
         $key = 'api-client:'.Cache::rememberForever(self::CACHE_VERSION_KEY, fn () => Str::random(12))
-            .':'.sha1(session('access_token', '').'|'.$uri.'|'.serialize($query));
+            .':'.sha1($owner.'|'.$uri.'|'.serialize($query));
 
         if (is_array($cached = Cache::get($key))) {
             return new Response(new Psr7Response($cached['status'], $cached['headers'], $cached['body']));
