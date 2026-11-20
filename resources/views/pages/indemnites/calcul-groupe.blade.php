@@ -40,6 +40,7 @@
                 <div>
                     <p class="stat-label">Correcteurs (ce centre)</p>
                     <p class="stat-value" id="statCorrecteurs">—</p>
+                    <p class="stat-note">Centre sélectionné</p>
                 </div>
                 <span class="stat-icon green">
                     <i class="fa-solid fa-pen-nib" aria-hidden="true"></i>
@@ -50,6 +51,7 @@
                 <div>
                     <p class="stat-label">Copies renseignées</p>
                     <p class="stat-value" id="statCopies">—</p>
+                    <p class="stat-note">Saisies du centre</p>
                 </div>
                 <span class="stat-icon blue">
                     <i class="fa-solid fa-layer-group" aria-hidden="true"></i>
@@ -60,6 +62,7 @@
                 <div>
                     <p class="stat-label">Montant total</p>
                     <p class="stat-value" id="statMontant">—</p>
+                    <p class="stat-note">Indemnités calculées</p>
                 </div>
                 <span class="stat-icon yellow">
                     <i class="fa-solid fa-sack-dollar" aria-hidden="true"></i>
