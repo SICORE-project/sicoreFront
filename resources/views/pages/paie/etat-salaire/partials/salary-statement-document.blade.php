@@ -31,7 +31,8 @@
     <div><span>Inspection académique</span><strong>{{ $iaLabel }}</strong></div>
     <div><span>IEF</span><strong>{{ $iefLabel }}</strong></div>
     <div><span>Effectif</span><strong>{{ $statementRows->count() }} agent(s)</strong></div>
-    <div><span>Unité</span><strong>Franc CFA (FCFA)</strong></div>
+    {{-- Montant total net à payer de l'état (totaux calculés par le back). --}}
+    <div><span>Montant total</span><strong>{{ data_get($statement, 'totals.net', '0') }} FCFA</strong></div>
   </section>
 
   <div class="salary-statement-table-wrap">

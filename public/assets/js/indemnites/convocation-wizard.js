@@ -542,8 +542,9 @@
       main. Colonnes attendues (1re ligne = en-tetes) : matricule
       (ou agent), fonction, statut, provenance — seule "matricule"
       est obligatoire. Le matricule est recherche via le meme
-      endpoint que la recherche manuelle (data-search-url) pour
-      retrouver l'enseignant et pre-remplir nom/telephone/statut ;
+      endpoint que la saisie manuelle du matricule (data-matricule-url,
+      module Indemnites) pour retrouver l'enseignant et pre-remplir
+      nom/telephone/statut ;
       s'il n'est pas trouve, la ligne est quand meme ajoutee (avec le
       matricule saisi tel quel) pour ne rien perdre de l'import.
       ============================================================
@@ -587,47 +588,12 @@
       return -1;
     }
 
+    // Meme recherche exacte que la saisie manuelle du matricule : un
+    // matricule qui ne correspond qu'en partie n'est plus pris pour un autre.
     function rechercherEnseignantParMatricule(matricule) {
-      var form = getWizard();
-
-      var searchUrl = form ? form.getAttribute("data-search-url") : null;
-
-      if (!searchUrl || !matricule) {
-        return Promise.resolve(null);
-      }
-
-      return fetch(searchUrl + "?search=" + encodeURIComponent(matricule), {
-        method: "GET",
-
-        headers: {
-          Accept: "application/json",
-
-          "X-Requested-With": "XMLHttpRequest",
-        },
-      })
-        .then(function (response) {
-          return response.ok ? response.json() : null;
-        })
-        .then(function (payload) {
-          var resultats = (payload && payload.data) || [];
-
-          if (!Array.isArray(resultats) || resultats.length === 0) {
-            return null;
-          }
-
-          var exact = resultats.filter(function (enseignant) {
-            return (
-              enseignant.matricule &&
-              String(enseignant.matricule).toLowerCase() ===
-                String(matricule).toLowerCase()
-            );
-          });
-
-          return exact[0] || resultats[0];
-        })
-        .catch(function () {
-          return null;
-        });
+      return trouverEnseignantParMatricule(matricule).catch(function () {
+        return null;
+      });
     }
 
     function importerMembresDepuisCsv(file, group) {
@@ -708,6 +674,11 @@
             var searchInput = nouvelleLigne.querySelector(
               "[data-member-search-input]",
             );
+            var matriculeInput = nouvelleLigne.querySelector(
+              "[data-member-matricule-input]",
+            );
+
+            if (matriculeInput) matriculeInput.value = matricule;
             var idInput = nouvelleLigne.querySelector("[data-member-id-input]");
             var nomInput = nouvelleLigne.querySelector("[data-member-nom]");
             var telephoneInput = nouvelleLigne.querySelector(
@@ -739,9 +710,6 @@
               }
             } else {
               introuvables.push(matricule);
-
-              if (searchInput) searchInput.value = matricule;
-              if (nomInput) nomInput.value = matricule;
             }
 
             if (idxFonction !== -1 && fonctionInput && ligne[idxFonction]) {
@@ -757,7 +725,7 @@
               provenanceInput &&
               ligne[idxProvenance]
             ) {
-              provenanceInput.value = ligne[idxProvenance];
+              definirValeur(provenanceInput, ligne[idxProvenance]);
             }
 
             traiterLigne(index + 1);
@@ -840,39 +808,39 @@
     return doublons;
   }
 
-  function rechercherEnseignant(input, hiddenInput, suggestions) {
+  /*
+    ============================================================
+    RECHERCHE PAR MATRICULE
+    President du jury, chef de centre et membres du jury : des la saisie,
+    la liste des matricules qui COMMENCENT par le texte tape s'affiche ;
+    choisir un matricule (ou taper un matricule complet) remplit prenom,
+    nom, telephone (et statut pour un membre).
+    ============================================================
+    */
+
+  // Enseignants dont le matricule commence par "debut" (10 au plus, tries
+  // par matricule).
+  function chercherMatricules(debut) {
     var form = getWizard();
 
-    if (!form) {
-      return;
+    var matriculeUrl = form ? form.getAttribute("data-matricule-url") : null;
+
+    if (!matriculeUrl || !debut) {
+      return Promise.resolve([]);
     }
 
-    var searchUrl = form.getAttribute("data-search-url");
+    return fetch(
+      matriculeUrl + "?matricule=" + encodeURIComponent(String(debut).trim()),
+      {
+        method: "GET",
 
-    if (!searchUrl) {
-      return;
-    }
+        headers: {
+          Accept: "application/json",
 
-    var search = input.value.trim();
-
-    if (search.length < 2) {
-      hiddenInput.value = "";
-
-      suggestions.innerHTML = "";
-      suggestions.hidden = true;
-
-      return;
-    }
-
-    fetch(searchUrl + "?search=" + encodeURIComponent(search), {
-      method: "GET",
-
-      headers: {
-        Accept: "application/json",
-
-        "X-Requested-With": "XMLHttpRequest",
+          "X-Requested-With": "XMLHttpRequest",
+        },
       },
-    })
+    )
       .then(function (response) {
         if (!response.ok) {
           throw new Error("Erreur de recherche");
@@ -881,205 +849,301 @@
         return response.json();
       })
       .then(function (payload) {
+        var resultats = payload && payload.data;
+
+        return Array.isArray(resultats) ? resultats : [];
+      });
+  }
+
+  function correspondanceExacte(enseignants, matricule) {
+    var cible = String(matricule || "").trim().toLowerCase();
+
+    return (
+      enseignants.filter(function (enseignant) {
+        return (
+          enseignant.matricule &&
+          String(enseignant.matricule).trim().toLowerCase() === cible
+        );
+      })[0] || null
+    );
+  }
+
+  // Enseignant dont le matricule est EXACTEMENT celui-ci (import CSV).
+  function trouverEnseignantParMatricule(matricule) {
+    return chercherMatricules(matricule).then(function (enseignants) {
+      return correspondanceExacte(enseignants, matricule);
+    });
+  }
+
+  // Branche la recherche par matricule sur un champ. onFound(enseignant)
+  // remplit les champs lies (retourner false refuse l'enseignant) ;
+  // onReset() les vide (matricule efface, modifie ou introuvable).
+  function brancherRechercheMatricule(input, hiddenInput, status, onFound, onReset) {
+    var container = input.closest(".enseignant-search");
+    var suggestions = container
+      ? container.querySelector("[data-matricule-suggestions]")
+      : null;
+    var timer = null;
+    var derniereRequete = 0;
+
+    function afficherStatut(texte, erreur) {
+      if (!status) {
+        return;
+      }
+
+      status.textContent = texte || "";
+      status.hidden = !texte;
+      status.style.color = erreur ? "#dc2626" : "";
+    }
+
+    function fermerSuggestions() {
+      if (suggestions) {
         suggestions.innerHTML = "";
+        suggestions.hidden = true;
+      }
+    }
 
-        var results = payload.data || payload.enseignants || payload || [];
+    function choisir(enseignant) {
+      fermerSuggestions();
 
-        if (!Array.isArray(results) || results.length === 0) {
-          suggestions.innerHTML = "<li>Aucun enseignant trouvé.</li>";
+      if (onFound(enseignant) === false) {
+        afficherStatut("");
 
-          suggestions.hidden = false;
+        return;
+      }
 
-          return;
-        }
+      input.value = enseignant.matricule || input.value;
+      hiddenInput.value = enseignant.id || "";
+      afficherStatut("");
+    }
 
-        results.forEach(function (enseignant) {
-          var li = document.createElement("li");
+    function afficherSuggestions(enseignants) {
+      if (!suggestions) {
+        return;
+      }
 
-          var prenom = enseignant.prenom || "";
+      suggestions.innerHTML = "";
 
-          var nom = enseignant.nom || "";
+      enseignants.forEach(function (enseignant) {
+        var li = document.createElement("li");
 
-          li.textContent = (prenom + " " + nom).trim();
+        var nomComplet = (
+          (enseignant.prenom || "") +
+          " " +
+          (enseignant.nom || "")
+        ).trim();
 
-          li.addEventListener("click", function () {
-            var memberRow = input.closest(".member-row");
+        li.textContent =
+          (enseignant.matricule || "") + (nomComplet ? " — " + nomComplet : "");
 
-            // "UN BENEFICIAIRE NE PEUT PAS ETRE CONVOQUE PLUS DE UNE FOIS" -
-            // un meme enseignant ne peut pas etre ajoute deux fois comme
-            // membre du jury de CETTE convocation (deja vrai en base, cf.
-            // contrainte sur convocation_enseignant, mais jusqu'ici
-            // silencieusement ecrase sans prevenir l'utilisatrice - cf.
-            // ConvocationSyncController::sync() qui indexe "beneficiaires"
-            // par enseignant_id). On bloque des la selection, avec un
-            // message clair, plutot que de laisser deux lignes identiques
-            // dont une disparaitra sans explication a l'enregistrement.
-            if (
-              memberRow &&
-              estEnseignantDejaBeneficiaire(form, enseignant.id, hiddenInput)
-            ) {
-              if (typeof window.showToast === "function") {
-                window.showToast(
-                  "error",
-                  '"' +
-                    li.textContent +
-                    '" est déjà convoqué(e) dans cette convocation. Un bénéficiaire ne peut pas être convoqué plus d\'une fois.',
-                );
-              }
+        // mousedown (et non click) : se declenche avant le "blur" du champ
+        // qui ferme la liste.
+        li.addEventListener("mousedown", function (event) {
+          event.preventDefault();
+          choisir(enseignant);
+        });
+
+        suggestions.appendChild(li);
+      });
+
+      suggestions.hidden = enseignants.length === 0;
+    }
+
+    input.addEventListener("input", function () {
+      clearTimeout(timer);
+
+      // Le matricule change : l'enseignant precedemment choisi ne
+      // correspond plus.
+      hiddenInput.value = "";
+      onReset();
+
+      var matricule = input.value.trim();
+
+      if (matricule === "") {
+        afficherStatut("");
+        fermerSuggestions();
+
+        return;
+      }
+
+      timer = setTimeout(function () {
+        var requete = ++derniereRequete;
+
+        chercherMatricules(matricule)
+          .then(function (enseignants) {
+            // Une saisie plus recente a deja relance une recherche.
+            if (requete !== derniereRequete) {
+              return;
+            }
+
+            if (enseignants.length === 0) {
+              fermerSuggestions();
+              afficherStatut("Aucun enseignant avec ce matricule.", true);
 
               return;
             }
 
-            // La ligne "membre" a un champ Nom separe : la case de
-            // recherche ne doit garder que le prenom. Les cases de
-            // recherche du chef de centre / president du jury n'ont pas
-            // de champ Nom dedie et affichent donc le nom complet.
-            input.value = memberRow ? prenom : li.textContent;
+            afficherStatut("");
 
-            hiddenInput.value = enseignant.id || "";
+            // Matricule complet tape : on remplit directement, mais on
+            // laisse la liste ouverte s'il existe d'autres matricules plus
+            // longs qui commencent pareil.
+            var exact = correspondanceExacte(enseignants, matricule);
 
-            suggestions.innerHTML = "";
+            if (exact && enseignants.length === 1) {
+              choisir(exact);
 
-            suggestions.hidden = true;
+              return;
+            }
 
-            if (memberRow) {
-              // Recherche d'un membre du jury : on renseigne le nom et
-              // le telephone de CETTE ligne, pas ceux du chef de centre.
-              var memberNomInput = memberRow.querySelector("[data-member-nom]");
+            if (exact && onFound(exact) !== false) {
+              hiddenInput.value = exact.id || "";
+            }
 
-              var memberTelephoneInput = memberRow.querySelector(
-                "[data-member-telephone]",
-              );
-
-              var memberCategorieInput = memberRow.querySelector(
-                "[data-member-categorie]",
-              );
-
-              if (memberNomInput) {
-                memberNomInput.value = nom;
-              }
-
-              if (memberTelephoneInput && enseignant.telephone) {
-                memberTelephoneInput.value = enseignant.telephone;
-              }
-
-              // Pre-remplit le statut (fonctionnaire/contractuel/vacataire)
-              // s'il est deja renseigne sur la fiche de l'enseignant -
-              // sinon laisse "Selectionner" pour que l'utilisateur le
-              // complete lui-meme.
-              if (memberCategorieInput && enseignant.categorie_personnel) {
-                memberCategorieInput.value = enseignant.categorie_personnel;
-              }
-            } else {
-              // Recherche du chef de centre OU du président du jury — deux
-              // champs distincts sur la même carte centre, on cible celui
-              // qui correspond au conteneur de recherche utilisé.
-              var centreCard = input.closest("[data-centre-card]");
-
-              var estPresident = !!input.closest("[data-president-search]");
-
-              var telephoneInput = centreCard
-                ? centreCard.querySelector(
-                    estPresident
-                      ? "[data-president-telephone-input]"
-                      : "[data-chef-telephone-input]",
-                  )
-                : null;
-
-              if (telephoneInput && enseignant.telephone) {
-                telephoneInput.value = enseignant.telephone;
-              }
+            afficherSuggestions(enseignants);
+          })
+          .catch(function () {
+            if (requete === derniereRequete) {
+              fermerSuggestions();
+              afficherStatut("Erreur lors de la recherche.", true);
             }
           });
+      }, 250);
+    });
 
-          suggestions.appendChild(li);
-        });
+    input.addEventListener("blur", function () {
+      // Laisse le temps a un clic sur une suggestion d'etre pris en compte.
+      setTimeout(fermerSuggestions, 150);
+    });
 
-        suggestions.hidden = false;
-      })
-      .catch(function () {
-        suggestions.innerHTML = "<li>Erreur lors de la recherche.</li>";
+    input.addEventListener("keydown", function (event) {
+      if (event.key === "Escape") {
+        fermerSuggestions();
+      }
+    });
+  }
 
-        suggestions.hidden = false;
-      });
+  // President du jury / chef de centre : meme logique, seuls les
+  // selecteurs changent (role = "president" ou "chef").
+  function initResponsableMatricule(centre, role) {
+    var container = centre.querySelector("[data-" + role + "-search]");
+
+    if (!container) {
+      return;
+    }
+
+    var input = container.querySelector("[data-" + role + "-matricule-input]");
+    var hiddenInput = container.querySelector("[data-" + role + "-id-input]");
+    var status = container.querySelector("[data-" + role + "-matricule-status]");
+    var nomInput = centre.querySelector("[data-" + role + "-search-input]");
+    var telephoneInput = centre.querySelector(
+      "[data-" + role + "-telephone-input]",
+    );
+    // Categorie de personnel deduite du statut de l'enseignant
+    // (statuts_enseignant), cf. ConvocationEnseignantMatriculeController.
+    var categorieInput = centre.querySelector(
+      role === "president"
+        ? '[data-field="president_jury_categorie_personnel"]'
+        : '[data-field="chef_centre_categorie_personnel"]',
+    );
+
+    if (!input || !hiddenInput) {
+      return;
+    }
+
+    brancherRechercheMatricule(
+      input,
+      hiddenInput,
+      status,
+      function (enseignant) {
+        if (nomInput) {
+          nomInput.value = (
+            (enseignant.prenom || "") +
+            " " +
+            (enseignant.nom || "")
+          ).trim();
+        }
+
+        if (telephoneInput) {
+          telephoneInput.value = enseignant.telephone || "";
+        }
+
+        if (categorieInput) {
+          categorieInput.value = enseignant.categorie_personnel || "";
+        }
+      },
+      function () {
+        if (nomInput) nomInput.value = "";
+        if (telephoneInput) telephoneInput.value = "";
+        if (categorieInput) categorieInput.value = "";
+      },
+    );
   }
 
   function initChefSearch(centre) {
-    var container = centre.querySelector("[data-chef-search]");
-
-    if (!container) {
-      return;
-    }
-
-    var input = container.querySelector("[data-chef-search-input]");
-
-    var hiddenInput = container.querySelector("[data-chef-id-input]");
-
-    var suggestions = container.querySelector("[data-chef-suggestions]");
-
-    if (!input || !hiddenInput || !suggestions) {
-      return;
-    }
-
-    input.addEventListener("input", function () {
-      rechercherEnseignant(input, hiddenInput, suggestions);
-    });
-
-    input.addEventListener("focus", function () {
-      if (input.value.trim().length >= 2) {
-        rechercherEnseignant(input, hiddenInput, suggestions);
-      }
-    });
+    initResponsableMatricule(centre, "chef");
   }
 
   function initPresidentSearch(centre) {
-    var container = centre.querySelector("[data-president-search]");
-
-    if (!container) {
-      return;
-    }
-
-    var input = container.querySelector("[data-president-search-input]");
-
-    var hiddenInput = container.querySelector("[data-president-id-input]");
-
-    var suggestions = container.querySelector("[data-president-suggestions]");
-
-    if (!input || !hiddenInput || !suggestions) {
-      return;
-    }
-
-    input.addEventListener("input", function () {
-      rechercherEnseignant(input, hiddenInput, suggestions);
-    });
-
-    input.addEventListener("focus", function () {
-      if (input.value.trim().length >= 2) {
-        rechercherEnseignant(input, hiddenInput, suggestions);
-      }
-    });
+    initResponsableMatricule(centre, "president");
   }
 
   function initMemberSearch(row) {
-    var container = row.querySelector("[data-member-search]");
+    var input = row.querySelector("[data-member-matricule-input]");
+    var hiddenInput = row.querySelector("[data-member-id-input]");
+    var status = row.querySelector("[data-member-matricule-status]");
+    var prenomInput = row.querySelector("[data-member-search-input]");
+    var nomInput = row.querySelector("[data-member-nom]");
+    var telephoneInput = row.querySelector("[data-member-telephone]");
+    var categorieInput = row.querySelector("[data-member-categorie]");
 
-    if (!container) {
+    if (!input || !hiddenInput) {
       return;
     }
 
-    var input = container.querySelector("[data-member-search-input]");
+    brancherRechercheMatricule(
+      input,
+      hiddenInput,
+      status,
+      function (enseignant) {
+        var form = getWizard();
 
-    var hiddenInput = container.querySelector("[data-member-id-input]");
+        // "UN BENEFICIAIRE NE PEUT PAS ETRE CONVOQUE PLUS DE UNE FOIS" :
+        // un meme enseignant ne peut pas etre deux fois membre du jury de
+        // cette convocation (cf. ConvocationSyncController::sync()).
+        if (
+          form &&
+          estEnseignantDejaBeneficiaire(form, enseignant.id, hiddenInput)
+        ) {
+          if (typeof window.showToast === "function") {
+            window.showToast(
+              "error",
+              '"' +
+                ((enseignant.prenom || "") + " " + (enseignant.nom || "")).trim() +
+                "\" est déjà convoqué(e) dans cette convocation. Un bénéficiaire ne peut pas être convoqué plus d'une fois.",
+            );
+          }
 
-    var suggestions = container.querySelector("[data-member-suggestions]");
+          return false;
+        }
 
-    if (!input || !hiddenInput || !suggestions) {
-      return;
-    }
+        if (prenomInput) prenomInput.value = enseignant.prenom || "";
+        if (nomInput) nomInput.value = enseignant.nom || "";
+        if (telephoneInput) telephoneInput.value = enseignant.telephone || "";
 
-    input.addEventListener("input", function () {
-      rechercherEnseignant(input, hiddenInput, suggestions);
-    });
+        // Statut deduit du statut de l'enseignant (statuts_enseignant) ;
+        // vide si l'enseignant n'en a pas -> l'utilisateur le choisit.
+        if (categorieInput) {
+          categorieInput.value = enseignant.categorie_personnel || "";
+        }
+      },
+      function () {
+        if (prenomInput) prenomInput.value = "";
+        if (nomInput) nomInput.value = "";
+        if (telephoneInput) telephoneInput.value = "";
+        if (categorieInput) categorieInput.value = "";
+      },
+    );
   }
 
   /*
@@ -1308,16 +1372,20 @@
             // selectionne dans l'autocomplete (data-member-id-input rempli)
             // pour pouvoir etre enregistre.
             if (!memberId || !memberId.value) {
+              var matriculeSaisi = row.querySelector(
+                "[data-member-matricule-input]",
+              );
+
               if (
-                nom &&
-                nom.value.trim() &&
+                matriculeSaisi &&
+                matriculeSaisi.value.trim() &&
                 typeof window.showToast === "function"
               ) {
                 window.showToast(
                   "error",
-                  '"' +
-                    nom.value.trim() +
-                    '" n\'a pas ete selectionne dans la liste de recherche et ne sera pas enregistre.',
+                  'Matricule "' +
+                    matriculeSaisi.value.trim() +
+                    "\" introuvable : ce membre ne sera pas enregistré.",
                 );
               }
 
@@ -1387,12 +1455,33 @@
     ============================================================
     */
 
-  function setFieldValue(scope, selector, value) {
-    var field = scope.querySelector(selector);
-
-    if (field && value !== null && typeof value !== "undefined") {
-      field.value = value;
+  // Donne une valeur a un champ. Pour un <select> (centre d'examen, region,
+  // discipline...), une valeur saisie librement avant le passage au menu
+  // deroulant n'est pas dans la liste -> on l'ajoute pour ne pas la perdre
+  // a l'enregistrement.
+  function definirValeur(field, value) {
+    if (!field || value === null || typeof value === "undefined") {
+      return;
     }
+
+    if (field.tagName === "SELECT" && value !== "") {
+      var existe = Array.prototype.some.call(field.options, function (option) {
+        return option.value === String(value);
+      });
+
+      if (!existe) {
+        var option = document.createElement("option");
+        option.value = value;
+        option.textContent = value;
+        field.appendChild(option);
+      }
+    }
+
+    field.value = value;
+  }
+
+  function setFieldValue(scope, selector, value) {
+    definirValeur(scope.querySelector(selector), value);
   }
 
   function hydrateFromPrefill() {
@@ -1492,6 +1581,17 @@
         presidentSearchInput.value = centreData.president_jury_nom;
       }
 
+      setFieldValue(
+        centreCard,
+        "[data-chef-matricule-input]",
+        centreData.chef_centre_matricule,
+      );
+      setFieldValue(
+        centreCard,
+        "[data-president-matricule-input]",
+        centreData.president_jury_matricule,
+      );
+
       // addCentre() ajoute toujours un premier groupe metier "vide" par
       // defaut (pour coller au papier) - on le retire, la liste reelle des
       // groupes vient entierement de centreData.metiers ci-dessous.
@@ -1578,6 +1678,11 @@
             "[data-member-telephone]",
           );
 
+          var matriculeInput = row.querySelector(
+            "[data-member-matricule-input]",
+          );
+
+          if (matriculeInput) matriculeInput.value = membre.matricule || "";
           if (searchInput) searchInput.value = membre.prenom || "";
           if (idInput) idInput.value = membre.enseignant_id || "";
           if (nomInput) nomInput.value = membre.nom || "";
@@ -1588,7 +1693,7 @@
           }
 
           if (provenanceInput) {
-            provenanceInput.value = membre.provenance || "";
+            definirValeur(provenanceInput, membre.provenance || "");
           }
 
           if (telephoneInput) {

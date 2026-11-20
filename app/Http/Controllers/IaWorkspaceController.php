@@ -151,6 +151,18 @@ class IaWorkspaceController extends Controller
                 'boolean',
             ],
 
+            // État des salaires : bulletins décochés, exclus du fichier SICA.
+            'exclude' => [
+                'nullable',
+                'array',
+                'max:5000',
+            ],
+
+            'exclude.*' => [
+                'string',
+                'max:100',
+            ],
+
         ]);
     }
 

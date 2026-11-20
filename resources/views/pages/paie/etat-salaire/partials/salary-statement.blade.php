@@ -140,7 +140,7 @@
     <div class="salary-statement-results">
 
       <div class="salary-statement-table-wrap">
-        <table class="salary-statement-table">
+        <!-- <table class="salary-statement-table">
 
           <thead>
             <tr>
@@ -188,7 +188,7 @@
               </tr>
             </tfoot>
           @endif
-        </table>
+        </table> -->
       </div>
     </div>
   </form>
@@ -204,6 +204,16 @@
       const matricule = document.getElementById('salaryStatementMatricule');
       let typingTimer;
       form?.addEventListener('change', (event) => {
+        // Options de l'état : une seule à la fois (cocher l'une décoche les autres).
+        // Elles s'appliquent à « Générer l'état » et ne rechargent pas la page.
+        if (event.target.type === 'checkbox') {
+          if (event.target.checked) {
+            form.querySelectorAll('.salary-statement-options input[type="checkbox"]').forEach((box) => {
+              if (box !== event.target) box.checked = false;
+            });
+          }
+          return;
+        }
         if (event.target === matricule) return;
         form.requestSubmit();
       });
