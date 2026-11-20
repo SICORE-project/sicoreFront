@@ -40,3 +40,97 @@
 @media (max-width: 380px) { .dashboard-metrics { grid-template-columns: 1fr; } }
 
 .dashboard-metric-group > h2 { font-size: 14px; color: #475569; margin: 0 0 12px; font-weight: 600; }
+
+/* ==========================================================================
+   TABLEAU DE BORD — responsive (tous les profils)
+   Ce fichier est chargé AVANT app.css : chaque règle est préfixée par
+   .role-dashboard pour rester prioritaire sur les grilles d'app.css.
+   ========================================================================== */
+.role-dashboard { min-width: 0; }
+.role-dashboard > *, .role-dashboard .sa-dashboard > * { min-width: 0; }
+.role-dashboard .stat-card { min-width: 0; }
+.role-dashboard .stat-card > div { min-width: 0; }
+.role-dashboard .stat-label { overflow-wrap: anywhere; }
+.role-dashboard .stat-value { font-size: clamp(21px, 2vw, 27px); overflow-wrap: anywhere; }
+.role-dashboard .dashboard-table th,
+.role-dashboard .dashboard-table td { white-space: nowrap; }
+.role-dashboard .dashboard-table-scroll { -webkit-overflow-scrolling: touch; scrollbar-width: thin; }
+
+/* Grand portable / tablette paysage */
+@media (max-width: 1200px) {
+  .role-dashboard .stats-grid,
+  .role-dashboard .stats-grid.four,
+  .role-dashboard .stats-grid.three { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* Tablette */
+@media (max-width: 992px) {
+  .role-dashboard { gap: 18px; }
+  .role-dashboard .sa-chart-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .role-dashboard .sa-history { grid-column: 1 / -1; }
+  .role-dashboard .sa-bottom { grid-template-columns: minmax(0, 1fr); }
+  .role-dashboard .sa-heading { flex-wrap: wrap; }
+}
+
+/* Mobile */
+@media (max-width: 640px) {
+  .role-dashboard { gap: 14px; padding-bottom: 20px; }
+  .role-dashboard .stats-grid,
+  .role-dashboard .stats-grid.four,
+  .role-dashboard .stats-grid.three { gap: 10px; }
+  .role-dashboard .stat-card { padding: 14px; gap: 10px; min-height: 0; align-items: flex-start; }
+  .role-dashboard .stat-label { font-size: 12px; }
+  .role-dashboard .stat-note { font-size: 11px; }
+  .role-dashboard .stat-icon { width: 34px; height: 34px; flex-basis: 34px; font-size: 14px; border-radius: 10px; }
+
+  .role-dashboard .sa-chart-grid { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .role-dashboard .sa-panel,
+  .role-dashboard .dashboard-panel { padding: 16px; border-radius: 14px; }
+  .role-dashboard .sa-panel-top { flex-direction: column; align-items: stretch; }
+  .role-dashboard .sa-switch { align-self: flex-start; }
+  .role-dashboard .sa-heading h1,
+  .role-dashboard .dashboard-welcome h1 { font-size: 20px; }
+  .role-dashboard .sa-updated { white-space: normal; }
+
+  /* Graphique : largeur minimale + défilement horizontal pour garder des libellés lisibles. */
+  .role-dashboard .sa-history-chart { overflow-x: auto; margin: 0 -4px; padding-bottom: 4px; -webkit-overflow-scrolling: touch; }
+  .role-dashboard .sa-history-chart svg { min-width: 560px; }
+
+  /* Répartitions : donut centré, légende en dessous. */
+  .role-dashboard .sa-distribution-body { flex-direction: column; align-items: center; }
+  .role-dashboard .sa-donut { width: 140px; }
+  .role-dashboard .sa-legend { width: 100%; max-height: none; }
+  .role-dashboard .sa-legend li { font-size: 12px; padding: 7px 0; border-bottom: 1px solid #f1f5f9; }
+
+  .role-dashboard .dashboard-panel-heading { align-items: flex-start; }
+  .role-dashboard .dashboard-shortcuts a,
+  .role-dashboard .sa-shortcuts a { padding: 13px 12px; font-size: 13px; min-height: 44px; }
+
+  /* Tableaux → fiches empilées (libellé de colonne à gauche, valeur à droite). */
+  .role-dashboard .dashboard-table-scroll { overflow: visible; }
+  .role-dashboard .dashboard-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .role-dashboard .dashboard-table,
+  .role-dashboard .dashboard-table tbody,
+  .role-dashboard .dashboard-table tr,
+  .role-dashboard .dashboard-table td { display: block; width: 100%; }
+  .role-dashboard .dashboard-table tr { border: 1px solid #e2e8f0; border-radius: 10px; padding: 4px 12px; margin-top: 10px; background: #fff; }
+  .role-dashboard .dashboard-table td { display: flex; justify-content: space-between; gap: 14px; padding: 9px 0; border-bottom: 1px solid #f1f5f9; white-space: normal; text-align: right; overflow-wrap: anywhere; }
+  .role-dashboard .dashboard-table tr td:last-child { border-bottom: 0; }
+  .role-dashboard .dashboard-table td[data-label]::before { content: attr(data-label); flex: 0 0 auto; max-width: 45%; text-align: left; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .3px; }
+  /* Le tableau « Consulter les valeurs » du graphique n'a pas de data-label : il garde le défilement. */
+  .role-dashboard .sa-chart-data .dashboard-table-scroll { overflow-x: auto; }
+  .role-dashboard .sa-chart-data .dashboard-table thead { position: static; width: auto; height: auto; clip: auto; }
+  .role-dashboard .sa-chart-data .dashboard-table { display: table; }
+  .role-dashboard .sa-chart-data .dashboard-table thead { display: table-header-group; }
+  .role-dashboard .sa-chart-data .dashboard-table tbody { display: table-row-group; }
+  .role-dashboard .sa-chart-data .dashboard-table tr { display: table-row; border: 0; padding: 0; margin: 0; }
+  .role-dashboard .sa-chart-data .dashboard-table td { display: table-cell; width: auto; padding: 8px 10px; text-align: left; white-space: nowrap; }
+}
+
+/* Petits téléphones : une carte par ligne. */
+@media (max-width: 400px) {
+  .role-dashboard .stats-grid,
+  .role-dashboard .stats-grid.four,
+  .role-dashboard .stats-grid.three { grid-template-columns: minmax(0, 1fr); }
+  .role-dashboard .stat-card { align-items: center; }
+}
