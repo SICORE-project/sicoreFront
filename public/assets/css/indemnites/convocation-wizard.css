@@ -282,6 +282,29 @@
         position: relative;
     }
 
+    /* Prenom, nom, telephone et categorie remplis a partir du matricule :
+       non modifiables, grises. */
+    .convocation-card .form-control.input-auto,
+    .convocation-card .form-control.input-auto:focus {
+        background-color: #f1f5f9;
+        color: #475569;
+        border-color: #e2e8f0;
+        box-shadow: none;
+        cursor: not-allowed;
+    }
+
+    /* Un <select> ne peut pas etre "readonly" (et "disabled" changerait son
+       comportement) : on bloque simplement l'ouverture du menu. Le cursor
+       est porte par la cellule parente, pointer-events le neutralisant. */
+    .convocation-card select.form-control.input-auto {
+        pointer-events: none;
+    }
+
+    .convocation-card .form-group:has(> select.input-auto),
+    .convocation-card td:has(> select.input-auto) {
+        cursor: not-allowed;
+    }
+
     .convocation-card .enseignant-suggestions {
         position: absolute;
         z-index: 20;

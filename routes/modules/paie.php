@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\CreditEditionController;
+use App\Http\Controllers\Paie\EtatSalaire\EtatSalaireController;
 use App\Http\Controllers\PayrollController;
 use Illuminate\Support\Facades\Route;
 
@@ -22,7 +23,6 @@ Route::middleware(['sicore.auth', 'sicore.module:paie.bulletins.read'])->group(f
             'travaux-periodiques' => 'paie-travaux-periodiques',
             'recap-banque' => 'paie-recap-banque',
             'cotisations-sociales' => 'paie-cotisations-sociales',
-            'etat-salaires' => 'paie-etat-salaires',
             'elements-saisie-dashboard' => 'paie-elements-saisie-dashboard',
             'generee-ief' => 'paie-generee-ief',
             'fermeture-periode' => 'paie-fermeture-periode',
@@ -45,6 +45,11 @@ Route::middleware(['sicore.auth', 'sicore.module:paie.bulletins.read'])->group(f
             'edition' => 'paie-edition',
         ];
 
+        // État des salaires : contrôleur dédié (filtres propres), export déclaré avant la route générique.
+        Route::get('/etat-salaires', [EtatSalaireController::class, 'index'])->name('etat-salaires');
+        Route::get('/export/paie-etat-salaires', [EtatSalaireController::class, 'download'])
+            ->middleware('throttle:20,1')
+            ->name('etat-salaires.export');
         Route::get('/bulletins', [\App\Http\Controllers\PayrollBulletinController::class, 'index'])->name('bulletins');
 
         foreach ($pages as $path => $slug) {
@@ -59,7 +64,7 @@ Route::middleware(['sicore.auth', 'sicore.module:paie.bulletins.read'])->group(f
             ->name('action');
 
         Route::get('/export/{slug}', [PayrollController::class, 'export'])
-            ->whereIn('slug', array_values($pages))
+            ->whereIn('slug', [...array_values($pages), 'paie-etat-salaires'])
             ->middleware('throttle:20,1')
             ->name('export');
 

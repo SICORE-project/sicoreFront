@@ -157,13 +157,22 @@
 
                         @forelse ($centre['metiers'] as $metier)
 
-                            <h4 class="sub-form-subheading">{{ $metier['metier'] ?? '—' }}</h4>
+                            {{-- id null = pseudo-groupe "Non classés" (membres sans
+                                 specialite) : pas de libelle "Specialite" devant. --}}
+                            <h4 class="sub-form-subheading">
+                                @if (($metier['id'] ?? null) !== null)
+                                    <span class="sub-form-subheading-label">Spécialité de la convocation :</span>
+                                @endif
+                                {{ $metier['metier'] ?? '—' }}
+                            </h4>
 
                             @if (empty($metier['beneficiaires']))
 
                                 <p class="empty-message">Aucun membre ajouté pour ce métier.</p>
 
                             @else
+
+                                <p class="sub-form-table-title">Membres du jury</p>
 
                                 <div class="table-responsive">
                                     <table class="table">
@@ -343,6 +352,19 @@
         font-size: 14px;
         font-weight: 600;
         color: #334155;
+    }
+
+    .convocation-page-body .sub-form-subheading-label {
+        font-weight: 700;
+        color: #0f172a;
+    }
+
+    /* Titre "Membres du jury" juste au-dessus du tableau. */
+    .convocation-page-body .sub-form-table-title {
+        margin: 0 0 8px;
+        font-size: 14px;
+        font-weight: 700;
+        color: #0f172a;
     }
 
     /* Un bloc par centre (Centre/Jury/Chef de centre + ses metiers) dans la

@@ -31,8 +31,8 @@ class PayrollController extends Controller
 {
     /** Le contrat API est résolu par app/Providers/ApiClientServiceProvider.php. */
     public function __construct(
-        private readonly SicoreApiClientInterface $api,
-        private readonly OrganisationContext $organisationContext,
+        protected readonly SicoreApiClientInterface $api,
+        protected readonly OrganisationContext $organisationContext,
     ) {}
 
     /**
@@ -124,8 +124,12 @@ class PayrollController extends Controller
      */
     public function export(Request $request, string $slug): Response
     {
-        $filters = $this->scopedFilters($this->validatedPageFilters($request, $slug));
+        return $this->downloadCsv($request, $slug, $this->scopedFilters($this->validatedPageFilters($request, $slug)));
+    }
 
+    /** Transmet le CSV produit par le backend pour une page de paie et ses filtres validés. */
+    protected function downloadCsv(Request $request, string $slug, array $filters): Response
+    {
         try {
             $apiResponse = $this->api->payrollExport(
                 $this->token($request),
@@ -167,9 +171,9 @@ private function validatedPageFilters(
         'period_id' => ['nullable', 'integer', 'min:1'],
     ];
 
-    // Filtres communs à l'état des salaires
-    // et à l'édition de la paie.
-    if (in_array($slug, ['paie-etat-salaires', 'paie-edition'], true)) {
+    // Filtres de l'édition de la paie. L'état des salaires a ses propres filtres :
+    // App\Http\Controllers\Paie\EtatSalaire\EtatSalaireController.
+    if ($slug === 'paie-edition') {
         $rules += [
             'academic_year_id' => ['nullable', 'integer', 'min:1'],
             'corps_id' => ['nullable', 'integer', 'min:1'],
@@ -217,7 +221,7 @@ private function validatedPageFilters(
 
 
     /** Le périmètre de session prime toujours sur les filtres du navigateur. */
-    private function scopedFilters(array $filters): array
+    protected function scopedFilters(array $filters): array
     {
         return array_replace($filters, $this->organisationContext->query());
     }
@@ -243,7 +247,7 @@ private function validatedPageFilters(
     }
 
     /** Récupère le jeton API conservé dans la session Laravel du frontend. */
-    private function token(Request $request): string
+    protected function token(Request $request): string
     {
         return (string) $request->session()->get('access_token');
     }
@@ -254,7 +258,7 @@ private function validatedPageFilters(
      *
      * @return array{title: string, message: string}
      */
-    private function apiErrorDetails(Request $request, SicoreApiException $exception): array
+    protected function apiErrorDetails(Request $request, SicoreApiException $exception): array
     {
         $title = match ($exception->status) {
             403 => 'Accès refusé pour votre rôle',
@@ -271,7 +275,7 @@ private function validatedPageFilters(
         ];
     }
 
-    private function apiErrorMessage(Request $request, SicoreApiException $exception): string
+    protected function apiErrorMessage(Request $request, SicoreApiException $exception): string
     {
         if ($exception->status === 403) {
             $role = trim((string) $request->session()->get('sicore_user.role'));
@@ -290,7 +294,7 @@ private function validatedPageFilters(
     }
 
     /** Nettoie une session expirée et renvoie l'utilisateur vers la connexion. */
-    private function expired(Request $request): RedirectResponse
+    protected function expired(Request $request): RedirectResponse
     {
         $returnUrl = PayrollReturnUrl::capture($request);
 

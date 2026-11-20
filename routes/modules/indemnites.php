@@ -58,6 +58,11 @@ Route::middleware(['sicore.auth', 'sicore.module:indemnites.read,pieces.read,con
         Route::get('/convocations/enseignants/rechercher', [ConvocationsController::class, 'rechercherEnseignants'])
             ->name('convocations.enseignants.rechercher');
 
+        // Recherche exacte d'un enseignant par matricule (president du jury,
+        // chef de centre, membres) - avant /convocations/{id}, meme raison.
+        Route::get('/convocations/enseignants/matricule', [ConvocationsController::class, 'enseignantParMatricule'])
+            ->name('convocations.enseignants.matricule');
+
         // Modèle Word à remplir puis import du document rempli (une
         // convocation complète par document : infos + centres + membres).
         // Doit rester avant /convocations/{id} pour ne pas etre capturee par elle.

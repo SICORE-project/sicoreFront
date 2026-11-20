@@ -35,6 +35,7 @@
             data-convocation-wizard
             data-wizard-mode="create"
             data-search-url="{{ route('indemnites.convocations.enseignants.rechercher') }}"
+            data-matricule-url="{{ route('indemnites.convocations.enseignants.matricule') }}"
             aria-describedby="{{ $errors->any() ? 'form-errors' : '' }}"
             novalidate
         >
@@ -190,14 +191,21 @@
 
                         <div class="form-group">
                             <label for="lieu_affectation">Lieu d'affectation</label>
-                            <input
+                            @php($lieuAffectationActuel = old('lieu_affectation'))
+                            <select
                                 class="form-control @error('lieu_affectation') is-invalid @enderror"
                                 id="lieu_affectation"
                                 name="lieu_affectation"
-                                type="text"
-                                value="{{ old('lieu_affectation') }}"
-                                placeholder="Ex : Dakar"
                             >
+                                <option value="">Sélectionner le lieu d'affectation</option>
+                                @foreach ($regions ?? [] as $region)
+                                    <option value="{{ $region }}" @selected($lieuAffectationActuel === $region)>{{ $region }}</option>
+                                @endforeach
+                                {{-- Valeur saisie librement avant le menu deroulant : conservee. --}}
+                                @if ($lieuAffectationActuel && ! in_array($lieuAffectationActuel, $regions ?? [], true))
+                                    <option value="{{ $lieuAffectationActuel }}" selected>{{ $lieuAffectationActuel }}</option>
+                                @endif
+                            </select>
                             @error('lieu_affectation')<p class="field-error">{{ $message }}</p>@enderror
                         </div>
 
@@ -267,14 +275,17 @@
 
                         <div class="form-group">
                             <label>Centre d'examen <span class="required">*</span></label>
-                            <input
+                            <select
                                 class="form-control"
-                                type="text"
-                                placeholder="Ex : Centre LTP FXN/THIES"
                                 data-centre-input
                                 data-field="centre"
                                 required
                             >
+                                <option value="">Sélectionner un lieu de service</option>
+                                @foreach ($lieuxService ?? [] as $lieu)
+                                    <option value="{{ $lieu }}">{{ $lieu }}</option>
+                                @endforeach
+                            </select>
                         </div>
 
                         <div class="form-group">
@@ -283,28 +294,39 @@
                         </div>
 
                         <div class="form-group">
-                            <label>Président du jury</label>
+                            <label>Matricule du président du jury</label>
                             <div class="enseignant-search" data-president-search>
-                                <input class="form-control" type="text" placeholder="Rechercher le président du jury..." autocomplete="off" data-president-search-input>
+                                <input class="form-control" type="text" placeholder="Saisir le matricule..." autocomplete="off" data-president-matricule-input>
                                 <input type="hidden" data-president-id-input data-field="president_jury_id">
-                                <ul class="enseignant-suggestions" data-president-suggestions hidden></ul>
+                                <ul class="enseignant-suggestions" data-matricule-suggestions hidden></ul>
+                                <p class="section-description" style="margin: 6px 0 0;" data-president-matricule-status hidden></p>
                             </div>
                         </div>
 
                         <div class="form-group">
+                            <label>Prénom et nom du président du jury</label>
+                            <input class="form-control input-auto" type="text" readonly tabindex="-1" data-president-search-input>
+                        </div>
+
+                        <div class="form-group">
                             <label>Téléphone du président du jury</label>
-                            <input class="form-control" type="text" placeholder="33 901 10 71" data-president-telephone-input data-field="president_jury_telephone">
+                            <input class="form-control input-auto" type="text" readonly tabindex="-1" data-president-telephone-input data-field="president_jury_telephone">
                         </div>
 
                         <div class="form-group">
                             <label>Provenance du président du jury</label>
-                            <input class="form-control" type="text" placeholder="Ex : Dakar" data-field="president_jury_provenance">
+                            <select class="form-control" data-field="president_jury_provenance">
+                                <option value="">Sélectionner la provenance</option>
+                                @foreach ($regions ?? [] as $option)
+                                    <option value="{{ $option }}">{{ $option }}</option>
+                                @endforeach
+                            </select>
                             <p class="section-description" style="margin: 6px 0 0;">Lieu où il exerce habituellement — sert au calcul des frais de déplacement.</p>
                         </div>
 
                         <div class="form-group">
                             <label>Catégorie de personnel du président du jury</label>
-                            <select class="form-control" data-field="president_jury_categorie_personnel">
+                            <select class="form-control input-auto" tabindex="-1" aria-readonly="true" data-field="president_jury_categorie_personnel">
                                 <option value="">Sélectionner</option>
                                 <option value="fonctionnaire">Fonctionnaire</option>
                                 <option value="contractuel">Contractuelle</option>
@@ -313,28 +335,39 @@
                         </div>
 
                         <div class="form-group">
-                            <label>Chef de centre</label>
+                            <label>Matricule du chef de centre</label>
                             <div class="enseignant-search" data-chef-search>
-                                <input class="form-control" type="text" placeholder="Rechercher le chef de centre..." autocomplete="off" data-chef-search-input>
+                                <input class="form-control" type="text" placeholder="Saisir le matricule..." autocomplete="off" data-chef-matricule-input>
                                 <input type="hidden" data-chef-id-input data-field="chef_centre_id">
-                                <ul class="enseignant-suggestions" data-chef-suggestions hidden></ul>
+                                <ul class="enseignant-suggestions" data-matricule-suggestions hidden></ul>
+                                <p class="section-description" style="margin: 6px 0 0;" data-chef-matricule-status hidden></p>
                             </div>
                         </div>
 
                         <div class="form-group">
+                            <label>Prénom et nom du chef de centre</label>
+                            <input class="form-control input-auto" type="text" readonly tabindex="-1" data-chef-search-input>
+                        </div>
+
+                        <div class="form-group">
                             <label>Téléphone du chef de centre</label>
-                            <input class="form-control" type="text" placeholder="33 901 10 71" data-chef-telephone-input data-field="chef_centre_telephone">
+                            <input class="form-control input-auto" type="text" readonly tabindex="-1" data-chef-telephone-input data-field="chef_centre_telephone">
                         </div>
 
                         <div class="form-group">
                             <label>Provenance du chef de centre</label>
-                            <input class="form-control" type="text" placeholder="Ex : Dakar" data-field="chef_centre_provenance">
+                            <select class="form-control" data-field="chef_centre_provenance">
+                                <option value="">Sélectionner la provenance</option>
+                                @foreach ($regions ?? [] as $option)
+                                    <option value="{{ $option }}">{{ $option }}</option>
+                                @endforeach
+                            </select>
                             <p class="section-description" style="margin: 6px 0 0;">Lieu où il exerce habituellement — sert au calcul des frais de déplacement.</p>
                         </div>
 
                         <div class="form-group">
                             <label>Catégorie de personnel du chef de centre</label>
-                            <select class="form-control" data-field="chef_centre_categorie_personnel">
+                            <select class="form-control input-auto" tabindex="-1" aria-readonly="true" data-field="chef_centre_categorie_personnel">
                                 <option value="">Sélectionner</option>
                                 <option value="fonctionnaire">Fonctionnaire</option>
                                 <option value="contractuel">Contractuelle</option>
@@ -399,13 +432,12 @@
                     <div class="form-grid">
                         <div class="form-group full">
                             <label>Métier / spécialité</label>
-                            <input
-                                class="form-control"
-                                type="text"
-                                placeholder="Ex : Technicien en Maintenance Véhicules Moteurs (MVM)"
-                                data-metier-input
-                                data-field="metier"
-                            >
+                            <select class="form-control" data-metier-input data-field="metier">
+                                <option value="">Sélectionner le métier / spécialité</option>
+                                @foreach ($disciplines ?? [] as $option)
+                                    <option value="{{ $option }}">{{ $option }}</option>
+                                @endforeach
+                            </select>
                         </div>
                     </div>
 
@@ -413,6 +445,7 @@
                         <table class="table members-table">
                             <thead>
                                 <tr>
+                                    <th>Matricule</th>
                                     <th>Prénom</th>
                                     <th>Nom</th>
                                     <th>Type de convocation</th>
@@ -456,15 +489,19 @@
             <template data-member-template>
 
                 <tr class="member-row">
-                    <td data-label="Prénom">
+                    <td data-label="Matricule">
                         <div class="enseignant-search" data-member-search>
-                            <input class="form-control" type="text" placeholder="Rechercher..." autocomplete="off" data-member-search-input>
+                            <input class="form-control" type="text" placeholder="Matricule" autocomplete="off" data-member-matricule-input>
                             <input type="hidden" data-member-id-input>
-                            <ul class="enseignant-suggestions" data-member-suggestions hidden></ul>
+                            <ul class="enseignant-suggestions" data-matricule-suggestions hidden></ul>
+                            <small class="section-description" data-member-matricule-status hidden></small>
                         </div>
                     </td>
+                    <td data-label="Prénom">
+                        <input class="form-control input-auto" type="text" readonly tabindex="-1" data-member-search-input>
+                    </td>
                     <td data-label="Nom">
-                        <input class="form-control" type="text" placeholder="Nom" data-member-nom>
+                        <input class="form-control input-auto" type="text" readonly tabindex="-1" data-member-nom>
                     </td>
                     <td data-label="Type de convocation">
                         <select class="form-control" data-member-fonction>
@@ -474,7 +511,7 @@
                         </select>
                     </td>
                     <td data-label="Statut">
-                        <select class="form-control" data-member-categorie>
+                        <select class="form-control input-auto" tabindex="-1" aria-readonly="true" data-member-categorie>
                             <option value="">Sélectionner</option>
                             <option value="fonctionnaire">Fonctionnaire</option>
                             <option value="contractuel">Contractuelle</option>
@@ -482,10 +519,15 @@
                         </select>
                     </td>
                     <td data-label="Provenance">
-                        <input class="form-control" type="text" placeholder="Ex : LTP-FXN/THIES" data-member-provenance>
+                        <select class="form-control" data-member-provenance>
+                                <option value="">Sélectionner la provenance</option>
+                                @foreach ($regions ?? [] as $option)
+                                    <option value="{{ $option }}">{{ $option }}</option>
+                                @endforeach
+                            </select>
                     </td>
                     <td data-label="Téléphone">
-                        <input class="form-control" type="text" placeholder="77 000 00 00" data-member-telephone>
+                        <input class="form-control input-auto" type="text" readonly tabindex="-1" data-member-telephone>
                     </td>
                     <td class="actions-cell" data-label="Action">
                         <button type="button" class="icon-action" title="Retirer" aria-label="Retirer le membre" data-remove-member>
