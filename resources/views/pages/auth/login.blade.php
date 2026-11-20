@@ -18,10 +18,10 @@
 
         <div class="login-brand">
           <span class="brand-emblem">
-            <img src="{{ asset('assets/images/image-fcfa.png') }}" alt="Logo SICORE - Syst&egrave;me Int&eacute;gr&eacute; des COrps &Eacute;mergents">
+            <img src="{{ asset('assets/images/image-fcfa.png') }}" alt="Logo SICORE - Syst&egrave;me Int&eacute;gr&eacute; des Corps &Eacute;mergents">
           </span>
           <h1>SICORE</h1>
-          <p>Syst&egrave;me Int&eacute;gr&eacute; des COrps &Eacute;mergents</p>
+          <p>Syst&egrave;me Int&eacute;gr&eacute; des Corps &Eacute;mergents</p>
         </div>
       </div>
 

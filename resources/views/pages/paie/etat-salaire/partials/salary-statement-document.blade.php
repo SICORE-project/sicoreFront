@@ -61,11 +61,14 @@
             @endforeach
           </tr>
         @empty
-          <tr><td class="salary-statement-empty" colspan="{{ max(1, $statementColumns->count()) }}">Aucun bulletin ne correspond aux critères sélectionnés.</td></tr>
+          <tr>
+            <td class="salary-statement-empty" colspan="{{ max(1, $statementColumns->count()) }}">Aucun bulletin ne correspond aux critères sélectionnés.</td>
+          </tr>
         @endforelse
       </tbody>
       @if ($statementRows->isNotEmpty())
-        <tfoot><tr>
+        <tfoot>
+          <tr>
           @foreach ($statementColumns as $column)
             @php $key = $column['key']; @endphp
             <td @class(['salary-statement-amount' => ! empty($column['amount'])])>
@@ -74,7 +77,8 @@
               @endif
             </td>
           @endforeach
-        </tr></tfoot>
+        </tr>
+      </tfoot>
       @endif
     </table>
   </div>
