@@ -36,6 +36,7 @@
                 <div>
                     <p class="stat-label">Surveillants (ce centre)</p>
                     <p class="stat-value" id="statSurveillants">—</p>
+                    <p class="stat-note">Centre sélectionné</p>
                 </div>
                 <span class="stat-icon green">
                     <i class="fa-solid fa-user-shield" aria-hidden="true"></i>
@@ -46,6 +47,7 @@
                 <div>
                     <p class="stat-label">Heures renseignées</p>
                     <p class="stat-value" id="statHeures">—</p>
+                    <p class="stat-note">Saisies du centre</p>
                 </div>
                 <span class="stat-icon blue">
                     <i class="fa-solid fa-clock" aria-hidden="true"></i>
@@ -56,6 +58,7 @@
                 <div>
                     <p class="stat-label">Montant total</p>
                     <p class="stat-value" id="statMontant">—</p>
+                    <p class="stat-note">Indemnités calculées</p>
                 </div>
                 <span class="stat-icon yellow">
                     <i class="fa-solid fa-sack-dollar" aria-hidden="true"></i>

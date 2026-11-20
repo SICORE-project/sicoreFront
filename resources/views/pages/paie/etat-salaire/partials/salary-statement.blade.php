@@ -40,8 +40,9 @@
       </div>
       <div class="form-group">
         <label for="salaryStatementPeriod">Période de paie</label>
-        <select class="form-control" id="salaryStatementPeriod" name="period_id" required>
-                    <option value="">Toute les périodes de paie</option>
+        <select class="form-control" id="salaryStatementPeriod" name="{{ array_key_exists('payroll_months', $moduleData) ? 'payroll_month' : 'period_id' }}" required @if(!array_key_exists('payroll_months', $moduleData)) data-payroll-months="{{ json_encode($moduleData['periods'] ?? []) }}" data-payroll-years="{{ json_encode($moduleData['academic_years'] ?? []) }}" @endif>
+          <option value="">Toutes les périodes de paie</option>
+          @include('pages.paie.partials.month-options', ['monthSelected' => data_get($moduleData, 'period.id'), 'useCatalogue' => true])
 
           @foreach (($moduleData['periods'] ?? []) as $periodOption)
             <option value="{{ $periodOption['id'] }}" @selected((string) $periodOption['id'] === (string) data_get($moduleData, 'period.id'))>

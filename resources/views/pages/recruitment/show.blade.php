@@ -12,8 +12,8 @@
     <section class="content-area">
         <a href="{{ route('recruitment.index') }}">← Retour aux lots</a>
         <div class="stats-grid four">
-            @foreach (['Recrutés du périmètre' => count($members), 'Actifs' => $activeCount, 'En attente de prise de service' => count($members) - $activeCount, 'Échéances à examiner' => $dueCount] as $label => $value)
-                <article class="stat-card"><div><p class="stat-label">{{ $label }}</p><p class="stat-value">{{ $value }}</p></div></article>
+            @foreach (['Recrutés du périmètre' => [count($members), 'Lot sélectionné'], 'Actifs' => [$activeCount, 'Prise de service effectuée'], 'En attente de prise de service' => [count($members) - $activeCount, 'Prise de service à venir'], 'Échéances à examiner' => [$dueCount, 'Contrôle requis']] as $label => [$value, $note])
+                <article class="stat-card"><div><p class="stat-label">{{ $label }}</p><p class="stat-value">{{ $value }}</p><p class="stat-note">{{ $note }}</p></div></article>
             @endforeach
         </div>
         <section class="panel recruitment-panel">

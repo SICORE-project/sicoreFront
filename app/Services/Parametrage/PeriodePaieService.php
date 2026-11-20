@@ -66,7 +66,7 @@ class PeriodePaieService
         try {
             $response = $method === 'delete'
                 ? $this->apiClient->delete($uri)
-                : $this->apiClient->{$method}($uri, $data);
+                : ($method === 'post' ? $this->apiClient->post($uri, $data, 300) : $this->apiClient->{$method}($uri, $data));
 
             return [
                 'success' => $response->successful(),

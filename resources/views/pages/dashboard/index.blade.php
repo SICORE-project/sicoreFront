@@ -63,7 +63,7 @@
           <div class="dashboard-panel-heading"><h2>{{ $section['title'] }}</h2></div>
           @if ($section['rows'])
             <div class="dashboard-table-scroll"><table class="dashboard-table"><thead><tr>@foreach ($section['columns'] as $column)<th scope="col">{{ $column }}</th>@endforeach</tr></thead>
-              <tbody>@foreach ($section['rows'] as $row)<tr>@foreach ($row as $cell)<td>{{ $cell ?? 'Non renseigné' }}</td>@endforeach</tr>@endforeach</tbody>
+              <tbody>@foreach ($section['rows'] as $row)<tr>@foreach ($row as $cell)<td data-label="{{ $section['columns'][$loop->index] ?? '' }}">{{ $cell ?? 'Non renseigné' }}</td>@endforeach</tr>@endforeach</tbody>
             </table></div>
           @else
             <p class="dashboard-muted">Aucune donnée disponible dans votre périmètre pour le moment.</p>

@@ -14,14 +14,17 @@
       <article class="stat-card"><div><p class="stat-label">Total</p><p class="stat-value">{{ $statistics['total'] }}</p><p class="stat-note">Rubriques enregistrées</p></div><span class="stat-icon green"><i class="fa-solid fa-list-check"></i></span></article>
       <article class="stat-card"><div><p class="stat-label">Gains</p><p class="stat-value">{{ $statistics['gains'] }}</p><p class="stat-note">Éléments de rémunération</p></div><span class="stat-icon blue"><i class="fa-solid fa-arrow-trend-up"></i></span></article>
       <article class="stat-card"><div><p class="stat-label">Retenues</p><p class="stat-value">{{ $statistics['retenues'] }}</p><p class="stat-note">Éléments déduits</p></div><span class="stat-icon yellow"><i class="fa-solid fa-arrow-trend-down"></i></span></article>
+      <article class="stat-card"><div><p class="stat-label">Rubriques contractuels</p><p class="stat-value">{{ $statistics['contractuels'] ?? 0 }}</p><p class="stat-note">Statut contractuel</p></div><span class="stat-icon purple"><i class="fa-solid fa-file-signature"></i></span></article>
+      <article class="stat-card"><div><p class="stat-label">Rubriques vacataires</p><p class="stat-value">{{ $statistics['vacataires'] ?? 0 }}</p><p class="stat-note">Statut vacataire</p></div><span class="stat-icon blue"><i class="fa-solid fa-user-clock"></i></span></article>
+      <article class="stat-card"><div><p class="stat-label">Rubriques mensuelles</p><p class="stat-value">{{ $statistics['mensuelles'] ?? 0 }}</p><p class="stat-note">Versées chaque mois</p></div><span class="stat-icon green"><i class="fa-solid fa-calendar-days"></i></span></article>
     </div>
 
     <div class="actions-row">
       <p class="breadcrumb">Paramétrage &gt; Rubriques de paie</p>
-      @if ($canManage)
+      @if ($canManage)<div class="actions-group">
         <button class="btn-primary" type="button" data-modal-open="rubrique-create-modal"><i class="fa-solid fa-plus" aria-hidden="true"></i> Ajouter une rubrique</button>
         @if ($peutSupprimer)<button class="btn-secondary btn-bulk-delete" type="button" data-bulk-delete-button disabled>Supprimer la sélection</button>@endif
-      @endif
+      </div>@endif
     </div>
 
     @if (session('success'))<div class="alert alert-success" role="status">{{ session('success') }}</div>@endif

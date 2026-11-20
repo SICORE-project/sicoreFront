@@ -268,7 +268,7 @@ class ApplicationTest extends TestCase
             ->assertSee('aria-label="Pagination"', false)
             ->assertSee('title="Voir"', false)
             ->assertSee('title="Modifier"', false)
-            ->assertSee('Objectifs métier')
+            ->assertDontSee('Objectifs métier')
             ->assertSee('id="newInstitution"', false)
             ->assertSee('id="importInstitutionsFile"', false)
             ->assertSee('Toutes catégories');

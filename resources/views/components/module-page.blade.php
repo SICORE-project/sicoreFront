@@ -46,17 +46,6 @@
       </section>
     @endif
 
-    {{-- Objectifs définis dans config/module-pages.php. --}}
-    @if (! empty($page['objectives']))
-      <section class="objective-card {{ ! empty($page['sensitive']) ? 'sensitive-panel' : '' }}">
-        <h2>Objectifs métier</h2>
-        <ul class="objective-list">
-          @foreach ($page['objectives'] as $objective)
-            <li>{{ $objective }}</li>
-          @endforeach
-        </ul>
-      </section>
-    @endif
 
     {{-- Cartes statistiques : données API en Paie, configuration sinon. --}}
     @if (! empty($page['stats']))
@@ -174,15 +163,8 @@
           <div class="periodic-reports-toolbar">
             <form method="GET" class="periodic-period-form" aria-label="Choisir la période des rapports">
               <label for="periodicReportsPeriod">Période de paie</label>
-              <select class="form-control" id="periodicReportsPeriod" name="period_id">
-                @foreach (($moduleData['periods'] ?? []) as $periodOption)
-                  <option
-                    value="{{ $periodOption['id'] }}"
-                    @selected((string) $periodOption['id'] === (string) data_get($moduleData, 'period.id'))
-                  >
-                    {{ $periodOption['label'] }} — {{ $periodOption['status_label'] }}
-                  </option>
-                @endforeach
+              <select class="form-control" id="periodicReportsPeriod" name="period_id" data-payroll-months="{{ json_encode($moduleData['periods'] ?? []) }}" data-payroll-years="{{ json_encode($moduleData['academic_years'] ?? []) }}">
+                @include('pages.paie.partials.month-options', ['monthSelected' => data_get($moduleData, 'period.id')])
               </select>
               <button class="btn-secondary" type="submit">Actualiser</button>
             </form>
@@ -257,8 +239,11 @@
             @elseif ($filterName === 'matricule')
                 <input class="form-control" id="{{ $filterId }}" name="{{ $filterName }}" type="search" value="{{ $filterValue }}" placeholder="Saisir un matricule">
             @else
-                <select class="form-control" id="{{ $filterId }}" name="{{ $filterName }}">
+                <select class="form-control" id="{{ $filterId }}" name="{{ $filterName === 'period_id' && $slug === 'paie-edition' && array_key_exists('payroll_months', $moduleData) ? 'payroll_month' : $filterName }}" @if($filterName === 'period_id' && !($slug === 'paie-edition' && array_key_exists('payroll_months', $moduleData))) data-payroll-months="{{ json_encode($moduleData['periods'] ?? []) }}" data-payroll-years="{{ json_encode($moduleData['academic_years'] ?? []) }}" @endif>
                   <option value="">Tous</option>
+                  @if ($filterName === 'period_id')
+                    @include('pages.paie.partials.month-options', ['monthSelected' => $filterValue, 'useCatalogue' => $slug === 'paie-edition'])
+                  @else
                   @foreach ($filterOptions as $option)
                     <option
                       value="{{ $option['value'] }}"
@@ -267,6 +252,7 @@
                       {{ $option['label'] }}
                     </option>
                   @endforeach
+                  @endif
                 </select>
             @endif
           </div>
@@ -475,6 +461,10 @@
     @endif
 
     {{-- Tableau générique construit avec columns et rows. --}}
+    @if ($connected && $slug === 'paie-avance-tabaski' && empty($page['rows']))
+      @include('pages.paie.partials.tabaski-empty-advances')
+    @else
+    <section class="table-card">
     <section @class(['table-card', 'payroll-edition-grid' => $slug === 'paie-edition'])>
       <div class="table-responsive">
       <table class="table" id="moduleTable" @if(!in_array($slug, ['utilisateurs', 'paie-edition'])) data-paginated-table @endif>
@@ -688,6 +678,7 @@
       </nav>
       @endif
     </section>
+    @endif
     @endif
   </section>
 </main>

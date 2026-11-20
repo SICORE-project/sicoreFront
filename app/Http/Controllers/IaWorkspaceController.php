@@ -53,6 +53,7 @@ class IaWorkspaceController extends Controller
                 'min:1',
             ],
 
+            'payroll_month' => ['nullable', 'integer', 'between:1,12'],
             // Période de paie.
             'period_id' => [
                 'nullable',
@@ -76,7 +77,7 @@ class IaWorkspaceController extends Controller
             // Engagement.
             'engagement' => [
                 'nullable',
-                'in:non_fonctionnaires',
+                'in:non_fonctionnaires,contractuel,vacataire',
             ],
 
             // Ancien filtre année académique.
@@ -699,6 +700,12 @@ class IaWorkspaceController extends Controller
             )
             ->values();
 
+        // Nombre d'établissements rattachés à une IEF de l'IA (liste déjà renvoyée par ia/referentiels).
+        $iefIds = collect($data['data']['iefs'] ?? [])->pluck('id')->all();
+        $stats = [
+            'etablissements' => collect($data['data']['etablissements'] ?? [])->whereIn('ief_id', $iefIds)->count(),
+        ];
+
         // Associer les IEF à leur IA.
         if (! $isIa) {
 
@@ -720,6 +727,8 @@ class IaWorkspaceController extends Controller
             [
 
                 'items' => $items->all(),
+
+                'stats' => $stats,
 
                 'error' => $error,
 

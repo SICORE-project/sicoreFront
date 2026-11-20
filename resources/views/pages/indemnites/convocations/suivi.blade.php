@@ -20,6 +20,7 @@
             <div>
                 <p class="stat-label">Envois</p>
                 <p class="stat-value">{{ $stats['total'] ?? 0 }}</p>
+                <p class="stat-note">Toutes les convocations</p>
             </div>
             <span class="stat-icon green">
                 <i class="fa-solid fa-paper-plane" aria-hidden="true"></i>
@@ -30,6 +31,7 @@
             <div>
                 <p class="stat-label">Envoyés</p>
                 <p class="stat-value">{{ $stats['envoye'] ?? 0 }}</p>
+                <p class="stat-note">Envoi réussi</p>
             </div>
             <span class="stat-icon blue">
                 <i class="fa-solid fa-circle-check" aria-hidden="true"></i>
@@ -40,6 +42,7 @@
             <div>
                 <p class="stat-label">Échecs</p>
                 <p class="stat-value">{{ $stats['echec'] ?? 0 }}</p>
+                <p class="stat-note">À renvoyer</p>
             </div>
             <span class="stat-icon red">
                 <i class="fa-solid fa-circle-xmark" aria-hidden="true"></i>

@@ -1,0 +1,19 @@
+.bulletin-help { color: #62736c; line-height: 1.6; margin-top: 12px; }
+.bulletin-filter.salary-statement-filter { overflow: visible; }
+.bulletin-filter .salary-statement-filter-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+.bulletin-filter .salary-statement-filter-grid > .form-group { grid-column: span 2; }
+.bulletin-filter .salary-statement-filter-grid > .bulletin-field-ia_id,
+.bulletin-filter .salary-statement-filter-grid > .bulletin-matricule { grid-column: 1 / span 3; }
+.bulletin-filter .salary-statement-filter-grid > .bulletin-field-ief_id,
+.bulletin-filter .salary-statement-filter-grid > .bulletin-field-payment_place_id { grid-column: 4 / span 3; }
+.bulletin-matricule { position: relative; }
+.bulletin-suggestions { position: absolute; bottom: calc(100% - 22px); left: 0; right: 0; max-height: 240px; overflow: auto; background: #fff; border: 1px solid #b8cfc4; border-radius: 10px; box-shadow: 0 -8px 24px #143d3020; z-index: 10; }
+.bulletin-suggestions[hidden] { display: none; }
+.bulletin-suggestions button { display: block; width: 100%; text-align: left; padding: 12px 16px; border: 0; border-bottom: 1px solid #edf2ef; background: #fff; cursor: pointer; color: #123f2e; }
+.bulletin-suggestions button:hover, .bulletin-suggestions button:focus { background: #eaf3ee; }
+.bulletin-error { color: #8b3b32; background: #fff0ed; padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; }
+.bulletin-suggestion-status { display: block; font-size: 13px; margin-top: 6px; color: #52695f; }
+@media (max-width: 720px) {
+  .bulletin-filter .salary-statement-filter-grid { grid-template-columns: 1fr; }
+  .bulletin-filter .salary-statement-filter-grid > .form-group { grid-column: 1 / -1; }
+}
