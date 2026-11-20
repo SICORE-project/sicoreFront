@@ -20,8 +20,8 @@
       <i class="fa-solid fa-bars" aria-hidden="true"></i>
     </button>
     <span class="title-icon" aria-hidden="true"><i class="{{ $icon }}"></i></span>
-    <div>
-      <h1>{{ $title }}</h1>
+    <div class="page-title-text">
+      <h1 title="{{ $title }}">{{ $title }}</h1>
       @if ($subtitle)
         <p>{{ $subtitle }}</p>
       @endif
