@@ -53,11 +53,6 @@
   function fieldOptions(field) {
     if (field.type === "period") {
       var periods = page.data.periods || [];
-      if (field.open_only) {
-        periods = periods.filter(function (period) {
-          return period.status === "open";
-        });
-      }
       return periods.map(function (period) {
         return {
           value: period.id,
@@ -462,6 +457,16 @@
     var iaBoxes = Array.prototype.slice.call(form.querySelectorAll('input[name="ia_ids"]'));
     var suggestions = form.querySelector('[data-payroll-matricule-suggestions]');
     if (!iefField || !matriculeField || !iaBoxes.length || !suggestions) return;
+    var yearField = form.elements.calendar_year;
+    var monthField = form.elements.start_month;
+    function syncApplicationYear() {
+      if (!yearField || !monthField || !/^\d{4}$/.test(yearField.value)) return;
+      Array.prototype.forEach.call(monthField.options, function (option) {
+        if (/^\d{4}-\d{2}$/.test(option.value)) option.value = yearField.value + option.value.slice(4);
+      });
+    }
+    if (yearField) yearField.addEventListener('input', syncApplicationYear);
+    syncApplicationYear();
 
     function selectedIas() {
       return iaBoxes.filter(function (box) { return box.checked; }).map(function (box) { return String(box.value); });

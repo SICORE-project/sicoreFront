@@ -12,6 +12,10 @@
 | actifs du statut et des IA choisis. IEF et matricule permettent de limiter
 | facultativement la sélection sans modifier les échéanciers existants.
 */
+$calendarYear = (int) now()->year;
+$calendarMonths = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+$tabaskiMonthOptions = [];
+foreach ($calendarMonths as $index => $label) $tabaskiMonthOptions[] = ['value' => sprintf('%04d-%02d', $calendarYear, $index + 1), 'label' => $label];
 $collectiveTabaskiFields = [
     ['name' => 'statut_enseignant_id', 'label' => 'Statut enseignant', 'type' => 'teaching_statuses', 'required' => true],
     [
@@ -25,7 +29,8 @@ $collectiveTabaskiFields = [
     ],
     ['name' => 'ief_id', 'label' => 'IEF rattachée (facultatif)', 'type' => 'education_inspection', 'help' => 'Laisser vide pour toutes les IEF des IA cochées.'],
     ['name' => 'matricule', 'label' => 'Matricule du formateur (facultatif)', 'type' => 'matricule', 'full_width' => true, 'help' => 'Saisir le matricule exact pour un seul formateur ; laisser vide pour le groupe.'],
-    ['name' => 'start_month', 'label' => 'À partir du mois', 'type' => 'month', 'required' => true, 'help' => 'Choisir un mois après la dernière période déjà calculée. Les périodes futures ne doivent pas encore exister.'],
+    ['name' => 'calendar_year', 'label' => 'Année', 'type' => 'number', 'default' => $calendarYear, 'required' => true, 'min' => 2000, 'max' => 2100, 'step' => 1],
+    ['name' => 'start_month', 'label' => 'Mois d’application', 'type' => 'select', 'options' => $tabaskiMonthOptions, 'required' => true, 'help' => 'Choisir le mois concerné. Si son état des salaires existe, seuls les bulletins non payés des bénéficiaires sont mis à jour. Sinon, l’opération attend ce mois précis.'],
 ];
 
 return [
@@ -122,7 +127,7 @@ return [
     ],
     'apply-tabaski-advance' => [
         'title' => 'Programmer une avance Tabaski',
-        'confirmation' => '100 000 FCFA seront ajoutés au prochain bulletin éligible de chaque bénéficiaire. La liste des enseignants est figée lors de cette application.',
+        'confirmation' => '100 000 FCFA seront ajoutés au bulletin du mois choisi pour chaque bénéficiaire. Les bulletins déjà payés sont protégés. La liste des enseignants est figée lors de cette application.',
         'fields' => [
             ...$collectiveTabaskiFields,
             ['name' => 'amount', 'label' => 'Montant de l’avance (FCFA)', 'type' => 'number', 'default' => 100000, 'required' => true, 'readonly' => true, 'min' => 100000, 'max' => 100000, 'step' => 1],
@@ -130,7 +135,7 @@ return [
     ],
     'apply-tabaski-deduction' => [
         'title' => 'Activer les retenues Tabaski',
-        'confirmation' => 'Uniquement les bénéficiaires d’une avance recevront 10 retenues mensuelles de 10 000 FCFA. La première retenue commence au plus tôt le mois suivant le versement de l’avance. Les nouveaux enseignants sans avance sont exclus.',
+        'confirmation' => 'La retenue exige une avance Tabaski déjà portée sur le bulletin de l’enseignant. Une avance seulement programmée ne suffit pas. Le remboursement comprend 10 mensualités de 10 000 FCFA, au plus tôt à partir du mois suivant l’avance. Les enseignants sans avance sont exclus.',
         'fields' => [
             ...$collectiveTabaskiFields,
             ['name' => 'amount', 'label' => 'Montant mensuel de la retenue (FCFA)', 'type' => 'number', 'default' => 10000, 'required' => true, 'readonly' => true, 'min' => 10000, 'max' => 10000, 'step' => 1, 'help' => '10 000 FCFA par mois pendant 10 mois, soit 100 000 FCFA au total.'],

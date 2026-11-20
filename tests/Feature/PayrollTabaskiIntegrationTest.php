@@ -24,6 +24,11 @@ class PayrollTabaskiIntegrationTest extends TestCase
         foreach (['apply-tabaski-advance', 'apply-tabaski-deduction'] as $action) {
             $names = array_column(config('payroll-forms.'.$action.'.fields'), 'name');
             $this->assertContains('start_month', $names);
+            $this->assertContains('calendar_year', $names);
+            $monthField = collect(config('payroll-forms.'.$action.'.fields'))->firstWhere('name', 'start_month');
+            $this->assertCount(12, $monthField['options']);
+            $this->assertSame('Janvier', $monthField['options'][0]['label']);
+            $this->assertSame('Décembre', $monthField['options'][11]['label']);
             $this->assertContains('ief_id', $names);
             $this->assertContains('matricule', $names);
             foreach (config('payroll-forms.'.$action.'.fields') as $field) {

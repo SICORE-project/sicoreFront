@@ -36,7 +36,7 @@
           <select id="bulletin-{{ $name }}" name="{{ $name }}" @required($required) class="form-control" @disabled($name === 'ia_id' && ! empty($moduleData['scope_ia_id']))>
             <option value="">{{ $placeholders[$name] ?? 'Sélectionner…' }}</option>
             @foreach ($choices as $option)
-            <option value="{{ $option['id'] }}" data-ia="{{ $option['ia_id'] ?? '' }}" data-ief="{{ $option['ief_id'] ?? '' }}" data-start="{{ $option['start_date'] ?? '' }}" data-end="{{ $option['end_date'] ?? '' }}" data-code="{{ $option['code'] ?? '' }}" @selected((string) $option['id'] === (string) old($name, $filters[$name] ?? ($name === 'ia_id' ? ($moduleData['scope_ia_id'] ?? '') : '')))>{{ $name === 'period_id' ? trim(preg_replace('/\s*\b\d{4}\b/u', '', $option['label'])) : $option['label'] }}</option>
+            <option value="{{ $option['id'] }}" data-ia="{{ $option['ia_id'] ?? '' }}" data-ief="{{ $option['ief_id'] ?? '' }}" data-start="{{ $option['start_date'] ?? '' }}" data-end="{{ $option['end_date'] ?? '' }}" data-code="{{ $option['code'] ?? '' }}" data-has-statement="{{ ($option['has_salary_statement'] ?? true) ? '1' : '0' }}" @selected((string) $option['id'] === (string) old($name, $filters[$name] ?? ($name === 'ia_id' ? ($moduleData['scope_ia_id'] ?? '') : '')))>{{ $name === 'period_id' ? trim(preg_replace('/\s*\b\d{4}\b/u', '', $option['label'])) : $option['label'] }}</option>
             @endforeach
           </select></div>
         @endif

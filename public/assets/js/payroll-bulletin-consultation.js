@@ -5,6 +5,9 @@
   const matricule = form.elements.matricule;
   const list = document.getElementById('bulletinSuggestions');
   const status = form.querySelector('[role="status"]');
+  const periodSelect = form.elements.period_id;
+  const availablePeriods = Array.from(periodSelect.options).filter(option => option.value).map(option => option.cloneNode(true));
+  const monthLabels = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
   let timer, pending, version = 0;
   const close = () => { list.hidden = true; matricule.setAttribute('aria-expanded', 'false'); };
   const invalidate = () => {
@@ -22,13 +25,21 @@
     }
     if (form.elements.ief_id.selectedOptions[0]?.disabled) form.elements.ief_id.value = '';
     const year = form.elements.academic_year_id.selectedOptions[0];
-    for (const option of form.elements.period_id.options) {
-      const date = option.dataset.code ? `${option.dataset.code}-01` : '';
-      option.hidden = !!(date && year?.dataset.start && year?.dataset.end &&
-        (date.slice(0, 7) < year.dataset.start.slice(0, 7) || date.slice(0, 7) > year.dataset.end.slice(0, 7)));
-      option.disabled = option.hidden;
-    }
-    if (form.elements.period_id.selectedOptions[0]?.disabled) form.elements.period_id.value = '';
+    const selectedPeriod = periodSelect.value;
+    periodSelect.replaceChildren(new Option('Sélectionner…', ''));
+    monthLabels.forEach((label, index) => {
+      const available = availablePeriods.find(option => {
+        const code = option.dataset.code || '';
+        return Number(code.slice(5, 7)) === index + 1 && option.dataset.hasStatement !== '0' &&
+          (!year?.dataset.start || (code >= year.dataset.start.slice(0, 7) && code <= year.dataset.end.slice(0, 7)));
+      });
+      const option = available ? available.cloneNode(true) : new Option(label, '');
+      option.textContent = label;
+      option.disabled = !available;
+      if (!available) option.title = 'L’état des salaires de ce mois n’est pas encore disponible.';
+      periodSelect.append(option);
+    });
+    periodSelect.value = Array.from(periodSelect.options).some(option => option.value === selectedPeriod && !option.disabled) ? selectedPeriod : '';
   };
   matricule.addEventListener('input', () => {
     invalidate();
