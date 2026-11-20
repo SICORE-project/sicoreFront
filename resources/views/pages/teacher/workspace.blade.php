@@ -7,6 +7,14 @@
 @if($error)
 <div class="alert alert-warning" role="alert">{{ $error }}</div>
 @elseif($mode === 'bulletins')
+@if(!empty($data['stats']))
+<div class="stats-grid four">
+<article class="stat-card"><div><p class="stat-label">Mes bulletins</p><p class="stat-value">{{ number_format((int) ($data['stats']['total'] ?? 0), 0, ',', ' ') }}</p><p class="stat-note">Bulletins disponibles</p></div><span class="stat-icon green"><i class="fa-solid fa-file-invoice" aria-hidden="true"></i></span></article>
+<article class="stat-card"><div><p class="stat-label">Bulletins payés</p><p class="stat-value">{{ number_format((int) ($data['stats']['payes'] ?? 0), 0, ',', ' ') }}</p><p class="stat-note">Paiements effectués</p></div><span class="stat-icon blue"><i class="fa-solid fa-circle-check" aria-hidden="true"></i></span></article>
+<article class="stat-card"><div><p class="stat-label">Dernier net</p><p class="stat-value">{{ ($data['stats']['dernier_net'] ?? null) === null ? '—' : number_format((float) $data['stats']['dernier_net'], 0, ',', ' ') }}@if(($data['stats']['dernier_net'] ?? null) !== null) <small>FCFA</small>@endif</p><p class="stat-note">Période la plus récente</p></div><span class="stat-icon yellow"><i class="fa-solid fa-wallet" aria-hidden="true"></i></span></article>
+<article class="stat-card"><div><p class="stat-label">Cumul net perçu</p><p class="stat-value">{{ number_format((float) ($data['stats']['cumul_net'] ?? 0), 0, ',', ' ') }} <small>FCFA</small></p><p class="stat-note">Tous mes bulletins</p></div><span class="stat-icon purple"><i class="fa-solid fa-coins" aria-hidden="true"></i></span></article>
+</div>
+@endif
 <form class="filter-panel" method="GET" action="{{ route('teacher.payslips') }}">
 <div class="form-group"><label for="teacher-year">Année</label><select class="form-control" id="teacher-year" name="annee"><option value="">Toutes</option>@foreach($data['annees'] ?? [] as $year)<option value="{{ $year }}" @selected((string) request('annee') === (string) $year)>{{ $year }}</option>@endforeach</select></div>
 <div class="form-group"><label for="teacher-period">Période</label><select class="form-control" id="teacher-period" name="periode_id"><option value="">Toutes</option>@foreach($data['periodes'] ?? [] as $period)<option value="{{ $period['id'] }}" @selected((string) request('periode_id') === (string) $period['id'])>{{ $period['libelle'] }}</option>@endforeach</select></div>

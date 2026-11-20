@@ -20,10 +20,18 @@ class MesPiecesController extends Controller
     public function index(): View
     {
         $resultat = $this->pieces->mesPieces();
+        $convocations = $resultat['success'] ? ($resultat['data'] ?? []) : [];
+        $pieces = collect($convocations)->flatMap(fn (array $convocation) => $convocation['pieces'] ?? []);
 
         return view('pages.indemnites.mes-pieces', [
-            'convocations' => $resultat['success'] ? ($resultat['data'] ?? []) : [],
+            'convocations' => $convocations,
             'erreur' => $resultat['success'] ? null : ($resultat['message'] ?? 'Impossible de charger vos pièces.'),
+            'stats' => [
+                'convocations' => count($convocations),
+                'deposees' => $pieces->where('statut', 'depose')->count(),
+                'validees' => $pieces->where('statut', 'valide')->count(),
+                'rejetees' => $pieces->where('statut', 'rejete')->count(),
+            ],
         ]);
     }
 

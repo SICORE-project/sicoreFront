@@ -41,6 +41,26 @@
       @endif
       @include('pages.enseignants.import-report')
       @if(session('success'))<p class="alert alert-success" role="status">{{ session('success') }}</p>@endif
+      @if (!empty($stats))
+        <div class="stats-grid four">
+          <article class="stat-card">
+            <div><p class="stat-label">Total des enseignants</p><p class="stat-value">{{ number_format((int) ($stats['total'] ?? 0), 0, ',', ' ') }}</p><p class="stat-note">Tous les enseignants</p></div>
+            <span class="stat-icon green"><i class="fa-solid fa-chalkboard-user" aria-hidden="true"></i></span>
+          </article>
+          <article class="stat-card">
+            <div><p class="stat-label">Enseignants en activité</p><p class="stat-value">{{ number_format((int) ($stats['en_activite'] ?? 0), 0, ',', ' ') }}</p><p class="stat-note">Statut en activité</p></div>
+            <span class="stat-icon blue"><i class="fa-solid fa-user-check" aria-hidden="true"></i></span>
+          </article>
+          <article class="stat-card">
+            <div><p class="stat-label">Enseignants avec un compte</p><p class="stat-value">{{ number_format((int) ($stats['avec_compte'] ?? 0), 0, ',', ' ') }}</p><p class="stat-note">Accès à la plateforme</p></div>
+            <span class="stat-icon purple"><i class="fa-solid fa-user-shield" aria-hidden="true"></i></span>
+          </article>
+          <article class="stat-card">
+            <div><p class="stat-label">IA couvertes</p><p class="stat-value">{{ number_format((int) ($stats['ia_couvertes'] ?? 0), 0, ',', ' ') }}</p><p class="stat-note">Couverture territoriale</p></div>
+            <span class="stat-icon yellow"><i class="fa-solid fa-building-columns" aria-hidden="true"></i></span>
+          </article>
+        </div>
+      @endif
       <div class="actions-row teacher-list-actions">
         <p class="breadcrumb">Gestion du personnel &gt; Enseignants</p>
         <div class="actions-group">

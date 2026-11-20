@@ -157,32 +157,63 @@ class PayrollController extends Controller
      *
      * @return array<string, mixed>
      */
-    private function validatedPageFilters(Request $request, string $slug): array
-    {
-        $rules = [
-            'period_id' => ['nullable', 'integer', 'min:1'],
+   
+private function validatedPageFilters(
+    Request $request,
+    string $slug
+): array {
+    $rules = [
+        'period_id' => ['nullable', 'integer', 'min:1'],
+    ];
+
+    // Filtres communs à l'état des salaires
+    // et à l'édition de la paie.
+    if (in_array($slug, ['paie-etat-salaires', 'paie-edition'], true)) {
+        $rules += [
+            'academic_year_id' => ['nullable', 'integer', 'min:1'],
+            'corps_id' => ['nullable', 'integer', 'min:1'],
+
+            // Ancien filtre : conserver pour les autres pages.
+            'statut_enseignant_id' => ['nullable', 'integer', 'min:1'],
+
+            'ia_id' => ['nullable', 'integer', 'min:1'],
+            'ief_id' => ['nullable', 'integer', 'min:1'],
+            'matricule' => ['nullable', 'string', 'max:50'],
+            'payment_place_id' => ['nullable', 'integer', 'min:1'],
+            'training_center_id' => ['nullable', 'integer', 'min:1'],
+            'tabaski_only' => ['nullable', 'boolean'],
+            'with_signature' => ['nullable', 'boolean'],
+            'without_service_done' => ['nullable', 'boolean'],
+            'dage_signatory' => ['nullable', 'boolean'],
         ];
-
-        // On ajoute 'paie-edition' à la condition existante
-        if (in_array($slug, ['paie-etat-salaires', 'paie-edition'], true)) {
-            $rules += [
-                'academic_year_id' => ['nullable', 'integer', 'min:1'],
-                'corps_id' => ['nullable', 'integer', 'min:1'],
-                'statut_enseignant_id' => ['nullable', 'integer', 'min:1'], 
-                'ia_id' => ['nullable', 'integer', 'min:1'],
-                'ief_id' => ['nullable', 'integer', 'min:1'],
-                'matricule' => ['nullable', 'string', 'max:50'],
-                'payment_place_id' => ['nullable', 'integer', 'min:1'],
-                'training_center_id' => ['nullable', 'integer', 'min:1'],
-                'tabaski_only' => ['nullable', 'boolean'],
-                'with_signature' => ['nullable', 'boolean'],
-                'without_service_done' => ['nullable', 'boolean'],
-                'dage_signatory' => ['nullable', 'boolean'],
-            ];
-        }
-
-        return $request->validate($rules);
     }
+
+    // CORRECTION : filtres spécifiques à paie-edition.
+    if ($slug === 'paie-edition') {
+        $rules += [
+
+            // Déclenchement de la recherche.
+            'search' => ['nullable', 'boolean'],
+
+            // Filtre Vacataire / Contractuel.
+            'statuts_enseignant_id' => [
+                'nullable',
+                'integer',
+                'min:1',
+            ],
+
+            // Filtre année académique.
+            'annee_academique_id' => [
+                'nullable',
+                'integer',
+                'min:1',
+            ],
+        ];
+    }
+
+    return $request->validate($rules);
+}
+
 
     /** Le périmètre de session prime toujours sur les filtres du navigateur. */
     private function scopedFilters(array $filters): array

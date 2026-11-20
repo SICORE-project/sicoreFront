@@ -10,6 +10,22 @@
   <x-topbar title="Syndicats" subtitle="Paramétrage > Syndicats > Consultation" icon="fa-solid fa-people-group" />
 
   <section class="content-area">
+    @if (!$apiError)
+      <div class="stats-grid three">
+        <article class="stat-card">
+          <div><p class="stat-label">Syndicats</p><p class="stat-value">{{ number_format((int) $stats['total'], 0, ',', ' ') }}</p><p class="stat-note">Tous les syndicats</p></div>
+          <span class="stat-icon green"><i class="fa-solid fa-handshake" aria-hidden="true"></i></span>
+        </article>
+        <article class="stat-card">
+          <div><p class="stat-label">Syndicats actifs</p><p class="stat-value">{{ number_format((int) $stats['actifs'], 0, ',', ' ') }}</p><p class="stat-note">En vigueur</p></div>
+          <span class="stat-icon blue"><i class="fa-solid fa-circle-check" aria-hidden="true"></i></span>
+        </article>
+        <article class="stat-card">
+          <div><p class="stat-label">Syndicats inactifs</p><p class="stat-value">{{ number_format((int) $stats['inactifs'], 0, ',', ' ') }}</p><p class="stat-note">Désactivés</p></div>
+          <span class="stat-icon red"><i class="fa-solid fa-circle-pause" aria-hidden="true"></i></span>
+        </article>
+      </div>
+    @endif
     <form class="filter-panel syndicats-filters" method="GET" action="{{ route('parametres.syndicats.index') }}" data-syndicats-filters>
       <div class="form-group">
         <label for="syndicatSearch">Rechercher</label>

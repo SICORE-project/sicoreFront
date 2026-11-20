@@ -5,6 +5,12 @@
     $selectedAcademicYear = collect($moduleData['academic_years'] ?? [])
       ->firstWhere('label', $statement['academic_year'] ?? null)['id'] ?? null;
   }
+  // Le tableau n'apparaît qu'une fois un critère choisi (la période et l'année ne comptent pas :
+  // elles sont toujours renseignées).
+  $hasCriteria = collect([
+    'statut_enseignant_id', 'ia_id', 'ief_id', 'matricule',
+    'payment_place_id', 'training_center_id', 'tabaski_only',
+  ])->contains(fn (string $key): bool => filled(request($key)));
 @endphp
 
 <section class="salary-statement-workspace" aria-labelledby="salaryStatementFiltersTitle">
@@ -22,10 +28,22 @@
     </header>
 
     <div class="salary-statement-filter-grid">
+      
+      <div class="form-group">
+        <label for="salaryStatementCorps">Corps Enseignant</label>
+        <select class="form-control" id="salaryStatementCorps" name="statut_enseignant_id">
+          <option value="">Tous les statuts</option>
+          @foreach (data_get($statement, 'filter_options.statuts', []) as $option)
+            <option value="{{ $option['id'] }}" @selected((string) $option['id'] === (string) request('statut_enseignant_id'))>{{ $option['label'] }}</option>
+          @endforeach
+        </select>
+      </div>
       <div class="form-group">
         <label for="salaryStatementPeriod">Période de paie</label>
         <select class="form-control" id="salaryStatementPeriod" name="period_id" required data-payroll-months="{{ json_encode($moduleData['periods'] ?? []) }}" data-payroll-years="{{ json_encode($moduleData['academic_years'] ?? []) }}">
+          <option value="">Toutes les périodes de paie</option>
           @include('pages.paie.partials.month-options', ['monthSelected' => data_get($moduleData, 'period.id')])
+
         </select>
       </div>
 

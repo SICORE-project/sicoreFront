@@ -39,6 +39,9 @@ class IefService
                 'last_page' => max(1, (int) data_get($payload, 'meta.last_page', 1)),
                 'total' => (int) data_get($payload, 'meta.total', 0),
             ],
+            'stats' => [
+                'etablissements' => (int) data_get($payload, 'stats.etablissements', 0),
+            ],
             'error' => null,
             'unauthorized' => false,
         ];
