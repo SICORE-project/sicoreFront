@@ -40,14 +40,10 @@
       </div>
       <div class="form-group">
         <label for="salaryStatementPeriod">Période de paie</label>
-        <select class="form-control" id="salaryStatementPeriod" name="period_id" required>
-                    <option value="">Toute les périodes de paie</option>
+        <select class="form-control" id="salaryStatementPeriod" name="period_id" required data-payroll-months="{{ json_encode($moduleData['periods'] ?? []) }}" data-payroll-years="{{ json_encode($moduleData['academic_years'] ?? []) }}">
+          <option value="">Toutes les périodes de paie</option>
+          @include('pages.paie.partials.month-options', ['monthSelected' => data_get($moduleData, 'period.id')])
 
-          @foreach (($moduleData['periods'] ?? []) as $periodOption)
-            <option value="{{ $periodOption['id'] }}" @selected((string) $periodOption['id'] === (string) data_get($moduleData, 'period.id'))>
-              {{ trim(preg_replace('/\s*\b\d{4}\b/u', '', $periodOption['label'])) }}
-            </option>
-          @endforeach
         </select>
       </div>
 
