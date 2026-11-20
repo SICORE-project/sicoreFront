@@ -163,6 +163,7 @@ private function validatedPageFilters(
     string $slug
 ): array {
     $rules = [
+        'payroll_month' => ['nullable', 'integer', 'between:1,12'],
         'period_id' => ['nullable', 'integer', 'min:1'],
     ];
 

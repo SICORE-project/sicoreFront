@@ -6,6 +6,20 @@ use Tests\TestCase;
 
 class PayrollMonthOptionsTest extends TestCase
 {
+    public function test_catalogue_month_without_existing_treatment_is_selectable_and_historical_months_are_excluded(): void
+    {
+        $html = view('pages.paie.partials.month-options', ['moduleData' => [
+            'payroll_months' => [['value' => 3, 'label' => 'Mars']],
+            'periods' => [['id' => 55, 'code' => '2028-01', 'label' => 'Janvier']],
+        ], 'monthSelected' => 55, 'useCatalogue' => true])->render();
+        $this->assertStringContainsString('>Mars</option>', $html);
+        $this->assertStringContainsString('value="3"', $html);
+        $this->assertStringNotContainsString('Janvier', $html);
+        $this->assertStringNotContainsString('disabled', $html);
+        $empty = view('pages.paie.partials.month-options', ['moduleData' => ['payroll_months' => [], 'periods' => [['id' => 55, 'code' => '2028-01', 'label' => 'Janvier']]], 'monthSelected' => 55, 'useCatalogue' => true])->render();
+        $this->assertStringNotContainsString('<option', $empty);
+    }
+
     public function test_months_are_unique_and_status_free_with_correct_year_ids(): void
     {
         request()->merge(['academic_year_id' => 2]);
