@@ -169,7 +169,7 @@
                     value="{{ $periodOption['id'] }}"
                     @selected((string) $periodOption['id'] === (string) data_get($moduleData, 'period.id'))
                   >
-                    {{ $periodOption['label'] }} — {{ $periodOption['status_label'] }}
+                    {{ trim(preg_replace('/\s*\b\d{4}\b/u', '', $periodOption['label'])) }}
                   </option>
                 @endforeach
               </select>
@@ -464,6 +464,10 @@
     @endif
 
     {{-- Tableau générique construit avec columns et rows. --}}
+    @if ($connected && $slug === 'paie-avance-tabaski' && empty($page['rows']))
+      @include('pages.paie.partials.tabaski-empty-advances')
+    @else
+    <section class="table-card">
     <section @class(['table-card', 'payroll-edition-grid' => $slug === 'paie-edition'])>
       <div class="table-responsive">
       <table class="table" id="moduleTable" @if(!in_array($slug, ['utilisateurs', 'paie-edition'])) data-paginated-table @endif>
@@ -677,6 +681,7 @@
       </nav>
       @endif
     </section>
+    @endif
     @endif
   </section>
 </main>

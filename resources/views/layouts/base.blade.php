@@ -18,10 +18,12 @@
   {{-- Font Awesome 6.5.2 et Alpine 3.17.5 servis localement (plus de téléchargement depuis internet). --}}
   <link rel="stylesheet" href="{{ asset('assets/vendor/fontawesome/css/all.min.css') }}">
   <link rel="stylesheet" href="{{ asset('assets/css/style.css') }}?v={{ filemtime(public_path('assets/css/style.css')) }}">
-  <link rel="stylesheet" href="{{ asset('assets/css/responsive.css') }}?v={{ filemtime(public_path('assets/css/responsive.css')) }}">
   {{-- Une page peut ajouter une feuille avec @push('styles'). --}}
   @stack('styles')
   <script defer src="{{ asset('assets/vendor/alpinejs/cdn.min.js') }}"></script>
+  {{-- responsive.css en dernier : ses règles mobiles priment sur app.css et les CSS de page. --}}
+  <link rel="stylesheet" href="{{ asset('assets/css/responsive.css') }}?v={{ filemtime(public_path('assets/css/responsive.css')) }}">
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
 <body @yield('body_attributes')>
   {{-- Contenu fourni par layouts/app.blade.php ou layouts/guest.blade.php. --}}
