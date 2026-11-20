@@ -16,6 +16,7 @@ class PayrollBulletinController extends Controller
     public function index(Request $request)
     {
         $filters = $request->validate([
+            'payroll_month' => ['nullable', 'integer', 'between:1,12'],
             'period_id' => ['nullable', 'integer', 'min:1'],
             'academic_year_id' => ['nullable', 'integer', 'min:1'],
             'statut_enseignant_id' => ['nullable', 'integer', 'min:1'],
@@ -40,7 +41,7 @@ class PayrollBulletinController extends Controller
                 ])->values()])->header('Cache-Control', 'no-store, private');
             }
             if ($request->boolean('consult')) {
-                if (empty($filters['period_id']) || empty($filters['academic_year_id']) || empty($filters['statut_enseignant_id'])) {
+                if ((empty($filters['payroll_month']) && empty($filters['period_id'])) || empty($filters['academic_year_id']) || empty($filters['statut_enseignant_id'])) {
                     throw ValidationException::withMessages(['period_id' => 'Choisissez le corps, l’année académique et la période de paie.']);
                 }
                 $matricule = trim((string) ($filters['matricule'] ?? ''));
@@ -54,7 +55,7 @@ class PayrollBulletinController extends Controller
                     $records = $records->filter(fn ($row) => mb_strtoupper(trim($row['matricule'])) === mb_strtoupper($matricule));
                 }
                 if ($records->isEmpty()) {
-                    throw ValidationException::withMessages(['period_id' => 'Aucun bulletin disponible dans l’état des salaires pour ces critères.']);
+                    throw ValidationException::withMessages([isset($filters['payroll_month']) ? 'payroll_month' : 'period_id' => $moduleData['statement_unavailable'] ?? 'Aucun bulletin disponible dans l’état des salaires pour ces critères.']);
                 }
                 // Reuse existing authorized IDs; never generate or alter a payslip.
                 $catalogue = $this->api->payrollPage($token, 'paie-bulletins', ['period_id' => $moduleData['period']['id']]);

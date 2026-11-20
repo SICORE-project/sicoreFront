@@ -239,10 +239,10 @@
             @elseif ($filterName === 'matricule')
                 <input class="form-control" id="{{ $filterId }}" name="{{ $filterName }}" type="search" value="{{ $filterValue }}" placeholder="Saisir un matricule">
             @else
-                <select class="form-control" id="{{ $filterId }}" name="{{ $filterName }}" @if($filterName === 'period_id') data-payroll-months="{{ json_encode($moduleData['periods'] ?? []) }}" data-payroll-years="{{ json_encode($moduleData['academic_years'] ?? []) }}" @endif>
+                <select class="form-control" id="{{ $filterId }}" name="{{ $filterName === 'period_id' && $slug === 'paie-edition' && array_key_exists('payroll_months', $moduleData) ? 'payroll_month' : $filterName }}" @if($filterName === 'period_id' && !($slug === 'paie-edition' && array_key_exists('payroll_months', $moduleData))) data-payroll-months="{{ json_encode($moduleData['periods'] ?? []) }}" data-payroll-years="{{ json_encode($moduleData['academic_years'] ?? []) }}" @endif>
                   <option value="">Tous</option>
                   @if ($filterName === 'period_id')
-                    @include('pages.paie.partials.month-options', ['monthSelected' => $filterValue])
+                    @include('pages.paie.partials.month-options', ['monthSelected' => $filterValue, 'useCatalogue' => $slug === 'paie-edition'])
                   @else
                   @foreach ($filterOptions as $option)
                     <option

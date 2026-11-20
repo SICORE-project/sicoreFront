@@ -1,3 +1,8 @@
+@if (($useCatalogue ?? false) && array_key_exists('payroll_months', $moduleData))
+  @foreach ($moduleData['payroll_months'] as $catalogueMonth)
+    <option value="{{ $catalogueMonth['value'] }}" @selected((string) $catalogueMonth['value'] === (string) old('payroll_month', request('payroll_month', $moduleData['selected_payroll_month'] ?? null)))>{{ $catalogueMonth['label'] }}</option>
+  @endforeach
+@else
 @php
   $monthNames = [1 => 'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
   $allPeriods = collect($moduleData['periods'] ?? []);
@@ -22,3 +27,4 @@
     <script src="{{ asset('assets/js/payroll-month-filters.js') }}?v={{ filemtime(public_path('assets/js/payroll-month-filters.js')) }}" defer></script>
   @endpush
 @endonce
+@endif

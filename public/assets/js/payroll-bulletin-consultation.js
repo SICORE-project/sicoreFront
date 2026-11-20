@@ -5,7 +5,7 @@
   const matricule = form.elements.matricule;
   const list = document.getElementById('bulletinSuggestions');
   const status = form.querySelector('[role="status"]');
-  const periodSelect = form.elements.period_id;
+  const periodSelect = form.elements.payroll_month || form.elements.period_id;
   const availablePeriods = Array.from(periodSelect.options).filter(option => option.value).map(option => option.cloneNode(true));
   const monthLabels = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
   let timer, pending, version = 0;
@@ -24,6 +24,7 @@
       option.disabled = option.hidden;
     }
     if (form.elements.ief_id.selectedOptions[0]?.disabled) form.elements.ief_id.value = '';
+    if (form.elements.payroll_month) return;
     const year = form.elements.academic_year_id.selectedOptions[0];
     const selectedPeriod = periodSelect.value;
     periodSelect.replaceChildren(new Option('Sélectionner…', ''));
@@ -44,7 +45,7 @@
   matricule.addEventListener('input', () => {
     invalidate();
     if (!matricule.value.trim()) return;
-    if (!form.elements.period_id.value || !form.elements.academic_year_id.value || !form.elements.statut_enseignant_id.value) {
+    if (!periodSelect.value || !form.elements.academic_year_id.value || !form.elements.statut_enseignant_id.value) {
       status.textContent = 'Choisissez d’abord le corps, l’année et la période.';
       return;
     }

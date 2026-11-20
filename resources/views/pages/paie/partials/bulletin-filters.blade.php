@@ -6,7 +6,7 @@
   $fields = [
     'statut_enseignant_id' => ["Corps d’enseignant", $moduleData['teaching_statuses'] ?? [], true],
     'academic_year_id' => ['Année académique', $moduleData['academic_years'] ?? [], true],
-    'period_id' => ['Période de paie', $moduleData['periods'] ?? [], true],
+    (array_key_exists('payroll_months', $moduleData) ? 'payroll_month' : 'period_id') => ['Période de paie', $moduleData['periods'] ?? [], true],
     'ia_id' => ['IA', $moduleData['academic_inspections'] ?? [], false],
     'ief_id' => ['IEF', $moduleData['education_inspections'] ?? [], false],
     'matricule' => ['Matricule du', [], false],
@@ -35,9 +35,13 @@
         <div class="form-group bulletin-field-{{ $name }}"><label for="bulletin-{{ $name }}">{{ $label }}</label>
           <select id="bulletin-{{ $name }}" name="{{ $name }}" @required($required) class="form-control" @disabled($name === 'ia_id' && ! empty($moduleData['scope_ia_id']))>
             <option value="">{{ $placeholders[$name] ?? 'Sélectionner…' }}</option>
+            @if ($name === 'payroll_month')
+              @include('pages.paie.partials.month-options', ['monthSelected' => null, 'useCatalogue' => true])
+            @else
             @foreach ($choices as $option)
             <option value="{{ $option['id'] }}" data-ia="{{ $option['ia_id'] ?? '' }}" data-ief="{{ $option['ief_id'] ?? '' }}" data-start="{{ $option['start_date'] ?? '' }}" data-end="{{ $option['end_date'] ?? '' }}" data-code="{{ $option['code'] ?? '' }}" data-has-statement="{{ ($option['has_salary_statement'] ?? true) ? '1' : '0' }}" @selected((string) $option['id'] === (string) old($name, $filters[$name] ?? ($name === 'ia_id' ? ($moduleData['scope_ia_id'] ?? '') : '')))>{{ $name === 'period_id' ? trim(preg_replace('/\s*\b\d{4}\b/u', '', $option['label'])) : $option['label'] }}</option>
             @endforeach
+            @endif
           </select></div>
         @endif
         @endforeach

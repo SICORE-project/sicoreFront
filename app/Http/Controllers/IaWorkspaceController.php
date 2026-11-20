@@ -53,6 +53,7 @@ class IaWorkspaceController extends Controller
                 'min:1',
             ],
 
+            'payroll_month' => ['nullable', 'integer', 'between:1,12'],
             // Période de paie.
             'period_id' => [
                 'nullable',

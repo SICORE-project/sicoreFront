@@ -47,6 +47,19 @@ class PayrollBulletinConsultationTest extends TestCase
         Http::assertSentCount(1);
     }
 
+    public function test_catalogue_month_and_year_are_sent_without_using_month_as_treatment_id(): void
+    {
+        Http::fake(['*/payroll/pages/paie-etat-salaires*' => Http::response(['data' => [
+            'payroll_months' => [['value' => 3, 'label' => 'Mars']],
+            'period' => null, 'salary_statement' => ['rows' => []],
+            'statement_unavailable' => 'Aucun état des salaires disponible pour ce mois et cette année académique.',
+        ]])]);
+        $this->get('/paie/bulletins?payroll_month=3&academic_year_id=2&statut_enseignant_id=3&consult=1&group=1')
+            ->assertRedirect()->assertSessionHasErrors('payroll_month');
+        Http::assertSent(fn ($r) => $r['payroll_month'] == 3 && $r['academic_year_id'] == 2 && !isset($r['period_id']));
+        Http::assertSentCount(1); // Never fetch or display an unrelated existing bulletin.
+    }
+
     public function test_suggestions_use_salary_statement_filters_and_only_existing_slips(): void
     {
         $this->fakeApi([['reference' => 'BS-1', 'matricule' => 'PC-1', 'first_name' => 'Mame', 'last_name' => 'Dieye']]);
