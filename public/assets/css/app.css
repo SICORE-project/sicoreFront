@@ -616,9 +616,9 @@
 
 .stat-label {
   margin: 0;
-  color: var(--text-muted);
+  color: #334155;
   font-size: 13px;
-  font-weight: 400;
+  font-weight: 600;
 }
 
 .stat-value {
