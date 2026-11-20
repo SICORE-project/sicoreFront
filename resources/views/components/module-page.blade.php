@@ -174,15 +174,8 @@
           <div class="periodic-reports-toolbar">
             <form method="GET" class="periodic-period-form" aria-label="Choisir la période des rapports">
               <label for="periodicReportsPeriod">Période de paie</label>
-              <select class="form-control" id="periodicReportsPeriod" name="period_id">
-                @foreach (($moduleData['periods'] ?? []) as $periodOption)
-                  <option
-                    value="{{ $periodOption['id'] }}"
-                    @selected((string) $periodOption['id'] === (string) data_get($moduleData, 'period.id'))
-                  >
-                    {{ trim(preg_replace('/\s*\b\d{4}\b/u', '', $periodOption['label'])) }}
-                  </option>
-                @endforeach
+              <select class="form-control" id="periodicReportsPeriod" name="period_id" data-payroll-months="{{ json_encode($moduleData['periods'] ?? []) }}" data-payroll-years="{{ json_encode($moduleData['academic_years'] ?? []) }}">
+                @include('pages.paie.partials.month-options', ['monthSelected' => data_get($moduleData, 'period.id')])
               </select>
               <button class="btn-secondary" type="submit">Actualiser</button>
             </form>
@@ -257,8 +250,11 @@
             @elseif ($filterName === 'matricule')
                 <input class="form-control" id="{{ $filterId }}" name="{{ $filterName }}" type="search" value="{{ $filterValue }}" placeholder="Saisir un matricule">
             @else
-                <select class="form-control" id="{{ $filterId }}" name="{{ $filterName }}">
+                <select class="form-control" id="{{ $filterId }}" name="{{ $filterName }}" @if($filterName === 'period_id') data-payroll-months="{{ json_encode($moduleData['periods'] ?? []) }}" data-payroll-years="{{ json_encode($moduleData['academic_years'] ?? []) }}" @endif>
                   <option value="">Tous</option>
+                  @if ($filterName === 'period_id')
+                    @include('pages.paie.partials.month-options', ['monthSelected' => $filterValue])
+                  @else
                   @foreach ($filterOptions as $option)
                     <option
                       value="{{ $option['value'] }}"
@@ -267,6 +263,7 @@
                       {{ $option['label'] }}
                     </option>
                   @endforeach
+                  @endif
                 </select>
             @endif
           </div>
