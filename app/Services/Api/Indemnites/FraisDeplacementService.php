@@ -74,6 +74,28 @@ class FraisDeplacementService
     }
 
     /**
+     * État de paiement (PDF) des frais de déplacement de toute une
+     * convocation, éventuellement limité à un centre. Réponse HTTP brute.
+     */
+    public function telechargerEtatPaiement(int|string $convocationId, ?string $centre = null, bool $apercu = false)
+    {
+        return $this->api->get('frais-deplacement/etat-paiement', array_filter([
+            'convocation_id' => $convocationId,
+            'centre' => $centre,
+            'apercu' => $apercu ? 1 : null,
+        ]));
+    }
+
+    /** Fichier SICA (CSV) du même état de paiement. Réponse HTTP brute. */
+    public function telechargerEtatPaiementSica(int|string $convocationId, ?string $centre = null)
+    {
+        return $this->api->get('frais-deplacement/etat-paiement/sica', array_filter([
+            'convocation_id' => $convocationId,
+            'centre' => $centre,
+        ]));
+    }
+
+    /**
      * $fichierRecto / $fichierVerso sont les 2 faces de la feuille de
      * déplacement scannée/remplie — le document papier est RECTO-VERSO,
      * chaque face est optionnelle à la création (peuvent aussi être

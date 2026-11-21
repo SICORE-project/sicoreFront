@@ -142,6 +142,25 @@
 
         <div data-ajax-region="corps">
 
+            {{-- État de paiement (PDF) de toute une convocation : proposé
+                 une fois un filtre choisi, pour chaque convocation du
+                 résultat ayant au moins une fiche de déplacement. --}}
+            @if (! empty($etatsPaiement))
+                <div class="etat-paiement-actions">
+                    @foreach ($etatsPaiement as $etat)
+                        @include('pages.indemnites.frais-deplacement.partials.etat-paiement-boutons', [
+                            'convocationId' => $etat['convocation_id'],
+                            'centre' => $etat['centre'],
+                            'libelle' => trim(($etat['objet'] ?? 'Convocation')
+                                .(! empty($etat['session']) ? ' · '.$etat['session'] : '')
+                                .(! empty($etat['centre']) ? ' · '.$etat['centre'] : '')),
+                        ])
+                    @endforeach
+                </div>
+            @elseif (request()->hasAny(['session', 'objet', 'centre']) && ! empty($lignes))
+                <p class="etat-paiement-info">L'état de paiement (PDF) sera disponible dès qu'une fiche de déplacement aura été créée pour cette convocation.</p>
+            @endif
+
             <section class="table-card">
 
                 <div class="table-responsive">
@@ -241,6 +260,29 @@
         gap: 7px;
         padding: 14px 18px;
         border-top: 1px solid var(--border-soft);
+    }
+
+    /* Bouton(s) "État de paiement (PDF)" au-dessus du tableau. */
+    .etat-paiement-actions {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: 10px;
+        margin: 0 0 14px;
+    }
+
+    .etat-paiement-actions .btn-primary {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+    }
+
+    .etat-paiement-info {
+        margin: 0 0 14px;
+        text-align: right;
+        font-size: 13px;
+        color: #64748b;
     }
 </style>
 @endpush
