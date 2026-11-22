@@ -171,6 +171,14 @@ return [
             ['name' => 'payroll_period_id', 'label' => 'Période', 'type' => 'period', 'required' => true],
         ],
     ],
+    'open-period' => [
+        'title' => 'Ouvrir la paie du mois',
+        'confirmation' => 'La période datée du mois sélectionné sera créée et la paie calculée pour tous les contractuels et vacataires actifs (toutes IA). Une période déjà existante ne sera jamais recalculée par cette action.',
+        'fields' => [
+            ['name' => 'payroll_month', 'type' => 'hidden'],
+            ['name' => 'annee_academique_id', 'type' => 'hidden'],
+        ],
+    ],
     'validate-payroll' => [
         'title' => 'Valider la paie',
         'confirmation' => 'Après validation, les éléments de la période ne pourront plus être modifiés.',
