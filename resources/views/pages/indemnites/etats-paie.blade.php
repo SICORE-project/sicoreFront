@@ -121,14 +121,6 @@
                 </details>
             </div>
 
-            <div class="form-group etat-paie-generer-group">
-                <label>&nbsp;</label>
-                <a class="etat-paie-btn-vert" href="#" target="_blank" rel="noopener" data-etat-paie-generer-pdf hidden>
-                    <i class="fa-solid fa-file-pdf" aria-hidden="true"></i>
-                    Générer la fiche
-                </a>
-            </div>
-
         </form>
 
         {{-- ============================================================
@@ -141,24 +133,33 @@
 
         <section class="table-card">
 
-            @if (\App\Support\SicoreAccess::can(request(), 'indemnites.manage'))
-                <div class="etat-paie-groupe" data-etat-paie-groupe hidden>
-                    <p class="etat-paie-groupe__resume" data-etat-paie-groupe-resume></p>
+            {{-- Résumé + actions : « Générer la fiche (CSV) » (tous) à côté de
+                 « Générer l'état de paie » (gestionnaires uniquement). --}}
+            <div class="etat-paie-groupe" data-etat-paie-groupe hidden>
+                <p class="etat-paie-groupe__resume" data-etat-paie-groupe-resume></p>
 
-                    <form method="POST" action="{{ route('indemnites.etats-paie.generer') }}" data-etat-paie-groupe-form>
-                        @csrf
-                        <input type="hidden" name="type" data-etat-paie-groupe-champ="type">
-                        <input type="hidden" name="objet" data-etat-paie-groupe-champ="objet">
-                        <input type="hidden" name="session" data-etat-paie-groupe-champ="session">
-                        <span data-etat-paie-groupe-centres></span>
+                <div class="etat-paie-groupe__actions">
+                    <a class="etat-paie-btn-vert" href="#" data-etat-paie-generer-pdf hidden>
+                        <i class="fa-solid fa-file-csv" aria-hidden="true"></i>
+                        Générer la fiche (CSV)
+                    </a>
 
-                        <button type="submit" class="btn-primary">
-                            <i class="fa-solid fa-file-invoice-dollar" aria-hidden="true"></i>
-                            Générer l'état de paie
-                        </button>
-                    </form>
+                    @if (\App\Support\SicoreAccess::can(request(), 'indemnites.manage'))
+                        <form method="POST" action="{{ route('indemnites.etats-paie.generer') }}" data-etat-paie-groupe-form>
+                            @csrf
+                            <input type="hidden" name="type" data-etat-paie-groupe-champ="type">
+                            <input type="hidden" name="objet" data-etat-paie-groupe-champ="objet">
+                            <input type="hidden" name="session" data-etat-paie-groupe-champ="session">
+                            <span data-etat-paie-groupe-centres></span>
+
+                            <button type="submit" class="btn-primary">
+                                <i class="fa-solid fa-file-invoice-dollar" aria-hidden="true"></i>
+                                Générer l'état de paie
+                            </button>
+                        </form>
+                    @endif
                 </div>
-            @endif
+            </div>
 
             <div class="table-responsive">
                 <table class="table" id="etatsPaieMembresTable">
@@ -263,6 +264,7 @@
 @push('styles')
 <style>
 
+
     .etat-paie-liste-titre {
         display: flex;
         align-items: baseline;
@@ -332,6 +334,13 @@
         border-bottom: 1px solid var(--border-soft);
     }
     .etat-paie-groupe__resume { margin: 0; font-weight: 600; }
+    .etat-paie-groupe__actions {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 10px;
+    }
+    .etat-paie-groupe__actions form { margin: 0; }
 
     .etat-paie-btn-vert {
         display: inline-flex;
@@ -351,7 +360,6 @@
 
     .etat-paie-btn-vert:hover { background: var(--primary-dark); color: #ffffff; }
 
-    .etat-paie-generer-group label { visibility: hidden; }
 
     /* Bouton « Voir état » d'une ligne du tableau — un vrai bouton avec fond,
        pas juste un lien texte. */
@@ -735,13 +743,13 @@
 
     // Résumé et champs du bouton « Générer l'état de paie » (un seul état pour tout le tableau).
     function mettreAJourGroupe(membres) {
-        if (!groupeBloc || !groupeForm) return;
+        if (!groupeBloc) return;
 
         var avecMontant = membres.filter(function (m) { return (Number(m.montant) || 0) > 0; });
         var total = avecMontant.reduce(function (somme, m) { return somme + (Number(m.montant) || 0); }, 0);
 
         var perimetreChoisi = Boolean(objetSelect.value || sessionSelect.value);
-        var boutonGenerer = groupeForm.querySelector("button[type='submit']");
+        var boutonGenerer = groupeForm ? groupeForm.querySelector("button[type='submit']") : null;
 
         groupeBloc.hidden = membres.length === 0;
         groupeResume.textContent = membres.length + " bénéficiaire(s) listé(s) — "
@@ -752,6 +760,10 @@
             boutonGenerer.disabled = !perimetreChoisi;
             boutonGenerer.title = perimetreChoisi ? "" : "Choisissez une session ou un objet pour générer l'état de paie";
         }
+
+        // Sans droit de gestion : pas de formulaire « Générer l'état de paie »,
+        // seuls le résumé et le bouton CSV sont affichés.
+        if (!groupeForm) return;
 
         groupeForm.querySelector("[data-etat-paie-groupe-champ='type']").value = typeSelect.value;
         groupeForm.querySelector("[data-etat-paie-groupe-champ='objet']").value = objetSelect.value;

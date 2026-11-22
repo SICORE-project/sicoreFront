@@ -4,6 +4,8 @@
   ÉTAT DES SALAIRES — DOCUMENT À IMPRIMER, ouvert dans un nouvel onglet par
   le bouton « Générer l’état » (/paie/etat-salaires?document=1&…).
   Vue choisie par PayrollController::viewFor() ; mêmes données que la page de filtres.
+  Compte gestionnaire IA ($moduleData['scope_ia_id']) : liste à cocher
+  partials/salary-statement-ia.blade.php à la place du document complet.
 --}}
 @section('title', 'SICORE - État des salaires')
 @section('content')
@@ -23,7 +25,12 @@
       : route('paie.export', $exportFilters);
   @endphp
   <main class="salary-statement-page salary-statement-standalone">
-    @if (! empty($moduleData['salary_statement']))
+    @if (! empty($moduleData['scope_ia_id']) && ! empty($moduleData['salary_statement']))
+      @include('pages.paie.etat-salaire.partials.salary-statement-ia', [
+        'statement' => $moduleData['salary_statement'],
+        'statementRows' => collect($moduleData['salary_statement']['rows'] ?? []),
+      ])
+    @elseif (! empty($moduleData['salary_statement']))
       @include('pages.paie.etat-salaire.partials.salary-statement-document', [
         'statement' => $moduleData['salary_statement'],
       ])
@@ -37,6 +44,7 @@
       </section>
     @endif
 
+    @if (empty($moduleData['scope_ia_id']))
     <div class="salary-statement-standalone-actions">
       <div class="salary-statement-ordonnateur" role="radiogroup" aria-labelledby="ordonnateurLabel">
         <span id="ordonnateurLabel">Ordonnateur de crédit</span>
@@ -51,6 +59,7 @@
         <button class="btn-primary" type="button" onclick="window.print()"><i class="fa-solid fa-print" aria-hidden="true"></i> Imprimer</button>
       </div>
     </div>
+    @endif
   </main>
 @endsection
 

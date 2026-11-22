@@ -616,9 +616,9 @@
 
 .stat-label {
   margin: 0;
-  color: var(--text-muted);
+  color: #000000;
   font-size: 13px;
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .stat-value {
@@ -626,14 +626,14 @@
   color: var(--text-main);
   font-size: 27px;
   line-height: 1.1;
-  font-weight: 900;
+  font-weight: 400;
 }
 
 .stat-note {
   margin: 6px 0 0;
   color: #16a34a;
-  font-size: 12px;
-  font-weight: 800;
+  font-size: 13px;
+  font-weight: 600;
 }
 
 .stat-note.neutral {
@@ -3146,3 +3146,16 @@ body.sidebar-collapsed .logout-btn {
 @media(prefers-reduced-motion:reduce){.user-online-indicator{animation:none}}
 
 .user-presence-prefix .user-online-indicator { margin-left: 0; margin-right: 10px; }
+
+/* Tableau de bord principal (super admin) : mêmes cartes que les autres pages (ex. Enseignants),
+   avec la ligne du bas en vert. Sélecteurs plus précis que ceux de super-admin-dashboard.css. */
+.sa-dashboard .stats-grid.sa-kpis { gap: 16px; }
+.sa-dashboard .stat-card.sa-kpi { min-height: 86px; padding: 18px 20px; gap: 14px; transform: none; box-shadow: var(--shadow-card); }
+.sa-dashboard .stat-card.sa-kpi::before { display: none; }
+.sa-dashboard .stat-card.sa-kpi .stat-label { font-size: 13px; line-height: normal; }
+.sa-dashboard .stat-card.sa-kpi .stat-value { margin-top: 4px; font-size: 27px; }
+.sa-dashboard .stat-card.sa-kpi .stat-value small { font-size: 12px; }
+.sa-dashboard .stat-card.sa-kpi .stat-note { margin-top: 6px; color: #16a34a; font-size: 13px; font-weight: 600; }
+.sa-dashboard .stat-card.sa-kpi .stat-icon { width: 44px; height: 44px; flex-basis: 44px; border-radius: 12px; font-size: 18px; }
+@media (max-width: 560px) { .sa-dashboard .stat-card.sa-kpi { padding: 16px; } }
+@media (max-width: 480px) { .sa-dashboard .stat-card.sa-kpi .stat-value { font-size: 22px; } }

@@ -403,7 +403,37 @@ class ConvocationsController extends Controller
             // ->get('data') renvoie déjà un tableau (json_decode assoc) ;
             // pas de succès -> select vide plutôt qu'une page cassée.
             'typesConvocation' => $typesResultat['success'] ? ($typesResultat['data'] ?? []) : [],
+            'lieuxService' => $this->lieuxServicePourSelect(),
+            ...$this->referentielsPourSelects(),
         ]);
+    }
+
+    // Regions ("Lieu d'affectation", provenances) et disciplines ("Metier /
+    // specialite") pour les menus deroulants. Les valeurs restent stockees
+    // en texte (libelle). Listes vides si le back ne repond pas.
+    private function referentielsPourSelects(): array
+    {
+        $resultat = $this->convocations->referentiels();
+        $data = $resultat['success'] ? ($resultat['data'] ?? []) : [];
+
+        return [
+            'regions' => array_values(array_filter((array) ($data['regions'] ?? []))),
+            'disciplines' => array_values(array_filter((array) ($data['disciplines'] ?? []))),
+        ];
+    }
+
+    // Libelles des lieux de service, pour le <select> "Centre d'examen".
+    // Le centre reste stocke en texte (libelle) : seul le mode de saisie change.
+    private function lieuxServicePourSelect(): array
+    {
+        $resultat = $this->convocations->lieuxService();
+
+        return collect($resultat['success'] ? ($resultat['data'] ?? []) : [])
+            ->pluck('libelle')
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
     }
 
     // Cree la convocation, puis (si fournis) ses centres d'examen et ses
@@ -589,6 +619,32 @@ class ConvocationsController extends Controller
         return response()->json([
             'success' => $resultat['success'],
             'data' => $resultat['success'] ? ($resultat['data']['data'] ?? []) : [],
+        ]);
+    }
+
+    // Suggestions par matricule (AJAX, JSON) : enseignants dont le matricule
+    // commence par le texte saisi (10 au plus).
+    public function enseignantParMatricule(Request $request): JsonResponse
+    {
+        $matricule = trim((string) $request->query('matricule', ''));
+
+        if ($matricule === '') {
+            return response()->json(['success' => true, 'data' => []]);
+        }
+
+        $resultat = $this->convocations->enseignantParMatricule($matricule);
+
+        if (! $resultat['success']) {
+            return response()->json([
+                'success' => false,
+                'message' => $resultat['message'] ?? 'Erreur lors de la recherche.',
+                'data' => [],
+            ], 502);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $resultat['data'] ?? [],
         ]);
     }
 
@@ -807,6 +863,8 @@ class ConvocationsController extends Controller
             'convocation' => $this->formatConvocationForView($resultat['data']),
             'typesConvocation' => $typesResultat['success'] ? ($typesResultat['data'] ?? []) : [],
             'wizardData' => $this->construireWizardData($centres, $beneficiaires),
+            'lieuxService' => $this->lieuxServicePourSelect(),
+            ...$this->referentielsPourSelects(),
             'id' => $id,
         ]);
     }
@@ -839,6 +897,7 @@ class ConvocationsController extends Controller
                     'membres' => array_map(function ($beneficiaire) {
                         return [
                             'enseignant_id' => $beneficiaire['id'] ?? null,
+                            'matricule' => $beneficiaire['matricule'] ?? null,
                             'nom' => $beneficiaire['nom'] ?? null,
                             'prenom' => $beneficiaire['prenom'] ?? null,
                             'telephone' => $beneficiaire['telephone'] ?? null,
@@ -856,8 +915,10 @@ class ConvocationsController extends Controller
                 'jury' => $centre['jury'] ?? null,
                 'chef_centre_id' => $centre['chef_centre_id'] ?? null,
                 'chef_centre_nom' => trim(($centre['chef_centre']['prenom'] ?? '').' '.($centre['chef_centre']['nom'] ?? '')) ?: null,
+                'chef_centre_matricule' => $centre['chef_centre']['matricule'] ?? null,
                 'chef_centre_telephone' => $centre['chef_centre_telephone'] ?? null,
                 'president_jury_id' => $centre['president_jury_id'] ?? null,
+                'president_jury_matricule' => $centre['president_jury']['matricule'] ?? null,
                 'president_jury_nom' => trim(($centre['president_jury']['prenom'] ?? '').' '.($centre['president_jury']['nom'] ?? '')) ?: null,
                 'president_jury_telephone' => $centre['president_jury_telephone'] ?? null,
                 'metiers' => $metiers,

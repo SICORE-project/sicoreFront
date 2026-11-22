@@ -79,9 +79,9 @@ return [
                     'paie.edition-salaires-banque',
                     'paie.bulletins',
                     'paie.effectifs-corps',
-                    'paie.delegation',
-                    'paie.edition-delegations',
-                    'paie.edition-engagements',
+                    //'paie.delegation',
+                    //'paie.edition-delegations',
+                   // 'paie.edition-engagements',
                 ],
                 'links' => [
                     ['label' => 'Récapitulatif par banque', 'route' => 'paie.recap-banque', 'icon' => 'fa-solid fa-building-columns', 'permission' => 'paie.recap_banque.read'],
@@ -91,11 +91,57 @@ return [
                     ['label' => 'Salaires par banque', 'route' => 'paie.edition-salaires-banque', 'icon' => 'fa-solid fa-building-columns', 'permission' => 'paie.salaires_banque.read'],
                     ['label' => 'Bulletins des salaires', 'route' => 'paie.bulletins', 'icon' => 'fa-solid fa-file-lines', 'permission' => 'paie.bulletins_salaires.read'],
                     ['label' => 'Effectifs par corps', 'route' => 'paie.effectifs-corps', 'icon' => 'fa-solid fa-users', 'permission' => 'paie.effectifs_corps.read'],
-                    ['label' => 'Délégation de crédit', 'route' => 'credits.delegation', 'icon' => 'fa-solid fa-scale-balanced', 'permission' => 'paie.delegations.read'],
-                    ['label' => 'Édition des délégations', 'route' => 'credits.edition-delegations', 'icon' => 'fa-solid fa-file-signature', 'permission' => 'paie.delegations.edit'],
-                    ['label' => 'Édition des engagements', 'route' => 'credits.edition-engagements', 'icon' => 'fa-solid fa-clipboard-check', 'permission' => 'paie.engagements.edit'],
+                   // ['label' => 'Délégation de crédit', 'route' => 'credits.delegation', 'icon' => 'fa-solid fa-scale-balanced', 'permission' => 'paie.delegations.read'],
+                    //['label' => 'Édition des délégations', 'route' => 'credits.edition-delegations', 'icon' => 'fa-solid fa-file-signature', 'permission' => 'paie.delegations.edit'],
+                   // ['label' => 'Édition des engagements', 'route' => 'credits.edition-engagements', 'icon' => 'fa-solid fa-clipboard-check', 'permission' => 'paie.engagements.edit'],
                 ],
             ],
+
+
+
+            [
+                'type' => 'group',
+                'label' => 'Délégations de crédits',
+                'icon' => 'fa-solid fa-money-bill-transfer',
+                'permission' => 'paie.delegations_credits.read',
+                'active' => [
+                    'paie.delegation-credits',
+                    'paie.edition-delegation',
+                    'paie.edition-engagement',
+                    'paie.projection',
+                ],
+                'links' => [
+                    [
+                        'label' => 'Délégations de crédits',
+                        'route' => 'paie.delegation-credits',
+                        'icon' => 'fa-solid fa-file-circle-plus',
+                        'permission' => 'paie.delegation-credits.read',
+                    ],
+                    [
+                        'label' => 'Édition des délégations de crédits',
+                        'route' => 'paie.edition-delegation',
+                        'icon' => 'fa-solid fa-file-signature',
+                        'permission' => 'paie.edition-delegation.read',
+                    ],
+                    [
+                        'label' => 'Édition des engagements par délégation',
+                        'route' => 'paie.edition-engagement',
+                        'icon' => 'fa-solid fa-file-invoice-dollar',
+                        'permission' => 'paie.edition-engagement.read',
+                    ],
+                    [
+                        'label' => 'Mes projections',
+                        'route' => 'paie.projection',
+                        'icon' => 'fa-solid fa-chart-line',
+                        'permission' => 'paie.projection.read',
+                    ],
+                ],
+            ],
+            
+
+
+
+ 
         ],
     ],
         

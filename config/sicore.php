@@ -1,8 +1,9 @@
 <?php
 
 return [
-    // Pièces justificatives : dépôt possible seulement après la fin de l'examen (même réglage que le backend).
-    'depot_apres_examen' => (bool) env('INDEMNITES_DEPOT_APRES_EXAMEN', true),
+    // Pièces justificatives : dépôt toujours possible par défaut ; true = seulement
+    // après la fin de l'examen (même réglage que le backend, config/indemnites.php).
+    'depot_apres_examen' => (bool) env('INDEMNITES_DEPOT_APRES_EXAMEN', false),
 
     'api' => [
         'url' => env('API_BASE_URL', 'http://127.0.0.1:8000/api'),
@@ -20,3 +21,4 @@ return [
         'password' => env('SICORE_TEST_PASSWORD', 'Sicore@2026'),
     ],
 ];
+

@@ -119,14 +119,15 @@ class IaWorkspaceTest extends TestCase
     {
         Http::fake([
             '*/ia/enseignants*' => Http::response(['data' => [], 'total' => 0, 'current_page' => 1, 'last_page' => 1,
-                'stats' => ['total' => 9, 'en_activite' => 8, 'fonctionnaires' => 4, 'contractuels' => 3, 'vacataires' => 2, 'ief' => 2]]),
+                'stats' => ['total' => 9, 'en_activite' => 8, 'contractuels' => 3, 'vacataires' => 2, 'ief' => 2]]),
             '*/ia/referentiels*' => Http::response(['data' => ['iefs' => [], 'etablissements' => []]]),
         ]);
         $response = $this->get('/parametrage/enseignants?engagement=vacataire')->assertOk()
-            ->assertSeeInOrder(['Fonctionnaires', '4', 'Contractuels', '3', 'Vacataires', '2'])
+            ->assertSeeInOrder(['Contractuels', '3', 'Vacataires', '2'])
+            ->assertDontSee('Statut fonctionnaire')
             ->assertSee('name="engagement" value="vacataire"', false);
-        // 6 cartes sur 3 colonnes : 2 lignes complètes.
-        $this->assertSame(6, substr_count($response->getContent(), '<article class="stat-card">'));
+        // 5 cartes : les fonctionnaires ne sont pas gérés par l'application.
+        $this->assertSame(5, substr_count($response->getContent(), '<article class="stat-card">'));
         Http::assertSent(fn ($request) => str_contains($request->url(), '/ia/enseignants') && $request['engagement'] === 'vacataire');
     }
 }

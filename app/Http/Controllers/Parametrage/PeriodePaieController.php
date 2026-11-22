@@ -72,6 +72,7 @@ class PeriodePaieController extends Controller
         return [
             'code' => ['required', 'string', 'max:20', 'regex:/^[A-Z0-9]+(?:[-_][A-Z0-9]+)*$/'],
             'libelle' => ['required', 'string', 'max:100'],
+            'numero_mois' => ['required', 'integer', 'between:1,12'],
         ];
     }
 

@@ -68,7 +68,29 @@ class FraisDeplacementController extends Controller
             'lignes' => $pagination->items(),
             'stats' => $stats,
             'pagination' => $pagination,
+            'etatsPaiement' => $filtres === [] ? [] : $this->etatsPaiementDisponibles($lignes, $filtres['centre'] ?? null),
         ]);
+    }
+
+    /**
+     * Boutons "État de paiement (PDF)" : une entrée par convocation du
+     * filtre ayant au moins une fiche de déplacement (seules celles-ci sont
+     * payées). Calculé sur TOUTES les lignes du filtre, pas la seule page.
+     */
+    private function etatsPaiementDisponibles(array $lignes, ?string $centre): array
+    {
+        return collect($lignes)
+            ->filter(fn (array $ligne) => ! empty($ligne['fiche_deplacement_id']) && ! empty($ligne['convocation_id']))
+            ->groupBy('convocation_id')
+            ->map(fn ($lignesConvocation, $convocationId) => [
+                'convocation_id' => $convocationId,
+                'objet' => $lignesConvocation->first()['objet'] ?? null,
+                'session' => $lignesConvocation->first()['session'] ?? null,
+                'centre' => $centre,
+                'nombre_fiches' => $lignesConvocation->count(),
+            ])
+            ->values()
+            ->all();
     }
 
     private function optionsFiltresPourVue(array $filtres = []): array
@@ -631,6 +653,64 @@ class FraisDeplacementController extends Controller
      * pouvoir télécharger la fiche si possible". Même principe que
      * ConvocationsController::downloadPdf().
      */
+    /**
+     * État de paiement (PDF) des frais de déplacement de tous les
+     * bénéficiaires d'une convocation ayant une fiche (centre facultatif).
+     */
+    public function telechargerEtatPaiement(Request $request): RedirectResponse|\Illuminate\Http\Response
+    {
+        $convocationId = $request->query('convocation_id');
+        $centre = $request->query('centre');
+
+        if (! $convocationId) {
+            return redirect()
+                ->route('indemnites.frais-deplacement')
+                ->with('error', 'Choisissez une convocation pour télécharger son état de paiement.');
+        }
+
+        // apercu=1 : PDF affiché dans le navigateur (inline) avant téléchargement.
+        $apercu = $request->boolean('apercu');
+        $reponse = $this->fraisDeplacement->telechargerEtatPaiement($convocationId, $centre, $apercu);
+
+        if (! $reponse->successful()) {
+            return redirect()
+                ->back()
+                ->with('error', $reponse->json('message') ?? "Impossible de générer l'état de paiement.");
+        }
+
+        return response($reponse->body(), 200, [
+            'Content-Type' => $reponse->header('Content-Type') ?: 'application/pdf',
+            'Content-Disposition' => $reponse->header('Content-Disposition')
+                ?: ($apercu ? 'inline' : 'attachment').'; filename="etat-paiement-frais-deplacement.pdf"',
+        ]);
+    }
+
+    /** Fichier SICA (CSV) de l'état de paiement d'une convocation. */
+    public function telechargerEtatPaiementSica(Request $request): RedirectResponse|\Illuminate\Http\Response
+    {
+        $convocationId = $request->query('convocation_id');
+
+        if (! $convocationId) {
+            return redirect()
+                ->route('indemnites.frais-deplacement')
+                ->with('error', 'Choisissez une convocation pour télécharger son fichier SICA.');
+        }
+
+        $reponse = $this->fraisDeplacement->telechargerEtatPaiementSica($convocationId, $request->query('centre'));
+
+        if (! $reponse->successful()) {
+            return redirect()
+                ->back()
+                ->with('error', $reponse->json('message') ?? 'Impossible de générer le fichier SICA.');
+        }
+
+        return response($reponse->body(), 200, [
+            'Content-Type' => $reponse->header('Content-Type') ?: 'text/csv; charset=UTF-8',
+            'Content-Disposition' => $reponse->header('Content-Disposition')
+                ?: 'attachment; filename="sica-etat-paiement-frais-deplacement.csv"',
+        ]);
+    }
+
     public function telechargerPdf(string $id): RedirectResponse|\Illuminate\Http\Response
     {
         $reponse = $this->fraisDeplacement->telechargerPdf($id);

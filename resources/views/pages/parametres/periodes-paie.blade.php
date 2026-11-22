@@ -5,6 +5,7 @@
 @section('content')
 @php
     $peutSupprimer = $canManage && \App\Support\SicoreAccess::can(request(), 'parametrage.periodes_paie.manage');
+    $moisNoms = [1 => 'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
 @endphp
 <main class="main-content">
   <x-topbar title="Périodes de paie" subtitle="Paramétrage > Périodes de paie" icon="fa-solid fa-calendar-week" />
@@ -55,13 +56,14 @@
       <div class="table-card-header"><div><h2 id="periodeListTitle">Liste des périodes de paie</h2><p class="table-card-subtitle">{{ $pagination['total'] }} résultat{{ $pagination['total'] > 1 ? 's' : '' }}</p></div></div>
       <div class="table-responsive">
         <table class="table">
-          <thead><tr>@if ($peutSupprimer)<th class="checkbox-cell"><input type="checkbox" data-select-all aria-label="Tout sélectionner"></th>@endif<th>Code</th><th>Libellé</th>@if ($canManage)<th class="actions-cell">Actions</th>@endif</tr></thead>
+          <thead><tr>@if ($peutSupprimer)<th class="checkbox-cell"><input type="checkbox" data-select-all aria-label="Tout sélectionner"></th>@endif<th>Code</th><th>Libellé</th><th>Mois</th>@if ($canManage)<th class="actions-cell">Actions</th>@endif</tr></thead>
           <tbody>
             @forelse ($items as $periode)
               <tr>
                 @if ($peutSupprimer)<td class="checkbox-cell"><input type="checkbox" data-row-checkbox value="{{ data_get($periode, 'id') }}" aria-label="Sélectionner {{ data_get($periode, 'code') }}"></td>@endif
                 <td><span class="periode-code">{{ data_get($periode, 'code', '—') }}</span></td>
                 <td><strong>{{ data_get($periode, 'libelle', '—') }}</strong></td>
+                <td>@if ($n = (int) data_get($periode, 'numero_mois'))<span class="periode-code">{{ str_pad((string) $n, 2, '0', STR_PAD_LEFT) }}</span> {{ $moisNoms[$n] ?? '' }}@else<span class="field-error">Non renseigné</span>@endif</td>
                 @if ($canManage)
                   <td class="actions-cell">
                     <button class="icon-action" type="button" data-modal-open="periode-update-modal" data-periode-edit='@json($periode)' title="Modifier" aria-label="Modifier {{ data_get($periode, 'libelle') }}"><i class="fa-solid fa-pen-to-square" aria-hidden="true"></i></button>
@@ -70,7 +72,7 @@
                 @endif
               </tr>
             @empty
-              <tr><td colspan="{{ ($canManage ? 3 : 2) + ($peutSupprimer ? 1 : 0) }}" class="empty-message show"><x-table-empty-state>Aucune période de paie trouvée.</x-table-empty-state></td></tr>
+              <tr><td colspan="{{ ($canManage ? 4 : 3) + ($peutSupprimer ? 1 : 0) }}" class="empty-message show"><x-table-empty-state>Aucune période de paie trouvée.</x-table-empty-state></td></tr>
             @endforelse
           </tbody>
         </table>
@@ -92,6 +94,7 @@
       <div class="form-grid two-columns">
         <div class="form-group"><label for="periodeCode">Code <span aria-hidden="true">*</span></label><input class="form-control" id="periodeCode" name="code" value="{{ old('code') }}" maxlength="20" required>@error('code')<small class="field-error">{{ $message }}</small>@enderror</div>
         <div class="form-group"><label for="periodeLibelle">Libellé <span aria-hidden="true">*</span></label><input class="form-control" id="periodeLibelle" name="libelle" value="{{ old('libelle') }}" maxlength="100" required>@error('libelle')<small class="field-error">{{ $message }}</small>@enderror</div>
+        <div class="form-group"><label for="periodeMois">Mois <span aria-hidden="true">*</span></label><select class="form-control" id="periodeMois" name="numero_mois" required><option value="">Choisir…</option>@foreach ($moisNoms as $num => $nom)<option value="{{ $num }}" @selected((int) old('numero_mois') === $num)>{{ str_pad((string) $num, 2, '0', STR_PAD_LEFT) }} — {{ $nom }}</option>@endforeach</select>@error('numero_mois')<small class="field-error">{{ $message }}</small>@enderror</div>
       </div>
       <div class="form-actions"><button class="btn-secondary" type="button" data-modal-close>Annuler</button><button class="btn-primary" type="submit">Ajouter</button></div>
     </form>
@@ -103,6 +106,7 @@
       <div class="form-grid two-columns">
         <div class="form-group"><label for="periodeUpdateCode">Code <span aria-hidden="true">*</span></label><input class="form-control" id="periodeUpdateCode" name="code" maxlength="20" required>@error('code', 'updatePeriode')<small class="field-error">{{ $message }}</small>@enderror</div>
         <div class="form-group"><label for="periodeUpdateLibelle">Libellé <span aria-hidden="true">*</span></label><input class="form-control" id="periodeUpdateLibelle" name="libelle" maxlength="100" required>@error('libelle', 'updatePeriode')<small class="field-error">{{ $message }}</small>@enderror</div>
+        <div class="form-group"><label for="periodeUpdateMois">Mois <span aria-hidden="true">*</span></label><select class="form-control" id="periodeUpdateMois" name="numero_mois" required><option value="">Choisir…</option>@foreach ($moisNoms as $num => $nom)<option value="{{ $num }}">{{ str_pad((string) $num, 2, '0', STR_PAD_LEFT) }} — {{ $nom }}</option>@endforeach</select>@error('numero_mois', 'updatePeriode')<small class="field-error">{{ $message }}</small>@enderror</div>
       </div>
       <div class="form-actions"><button class="btn-secondary" type="button" data-modal-close>Annuler</button><button class="btn-primary" type="submit">Enregistrer</button></div>
     </form>
@@ -139,6 +143,7 @@
         updateForm.action = updateForm.dataset.updateUrl.replace('__ID__', encodeURIComponent(item.id));
         document.getElementById('periodeUpdateCode').value = item.code || '';
         document.getElementById('periodeUpdateLibelle').value = item.libelle || '';
+        document.getElementById('periodeUpdateMois').value = item.numero_mois ? String(item.numero_mois) : '';
       });
     });
     document.querySelectorAll('[data-periode-delete]').forEach(function (form) {
@@ -148,6 +153,7 @@
       updateForm.action = updateForm.dataset.updateUrl.replace('__ID__', @json(session('periode_update_id')));
       document.getElementById('periodeUpdateCode').value = @json(old('code'));
       document.getElementById('periodeUpdateLibelle').value = @json(old('libelle'));
+      document.getElementById('periodeUpdateMois').value = @json((string) old('numero_mois'));
     @endif
   }());
 </script>

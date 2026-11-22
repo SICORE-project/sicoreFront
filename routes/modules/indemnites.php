@@ -58,6 +58,11 @@ Route::middleware(['sicore.auth', 'sicore.module:indemnites.read,pieces.read,con
         Route::get('/convocations/enseignants/rechercher', [ConvocationsController::class, 'rechercherEnseignants'])
             ->name('convocations.enseignants.rechercher');
 
+        // Recherche exacte d'un enseignant par matricule (president du jury,
+        // chef de centre, membres) - avant /convocations/{id}, meme raison.
+        Route::get('/convocations/enseignants/matricule', [ConvocationsController::class, 'enseignantParMatricule'])
+            ->name('convocations.enseignants.matricule');
+
         // Modèle Word à remplir puis import du document rempli (une
         // convocation complète par document : infos + centres + membres).
         // Doit rester avant /convocations/{id} pour ne pas etre capturee par elle.
@@ -218,6 +223,14 @@ Route::middleware(['sicore.auth', 'sicore.module:indemnites.read,pieces.read,con
 
         Route::post('/frais-deplacement/calcul-groupe', [FraisDeplacementController::class, 'storeGroupe'])
             ->name('frais-deplacement.calcul-groupe.store');
+
+        // État de paiement (PDF) de toute une convocation — segment fixe,
+        // doit rester avant /frais-deplacement/{id}.
+        Route::get('/frais-deplacement/etat-paiement', [FraisDeplacementController::class, 'telechargerEtatPaiement'])
+            ->name('frais-deplacement.etat-paiement');
+
+        Route::get('/frais-deplacement/etat-paiement/sica', [FraisDeplacementController::class, 'telechargerEtatPaiementSica'])
+            ->name('frais-deplacement.etat-paiement.sica');
 
         Route::post('/frais-deplacement', [FraisDeplacementController::class, 'store'])
             ->name('frais-deplacement.store');

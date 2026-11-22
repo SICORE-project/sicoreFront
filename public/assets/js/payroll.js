@@ -53,15 +53,10 @@
   function fieldOptions(field) {
     if (field.type === "period") {
       var periods = page.data.periods || [];
-      if (field.open_only) {
-        periods = periods.filter(function (period) {
-          return period.status === "open";
-        });
-      }
       return periods.map(function (period) {
         return {
           value: period.id,
-          label: period.label + " — " + period.status_label
+          label: String(period.label || '').replace(/\s*\b\d{4}\b/g, '').trim()
         };
       });
     }
@@ -141,6 +136,7 @@
     var value = defaults[field.name] == null ? (field.default == null ? "" : field.default) : defaults[field.name];
     var required = field.required ? " required" : "";
     var attributes = [
+      field.readonly ? ' readonly' : '',
       field.min != null ? ' min="' + escapeHtml(field.min) + '"' : "",
       field.max != null ? ' max="' + escapeHtml(field.max) + '"' : "",
       field.step != null ? ' step="' + escapeHtml(field.step) + '"' : "",
@@ -211,19 +207,12 @@
     if (selectedPeriod && defaults.payroll_period_id == null) {
       defaults.payroll_period_id = selectedPeriod.id;
     }
-    if ((isCollectiveTabaskiAction() || currentAction === "generate-payslips") && defaults.annee_academique_id == null) {
+    if (isCollectiveTabaskiAction() && defaults.annee_academique_id == null) {
       var academicYears = page.data.academic_years || [];
       var activeYear = academicYears.find(function (year) { return year.is_active; });
       if (activeYear || academicYears.length) {
         defaults.annee_academique_id = (activeYear || academicYears[0]).id;
       }
-    }
-    if (currentAction === "generate-payslips" && selectedPeriod && defaults.month == null) {
-      defaults.month = selectedPeriod.month_number;
-      var matchingYear = (page.data.academic_years || []).find(function (year) {
-        return year.start_date <= selectedPeriod.start_date && year.end_date >= selectedPeriod.end_date;
-      });
-      if (matchingYear) defaults.annee_academique_id = matchingYear.id;
     }
     if (selectedPeriod && defaults.expected_version == null && currentAction === "close-period") {
       defaults.expected_version = selectedPeriod.version;
@@ -301,7 +290,6 @@
     initializeCollectiveHierarchy(defaults);
     initializeCheckboxGroups();
     initializePayrollProfileFields();
-    initializePayrollGeneration(defaults);
     var codeField = form.elements.code;
     if (currentAction === "add-element" && codeField) {
       codeField.addEventListener("change", syncEditableRecord);
@@ -323,72 +311,7 @@
     }
   }
 
-  function initializePayrollGeneration(defaults) {
-    if (currentAction !== "generate-payslips") return;
-    var scope = form.elements.generation_scope;
-    var teacherField = form.elements.enseignant_id;
-    var iaField = form.elements.ia_id;
-    var iefField = form.elements.ief_id;
-    var corpsField = form.elements.statut_enseignant_id;
-    var summary = document.createElement("div");
-    summary.className = "payroll-teacher-summary payroll-field-full";
-    summary.setAttribute("aria-live", "polite");
-    fieldsHost.appendChild(summary);
 
-    function showField(control, visible, required) {
-      control.closest(".payroll-field").hidden = !visible;
-      control.disabled = !visible;
-      control.required = !!required;
-    }
-    function refreshIefs(value) {
-      replaceSelectOptions(iefField, (page.data.education_inspections || []).filter(function (option) {
-        return String(option.ia_id) === String(iaField.value);
-      }), "Toutes les IEF de l’IA", value);
-    }
-    function refresh() {
-      var individual = scope.value === "teacher";
-      showField(teacherField, individual, individual);
-      showField(iaField, !individual, !individual);
-      showField(iefField, !individual, false);
-      showField(corpsField, !individual, false);
-      var selected = (page.data.teachers || []).find(function (teacher) {
-        return String(teacher.id) === String(teacherField.value);
-      });
-      if (individual) {
-        var profile = selected && selected.administrative_profile || {};
-        var facts = selected ? [
-          ["Matricule", selected.matricule], ["Corps / statut", profile.status_label || profile.engagement_type],
-          ["IA", selected.ia_label], ["IEF", selected.ief_label],
-          ["Diplôme", profile.diploma_label], ["Catégorie", profile.category_label],
-          ["Établissement", selected.establishment]
-        ] : [];
-        summary.innerHTML = '<strong>Données enregistrées dans Personnel</strong>' +
-          (selected ? '<span>' + escapeHtml(selected.name) + '</span>' : '<span>Sélectionnez un enseignant.</span>') +
-          facts.map(function (fact) { return '<small>' + escapeHtml(fact[0]) + ' : ' + escapeHtml(fact[1] || 'Non renseigné') + '</small>'; }).join("");
-        submitButton.disabled = !selected;
-      } else {
-        var count = (page.data.teachers || []).filter(function (teacher) {
-          var profile = teacher.administrative_profile || {};
-          return String(teacher.ia_id) === String(iaField.value) &&
-            (!iefField.value || String(teacher.ief_id) === String(iefField.value)) &&
-            (!corpsField.value || String(teacher.statut_enseignant_id) === String(corpsField.value)) &&
-            ["contractuel", "vacataire"].indexOf(profile.engagement_type) !== -1;
-        }).length;
-        summary.innerHTML = '<strong>Génération pour l’IA sélectionnée</strong><span>' + count +
-          ' enseignant(s) actif(s) PC/VAC dans la sélection.</span><small>Un dossier incomplet sera signalé, sans inventer ses données.</small>';
-        submitButton.disabled = !iaField.value || count === 0;
-      }
-    }
-    iaField.addEventListener("change", function () { refreshIefs(""); refresh(); });
-    [scope, teacherField, iefField, corpsField].forEach(function (control) { control.addEventListener("change", refresh); });
-    refreshIefs(defaults.ief_id);
-    refresh();
-  }
-
-  // ---------------------------------------------------------------------------
-  // Sélection obligatoire du formateur : IA, puis IEF, puis matricule saisi.
-  // Les listes et suggestions viennent de PayrollPageService.php.
-  // ---------------------------------------------------------------------------
   function initializeTeacherHierarchy(defaults) {
     var iaField = form.elements.ia_id;
     var iefField = form.elements.ief_id;
@@ -528,34 +451,78 @@
   function initializeCollectiveHierarchy(defaults) {
     if (!isCollectiveTabaskiAction()) return;
 
-    var iaField = form.elements.ia_id;
     var iefField = form.elements.ief_id;
-    if (!iaField || !iefField || form.elements.matricule) return;
+    var matriculeField = form.elements.matricule;
+    var statusField = form.elements.statut_enseignant_id;
+    var iaBoxes = Array.prototype.slice.call(form.querySelectorAll('input[name="ia_ids"]'));
+    var suggestions = form.querySelector('[data-payroll-matricule-suggestions]');
+    if (!iefField || !matriculeField || !iaBoxes.length || !suggestions) return;
+    var yearField = form.elements.calendar_year;
+    var monthField = form.elements.start_month;
+    function syncApplicationYear() {
+      if (!yearField || !monthField || !/^\d{4}$/.test(yearField.value)) return;
+      Array.prototype.forEach.call(monthField.options, function (option) {
+        if (/^\d{4}-\d{2}$/.test(option.value)) option.value = yearField.value + option.value.slice(4);
+      });
+    }
+    if (yearField) yearField.addEventListener('input', syncApplicationYear);
+    syncApplicationYear();
+
+    function selectedIas() {
+      return iaBoxes.filter(function (box) { return box.checked; }).map(function (box) { return String(box.value); });
+    }
+
+    function availableTeachers() {
+      var ias = selectedIas();
+      var statusId = String(statusField.value);
+      return (page.data.teachers || []).filter(function (teacher) {
+        var scopes = currentAction === 'apply-tabaski-deduction'
+          ? (page.data.tabaski_beneficiaries || []).filter(function (item) { return String(item.enseignant_id) === String(teacher.id); })
+          : [{ia_id: teacher.ia_id, ief_id: teacher.ief_id, statut_enseignant_id: teacher.statut_enseignant_id}];
+        return teacher.matricule && scopes.some(function (scope) {
+          return ias.indexOf(String(scope.ia_id)) !== -1 && String(scope.statut_enseignant_id) === statusId &&
+            (!iefField.value || String(scope.ief_id) === String(iefField.value));
+        });
+      });
+    }
+
+    function syncMatricule() {
+      var value = String(matriculeField.value || '').trim().toLocaleUpperCase('fr-FR');
+      var teachers = availableTeachers();
+      suggestions.innerHTML = teachers.map(function (teacher) {
+        return '<option value="' + escapeHtml(teacher.matricule) + '">' + escapeHtml(teacher.name) + '</option>';
+      }).join('');
+      var teacher = teachers.find(function (item) { return String(item.matricule).trim().toLocaleUpperCase('fr-FR') === value; });
+      matriculeField.setCustomValidity(value && !teacher ? 'Ce matricule ne correspond pas à la sélection ou ne possède pas d’avance à rembourser.' : '');
+      var summary = fieldsHost.querySelector('[data-payroll-teacher-summary]');
+      if (summary) {
+        summary.hidden = !teacher;
+        summary.innerHTML = teacher ? '<strong>Formateur identifié</strong><span>' + escapeHtml(teacher.name) + ' · ' + escapeHtml(teacher.matricule) + '</span>' : '';
+      }
+    }
 
     function populateEducationInspections(selectedIef) {
       var inspections = (page.data.education_inspections || []).filter(function (inspection) {
-        return String(inspection.ia_id) === String(iaField.value);
+        return selectedIas().indexOf(String(inspection.ia_id)) !== -1;
       });
       replaceSelectOptions(
         iefField,
         inspections,
-        inspections.length ? "Sélectionner une IEF…" : "Aucune IEF disponible",
+        inspections.length ? "Toutes les IEF des IA sélectionnées" : "Choisir d’abord une IA",
         selectedIef
       );
-      iefField.disabled = !iaField.value || inspections.length === 0;
+      iefField.disabled = inspections.length === 0;
+      syncMatricule();
     }
 
-    replaceSelectOptions(
-      iaField,
-      page.data.academic_inspections || [],
-      "Sélectionner une IA…",
-      defaults.ia_id
-    );
     populateEducationInspections(defaults.ief_id);
-
-    iaField.addEventListener("change", function () {
-      populateEducationInspections("");
+    iaBoxes.forEach(function (box) { box.addEventListener('change', function () { populateEducationInspections(iefField.value); }); });
+    form.querySelectorAll('[data-checkbox-action]').forEach(function (button) {
+      button.addEventListener('click', function () { window.setTimeout(function () { populateEducationInspections(iefField.value); }, 0); });
     });
+    iefField.addEventListener('change', syncMatricule);
+    statusField.addEventListener('change', syncMatricule);
+    matriculeField.addEventListener('input', syncMatricule);
   }
 
   function initializeCheckboxGroups() {
@@ -853,16 +820,8 @@
       status.textContent = 'Sélectionnez au moins une Inspection académique (IA).';
       return false;
     }
-    if (currentAction === 'apply-tabaski-deduction') {
-      var monthCount = form.querySelectorAll('input[name="months"]:checked').length;
-      if (monthCount !== 10) {
-        status.textContent = 'La retenue Tabaski doit porter sur exactement 10 mois distincts.';
-        return false;
-      }
-    }
-    var amount = form.elements.amount ? Number(form.elements.amount.value) : 0;
-    if (!Number.isFinite(amount) || amount <= 0) {
-      status.textContent = 'Le montant doit être strictement supérieur à zéro.';
+    if (!form.elements.start_month?.value) {
+      status.textContent = 'Choisissez le premier mois à venir.';
       return false;
     }
 

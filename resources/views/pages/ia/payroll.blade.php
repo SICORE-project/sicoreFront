@@ -7,9 +7,9 @@
         <section class="objective-card"><h2>{{ $scopeLabel }}</h2><p>Périmètre : {{ $scopeLabel }}</p></section>
         @if ($error)<p class="alert alert-warning" role="alert">{{ $error }}</p>@endif
         <div class="stats-grid three">
-            @foreach (['bulletins_generes' => 'Bulletins générés', 'bulletins_payes' => 'Bulletins payés', 'sommes_percues' => 'Sommes perçues'] as $key => $label)
+            @foreach (['bulletins_generes' => ['Bulletins générés', 'Période sélectionnée'], 'bulletins_payes' => ['Bulletins payés', 'Virements effectués'], 'sommes_percues' => ['Sommes perçues', 'Montant versé']] as $key => [$label, $note])
                 @if (array_key_exists($key, $data['indicateurs'] ?? []))
-                    <article class="stat-card"><div><p class="stat-label">{{ $label }}</p><p class="stat-value">{{ number_format($data['indicateurs'][$key], 0, ',', ' ') }}{{ $key === 'sommes_percues' ? ' FCFA' : '' }}</p></div></article>
+                    <article class="stat-card"><div><p class="stat-label">{{ $label }}</p><p class="stat-value">{{ number_format($data['indicateurs'][$key], 0, ',', ' ') }}{{ $key === 'sommes_percues' ? ' FCFA' : '' }}</p><p class="stat-note">{{ $note }}</p></div></article>
                 @endif
             @endforeach
         </div>

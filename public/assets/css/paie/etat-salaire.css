@@ -647,3 +647,238 @@
     font-size: 5pt;
   }
 }
+
+/* ===== Espace IA : consultation de l'état (partials/salary-statement-ia.blade.php) ===== */
+.salary-ia-statement {
+  margin-top: 20px;
+  overflow: hidden;
+  border: 1px solid #cfe3d8;
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 16px 38px rgba(16, 58, 40, 0.08);
+}
+
+.salary-ia-print-header {
+  display: none;
+}
+
+.salary-ia-footer [hidden] {
+  display: none;
+}
+
+.salary-ia-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 20px 0;
+}
+
+.salary-ia-selection {
+  margin-left: auto;
+  color: #3d5249;
+  font-weight: 600;
+}
+
+.salary-ia-table-wrap {
+  max-height: 560px;
+  overflow: auto;
+}
+
+.salary-ia-table {
+  min-width: 960px;
+}
+
+.salary-ia-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.salary-ia-table .salary-ia-check {
+  width: 44px;
+  text-align: center;
+}
+
+.salary-ia-table .salary-ia-check input {
+  width: 18px;
+  height: 18px;
+  accent-color: #087445;
+  cursor: pointer;
+}
+
+.salary-ia-table tbody tr:not(.is-selected) td {
+  color: #9aa8a2;
+}
+
+.salary-ia-table .sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+
+.salary-ia-actions {
+  display: grid;
+  gap: 16px;
+  padding: 16px 20px 20px;
+  border-top: 1px solid #d8e4de;
+}
+
+.salary-ia-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.salary-ia-buttons .btn-secondary,
+.salary-ia-buttons .btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+}
+
+.salary-ia-buttons .is-disabled,
+.salary-ia-buttons button:disabled {
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+.salary-ia-buttons-spacer {
+  flex: 1;
+}
+
+.salary-ia-choices {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 24px;
+}
+
+.salary-ia-total {
+  padding: 8px 14px;
+  border-radius: 10px;
+  background: #e8f7ef;
+  color: #087445;
+  font-size: 18px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.salary-ia-fields {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 16px;
+}
+
+.salary-ia-fields .form-group {
+  min-width: 200px;
+  margin: 0;
+}
+
+.salary-ia-visa-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Impression depuis l'espace IA : seul l'état, avec les agents cochés. */
+@media print {
+  body.salary-ia-printing {
+    background: #fff !important;
+  }
+
+  body.salary-ia-printing * {
+    visibility: hidden;
+  }
+
+  body.salary-ia-printing .salary-ia-statement,
+  body.salary-ia-printing .salary-ia-statement * {
+    visibility: visible;
+  }
+
+  body.salary-ia-printing .salary-ia-statement {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    margin: 0;
+    border: 0;
+    box-shadow: none;
+  }
+
+  body.salary-ia-printing .salary-ia-toolbar,
+  body.salary-ia-printing .salary-ia-actions,
+  body.salary-ia-printing .salary-ia-check,
+  body.salary-ia-printing .salary-ia-table tbody tr:not(.is-selected) {
+    display: none !important;
+  }
+
+  body.salary-ia-printing .salary-ia-table-wrap {
+    max-height: none;
+    overflow: visible;
+    padding: 0;
+  }
+
+  body.salary-ia-printing .salary-ia-table {
+    min-width: 0;
+    font-size: 9pt;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  body.salary-ia-printing .salary-ia-print-header {
+    display: block;
+    padding: 0 0 10px;
+    text-align: center;
+  }
+
+  body.salary-ia-printing .salary-ia-print-header h3 {
+    margin: 0 0 6px;
+    color: #087445;
+    font-size: 13pt;
+  }
+
+  body.salary-ia-printing .salary-ia-print-meta {
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+    margin: 0;
+    font-size: 10pt;
+  }
+
+  /* Trois blocs côte à côte, même sur une page A4 (les règles « petit écran » les empileraient). */
+  body.salary-ia-printing .salary-ia-footer {
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 30px;
+    padding: 24px 10px 0;
+    border-top: 0;
+  }
+
+  body.salary-ia-printing .salary-ia-footer > div {
+    flex: 1 1 0;
+    min-width: 0;
+    max-width: none;
+    text-align: left;
+  }
+
+  body.salary-ia-printing .salary-ia-footer > .salary-statement-signatory {
+    text-align: center;
+  }
+
+  body.salary-ia-printing .salary-ia-footer strong {
+    font-size: 10pt;
+  }
+
+  body.salary-ia-printing .salary-ia-footer span {
+    font-size: 8pt;
+  }
+}

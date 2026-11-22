@@ -179,6 +179,29 @@ class ConvocationService
         return $this->wrap($this->api->get('types-convocation'));
     }
 
+    // Regions (lieu d'affectation, provenances) et disciplines (metier /
+    // specialite) : options des menus deroulants du formulaire de convocation.
+    public function referentiels(): array
+    {
+        return $this->wrap($this->api->get('convocations-referentiels'));
+    }
+
+    // Lieux de service actifs (id, code, libelle) : options du <select>
+    // "Centre d'examen" du formulaire de convocation.
+    public function lieuxService(): array
+    {
+        return $this->wrap($this->api->get('convocations-lieux-service'));
+    }
+
+    // Enseignants dont le matricule commence par $matricule (formulaire de
+    // convocation : president du jury, chef de centre, membres).
+    public function enseignantParMatricule(string $matricule): array
+    {
+        return $this->wrap($this->api->get('convocations-enseignant-matricule', [
+            'matricule' => $matricule,
+        ]));
+    }
+
     public function rechercherEnseignants(?string $recherche = null): array
     {
         return $this->wrap($this->api->get('enseignants', array_filter([

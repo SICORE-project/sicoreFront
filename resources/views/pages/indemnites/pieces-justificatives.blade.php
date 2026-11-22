@@ -152,9 +152,7 @@
 
         <p class="info-depot" role="note">
             <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
-            Les pièces justificatives sont fournies <strong>après les services faits (après les examens)</strong> :
-            le dépôt n'est possible qu'une fois l'examen terminé. L'ordre de mission se dépose en <strong>un seul fichier</strong>
-            contenant le recto et le verso.
+            L'ordre de mission se dépose en <strong>un seul fichier</strong> contenant le recto et le verso.
         </p>
 
         <div data-ajax-region="corps">

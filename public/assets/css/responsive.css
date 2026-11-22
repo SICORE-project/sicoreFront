@@ -361,3 +361,251 @@
     flex-basis: 38px;
   }
 }
+
+/* ==========================================================================
+   EN-TÊTE DE PAGE (x-topbar) — version responsive
+   ========================================================================== */
+.page-title-wrap { flex: 1 1 auto; }
+.page-title-text { min-width: 0; flex: 1 1 auto; }
+.topbar h1,
+.topbar .page-title-text p {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Tablette : en-tête collant, plus compact. */
+@media (max-width: 1024px) {
+  .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    min-height: 64px;
+    background: rgba(255, 255, 255, 0.94);
+    -webkit-backdrop-filter: saturate(180%) blur(10px);
+    backdrop-filter: saturate(180%) blur(10px);
+    box-shadow: 0 1px 0 var(--border), 0 6px 18px rgba(15, 23, 42, 0.04);
+  }
+  .topbar h1 { font-size: 21px; }
+}
+
+/* Mobile : titre et actions empilés proprement, sans débordement. */
+@media (max-width: 768px) {
+  .topbar {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+  }
+  .page-title-wrap { gap: 10px; width: 100%; }
+  .title-icon {
+    width: 38px;
+    height: 38px;
+    flex-basis: 38px;
+    border-radius: 11px;
+    font-size: 16px;
+  }
+  .topbar h1 { font-size: 18px; letter-spacing: -0.2px; }
+  .topbar .page-title-text p { font-size: 12px; margin-top: 2px; }
+  .topbar > :not(.page-title-wrap) { flex: 1 1 100%; }
+}
+
+/* Petits téléphones : on masque l'icône décorative pour laisser place au titre. */
+@media (max-width: 390px) {
+  .topbar { padding: 10px 12px; }
+  .title-icon { display: none; }
+  .topbar h1 { font-size: 17px; }
+}
+
+/* ==========================================================================
+   SIDEBAR — tablette et mobile (≤ 992px)
+   Placé à la fin d'app.css : ce fichier est chargé après responsive.css,
+   sans quoi « .app-body .main-content » garderait la marge de 292px.
+   ========================================================================== */
+@media (max-width: 992px) {
+  body.app-body {
+    overflow-x: hidden;
+  }
+
+  /* Le contenu occupe toute la largeur, que le menu soit réduit ou non. */
+  body.app-body .main-content,
+  body.app-body.sidebar-collapsed .main-content {
+    margin-left: 0;
+    width: 100%;
+    min-width: 0;
+  }
+
+  /* Menu en tiroir, caché hors écran par défaut. */
+  body.app-body .sidebar,
+  body.app-body.sidebar-collapsed .sidebar {
+    width: min(86vw, 300px);
+    height: 100vh;
+    height: 100dvh;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    transform: translateX(-100%);
+    visibility: hidden;
+    box-shadow: none;
+    transition: transform 0.26s ease, visibility 0s linear 0.26s, box-shadow 0.26s ease;
+  }
+
+  body.app-body .sidebar.open {
+    transform: translateX(0);
+    visibility: visible;
+    box-shadow: 24px 0 46px rgba(15, 23, 42, 0.22);
+    transition: transform 0.26s ease, visibility 0s, box-shadow 0.26s ease;
+  }
+
+  /* Calque sombre derrière le menu ouvert (clic = fermeture). */
+  body.sidebar-open .mobile-overlay {
+    display: block;
+    opacity: 1;
+    -webkit-backdrop-filter: blur(2px);
+    backdrop-filter: blur(2px);
+  }
+
+  body.sidebar-open {
+    overflow: hidden;
+  }
+
+  .mobile-menu-btn {
+    display: inline-flex;
+  }
+
+  .desktop-sidebar-btn {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sidebar,
+  .sidebar.open {
+    transition: none !important;
+  }
+}
+
+/* ==========================================================================
+   COMPOSANTS COMMUNS — toutes les pages (listes, formulaires, filtres, modales)
+   ========================================================================== */
+.content-area { min-width: 0; }
+.content-area img,
+.content-area svg,
+.content-area video { max-width: 100%; }
+.table-card,
+.form-card,
+.panel { min-width: 0; }
+
+@media (max-width: 992px) {
+  .form-grid.three,
+  .form-grid--three { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .table-card-header { flex-wrap: wrap; }
+  .wizard-progress { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+@media (max-width: 768px) {
+  /* En-tête des listes : titre puis actions en pleine largeur. */
+  .table-card-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    padding: 16px;
+  }
+  .table-card-header > * { min-width: 0; }
+  .table-card-header .actions-group { width: 100%; }
+  .actions-row { align-items: stretch; gap: 10px; }
+  .actions-row > .breadcrumb { margin-right: 0; }
+  .actions-group > .btn-primary,
+  .actions-group > .btn-secondary,
+  .actions-group > a,
+  .actions-group > button { flex: 1 1 auto; justify-content: center; }
+
+  /* Tableaux : défilement horizontal fluide avec un indicateur d'ombre. */
+  .table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    background:
+      linear-gradient(90deg, #fff 30%, rgba(255,255,255,0)) left / 24px 100% no-repeat local,
+      linear-gradient(270deg, #fff 30%, rgba(255,255,255,0)) right / 24px 100% no-repeat local,
+      radial-gradient(farthest-side at 0 50%, rgba(15,23,42,.14), transparent) left / 10px 100% no-repeat scroll,
+      radial-gradient(farthest-side at 100% 50%, rgba(15,23,42,.14), transparent) right / 10px 100% no-repeat scroll;
+  }
+  .table { min-width: 640px; }
+  .table th { padding: 11px 12px; font-size: 11px; white-space: nowrap; }
+  .table td { padding: 12px; font-size: 13px; }
+  .table .badge { white-space: nowrap; }
+  .table .icon-action { width: 36px; height: 36px; }
+
+  /* Pagination empilée et centrée. */
+  .pagination {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    min-height: 0;
+    padding: 12px 14px;
+    text-align: center;
+  }
+  .pagination > * { justify-content: center; flex-wrap: wrap; }
+
+  /* Formulaires : une colonne, champs confortables au doigt. */
+  .form-grid,
+  .form-grid.three,
+  .form-grid--three,
+  .form-grid--balanced { grid-template-columns: minmax(0, 1fr); gap: 14px; }
+  .form-group.full { grid-column: auto; }
+  .form-control,
+  .form-select,
+  select,
+  textarea,
+  input[type="text"],
+  input[type="email"],
+  input[type="number"],
+  input[type="date"],
+  input[type="search"],
+  input[type="tel"],
+  input[type="password"] { font-size: 16px; } /* évite le zoom automatique d'iOS */
+  .form-section { padding-left: 16px; padding-right: 16px; }
+  .form-required-note { margin-left: 16px; margin-right: 16px; }
+  .form-actions { gap: 8px; }
+
+  /* Filtres. */
+  .filter-panel,
+  .filter-panel.parametrage-filters { grid-template-columns: minmax(0, 1fr); padding: 14px; gap: 12px; }
+  .filter-panel .actions-group,
+  .filter-panel.parametrage-filters > .actions-group { width: 100%; justify-content: stretch; }
+
+  /* Assistants (étapes) : numéros seuls si l'espace manque. */
+  .wizard-progress { gap: 6px; padding: 14px 14px 0; }
+  .wizard-step { justify-content: center; padding: 8px; min-height: 40px; font-size: 12px; }
+
+  /* Panneaux et cartes. */
+  .panel,
+  .form-card { border-radius: 14px; }
+  .panel-header,
+  .form-card-header { padding-left: 16px; padding-right: 16px; }
+
+  /* Modales et confirmations. */
+  .confirm-backdrop { padding: 12px; align-items: flex-end; }
+  .confirm-dialog { width: 100%; border-radius: 16px 16px 12px 12px; padding: 18px; }
+
+  /* Alertes et textes longs. */
+  .alert { font-size: 13px; overflow-wrap: anywhere; }
+  .breadcrumb { overflow-wrap: anywhere; }
+}
+
+@media (max-width: 480px) {
+  .wizard-step span:not(.wizard-step-number):not(.wizard-step-icon) { display: none; }
+  .stat-value { font-size: 22px; }
+  .table-card-header h2 { font-size: 17px; }
+}
+
+/* Boutons à l'intérieur d'un tableau : jamais étirés en pleine largeur. */
+@media (max-width: 768px) {
+  .table .actions-group,
+  .table td .btn-primary,
+  .table td .btn-secondary,
+  .table td .btn-danger-soft { width: auto; flex-wrap: nowrap; }
+  .table .actions-group > * { flex: 0 0 auto; }
+}

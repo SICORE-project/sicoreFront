@@ -89,7 +89,7 @@
                   $exportParameters = array_merge(
                     $exportParameters,
                     request()->only([
-                      'academic_year_id', 'statut_enseignant_id', 'ia_id', 'ief_id', 'matricule',
+                      'payroll_month', 'academic_year_id', 'statut_enseignant_id', 'ia_id', 'ief_id', 'matricule',
                       'payment_place_id', 'training_center_id', 'tabaski_only',
                       'with_signature', 'without_service_done', 'dage_signatory',
                     ])
@@ -163,15 +163,8 @@
           <div class="periodic-reports-toolbar">
             <form method="GET" class="periodic-period-form" aria-label="Choisir la période des rapports">
               <label for="periodicReportsPeriod">Période de paie</label>
-              <select class="form-control" id="periodicReportsPeriod" name="period_id">
-                @foreach (($moduleData['periods'] ?? []) as $periodOption)
-                  <option
-                    value="{{ $periodOption['id'] }}"
-                    @selected((string) $periodOption['id'] === (string) data_get($moduleData, 'period.id'))
-                  >
-                    {{ $periodOption['label'] }} — {{ $periodOption['status_label'] }}
-                  </option>
-                @endforeach
+              <select class="form-control" id="periodicReportsPeriod" name="period_id" data-payroll-months="{{ json_encode($moduleData['periods'] ?? []) }}" data-payroll-years="{{ json_encode($moduleData['academic_years'] ?? []) }}">
+                @include('pages.paie.partials.month-options', ['monthSelected' => data_get($moduleData, 'period.id')])
               </select>
               <button class="btn-secondary" type="submit">Actualiser</button>
             </form>
@@ -246,8 +239,11 @@
             @elseif ($filterName === 'matricule')
                 <input class="form-control" id="{{ $filterId }}" name="{{ $filterName }}" type="search" value="{{ $filterValue }}" placeholder="Saisir un matricule">
             @else
-                <select class="form-control" id="{{ $filterId }}" name="{{ $filterName }}">
+                <select class="form-control" id="{{ $filterId }}" name="{{ $filterName === 'period_id' && $slug === 'paie-edition' && array_key_exists('payroll_months', $moduleData) ? 'payroll_month' : $filterName }}" @if($filterName === 'period_id' && !($slug === 'paie-edition' && array_key_exists('payroll_months', $moduleData))) data-payroll-months="{{ json_encode($moduleData['periods'] ?? []) }}" data-payroll-years="{{ json_encode($moduleData['academic_years'] ?? []) }}" @endif>
                   <option value="">Tous</option>
+                  @if ($filterName === 'period_id')
+                    @include('pages.paie.partials.month-options', ['monthSelected' => $filterValue, 'useCatalogue' => $slug === 'paie-edition'])
+                  @else
                   @foreach ($filterOptions as $option)
                     <option
                       value="{{ $option['value'] }}"
@@ -256,6 +252,7 @@
                       {{ $option['label'] }}
                     </option>
                   @endforeach
+                  @endif
                 </select>
             @endif
           </div>
@@ -274,15 +271,26 @@
          "
      @endif>
 
+    @php
+        // Édition : un mois déjà validé par l'IA se consulte, il ne se régénère pas.
+        $editionConsult = $slug === 'paie-edition' && data_get($moduleData, 'edition.status') === 'validee';
+    @endphp
     <button class="btn-secondary"
             type="submit"
-            style="white-space: nowrap;">
+            style="white-space: nowrap;"
+            @if ($slug === 'paie-edition') data-edition-generate @endif>
 
-        <i class="fa-solid fa-filter" aria-hidden="true"></i>
+        <i class="fa-solid {{ $editionConsult ? 'fa-eye' : 'fa-filter' }}" aria-hidden="true"></i>
 
-        {{ $slug === 'paie-edition' ? 'Générer la paie' : 'Appliquer' }}
+        <span data-generate-label>{{ $slug === 'paie-edition' ? ($editionConsult ? 'Consulter' : 'Générer la paie') : 'Appliquer' }}</span>
 
     </button>
+    @if ($slug === 'paie-edition')
+        @include('pages.paie.partials.generate-once', [
+            'selector' => '[data-edition-generate]', 'states' => $moduleData['edition_months'] ?? [],
+            'generate' => 'Générer la paie', 'consult' => 'Consulter', 'rule' => 'validated',
+        ])
+    @endif
 
     @if ($slug === 'paie-edition')
         <a class="btn-secondary"
@@ -463,7 +471,15 @@
       </style>
     @endif
 
+    @if ($slug === 'paie-edition' && !empty($moduleData['edition']))
+      @include('pages.paie.partials.edition-workflow', ['edition' => $moduleData['edition']])
+    @endif
+
     {{-- Tableau générique construit avec columns et rows. --}}
+    @if ($connected && $slug === 'paie-avance-tabaski' && empty($page['rows']))
+      @include('pages.paie.partials.tabaski-empty-advances')
+    @else
+    <section class="table-card">
     <section @class(['table-card', 'payroll-edition-grid' => $slug === 'paie-edition'])>
       <div class="table-responsive">
       <table class="table" id="moduleTable" @if(!in_array($slug, ['utilisateurs', 'paie-edition'])) data-paginated-table @endif>
@@ -637,7 +653,9 @@
       </script>
       <div class="edition-footer-actions" style="display: flex; align-items: center; justify-content: space-between; padding: 15px; background: #f8fafc; border-top: 1px solid #e2e8f0; margin-top: 10px;">
         <div style="display: flex; gap: 10px;">
-          <button type="button" class="btn-primary" style="background: #4b5563; color: white;">Valider</button>
+          @if (data_get($moduleData, 'edition.can_validate') && data_get($moduleData, 'edition.status') !== 'validee')
+            <button type="button" class="btn-primary" data-edition-validate>Valider l’Édition</button>
+          @endif
           <button type="button" class="btn-secondary" onclick="printPayrollEdition()">Imprimer</button>
           <button type="button" class="btn-secondary">Annuler</button>
         </div>
@@ -677,6 +695,7 @@
       </nav>
       @endif
     </section>
+    @endif
     @endif
   </section>
 </main>

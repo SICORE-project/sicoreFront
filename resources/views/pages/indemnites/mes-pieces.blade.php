@@ -16,7 +16,7 @@
 
         <p class="info-depot" role="note">
             <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
-            Vos pièces sont fournies <strong>après les services faits (après l'examen)</strong>. Chaque fichier (PDF, JPG ou PNG) pèse
+            Chaque fichier (PDF, JPG ou PNG) pèse
             <strong>1 Mo maximum</strong>. L'ordre de mission se dépose en <strong>un seul fichier</strong> contenant le recto et le verso.
         </p>
 

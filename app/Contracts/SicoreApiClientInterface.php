@@ -56,4 +56,64 @@ interface SicoreApiClientInterface
 
     /** Charge le détail complet d'un bulletin individuel. */
     public function payslip(string $token, int $payslipId): array;
+
+
+
+
+public function delegationCredits(string $token, array $filters = []): array;
+
+public function delegationCreditOptions(string $token): array;
+
+public function delegationCredit(string $token, int $id): array;
+
+public function createDelegationCredit(string $token, array $payload): array;
+
+public function updateDelegationCredit(string $token, int $id, array $payload): array;
+
+public function deleteDelegationCredit(string $token, int $id): array;
+
+
+
+/*
+|--------------------------------------------------------------------------
+| Ventilations des délégations de crédits
+|--------------------------------------------------------------------------
+*/
+
+public function delegationVentilations(
+    string $token,
+    int $delegationId
+): array;
+
+public function delegationVentilationOptions(
+    string $token,
+    int $delegationId
+): array;
+
+public function delegationVentilation(
+    string $token,
+    int $delegationId,
+    int $ventilationId
+): array;
+
+public function createDelegationVentilation(
+    string $token,
+    int $delegationId,
+    array $payload
+): array;
+
+public function updateDelegationVentilation(
+    string $token,
+    int $delegationId,
+    int $ventilationId,
+    array $payload
+): array;
+
+public function deleteDelegationVentilation(
+    string $token,
+    int $delegationId,
+    int $ventilationId
+): array;
+
+
 }

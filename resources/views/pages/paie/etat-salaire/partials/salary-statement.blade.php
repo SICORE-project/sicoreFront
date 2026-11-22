@@ -40,14 +40,9 @@
       </div>
       <div class="form-group">
         <label for="salaryStatementPeriod">Période de paie</label>
-        <select class="form-control" id="salaryStatementPeriod" name="period_id" required>
-                    <option value="">Toute les périodes de paie</option>
-
-          @foreach (($moduleData['periods'] ?? []) as $periodOption)
-            <option value="{{ $periodOption['id'] }}" @selected((string) $periodOption['id'] === (string) data_get($moduleData, 'period.id'))>
-              {{ $periodOption['label'] }} — {{ $periodOption['status_label'] }}
-            </option>
-          @endforeach
+        <select class="form-control" id="salaryStatementPeriod" name="{{ array_key_exists('payroll_months', $moduleData) ? 'payroll_month' : 'period_id' }}" required @if(!array_key_exists('payroll_months', $moduleData)) data-payroll-months="{{ json_encode($moduleData['periods'] ?? []) }}" data-payroll-years="{{ json_encode($moduleData['academic_years'] ?? []) }}" @endif>
+          <option value="">Choisir le mois</option>
+          @include('pages.paie.partials.month-options', ['monthSelected' => data_get($moduleData, 'period.id'), 'useCatalogue' => true])
         </select>
       </div>
 
@@ -57,16 +52,6 @@
           <option value="">Année correspondant à la période</option>
           @foreach (($moduleData['academic_years'] ?? []) as $year)
             <option value="{{ $year['id'] }}" @selected((string) $year['id'] === (string) $selectedAcademicYear)>{{ $year['label'] }}</option>
-          @endforeach
-        </select>
-      </div>
-
-      <div class="form-group">
-        <label for="salaryStatementCorps">Corps Enseignant</label>
-        <select class="form-control" id="salaryStatementCorps" name="statut_enseignant_id">
-          <option value="">Tous les statuts</option>
-          @foreach (data_get($statement, 'filter_options.statuts', []) as $option)
-            <option value="{{ $option['id'] }}" @selected((string) $option['id'] === (string) request('statut_enseignant_id'))>{{ $option['label'] }}</option>
           @endforeach
         </select>
       </div>
@@ -139,7 +124,15 @@
 
     <div class="salary-statement-filter-actions">
       <a class="btn-secondary" href="{{ route('paie.etat-salaires') }}"><i class="fa-solid fa-rotate-left" aria-hidden="true"></i> Réinitialiser</a>
-      <button class="btn-primary" type="submit" name="document" value="1" formtarget="_blank"><i class="fa-solid fa-file-lines" aria-hidden="true"></i> Générer l’état</button>
+      @php
+        // IA : l'état d'un mois validé se génère une fois, puis se consulte.
+        $statementConsult = (bool) data_get($moduleData, 'edition_months.p'.data_get($moduleData, 'period.id').'.statement_generated');
+      @endphp
+      <button class="btn-primary" type="submit" name="document" value="1" formtarget="_blank" data-statement-generate><i class="fa-solid {{ $statementConsult ? 'fa-eye' : 'fa-file-lines' }}" aria-hidden="true"></i> <span data-generate-label>{{ $statementConsult ? 'Consulter l’état' : 'Générer l’état' }}</span></button>
+      @include('pages.paie.partials.generate-once', [
+        'selector' => '[data-statement-generate]', 'states' => $moduleData['edition_months'] ?? [],
+        'generate' => 'Générer l’état', 'consult' => 'Consulter l’état', 'rule' => 'generated',
+      ])
     </div>
 
     {{-- Résultat du filtre : un agent par ligne, une colonne par élément de l'état. --}}
@@ -150,7 +143,7 @@
     <div class="salary-statement-results">
 
       <div class="salary-statement-table-wrap">
-        <table class="salary-statement-table">
+        <!-- <table class="salary-statement-table">
 
           <thead>
             <tr>
@@ -198,7 +191,7 @@
               </tr>
             </tfoot>
           @endif
-        </table>
+        </table> -->
       </div>
     </div>
   </form>
@@ -214,6 +207,16 @@
       const matricule = document.getElementById('salaryStatementMatricule');
       let typingTimer;
       form?.addEventListener('change', (event) => {
+        // Options de l'état : une seule à la fois (cocher l'une décoche les autres).
+        // Elles s'appliquent à « Générer l'état » et ne rechargent pas la page.
+        if (event.target.type === 'checkbox') {
+          if (event.target.checked) {
+            form.querySelectorAll('.salary-statement-options input[type="checkbox"]').forEach((box) => {
+              if (box !== event.target) box.checked = false;
+            });
+          }
+          return;
+        }
         if (event.target === matricule) return;
         form.requestSubmit();
       });

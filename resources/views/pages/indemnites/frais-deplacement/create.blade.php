@@ -317,31 +317,34 @@
                     <div class="form-grid">
 
                         {{--
-                            Demande utilisatrice : "lieu_depart" et
-                            "date_depart" (comme "date_retour" plus bas) sont
-                            pré-remplis depuis la convocation
-                            (lieu_affectation = où l'agent travaille
-                            habituellement / date_debut / date_fin = période
-                            d'examen). "date_depart"/"date_retour" sont
+                            Demande utilisatrice : "lieu_depart" = provenance
+                            du bénéficiaire (où il exerce habituellement, saisie
+                            sur la convocation), "lieu_destination" = lieu
+                            d'affectation de la convocation. "date_depart"
+                            (comme "date_retour" plus bas) est pré-remplie
+                            depuis la convocation (date_debut / date_fin =
+                            période d'examen). "date_depart"/"date_retour" sont
                             désactivés + fond coloré (.field-prefilled),
                             avec un hidden portant la valeur réelle (un input
                             disabled n'est jamais envoyé par le navigateur).
-                            "lieu_depart" et "lieu_destination" (plus bas)
-                            restent volontairement MODIFIABLES — demande
-                            utilisatrice explicite de garder ces deux-là
-                            corrigibles, contrairement aux dates.
+                            "lieu_depart" et "lieu_destination" sont eux aussi
+                            grisés et non modifiables (demande utilisatrice),
+                            mais en "readonly" (pas "disabled") : leur valeur
+                            est donc bien envoyée à l'enregistrement.
                         --}}
                         <div class="form-group">
                             <label for="lieu_depart" class="required-label">Partant de <span class="required">*</span></label>
                             <input
                                 type="text"
-                                class="form-control @error('lieu_depart') is-invalid @enderror"
+                                class="form-control field-prefilled @error('lieu_depart') is-invalid @enderror"
                                 id="lieu_depart"
                                 name="lieu_depart"
-                                value="{{ old('lieu_depart', $convocation['lieu_affectation'] ?? 'Dakar') }}"
-                                placeholder="Ex : Dakar"
+                                value="{{ old('lieu_depart', $beneficiaire['provenance'] ?? '') }}"
+                                readonly
+                                tabindex="-1"
                                 required
                             >
+                            <small class="form-hint">Provenance du bénéficiaire, saisie sur la convocation — non modifiable ici.</small>
                         </div>
 
                         <div class="form-group">
@@ -362,13 +365,15 @@
                             <label for="lieu_destination" class="required-label">Pour se rendre à <span class="required">*</span></label>
                             <input
                                 type="text"
-                                class="form-control @error('lieu_destination') is-invalid @enderror"
+                                class="form-control field-prefilled @error('lieu_destination') is-invalid @enderror"
                                 id="lieu_destination"
                                 name="lieu_destination"
-                                value="{{ old('lieu_destination', $convocation['lieu_examen'] ?? '') }}"
-                                placeholder="Ex : Kaolack"
+                                value="{{ old('lieu_destination', $beneficiaire['lieu_affectation'] ?? ($convocation['lieu_affectation'] ?? '')) }}"
+                                readonly
+                                tabindex="-1"
                                 required
                             >
+                            <small class="form-hint">Lieu d'affectation de la convocation — non modifiable ici.</small>
                         </div>
 
                         <div class="form-group">
