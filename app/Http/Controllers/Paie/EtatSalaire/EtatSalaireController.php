@@ -60,6 +60,7 @@ class EtatSalaireController extends PayrollController
     {
         return $request->validate([
             'period_id' => ['nullable', 'integer', 'min:1'],
+            'payroll_month' => ['nullable', 'integer', 'between:1,12'],
             'academic_year_id' => ['nullable', 'integer', 'min:1'],
             'statut_enseignant_id' => ['nullable', 'integer', 'min:1'],
             'ia_id' => ['nullable', 'integer', 'min:1'],

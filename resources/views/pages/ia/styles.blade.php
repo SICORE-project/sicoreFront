@@ -7,5 +7,12 @@
     .ia-details dt { font-size: 14px; color: #64748b; }
     .ia-details dd { margin: 6px 0 0; overflow-wrap: anywhere; }
     @media (max-width: 640px) { .ia-filters label { width: 100%; } }
+    /* Liste des enseignants : même présentation que Gestion du personnel (national). */
+    .filter-panel.teacher-filters { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+    .teacher-filters .actions-group { grid-column: 1 / -1; justify-content: flex-end; }
+    @media (max-width: 600px) { .filter-panel.teacher-filters { grid-template-columns: minmax(0, 1fr); } }
+    a.icon-action { text-decoration: none; }
+    .ia-import-actions { margin: 12px 0; }
+    #ia-teacher-import-modal .form-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px; }
 </style>
 @endpush

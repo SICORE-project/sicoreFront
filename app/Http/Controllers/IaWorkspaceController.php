@@ -437,6 +437,16 @@ class IaWorkspaceController extends Controller
 
         ];
 
+        // État des salaires : la première génération du mois est enregistrée (ensuite « Consulter l'état »).
+        if ($slug === 'paie-etat-salaires' && $request->boolean('document')
+            && ! empty($moduleData['rows']) && data_get($moduleData, 'period.id')) {
+            try {
+                $this->api->post('ia/etat-salaires/genere', ['payroll_period_id' => data_get($moduleData, 'period.id')]);
+            } catch (ConnectionException) {
+                // Le document reste affiché ; seul le libellé du bouton ne sera pas mis à jour.
+            }
+        }
+
         // Adapter les liens d'export au périmètre IA.
         foreach ($moduleData['actions'] as &$action) {
 
@@ -773,5 +783,90 @@ class IaWorkspaceController extends Controller
 
             ]
         );
+    }
+
+    /**
+     * Formulaire « Modifier » d'une fiche (Gestion du personnel > Enseignants).
+     */
+    public function editTeacher(Request $request, int $id): View
+    {
+        [$data, $error] = $this->get('ia/enseignants/'.$id.'/formulaire', []);
+
+        return view('pages.ia.teacher-edit', [
+            'form' => $data['data'] ?? null,
+            'error' => $error,
+            'scopeLabel' => $this->organisation->label(),
+        ]);
+    }
+
+    /**
+     * Enregistre la fiche : seuls les champs modifiés sont transmis au backend.
+     */
+    public function updateTeacher(Request $request, int $id)
+    {
+        [$data] = $this->get('ia/enseignants/'.$id.'/formulaire', []);
+        $current = $data['data']['values'] ?? [];
+        $input = $request->except(['_token', '_method']);
+        $same = fn (string $key) => (string) ($input[$key] ?? '') === (string) ($current[$key] ?? '');
+
+        $payload = [];
+        foreach (['situation_matrimoniale', 'nombre_enfants', 'nombre_femmes', 'date_prise_service', 'date_recrutement',
+            'date_fin_contrat', 'ief_id', 'lieu_service_id', 'diplome_id', 'categorie_id'] as $key) {
+            if (! $same($key)) $payload[$key] = ($input[$key] ?? '') === '' ? null : $input[$key];
+        }
+        if ($request->boolean('conjoint_travaille') !== (bool) ($current['conjoint_travaille'] ?? false)) {
+            $payload['conjoint_travaille'] = $request->boolean('conjoint_travaille');
+        }
+        if (! $same('syndicat_id')) $payload['syndicat'] = ['syndicat_id' => $input['syndicat_id'] ?: null];
+        if (! $same('mutuelle_id')) $payload['mutuelle'] = ['mutuelle_id' => $input['mutuelle_id'] ?: null];
+        $bank = ['institut_financier_id', 'code_banque', 'code_guichet', 'numero_compte', 'cle_rib'];
+        if (collect($bank)->contains(fn ($key) => ! $same($key))) {
+            $payload['compte_bancaire'] = collect($bank)->mapWithKeys(fn ($key) => [$key => ($input[$key] ?? '') === '' ? null : $input[$key]])->all();
+        }
+        if ($payload === []) {
+            return redirect()->route('ia.teachers.show', $id)->with('success', 'Aucune modification à enregistrer.');
+        }
+
+        try {
+            $response = $this->api->put('ia/enseignants/'.$id, $payload);
+        } catch (ConnectionException) {
+            return back()->withInput()->with('error', 'Le service est indisponible. Veuillez réessayer.');
+        }
+        if (! $response->successful()) {
+            $errors = collect((array) $response->json('errors', []))
+                ->mapWithKeys(fn ($messages, $key) => [preg_replace('/^(compte_bancaire|syndicat|mutuelle)\./', '', $key) => $messages])
+                ->all();
+
+            return back()->withInput()->withErrors($errors)->with('error', $response->json('message', 'Enregistrement impossible.'));
+        }
+
+        return redirect()->route('ia.teachers.show', $id)->with('success', $response->json('message'));
+    }
+
+    /**
+     * Édition IA : valide le mois pour l'IA (recalcul des bulletins de l'IA).
+     */
+    public function validateEdition(Request $request): \Illuminate\Http\JsonResponse
+    {
+        return $this->relayJson(fn () => $this->api->post(
+            'ia/edition/valider',
+            $request->only(['payroll_period_id']),
+            180
+        ), 'Validation impossible.');
+    }
+
+    private function relayJson(\Closure $call, string $fallback): \Illuminate\Http\JsonResponse
+    {
+        try {
+            $response = $call();
+        } catch (ConnectionException) {
+            return response()->json(['message' => 'Le service est indisponible. Veuillez réessayer.'], 503);
+        }
+
+        return response()->json([
+            'message' => $response->json('message', $response->successful() ? 'Opération effectuée.' : $fallback),
+            'errors' => (array) $response->json('errors', []),
+            'data' => $response->json('data'),
+        ], $response->status());
     }
 }
