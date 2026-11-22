@@ -41,7 +41,8 @@
         @forelse ($statementRows as $row)
           <tr data-salary-ia-row data-reference="{{ $row['reference'] ?? '' }}" data-net="{{ (float) ($row['net'] ?? 0) }}">
             <td class="salary-ia-check">
-              <input type="checkbox" aria-label="Inclure {{ $row['first_name'] ?? '' }} {{ $row['last_name'] ?? '' }}" data-salary-ia-box>
+              {{-- Comme FINPRONET : toutes les lignes sont cochées à l'ouverture. --}}
+              <input type="checkbox" checked aria-label="Inclure {{ $row['first_name'] ?? '' }} {{ $row['last_name'] ?? '' }}" data-salary-ia-box>
             </td>
             <td>{{ $row['sequence'] ?? $loop->iteration }}</td>
             <td>{{ $row['first_name'] ?? '—' }}</td>

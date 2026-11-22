@@ -66,6 +66,10 @@ Route::middleware('sicore.auth')->group(function (): void {
     Route::get('/ia/enseignants/{id}', [\App\Http\Controllers\IaWorkspaceController::class, 'teacher'])->whereNumber('id')->name('ia.teachers.show');
     Route::get('/ia/paie/export', [\App\Http\Controllers\IaWorkspaceController::class, 'export'])->name('ia.payroll.export');
     Route::get('/ia/paie/{id}', [\App\Http\Controllers\IaWorkspaceController::class, 'payslip'])->whereNumber('id')->name('ia.payroll.show');
+    // Fiches modifiées par l'IA (Gestion du personnel > Enseignants), puis validation de l'Édition du mois.
+    Route::get('/ia/enseignants/{id}/modifier', [\App\Http\Controllers\IaWorkspaceController::class, 'editTeacher'])->whereNumber('id')->name('ia.teachers.edit');
+    Route::put('/ia/enseignants/{id}', [\App\Http\Controllers\IaWorkspaceController::class, 'updateTeacher'])->whereNumber('id')->name('ia.teachers.update');
+    Route::post('/ia/edition/valider', [\App\Http\Controllers\IaWorkspaceController::class, 'validateEdition'])->name('ia.edition.validate');
 
     Route::get('/enseignants', [EnseignantController::class, 'index'])->name('enseignants.legacy.index');
     Route::get('/enseignants/nouveau', [EnseignantController::class, 'create'])->name('enseignants.legacy.create');

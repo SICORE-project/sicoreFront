@@ -26,16 +26,16 @@ class PayrollPeriodWorkflowTest extends TestCase
     public function test_creation_posts_only_code_and_label(): void
     {
         Http::fake(['*/periodes-paie' => Http::response(['message' => 'Période de paie ajoutée avec succès.'], 201)]);
-        $this->post(route('parametres.periodes-paie.store'), ['code' => 'JAN', 'libelle' => 'JANVIER'])
+        $this->post(route('parametres.periodes-paie.store'), ['code' => 'JAN', 'libelle' => 'JANVIER', 'numero_mois' => 1])
             ->assertRedirect(route('parametres.periodes-paie.index'))->assertSessionHas('success');
-        Http::assertSent(fn ($r) => $r->method() === 'POST' && $r['code'] === 'JAN' && $r['libelle'] === 'JANVIER' && ! isset($r['date_debut']));
+        Http::assertSent(fn ($r) => $r->method() === 'POST' && $r['code'] === 'JAN' && $r['libelle'] === 'JANVIER' && (int) $r['numero_mois'] === 1 && ! isset($r['date_debut']));
         Http::assertSentCount(1);
     }
 
     public function test_processing_error_preserves_the_simple_form_and_entered_values(): void
     {
         Http::fake(['*/periodes-paie' => Http::response(['message' => 'Validation', 'errors' => ['code' => ['Diplôme manquant pour un enseignant.']]], 422)]);
-        $this->post(route('parametres.periodes-paie.store'), ['code' => 'JAN', 'libelle' => 'JANVIER'])
+        $this->post(route('parametres.periodes-paie.store'), ['code' => 'JAN', 'libelle' => 'JANVIER', 'numero_mois' => 1])
             ->assertRedirect()->assertSessionHas('periode_create_form_open', true)->assertSessionHasErrors('code');
     }
 }
