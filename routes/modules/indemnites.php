@@ -224,6 +224,14 @@ Route::middleware(['sicore.auth', 'sicore.module:indemnites.read,pieces.read,con
         Route::post('/frais-deplacement/calcul-groupe', [FraisDeplacementController::class, 'storeGroupe'])
             ->name('frais-deplacement.calcul-groupe.store');
 
+        // État de paiement (PDF) de toute une convocation — segment fixe,
+        // doit rester avant /frais-deplacement/{id}.
+        Route::get('/frais-deplacement/etat-paiement', [FraisDeplacementController::class, 'telechargerEtatPaiement'])
+            ->name('frais-deplacement.etat-paiement');
+
+        Route::get('/frais-deplacement/etat-paiement/sica', [FraisDeplacementController::class, 'telechargerEtatPaiementSica'])
+            ->name('frais-deplacement.etat-paiement.sica');
+
         Route::post('/frais-deplacement', [FraisDeplacementController::class, 'store'])
             ->name('frais-deplacement.store');
 

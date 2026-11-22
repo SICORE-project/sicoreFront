@@ -129,7 +129,7 @@
                                     <td class="checkbox-cell">
                                         @if (empty($membre['fiche_deplacement_id']))
                                             <input type="checkbox" name="beneficiaire_id[]" value="{{ $membre['id'] }}" checked data-membre-checkbox>
-                                            <input type="hidden" name="nom.{{ $membre['id'] }}" value="{{ trim(($membre['prenom'] ?? '').' '.($membre['nom'] ?? '')) }}">
+                                            <input type="hidden" name="nom[{{ $membre['id'] }}]" value="{{ trim(($membre['prenom'] ?? '').' '.($membre['nom'] ?? '')) }}">
                                         @endif
                                     </td>
                                     <td>
@@ -225,7 +225,7 @@
                                                 class="form-control row-input"
                                                 type="number"
                                                 step="0.01"
-                                                name="{{ ($membre['categorie_personnel'] ?? '') === 'fonctionnaire' ? 'indice' : 'montant_mensuel' }}.{{ $membre['id'] }}"
+                                                name="{{ ($membre['categorie_personnel'] ?? '') === 'fonctionnaire' ? 'indice' : 'montant_mensuel' }}[{{ $membre['id'] }}]"
                                                 value="{{ ($membre['categorie_personnel'] ?? '') === 'fonctionnaire' ? ($membre['indice'] ?? '') : '' }}"
                                                 data-field="valeur"
                                                 data-id="{{ $membre['id'] }}"
@@ -239,7 +239,7 @@
                                             <input
                                                 class="form-control row-input"
                                                 type="text"
-                                                name="provenance.{{ $membre['id'] }}"
+                                                name="provenance[{{ $membre['id'] }}]"
                                                 value="{{ $membre['provenance'] ?? '' }}"
                                                 data-field="provenance"
                                                 data-id="{{ $membre['id'] }}"
@@ -274,10 +274,18 @@
                     <span class="total-figure" id="totalGeneral">— F</span>
                 </div>
 
+                @php($nombreFiches = collect($membres)->filter(fn ($membre) => ! empty($membre['fiche_deplacement_id']))->count())
+
                 <div class="actions-group calcul-groupe-actions">
-                    <button class="btn-primary" type="submit" data-submit-groupe>
-                        Créer les fiches sélectionnées
-                    </button>
+                    {{-- État de paiement de toute la convocation (aperçu,
+                         PDF, fichier SICA) : seules les fiches déjà créées y
+                         figurent, d'où les boutons masqués tant qu'il n'y en
+                         a aucune. --}}
+                    @if ($nombreFiches > 0)
+                        @include('pages.indemnites.frais-deplacement.partials.etat-paiement-boutons', [
+                            'convocationId' => $convocationId,
+                        ])
+                    @endif
                 </div>
             @endif
 
@@ -513,7 +521,7 @@
         font-size: 22px;
     }
 
-    .calcul-groupe-actions { margin-top: 14px; justify-content: flex-end; }
+    .calcul-groupe-actions { margin-top: 14px; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
 
 </style>
 @endpush

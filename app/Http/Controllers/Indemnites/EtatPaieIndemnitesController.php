@@ -14,6 +14,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * "États de paie" — fiche regroupant, pour une période, les montants d'UN
@@ -39,8 +40,11 @@ class EtatPaieIndemnitesController extends Controller
      * (Frais de déplacement / Indemnités de correction / Indemnité de
      * surveillance) — cf. config/navigation.php.
      */
+    // Demande utilisatrice : l'état de paie ne gère que les indemnités de
+    // correction et de surveillance — les frais de déplacement ont leur
+    // propre état de paiement (PDF + fichier SICA, page Frais de
+    // déplacement). Le premier type reste le type par défaut.
     private const TYPES_INDEMNITE = [
-        'frais_deplacement' => 'Frais de déplacement',
         'indemnite_correction' => 'Indemnité de correction',
         'indemnite_surveillance' => 'Indemnité de surveillance',
     ];
@@ -194,7 +198,9 @@ class EtatPaieIndemnitesController extends Controller
         $correcteurs = [];
         $surveillants = [];
 
-        if ($type === 'frais_deplacement' || $type === 'indemnite_correction') {
+        // Correction : les bénéficiaires des frais de déplacement fournissent
+        // le chef de centre et le président du jury (montant par défaut).
+        if ($type === 'indemnite_correction') {
             $lot = $this->fraisDeplacement->beneficiairesEligiblesLot($ids);
             $eligiblesFrais = $lot['success'] ? ($lot['data'] ?? []) : [];
         }
@@ -217,7 +223,6 @@ class EtatPaieIndemnitesController extends Controller
             }
 
             $lignes = match ($type) {
-                'frais_deplacement' => $this->lignesFraisDeplacement($eligiblesFrais[$convocationId] ?? []),
                 'indemnite_correction' => array_merge(
                     $correcteurs[$convocationId] ?? [],
                     $this->lignesChefEtPresident($eligiblesFrais[$convocationId] ?? [])
@@ -516,16 +521,16 @@ class EtatPaieIndemnitesController extends Controller
     }
 
     /**
-     * Génère et télécharge la fiche PDF officielle ("États de paiement
-     * examens" — contrôle clé RIB / fichier virement de masse Trésor
-     * Public) à partir du filtre courant — demande utilisatrice : "je
-     * voudrais a chaque filtre generer un fiche d'etat de paie le fichier
-     * doit avoir ses informations" (document papier fourni en photo).
-     * Reconstruit les membres via construireMembres() (même agrégation que
-     * membresPourFiltre()) plutôt que de faire confiance à un tableau
-     * envoyé par le navigateur — évite de dépendre du DOM JS déjà rendu.
+     * Génère et télécharge la fiche d'état de paiement du filtre courant,
+     * au format CSV (demande utilisatrice ; c'était un PDF auparavant) —
+     * "je voudrais a chaque filtre generer un fiche d'etat de paie le
+     * fichier doit avoir ses informations". Reconstruit les membres via
+     * construireMembres() (même agrégation que membresPourFiltre()) plutôt
+     * que de faire confiance à un tableau envoyé par le navigateur. Le nom
+     * de la méthode et de la route (etats-paie.fiche-pdf) est conservé pour
+     * ne pas casser les liens existants.
      */
-    public function genererFichePdf(Request $request): RedirectResponse|\Illuminate\Http\Response
+    public function genererFichePdf(Request $request): RedirectResponse|StreamedResponse
     {
         $type = $request->query('type');
         $objet = $request->query('objet');
@@ -550,44 +555,75 @@ class EtatPaieIndemnitesController extends Controller
 
         $typeLibelle = self::TYPES_INDEMNITE[$type];
 
-        $reponse = $this->etatPaieIndemnites->genererFichePdf([
-            'type' => $type,
-            'type_libelle' => $typeLibelle,
-            'objet' => $objet,
-            'session' => $session,
-            'centre' => $centres === [] ? null : implode(', ', $centres),
-            'details' => $membres->values()->all(),
+        // Coordonnées bancaires de chaque membre (compte bancaire de sa fiche
+        // enseignant) — même source que la génération de l'état de paie
+        // (store() ci-dessus). Sans elles, la colonne "Coordonnées bancaires"
+        // de la fiche PDF restait toujours vide ("—"). Ici on ne bloque pas
+        // si un RIB manque : la fiche est un aperçu, la cellule reste "—".
+        $ribResultat = $this->enseignants->coordonneesBancaires($membres->pluck('id')->filter()->unique()->values()->all());
+        $ribs = $ribResultat['success'] ? ($ribResultat['data'] ?? []) : [];
+
+        $details = $membres->map(function (array $membre) use ($ribs) {
+            $rib = $ribs[$membre['id'] ?? ''] ?? [];
+
+            return array_merge($membre, [
+                'code_banque' => $rib['code_banque'] ?? null,
+                'code_guichet' => $rib['code_guichet'] ?? null,
+                'numero_compte_bancaire' => $rib['numero_compte_bancaire'] ?? null,
+                'cle_rib' => $rib['cle_rib'] ?? null,
+            ]);
+        })->values()->all();
+
+        // Demande utilisatrice : la fiche est désormais un fichier CSV (et
+        // non plus un PDF). Même format que les autres fichiers SICA de
+        // l'application : UTF-8 avec BOM (accents lisibles dans Excel),
+        // séparateur ";", cellules neutralisées contre l'injection de
+        // formules (=, +, -, @ en début de cellule).
+        $colonnes = [
+            'N°', 'Nom', 'Prénom', 'Fonction', 'Catégorie', 'Centre',
+            'Code banque', 'Code guichet', 'Numéro de compte', 'Clé RIB',
+            'Montant (FCFA)', "Type d'indemnité", 'Objet', 'Session',
+        ];
+
+        $lignes = array_map(fn (array $ligne, int $index) => [
+            $index + 1,
+            $ligne['nom'] ?? '',
+            $ligne['prenom'] ?? '',
+            $ligne['fonction'] ?? '',
+            ucfirst((string) ($ligne['categorie_personnel'] ?? '')),
+            $ligne['centre'] ?? '',
+            $ligne['code_banque'] ?? '',
+            $ligne['code_guichet'] ?? '',
+            $ligne['numero_compte_bancaire'] ?? '',
+            $ligne['cle_rib'] ?? '',
+            (int) round((float) ($ligne['montant'] ?? 0)),
+            $typeLibelle,
+            $objet ?? '',
+            $session ?? '',
+        ], $details, array_keys($details));
+
+        $nomFichier = 'etat-de-paiement-'.Str::slug($typeLibelle)
+            .($objet ? '-'.Str::slug($objet) : '')
+            .($session ? '-'.Str::slug($session) : '').'.csv';
+
+        return response()->streamDownload(function () use ($colonnes, $lignes): void {
+            $flux = fopen('php://output', 'wb');
+            fwrite($flux, "\xEF\xBB\xBF");
+            fputcsv($flux, $colonnes, ';', '"', '');
+
+            foreach ($lignes as $ligne) {
+                fputcsv($flux, array_map(function (mixed $cellule): string {
+                    $valeur = (string) $cellule;
+
+                    return preg_match('/^[=+@\-\t\r]/', $valeur) ? "'".$valeur : $valeur;
+                }, $ligne), ';', '"', '');
+            }
+
+            fclose($flux);
+        }, $nomFichier, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Cache-Control' => 'no-store, private',
         ]);
-
-        if (! $reponse->successful()) {
-            return redirect()
-                ->route('indemnites.etats-paie', $retour)
-                ->with('error', $reponse->json('message') ?? 'Impossible de générer la fiche.');
-        }
-
-        return response($reponse->body(), 200, [
-            'Content-Type' => $reponse->header('Content-Type') ?: 'application/pdf',
-            // inline (pas attachment) : demande utilisatrice "afficher le
-            // fichier pdf avant de le telecharger" — le navigateur l'ouvre
-            // dans l'onglet au lieu de forcer le telechargement direct.
-            'Content-Disposition' => $reponse->header('Content-Disposition') ?: 'inline; filename="etat-de-paiement.pdf"',
-        ]);
-    }
-
-    /**
-     * Seuls les bénéficiaires au dossier complet peuvent avoir une fiche de
-     * déplacement (même filtre que la page Frais de déplacement) —
-     * 'fiche_montant' renommé en 'montant' pour la forme commune.
-     *
-     * @param  array<string, mixed>  $eligibles  résultat de beneficiairesEligibles() pour UNE convocation
-     */
-    private function lignesFraisDeplacement(array $eligibles): array
-    {
-        return array_map(function (array $ligne) {
-            $ligne['montant'] = $ligne['fiche_montant'] ?? 0;
-
-            return $ligne;
-        }, $eligibles['complets'] ?? []);
     }
 
     /**

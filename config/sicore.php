@@ -21,3 +21,4 @@ return [
         'password' => env('SICORE_TEST_PASSWORD', 'Sicore@2026'),
     ],
 ];
+
