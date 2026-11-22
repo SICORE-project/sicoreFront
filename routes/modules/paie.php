@@ -21,6 +21,10 @@ Route::middleware(['sicore.auth', 'sicore.module:paie.bulletins.read'])->group(f
             'retenues-rappel' => 'paie-retenues-rappel',
             'exemptions' => 'paie-exemptions',
             'travaux-periodiques' => 'paie-travaux-periodiques',
+            'delegation-credits' => 'paie-delegation-credits',
+'edition-delegation' => 'paie-edition-delegation',
+'edition-engagement' => 'paie-edition-engagement',
+'projection' => 'paie-projection',
             'recap-banque' => 'paie-recap-banque',
             'cotisations-sociales' => 'paie-cotisations-sociales',
             'elements-saisie-dashboard' => 'paie-elements-saisie-dashboard',
@@ -58,6 +62,74 @@ Route::middleware(['sicore.auth', 'sicore.module:paie.bulletins.read'])->group(f
                 ->name($path);
         }
 
+
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Délégations de crédits - CRUD
+        |--------------------------------------------------------------------------
+        */
+
+        Route::post(
+            '/delegation-credits',
+            [PayrollController::class, 'storeDelegationCredit']
+        )
+            ->middleware('throttle:30,1')
+            ->name('delegation-credits.store');
+
+        Route::put(
+            '/delegation-credits/{delegation}',
+            [PayrollController::class, 'updateDelegationCredit']
+        )
+            ->whereNumber('delegation')
+            ->middleware('throttle:30,1')
+            ->name('delegation-credits.update');
+
+        Route::delete(
+            '/delegation-credits/{delegation}',
+            [PayrollController::class, 'destroyDelegationCredit']
+        )
+            ->whereNumber('delegation')
+            ->middleware('throttle:30,1')
+            ->name('delegation-credits.destroy');
+
+
+
+            
+/*
+|--------------------------------------------------------------------------
+| Ventilations des délégations de crédits
+|--------------------------------------------------------------------------
+*/
+
+Route::get(
+    'delegation-credits/{delegation}/ventilations',
+    [PayrollController::class, 'showDelegationVentilations']
+)->whereNumber('delegation')
+ ->name('delegation-credits.ventilations');
+
+Route::post(
+    'delegation-credits/{delegation}/ventilations',
+    [PayrollController::class, 'storeDelegationVentilation']
+)->whereNumber('delegation')
+ ->name('delegation-credits.ventilations.store');
+
+Route::put(
+    'delegation-credits/{delegation}/ventilations/{ventilation}',
+    [PayrollController::class, 'updateDelegationVentilation']
+)->whereNumber('delegation')
+ ->whereNumber('ventilation')
+ ->name('delegation-credits.ventilations.update');
+
+Route::delete(
+    'delegation-credits/{delegation}/ventilations/{ventilation}',
+    [PayrollController::class, 'destroyDelegationVentilation']
+)->whereNumber('delegation')
+ ->whereNumber('ventilation')
+ ->name('delegation-credits.ventilations.destroy');
+
+
         Route::post('/actions/{action}', [PayrollController::class, 'action'])
             ->whereIn('action', array_keys(config('payroll-forms', [])))
             ->middleware('throttle:30,1')
@@ -73,29 +145,7 @@ Route::middleware(['sicore.auth', 'sicore.module:paie.bulletins.read'])->group(f
             ->name('payslip');
     });
 
-    Route::prefix('credits')->name('credits.')->group(function (): void {
-        Route::view('/delegation', 'pages.credits.delegation')->name('delegation');
-        Route::view('/edition-delegations', 'pages.credits.edition-delegations')->name('edition-delegations');
-        Route::get('/edition-delegations/apercu', [CreditEditionController::class, 'previewDelegations'])
-            ->name('edition-delegations.preview');
-        Route::get('/edition-delegations/export', [CreditEditionController::class, 'exportDelegations'])
-            ->name('edition-delegations.export');
-        Route::get('/edition-delegations/{reference}', [CreditEditionController::class, 'showDelegation'])
-            ->where('reference', '[A-Za-z0-9-]+')
-            ->name('edition-delegations.show');
-
-        Route::view('/edition-engagements', 'pages.credits.edition-engagements')->name('edition-engagements');
-        Route::get('/edition-engagements/export/pdf', [CreditEditionController::class, 'exportEngagementsPdf'])
-            ->name('edition-engagements.pdf');
-        Route::get('/edition-engagements/export/excel', [CreditEditionController::class, 'exportEngagementsExcel'])
-            ->name('edition-engagements.excel');
-        Route::get('/edition-engagements/{row}/pdf', [CreditEditionController::class, 'exportEngagementsPdf'])
-            ->whereNumber('row')
-            ->name('edition-engagements.row.pdf');
-        Route::get('/edition-engagements/{row}/excel', [CreditEditionController::class, 'exportEngagementsExcel'])
-            ->whereNumber('row')
-            ->name('edition-engagements.row.excel');
-    });
+  
 
     
 });

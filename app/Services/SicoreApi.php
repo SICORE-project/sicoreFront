@@ -131,6 +131,202 @@ class SicoreApi implements SicoreApiClientInterface
         return $this->json($response)['data'] ?? [];
     }
 
+
+
+
+    /**
+     * Liste des délégations de crédits, avec filtres et statistiques.
+     */
+    public function delegationCredits(
+        string $token,
+        array $filters = []
+    ): array {
+        return $this->json($this->guard(
+            fn (): Response => $this->client($token)
+                ->get('/payroll/delegations-credits', $filters)
+        ));
+    }
+
+    /**
+     * Référentiels nécessaires au formulaire.
+     */
+    public function delegationCreditOptions(string $token): array
+    {
+        return $this->json($this->guard(
+            fn (): Response => $this->client($token)
+                ->get('/payroll/delegations-credits/options')
+        ));
+    }
+
+    /**
+     * Détails d'une délégation.
+     */
+    public function delegationCredit(
+        string $token,
+        int $id
+    ): array {
+        return $this->json($this->guard(
+            fn (): Response => $this->client($token)
+                ->get('/payroll/delegations-credits/'.$id)
+        ));
+    }
+
+    /**
+     * Créer une délégation et ses ventilations.
+     */
+    public function createDelegationCredit(
+        string $token,
+        array $payload
+    ): array {
+        return $this->json($this->guard(
+            fn (): Response => $this->client($token)
+                ->post('/payroll/delegations-credits', $payload)
+        ));
+    }
+
+    /**
+     * Modifier une délégation.
+     */
+    public function updateDelegationCredit(
+        string $token,
+        int $id,
+        array $payload
+    ): array {
+        return $this->json($this->guard(
+            fn (): Response => $this->client($token)
+                ->put('/payroll/delegations-credits/'.$id, $payload)
+        ));
+    }
+
+    /**
+     * Supprimer une délégation.
+     */
+    public function deleteDelegationCredit(
+        string $token,
+        int $id
+    ): array {
+        return $this->json($this->guard(
+            fn (): Response => $this->client($token)
+                ->delete('/payroll/delegations-credits/'.$id)
+        ));
+    }
+
+
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Ventilations des délégations de crédits
+    |--------------------------------------------------------------------------
+    */
+
+    /**
+     * Liste des ventilations d'une délégation.
+     */
+    public function delegationVentilations(
+        string $token,
+        int $delegationId
+    ): array {
+        return $this->json($this->guard(
+            fn (): Response => $this->client($token)
+                ->get(
+                    '/payroll/delegations-credits/'
+                    .$delegationId.'/ventilations'
+                )
+        ));
+    }
+
+    /**
+     * Options nécessaires au formulaire de ventilation.
+     */
+    public function delegationVentilationOptions(
+        string $token,
+        int $delegationId
+    ): array {
+        return $this->json($this->guard(
+            fn (): Response => $this->client($token)
+                ->get(
+                    '/payroll/delegations-credits/'
+                    .$delegationId.'/ventilations/options'
+                )
+        ));
+    }
+
+    /**
+     * Détails d'une ventilation.
+     */
+    public function delegationVentilation(
+        string $token,
+        int $delegationId,
+        int $ventilationId
+    ): array {
+        return $this->json($this->guard(
+            fn (): Response => $this->client($token)
+                ->get(
+                    '/payroll/delegations-credits/'
+                    .$delegationId.'/ventilations/'
+                    .$ventilationId
+                )
+        ));
+    }
+
+    /**
+     * Créer une ventilation.
+     */
+    public function createDelegationVentilation(
+        string $token,
+        int $delegationId,
+        array $payload
+    ): array {
+        return $this->json($this->guard(
+            fn (): Response => $this->client($token)
+                ->post(
+                    '/payroll/delegations-credits/'
+                    .$delegationId.'/ventilations',
+                    $payload
+                )
+        ));
+    }
+
+    /**
+     * Modifier une ventilation.
+     */
+    public function updateDelegationVentilation(
+        string $token,
+        int $delegationId,
+        int $ventilationId,
+        array $payload
+    ): array {
+        return $this->json($this->guard(
+            fn (): Response => $this->client($token)
+                ->put(
+                    '/payroll/delegations-credits/'
+                    .$delegationId.'/ventilations/'
+                    .$ventilationId,
+                    $payload
+                )
+        ));
+    }
+
+    /**
+     * Supprimer une ventilation.
+     */
+    public function deleteDelegationVentilation(
+        string $token,
+        int $delegationId,
+        int $ventilationId
+    ): array {
+        return $this->json($this->guard(
+            fn (): Response => $this->client($token)
+                ->delete(
+                    '/payroll/delegations-credits/'
+                    .$delegationId.'/ventilations/'
+                    .$ventilationId
+                )
+        ));
+    }
+
+
     /**
      * Prépare le client Laravel avec l'URL, les délais et éventuellement le
      * jeton Bearer. Les valeurs viennent de config/sicore.php et du fichier .env.
