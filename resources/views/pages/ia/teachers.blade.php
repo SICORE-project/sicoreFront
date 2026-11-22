@@ -7,8 +7,8 @@
         <section class="objective-card"><h2>{{ $scopeLabel }}</h2><p>Périmètre : {{ $scopeLabel }}</p></section>
         @if ($error)<p class="alert alert-warning" role="alert">{{ $error }}</p>@endif
         @if (!empty($data['stats']))
-          {{-- 6 cartes sur 3 colonnes : 2 lignes complètes. --}}
-          <div class="stats-grid three">
+          {{-- 5 cartes sur une ligne (les fonctionnaires ne sont pas gérés par l'application). --}}
+          <div class="stats-grid">
             <article class="stat-card">
               <div><p class="stat-label">Enseignants de l’IA</p><p class="stat-value">{{ number_format((int) ($data['stats']['total'] ?? 0), 0, ',', ' ') }}</p><p class="stat-note">Tous statuts confondus</p></div>
               <span class="stat-icon green"><i class="fa-solid fa-chalkboard-user" aria-hidden="true"></i></span>
@@ -16,10 +16,6 @@
             <article class="stat-card">
               <div><p class="stat-label">En activité</p><p class="stat-value">{{ number_format((int) ($data['stats']['en_activite'] ?? 0), 0, ',', ' ') }}</p><p class="stat-note">Statut en activité</p></div>
               <span class="stat-icon blue"><i class="fa-solid fa-user-check" aria-hidden="true"></i></span>
-            </article>
-            <article class="stat-card">
-              <div><p class="stat-label">Fonctionnaires</p><p class="stat-value">{{ number_format((int) ($data['stats']['fonctionnaires'] ?? 0), 0, ',', ' ') }}</p><p class="stat-note">Statut fonctionnaire</p></div>
-              <span class="stat-icon green"><i class="fa-solid fa-user-tie" aria-hidden="true"></i></span>
             </article>
             <article class="stat-card">
               <div><p class="stat-label">Contractuels</p><p class="stat-value">{{ number_format((int) ($data['stats']['contractuels'] ?? 0), 0, ',', ' ') }}</p><p class="stat-note">Statut contractuel</p></div>
