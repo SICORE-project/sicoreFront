@@ -46,6 +46,12 @@ class PayrollController extends Controller
         if (app(\App\Services\Organisation\InterfaceAccess::class)->isIa()) {
             return app(IaWorkspaceController::class)->payroll($request, $slug);
         }
+
+         // Traitement spécifique aux délégations de crédits.
+    if ($slug === 'paie-delegation-credits') {
+        return $this->showDelegationCredits($request);
+    }
+
         $filters = $this->scopedFilters($this->validatedPageFilters($request, $slug));
               
 
@@ -70,6 +76,66 @@ class PayrollController extends Controller
             'apiError'
         ));
     }
+
+
+
+/**
+ * Affiche les délégations de crédits.
+ */
+private function showDelegationCredits(Request $request): View|RedirectResponse
+{
+    $filters = $request->validate([
+        'annee_academique_id' => ['nullable', 'integer', 'min:1'],
+        'periode_paie' => ['nullable', 'string', 'max:100'],
+        'reference_lettre' => ['nullable', 'string', 'max:191'],
+        'page' => ['nullable', 'integer', 'min:1'],
+        'per_page' => ['nullable', 'integer', 'in:10,25,50,100'],
+    ]);
+
+    $moduleData = [
+        'data' => [],
+        'meta' => [],
+        'stats' => [],
+    ];
+
+    $options = [
+        'annees_academiques' => [],
+        'ias' => [],
+        'iefs' => [],
+        'lieux_services' => [],
+    ];
+
+    $apiError = null;
+
+    try {
+        $token = $this->token($request);
+
+        $moduleData = $this->api->delegationCredits(
+            $token,
+            array_filter(
+                $this->scopedFilters($filters),
+                static fn ($value) => $value !== null && $value !== ''
+            )
+        );
+
+        $options = $this->api->delegationCreditOptions($token);
+
+    } catch (SicoreApiException $exception) {
+        if ($exception->status === 401) {
+            return $this->expired($request);
+        }
+
+        $apiError = $this->apiErrorDetails($request, $exception);
+    }
+
+    return view('pages.paie.delegation-credits', compact(
+        'moduleData',
+        'options',
+        'apiError'
+    ));
+}
+
+
 
     /**
      * Le préfixe "paie-" est retiré pour retrouver le nom du fichier Blade.
@@ -314,4 +380,334 @@ private function validatedPageFilters(
             'login_url' => route('login', array_filter(['next' => $returnUrl])),
         ], 401);
     }
+
+
+
+/**
+ * Enregistre une délégation de crédits.
+ */
+
+
+
+/**
+ * Modifie une délégation de crédits existante.
+ */
+/**
+ * Enregistre une délégation de crédits.
+ */
+public function storeDelegationCredit(Request $request): RedirectResponse
+{
+    $data = $request->validate([
+        'annee_academique_id' => ['required', 'integer', 'min:1'],
+        'reference_lettre' => ['required', 'string', 'max:191'],
+        'objet' => ['required', 'string', 'max:5000'],
+        'periode_paie' => ['required', 'string', 'max:100'],
+        'date_delegation' => ['required', 'date'],
+    ]);
+
+    try {
+        $this->api->createDelegationCredit(
+            $this->token($request),
+            $data
+        );
+
+        return redirect()
+            ->route('paie.delegation-credits')
+            ->with('success', 'Délégation de crédits enregistrée avec succès.');
+
+    } catch (SicoreApiException $exception) {
+        if ($exception->status === 401) {
+            return $this->expired($request);
+        }
+
+        return back()
+            ->withInput()
+            ->with('error', $this->apiErrorMessage($request, $exception))
+            ->withErrors($exception->errors ?? []);
+    }
+}
+
+
+/**
+ * Modifie une délégation de crédits existante.
+ */
+public function updateDelegationCredit(
+    Request $request,
+    int $delegation
+): RedirectResponse {
+    $data = $request->validate([
+        'annee_academique_id' => ['required', 'integer', 'min:1'],
+        'reference_lettre' => ['required', 'string', 'max:191'],
+        'objet' => ['required', 'string', 'max:5000'],
+        'periode_paie' => ['required', 'string', 'max:100'],
+        'date_delegation' => ['required', 'date'],
+    ]);
+
+    try {
+        $this->api->updateDelegationCredit(
+            $this->token($request),
+            $delegation,
+            $data
+        );
+
+        return redirect()
+            ->route('paie.delegation-credits')
+            ->with('success', 'Délégation de crédits modifiée avec succès.');
+
+    } catch (SicoreApiException $exception) {
+        if ($exception->status === 401) {
+            return $this->expired($request);
+        }
+
+        return back()
+            ->withInput()
+            ->with('error', $this->apiErrorMessage($request, $exception))
+            ->withErrors($exception->errors ?? []);
+    }
+}
+
+
+/**
+ * Supprime une délégation de crédits.
+ */
+public function destroyDelegationCredit(
+    Request $request,
+    int $delegation
+): RedirectResponse {
+    try {
+        $this->api->deleteDelegationCredit(
+            $this->token($request),
+            $delegation
+        );
+
+        return redirect()
+            ->route('paie.delegation-credits')
+            ->with('success', 'Délégation de crédits supprimée avec succès.');
+
+    } catch (SicoreApiException $exception) {
+        if ($exception->status === 401) {
+            return $this->expired($request);
+        }
+
+        return back()
+            ->with('error', $this->apiErrorMessage($request, $exception));
+    }
+}
+
+
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Gestion des ventilations des délégations de crédits
+    |--------------------------------------------------------------------------
+    */
+
+    /**
+     * Affiche les ventilations d'une délégation.
+     */
+    public function showDelegationVentilations(
+        Request $request,
+        int $delegation
+    ): View|RedirectResponse {
+        try {
+            $token = $this->token($request);
+
+            $result = $this->api->delegationVentilations(
+                $token,
+                $delegation
+            );
+
+            $options = $this->api->delegationVentilationOptions(
+                $token,
+                $delegation
+            );
+
+            return view('pages.paie.delegation-ventilations', [
+                'delegation' => $result['delegation'] ?? [],
+                'ventilations' => $result['data'] ?? [],
+                'stats' => $result['stats'] ?? [],
+                'options' => $options,
+                'apiError' => null,
+            ]);
+
+        } catch (SicoreApiException $exception) {
+            if ($exception->status === 401) {
+                return $this->expired($request);
+            }
+
+            return redirect()
+                ->route('paie.delegation-credits')
+                ->with(
+                    'error',
+                    $this->apiErrorMessage($request, $exception)
+                );
+        }
+    }
+
+    /**
+     * Enregistre une ventilation.
+     */
+    public function storeDelegationVentilation(
+        Request $request,
+        int $delegation
+    ): RedirectResponse {
+        $data = $this->validateDelegationVentilation($request);
+
+        try {
+            $this->api->createDelegationVentilation(
+                $this->token($request),
+                $delegation,
+                $data
+            );
+
+            return redirect()
+                ->route(
+                    'paie.delegation-credits.ventilations',
+                    ['delegation' => $delegation]
+                )
+                ->with('success', 'Ventilation enregistrée avec succès.');
+
+        } catch (SicoreApiException $exception) {
+            if ($exception->status === 401) {
+                return $this->expired($request);
+            }
+
+            return back()
+                ->withInput()
+                ->with(
+                    'error',
+                    $this->apiErrorMessage($request, $exception)
+                )
+                ->withErrors($exception->errors ?? []);
+        }
+    }
+
+    /**
+     * Modifie une ventilation.
+     */
+    public function updateDelegationVentilation(
+        Request $request,
+        int $delegation,
+        int $ventilation
+    ): RedirectResponse {
+        $data = $this->validateDelegationVentilation($request);
+
+        try {
+            $this->api->updateDelegationVentilation(
+                $this->token($request),
+                $delegation,
+                $ventilation,
+                $data
+            );
+
+            return redirect()
+                ->route(
+                    'paie.delegation-credits.ventilations',
+                    ['delegation' => $delegation]
+                )
+                ->with('success', 'Ventilation modifiée avec succès.');
+
+        } catch (SicoreApiException $exception) {
+            if ($exception->status === 401) {
+                return $this->expired($request);
+            }
+
+            return back()
+                ->withInput()
+                ->with(
+                    'error',
+                    $this->apiErrorMessage($request, $exception)
+                )
+                ->withErrors($exception->errors ?? []);
+        }
+    }
+
+    /**
+     * Supprime une ventilation.
+     */
+    public function destroyDelegationVentilation(
+        Request $request,
+        int $delegation,
+        int $ventilation
+    ): RedirectResponse {
+        try {
+            $this->api->deleteDelegationVentilation(
+                $this->token($request),
+                $delegation,
+                $ventilation
+            );
+
+            return redirect()
+                ->route(
+                    'paie.delegation-credits.ventilations',
+                    ['delegation' => $delegation]
+                )
+                ->with('success', 'Ventilation supprimée avec succès.');
+
+        } catch (SicoreApiException $exception) {
+            if ($exception->status === 401) {
+                return $this->expired($request);
+            }
+
+            return back()
+                ->with(
+                    'error',
+                    $this->apiErrorMessage($request, $exception)
+                );
+        }
+    }
+
+    /**
+     * Validation commune aux formulaires de ventilation.
+     */
+    private function validateDelegationVentilation(
+        Request $request
+    ): array {
+        return $request->validate([
+            'corps_enseignant_id' => [
+                'required', 'integer', 'min:1',
+            ],
+            'ia_id' => [
+                'required', 'integer', 'min:1',
+            ],
+          'ief_id' => ['nullable', 'integer'],
+            'centre_execution' => [
+                'required', 'string', 'max:255',
+            ],
+            'budget' => [
+                'required', 'string', 'max:255',
+            ],
+            'activite' => [
+                'required', 'string', 'max:255',
+            ],
+            'imputation_budgetaire' => [
+                'required', 'string', 'max:255',
+            ],
+            'numero_autorisation' => [
+                'required', 'string', 'max:255',
+            ],
+            'numero_carton' => [
+                'nullable', 'string', 'max:255',
+            ],
+            'engagement' => [
+                'nullable', 'string', 'max:255',
+            ],
+            'type_ventilation' => [
+                'required', 'in:salaire,prime_scolaire',
+            ],
+            'montant' => [
+                'required', 'numeric', 'gt:0',
+                'decimal:0,2',
+                'max:9999999999999.99',
+            ],
+        ]);
+    }
+
+
+
+
+
+
+
 }
