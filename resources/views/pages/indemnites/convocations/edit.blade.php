@@ -185,7 +185,7 @@
                                 id="heure_debut"
                                 name="heure_debut"
                                 type="time"
-                                value="{{ old('heure_debut', $convocation->heure_debut ?? '08:00') }}"
+                                value="{{ substr((string) old('heure_debut', $convocation->heure_debut ?? '08:00'), 0, 5) }}"
                                 required
                             >
                             @error('heure_debut')<p class="field-error">{{ $message }}</p>@enderror
