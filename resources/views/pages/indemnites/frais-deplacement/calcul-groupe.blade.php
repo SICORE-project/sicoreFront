@@ -217,7 +217,7 @@
                                         @endif
                                         <td class="montant-cell">
                                             <div class="montant-figure">{{ number_format($membre['fiche_montant'] ?? 0, 0, ',', ' ') }} F</div>
-                                            <a class="table-action" href="{{ route('indemnites.frais-deplacement.show', $membre['fiche_deplacement_id']) }}">Voir la fiche</a>
+                                            <a class="icon-action" href="{{ route('indemnites.frais-deplacement.show', $membre['fiche_deplacement_id']) }}" title="Voir la fiche" aria-label="Voir la fiche"><i class="fa-solid fa-eye" aria-hidden="true"></i></a>
                                         </td>
                                     @else
                                         <td>

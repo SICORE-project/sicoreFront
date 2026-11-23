@@ -1176,13 +1176,13 @@
                 "<td style=\"text-align:right;\">" + formatFCFA(etat.total_montant || 0) + "</td>" +
                 "<td><span class=\"etat-paie-voir-statut etat-paie-voir-statut-" + echapper(etat.statut || "brouillon") + "\">" + echapper(libelleStatut(etat.statut)) + "</span></td>" +
                 "<td class=\"actions-cell\"><div class=\"table-actions-inline\">" +
-                    "<button type=\"button\" class=\"table-action\" data-etat-consulter=\"" + echapper(etat.id) + "\">Consulter</button>" +
+                    "<button type=\"button\" class=\"icon-action\" title=\"Voir\" aria-label=\"Voir\" data-etat-consulter=\"" + echapper(etat.id) + "\"><i class=\"fa-solid fa-eye\" aria-hidden=\"true\"></i></button>" +
                     "<a class=\"table-action\" href=\"" + pdf + "\" target=\"_blank\" rel=\"noopener\">PDF</a>" +
                     ((peutValiderEtats && ACTIONS_STATUT[etat.statut])
                         ? "<button type=\"button\" class=\"table-action\" data-etat-statut=\"" + echapper(etat.id) + "\" data-action=\"" + ACTIONS_STATUT[etat.statut][0] + "\">" + ACTIONS_STATUT[etat.statut][1] + "</button>"
                         : "") +
                     ((peutGererEtats && etat.statut === "brouillon")
-                        ? "<button type=\"button\" class=\"table-action delete\" data-etat-supprimer=\"" + echapper(etat.id) + "\">Supprimer</button>"
+                        ? "<button type=\"button\" class=\"icon-action icon-action-danger\" title=\"Supprimer\" aria-label=\"Supprimer\" data-etat-supprimer=\"" + echapper(etat.id) + "\"><i class=\"fa-solid fa-trash\" aria-hidden=\"true\"></i></button>"
                         : "") +
                 "</div></td>";
 

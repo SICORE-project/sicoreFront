@@ -257,17 +257,21 @@
 
                                         <a
                                             href="{{ route('admin.roles.show', $role['id']) }}"
-                                            class="table-action"
-                                        >Voir</a>
+                                            class="icon-action"
+                                            title="Voir"
+                                            aria-label="Voir"
+                                        ><i class="fa-solid fa-eye" aria-hidden="true"></i></a>
 
 
                                         <button
                                             type="button"
-                                            class="table-action"
+                                            class="icon-action"
+                                            title="Modifier"
+                                            aria-label="Modifier"
                                             data-role-modal="edit"
                                             data-role="{{ json_encode($role) }}"
                                         >
-                                            Modifier
+                                            <i class="fa-solid fa-pen" aria-hidden="true"></i>
                                         </button>
 
 
@@ -283,10 +287,12 @@
 
                                             <button
                                                 type="submit"
-                                                class="table-action delete"
+                                                class="icon-action icon-action-danger"
+                                                title="Supprimer"
+                                                aria-label="Supprimer"
                                                 onclick="return confirm('Supprimer ce rôle ?')"
                                             >
-                                                Supprimer
+                                                <i class="fa-solid fa-trash" aria-hidden="true"></i>
                                             </button>
 
                                         </form>
