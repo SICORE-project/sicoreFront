@@ -148,17 +148,19 @@
 
                             <td class="actions-cell">
                                 <div class="table-actions-inline">
-                                    <a href="{{ route('admin.permissions.show', $permission['id']) }}" class="table-action">Voir</a>
+                                    <a href="{{ route('admin.permissions.show', $permission['id']) }}" class="icon-action" title="Voir" aria-label="Voir"><i class="fa-solid fa-eye" aria-hidden="true"></i></a>
                                     <a
                                         href="{{ route('admin.permissions.edit', $permission['id']) }}"
-                                        class="table-action"
+                                        class="icon-action"
+                                        title="Modifier"
+                                        aria-label="Modifier"
                                         data-permission-edit-trigger
-                                    >Modifier</a>
+                                    ><i class="fa-solid fa-pen" aria-hidden="true"></i></a>
                                     <form action="{{ route('admin.permissions.destroy', $permission['id']) }}" method="POST" style="display: inline;">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" class="table-action delete"
-                                                onclick="return confirm('Supprimer cette permission ?')">Supprimer</button>
+                                        <button type="submit" class="icon-action icon-action-danger" title="Supprimer" aria-label="Supprimer"
+                                                onclick="return confirm('Supprimer cette permission ?')"><i class="fa-solid fa-trash" aria-hidden="true"></i></button>
                                     </form>
                                 </div>
                             </td>

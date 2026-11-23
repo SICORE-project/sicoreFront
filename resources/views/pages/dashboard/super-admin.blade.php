@@ -92,7 +92,7 @@
       @php
         $total = array_sum(array_column($distribution['items'], 'value'));
         $offset = 0;
-        $showPercentage = ! in_array($distribution['title'], ['Comptes enseignants par corps', 'Enseignants par corps', 'État des comptes'], true);
+        $showPercentage = ! in_array($distribution['title'], ['Comptes enseignants par statut', 'Enseignants par statut', 'État des comptes'], true);
       @endphp
       <section class="sa-panel sa-distribution {{ $loop->first ? 'sa-accounts' : '' }}" data-sa-distribution>
         <h2>{{ $distribution['title'] }}</h2>

@@ -213,18 +213,22 @@
                                                 Ajouter une pièce
                                             </button>
                                             <button
-                                                class="table-action"
+                                                class="icon-action"
                                                 type="button"
+                                                title="Voir le dossier"
+                                                aria-label="Voir le dossier"
                                                 data-modal-open="modal-voir-dossier"
                                                 data-piece-mode="voir"
                                                 data-dossier-label="{{ trim(($membre['prenom'] ?? '').' '.($membre['nom'] ?? '')) }} — {{ $membre['centre'] ?? '—' }}"
                                                 data-dossier-json="{{ json_encode($membre['dossier'] ?? []) }}"
                                             >
-                                                Voir le dossier
+                                                <i class="fa-solid fa-eye" aria-hidden="true"></i>
                                             </button>
                                             <button
-                                                class="table-action"
+                                                class="icon-action"
                                                 type="button"
+                                                title="Modifier"
+                                                aria-label="Modifier"
                                                 data-modal-open="modal-piece-justificative"
                                                 data-piece-mode="modifier"
                                                 data-piece-convocation-id="{{ $membre['convocation_id'] }}"
@@ -233,7 +237,7 @@
                                                 data-piece-label="{{ trim(($membre['prenom'] ?? '').' '.($membre['nom'] ?? '')) }} — {{ $membre['centre'] ?? '—' }}"
                                                 data-dossier-json="{{ json_encode($membre['dossier'] ?? []) }}"
                                             >
-                                                Modifier
+                                                <i class="fa-solid fa-pen" aria-hidden="true"></i>
                                             </button>
                                         </div>
                                     </td>
