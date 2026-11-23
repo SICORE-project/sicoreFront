@@ -282,9 +282,17 @@ class ConvocationsController extends Controller
         $resultat = $this->convocations->importer($request->file('fichier'), $utilisateurId);
 
         if (! $resultat['success']) {
+            // Détail des erreurs (tableau, ligne, colonne du document Word),
+            // affiché dans la fenêtre d'import rouverte automatiquement.
+            $erreurs = array_values(array_filter(
+                \Illuminate\Support\Arr::flatten((array) ($resultat['errors'] ?? [])),
+                'is_string'
+            ));
+
             return redirect()
                 ->route('indemnites.convocations')
-                ->with('error', $resultat['message'] ?? "Échec de l'import du fichier.");
+                ->with('error', $resultat['message'] ?? "Échec de l'import du fichier.")
+                ->with('import_avertissements', $erreurs);
         }
 
         $donnees = $resultat['data'] ?? [];
@@ -935,6 +943,13 @@ class ConvocationsController extends Controller
     // remplacement complet.
     public function update(Request $request, int|string $id): RedirectResponse
     {
+        // La colonne heure_debut est de type TIME : l'API la renvoie en
+        // "HH:MM:SS", que certains navigateurs resoumettent tel quel depuis
+        // l'<input type="time"> pre-rempli - ce qui echouait sur H:i.
+        if (preg_match('/^(\d{2}:\d{2}):\d{2}$/', (string) $request->input('heure_debut'), $m)) {
+            $request->merge(['heure_debut' => $m[1]]);
+        }
+
         $data = $request->validate([
             'type_convocation_id' => ['nullable', 'integer'],
             'date_emission' => ['sometimes', 'date'],

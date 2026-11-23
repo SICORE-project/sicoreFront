@@ -251,18 +251,18 @@
                                 <td class="actions-cell">
                                     <div class="table-actions-inline">
                                         @if (! empty($ligne['centre_id']))
-                                            <a class="table-action" href="{{ route('indemnites.convocations.centres.show', [$ligne['convocation_id'], $ligne['centre_id']]) }}">
-                                                Voir
+                                            <a class="icon-action" href="{{ route('indemnites.convocations.centres.show', [$ligne['convocation_id'], $ligne['centre_id']]) }}" title="Voir" aria-label="Voir">
+                                                <i class="fa-solid fa-eye" aria-hidden="true"></i>
                                             </a>
-                                            <a class="table-action" href="{{ route('indemnites.convocations.centres.edit', [$ligne['convocation_id'], $ligne['centre_id']]) }}">
-                                                Modifier
+                                            <a class="icon-action" href="{{ route('indemnites.convocations.centres.edit', [$ligne['convocation_id'], $ligne['centre_id']]) }}" title="Modifier" aria-label="Modifier">
+                                                <i class="fa-solid fa-pen" aria-hidden="true"></i>
                                             </a>
                                         @else
-                                            <a class="table-action" href="{{ route('indemnites.convocations.show', $ligne['convocation_id']) }}">
-                                                Voir
+                                            <a class="icon-action" href="{{ route('indemnites.convocations.show', $ligne['convocation_id']) }}" title="Voir" aria-label="Voir">
+                                                <i class="fa-solid fa-eye" aria-hidden="true"></i>
                                             </a>
-                                            <a class="table-action" href="{{ route('indemnites.convocations.edit', $ligne['convocation_id']) }}">
-                                                Modifier
+                                            <a class="icon-action" href="{{ route('indemnites.convocations.edit', $ligne['convocation_id']) }}" title="Modifier" aria-label="Modifier">
+                                                <i class="fa-solid fa-pen" aria-hidden="true"></i>
                                             </a>
                                         @endif
                                         @if (! empty($ligne['centre_id']))
@@ -287,8 +287,8 @@
                                             >
                                                 @csrf
                                                 @method('DELETE')
-                                                <button class="table-action danger" type="submit">
-                                                    Supprimer
+                                                <button class="icon-action icon-action-danger" type="submit" title="Supprimer" aria-label="Supprimer">
+                                                    <i class="fa-solid fa-trash" aria-hidden="true"></i>
                                                 </button>
                                             </form>
                                         @else
@@ -303,8 +303,8 @@
                                             >
                                                 @csrf
                                                 @method('DELETE')
-                                                <button class="table-action danger" type="submit">
-                                                    Supprimer
+                                                <button class="icon-action icon-action-danger" type="submit" title="Supprimer" aria-label="Supprimer">
+                                                    <i class="fa-solid fa-trash" aria-hidden="true"></i>
                                                 </button>
                                             </form>
                                         @endif

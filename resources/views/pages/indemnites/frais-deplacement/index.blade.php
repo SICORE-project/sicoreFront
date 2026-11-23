@@ -198,8 +198,8 @@
                                     <td class="actions-cell">
                                         <div class="table-actions-inline">
                                             @if (! empty($ligne['fiche_deplacement_id']))
-                                                <a class="table-action" href="{{ route('indemnites.frais-deplacement.show', $ligne['fiche_deplacement_id']) }}">
-                                                    Voir la fiche
+                                                <a class="icon-action" href="{{ route('indemnites.frais-deplacement.show', $ligne['fiche_deplacement_id']) }}" title="Voir la fiche" aria-label="Voir la fiche">
+                                                    <i class="fa-solid fa-eye" aria-hidden="true"></i>
                                                 </a>
                                             @else
                                                 <a class="table-action" href="{{ route('indemnites.frais-deplacement.create', ['convocation_id' => $ligne['convocation_id'], 'beneficiaire_id' => $ligne['beneficiaire_id']]) }}">
