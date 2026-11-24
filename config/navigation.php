@@ -103,7 +103,12 @@ return [
                 'type' => 'group',
                 'label' => 'Délégations de crédits',
                 'icon' => 'fa-solid fa-money-bill-transfer',
-                'permission' => 'paie.delegations_credits.read',
+                'permission' => [
+                    'paie.delegation-credits.read',
+                    'paie.edition-delegation.read',
+                    'paie.edition-engagement.read',
+                    'paie.projection.read',
+                ],
                 'active' => [
                     'paie.delegation-credits',
                     'paie.edition-delegation',
