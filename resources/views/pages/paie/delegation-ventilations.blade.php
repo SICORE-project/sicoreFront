@@ -54,18 +54,33 @@
             <div class="dv-panel-heading"><h2>Liste des ventilations</h2><span>{{ count($records) }} résultat(s)</span></div>
             <div class="dv-table-scroll">
                 <table class="dv-table">
-                    <thead><tr><th>N° Carton</th><th>Corps d'enseignant</th><th>IA </th><th>Montant</th><th>N° Autorisation</th><th>Actions</th></tr></thead>
+                    <thead><tr><th>N° Carton</th><th>Corps d'enseignant</th><th>IA </th><th>Montant</th><th>Engagement</th><th>N° Autorisation</th><th>Actions</th></tr></thead>
                     <tbody>
                         @forelse($records as $item)
                             <tr>
                                 <td>{{ data_get($item, 'numero_carton') ?: '—' }}</td>
                                 <td>{{ $lookup($corps, data_get($item, 'corps_enseignant_id')) }}</td>
-                                <td>{{ $lookup($ias, data_get($item, 'ia_id')) }} / {{ $lookup($iefs, data_get($item, 'ief_id')) }}</td>
+                                <td>{{ $lookup($ias, data_get($item, 'ia_id')) }}</td>
 
                                 <td class="dv-amount">{{ number_format((float) data_get($item, 'montant', 0), 0, ',', ' ') }} FCFA</td>
                                 
-                                <td>{{ data_get($item, 'numero_autorisation') ?: '—' }}</td>
-                                <td><div class="dv-actions">
+                               
+
+<td class="dv-amount">
+    @if(data_get($item, 'engagement') !== null)
+        {{ number_format(
+            (float) data_get($item, 'engagement'),
+            0,
+            ',',
+            ' '
+        ) }} FCFA
+    @else
+        —
+    @endif
+</td>
+<td>{{ data_get($item, 'numero_autorisation') ?: '—' }}</td>
+
+<td><div class="dv-actions">
                                     <button type="button" class="icon-action" data-dv-view="{{ data_get($item, 'id') }}" title="Consulter" aria-label="Consulter"><i class="fa-solid fa-eye"></i></button>
                                     @if($canWrite)
                                         <button type="button" class="icon-action" data-dv-edit="{{ data_get($item, 'id') }}" title="Modifier" aria-label="Modifier"><i class="fa-solid fa-pen"></i></button>
@@ -77,7 +92,7 @@
                                 </div></td>
                             </tr>
                         @empty
-                            <tr><td colspan="6" class="dv-empty"><x-table-empty-state>Aucune ventilation enregistrée pour cette délégation.</x-table-empty-state></td></tr>
+                            <tr><td colspan="7" class="dv-empty"><x-table-empty-state>Aucune ventilation enregistrée pour cette délégation.</x-table-empty-state></td></tr>
                         @endforelse
                     </tbody>
                 </table>
