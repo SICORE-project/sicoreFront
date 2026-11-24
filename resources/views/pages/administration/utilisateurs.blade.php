@@ -654,11 +654,12 @@
           ''
         ));
 
+        // Le gestionnaire IA choisit une IA : le filtre des directions centrales ne s'applique pas à lui.
         editStructures
-          .filter(item => compatibleNationalStructure(item, selectedRole?.dataset.roleSlug))
           .filter(item => isGestionnaireIa
             ? String(item.type).toUpperCase() === expectedType
-            : String(item.perimetre).toLowerCase() === 'national')
+            : compatibleNationalStructure(item, selectedRole?.dataset.roleSlug)
+              && String(item.perimetre).toLowerCase() === 'national')
           .forEach(item => editStructure.add(new Option(optionLabel(item), item.id)));
 
         editStructure.value = String(selectedValue ?? '');
