@@ -209,7 +209,8 @@ return [
             ['label' => 'Utilisateurs', 'route' => 'utilisateurs.index', 'icon' => 'fa-solid fa-user-shield', 'permission' => 'administration.users.read'],
             ['label' => 'Créer un compte enseignant', 'route' => 'utilisateurs.teacher.create', 'icon' => 'fa-solid fa-user-plus', 'permission' => 'administration.users.create'],
             ['label' => 'Profils / Rôles', 'route' => 'utilisateurs.profils-roles', 'icon' => 'fa-solid fa-id-badge', 'permission' => 'administration.roles.read'],
-            ['label' => 'Permissions', 'route' => 'utilisateurs.permissions', 'icon' => 'fa-solid fa-key', 'permission' => 'administration.permissions.read'],
+            // Partie technique : visible seulement par le super administrateur.
+            ['label' => 'Permissions', 'route' => 'utilisateurs.permissions', 'icon' => 'fa-solid fa-key', 'permission' => 'administration.permissions.read', 'roles' => ['super_admin']],
         ],
     ],
 ];
