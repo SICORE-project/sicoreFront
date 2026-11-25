@@ -75,6 +75,17 @@ class AdministrationDashboardTest extends TestCase
             ->assertDontSee('Gestion du personnel')->assertDontSee('Gestion des indemnités');
     }
 
+    public function test_admin_keeps_full_menu_when_api_allows_it(): void
+    {
+        Http::fake(['*/dashboard*' => Http::response(['data' => $this->dashboard([
+            'title' => 'Administration des accès', 'role' => 'Administrateur', 'scope' => 'Administration centrale',
+            'menu_complet' => true,
+            'actions' => [['label' => 'Gérer les utilisateurs', 'route' => 'utilisateurs.index', 'icon' => 'fa-users']],
+        ])])]);
+        $this->get('/dashboard')->assertOk()->assertSee('Administration des accès')
+            ->assertSee('Gestion du personnel')->assertSee('Gestion des indemnités');
+    }
+
     public function test_empty_scope_displays_message_instead_of_fabricated_metrics(): void
     {
         Http::fake(['*/dashboard*' => Http::response(['data' => $this->dashboard([

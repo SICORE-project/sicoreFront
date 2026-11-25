@@ -191,7 +191,8 @@ class DashboardController extends Controller
             }
             return $visible;
         };
-        if (($dashboard['layout'] ?? null) !== 'super-admin') {
+        // L'API indique si le profil garde son menu complet (administrateur DAGE, super administrateur).
+        if (($dashboard['layout'] ?? null) !== 'super-admin' && empty($dashboard['menu_complet'])) {
             config()->set('navigation', $filter(config('navigation', [])));
         }
 
