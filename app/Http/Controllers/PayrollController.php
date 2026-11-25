@@ -43,13 +43,13 @@ class PayrollController extends Controller
      */
     public function show(Request $request, string $slug): View|RedirectResponse
     {
-        // Délégations de crédits : même page pour l'admin et l'IA.
-        if ($slug === 'paie-delegation-credits') {
-            return $this->showDelegationCredits($request);
-        }
-
         if (app(\App\Services\Organisation\InterfaceAccess::class)->isIa()) {
             return app(IaWorkspaceController::class)->payroll($request, $slug);
+        }
+
+        // Délégations de crédits : réservées à l'administration centrale.
+        if ($slug === 'paie-delegation-credits') {
+            return $this->showDelegationCredits($request);
         }
 
         $filters = $this->scopedFilters($this->validatedPageFilters($request, $slug));

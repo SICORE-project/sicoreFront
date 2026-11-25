@@ -137,10 +137,6 @@ class InterfaceAccess
                 'paie.exemptions' => 'paie.exemptions.read',
                 'paie.fermeture-periode' => 'paie.cloture.read',
                 'ia.payroll.export' => 'paie.bulletins.export',
-                'paie.delegation-credits' => 'paie.delegation-credits.read',
-                'paie.edition-delegation' => 'paie.edition-delegation.read',
-                'paie.edition-engagement' => 'paie.edition-engagement.read',
-                'paie.projection' => 'paie.projection.read',
                 default => null,
             };
             if ($permission) return $this->allows($permission);
