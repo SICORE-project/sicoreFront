@@ -1,7 +1,7 @@
 (function () {
   'use strict';
   function allowedTypes(slug, configured) {
-    var specific = { super_admin: ['CI', 'DAGE'], admin: ['CI', 'DAGE'], agent_decpc: ['DECPC'], agent_drh: ['DRH'], gestionnaire_ia: [], enseignant: [] };
+    var specific = { super_admin: ['CI'], admin: ['DAGE'], agent_decpc: ['DECPC'], agent_drh: ['DRH'], gestionnaire_ia: [], enseignant: [] };
     if (Object.hasOwn(specific, slug)) return specific[slug];
     var central = ['CI', 'DAGE', 'DRH', 'DECPC'];
     var types = (configured || []).map(function (type) { return String(type).toUpperCase(); }).filter(function (type) { return central.includes(type); });
